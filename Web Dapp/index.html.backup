@@ -71,32 +71,6 @@
 
     <!-- BASE MINI APPS SDK -->
     <script src="https://cdn.base.org/miniapps-sdk/v1/base-miniapps.js"></script>
-
-    <style>
-    /* Forzar fondo blanco permanente en el header */
-    #header.header {
-        background-color: #ffffff !important;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-    }
-    
-    /* Header en todas las variantes */
-    .header.tra-menu,
-    .header.navbar-light,
-    .header.scrolled {
-        background-color: #ffffff !important;
-    }
-    
-    /* Links del menú en color oscuro para que se vean sobre fondo blanco */
-    .header.navbar-light .wsmenu-list > li > a {
-        color: #333333 !important;
-    }
-    
-    /* Hover en los links */
-    .header.navbar-light .wsmenu-list > li > a:hover {
-        color: #00d4d4 !important;
-    }
-</style>
 </head>
 
 <body>
@@ -116,85 +90,106 @@
     <!-- PAGE CONTENT -->	
     <div id="page" class="page">
 
-       <!-- HEADER -->
-<header id="header" class="header tra-menu navbar-light">
-    <div class="header-wrapper">
+        <!-- HEADER -->
+        <header id="header" class="header tra-menu navbar-dark">
+            <div class="header-wrapper">
 
-        <!-- MOBILE HEADER -->
-        <div class="wsmobileheader clearfix">	  	
-            <span class="smllogo"><img src="images/LogoHRKEY-transparente.png" alt="HRKey-logo"/></span>
-            <a id="wsnavtoggle" class="wsanimated-arrow"><span></span></a>	
-        </div>
-
-        <!-- NAVIGATION MENU -->
-        <div class="wsmainfull menu clearfix">
-            <div class="wsmainwp clearfix">
-
-                <!-- HEADER LOGO -->
-                <div class="desktoplogo"><a href="#hero-13" class="logo-black"><img src="images/LogoHRKEY-transparente.png" alt="HRKey-logo"></a></div>
-                <div class="desktoplogo"><a href="#hero-13" class="logo-white"><img src="images/LogoHRKEY-transparente.png" alt="HRKey-logo"></a></div>
-
-                <!-- MAIN MENU -->
-                <nav class="wsmenu clearfix">
-                    <ul class="wsmenu-list nav-violet-red-hover">
-
-                        <!-- NAVIGATION LINKS -->
-                        <li class="nl-simple" aria-haspopup="true"><a href="#features-1">Why HRKey?</a></li>
-                        <li class="nl-simple" aria-haspopup="true"><a href="#features-8">Features</a></li>
-                        <li class="nl-simple" aria-haspopup="true"><a href="#content-9">How It Works</a></li>
-                        <li class="nl-simple" aria-haspopup="true"><a href="#pricing-3">Pricing</a></li>
-                        <li class="nl-simple" aria-haspopup="true"><a href="#reviews-1">Reviews</a></li>
-
-                        <!-- HEADER BUTTON -->
-                        <li class="nl-simple" aria-haspopup="true">
-                            <a href="#" id="get-started-btn" class="btn btn-violet-red tra-violet-red-hover last-link">Get Started</a>
-                        </li> 
-                    </ul>
-                </nav>	<!-- END MAIN MENU -->
-
-            </div>
-        </div>	<!-- END NAVIGATION MENU -->
-
-    </div>     <!-- End header-wrapper -->
-</header>	<!-- END HEADER -->
-        <section id="HRKEY-HERO" class="hero-section">
-                <div class="container">
-                    <!-- Título Principal -->
-                    <div class="row justify-content-center mb-4">
-                        <div class="col-lg-10 text-center">
-                            <h1 class="hero-title">Build Verifiable Professional <br><span class="text-teal">References on Blockchain</span></h1>
-                        </div>
-                    </div>
-
-                    <!-- SVG Hero Background -->
-                    <div class="row justify-content-center mb-4">
-                        <div class="col-lg-10">
-                            <div class="hero-svg-container">
-                                <object type="image/svg+xml" data="images/HRHERO.svg" class="hero-svg"></object>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- CTA y Tech Stack -->
-                    <div class="row justify-content-center">
-                        <div class="col-lg-8 text-center">
-                            <a href="#" id="create-reference-btn" class="btn btn-teal mb-4">Request Your First Reference</a>
-                            
-                            <div class="tech-stack mt-4">
-                                <h6 class="mb-3">Built on:</h6>
-                                <div class="d-flex align-items-center justify-content-center">
-                                    <img src="images/base-logo.png" alt="Base" style="height: 40px; margin-right: 20px;" onerror="this.style.display='none'">
-                                    <img src="images/ethereum-logo.png" alt="Ethereum" style="height: 35px;" onerror="this.style.display='none'">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <!-- MOBILE HEADER -->
+                <div class="wsmobileheader clearfix">	  	
+                    <span class="smllogo"><img src="images/logo-white.png" alt="HRKey-logo"/></span>
+                    <a id="wsnavtoggle" class="wsanimated-arrow"><span></span></a>	
                 </div>
-        </section>
+
+                <!-- NAVIGATION MENU -->
+                <div class="wsmainfull menu clearfix">
+                    <div class="wsmainwp clearfix">
+
+                        <!-- HEADER LOGO -->
+                        <div class="desktoplogo"><a href="#hero-13" class="logo-black"><img src="images/logo-01.png" alt="HRKey-logo"></a></div>
+                        <div class="desktoplogo"><a href="#hero-13" class="logo-white"><img src="images/logo-white.png" alt="HRKey-logo"></a></div>
+
+                        <!-- MAIN MENU -->
+                        <nav class="wsmenu clearfix">
+                            <ul class="wsmenu-list nav-violet-red-hover">
+
+                                <!-- NAVIGATION LINKS -->
+                                <li class="nl-simple" aria-haspopup="true"><a href="#features-1">Why HRKey?</a></li>
+                                <li class="nl-simple" aria-haspopup="true"><a href="#features-8">Features</a></li>
+                                <li class="nl-simple" aria-haspopup="true"><a href="#content-9">How It Works</a></li>
+                                <li class="nl-simple" aria-haspopup="true"><a href="#pricing-3">Pricing</a></li>
+                                <li class="nl-simple" aria-haspopup="true"><a href="#reviews-1">Reviews</a></li>
+
+                                <!-- HEADER BUTTON -->
+                                <li class="nl-simple" aria-haspopup="true">
+                                    <a href="#" id="get-started-btn" class="btn btn-violet-red tra-violet-red-hover last-link">Get Started</a>
+                                </li> 
+                            </ul>
+                        </nav>	<!-- END MAIN MENU -->
+
+                    </div>
+                </div>	<!-- END NAVIGATION MENU -->
+
+            </div>     <!-- End header-wrapper -->
+        </header>	<!-- END HEADER -->
 
         <!-- HERO-13 -->
+        <section id="hero-13" class="bg-scroll hero-section division" style="padding-top: 140px; background: linear-gradient(to bottom, #ffffff 0%, #ffffff 60%, #f8f9fa 60%, #f8f9fa 100%);">
+            <div class="container">
 
+                <!-- HERO TITLE -->		
+                <div class="row justify-content-center">
+                    <div class="col-lg-12 text-center">
+                        <div class="hero-13-title mb-50">
+                            <h1 class="h1-md" style="font-size: 3.2rem; font-weight: 600; line-height: 1.2; margin-bottom: 20px;">
+                                Build Verifiable Professional<br>
+                                <span class="violet-red-color">References on Blockchain</span>
+                            </h1>
+                        </div>
+                    </div>	
+                </div>
 
+                <div class="row d-flex align-items-center justify-content-center" style="min-height: 500px;">
+
+                    <!-- HERO TEXT -->
+                    <div class="col-md-6 col-lg-5">
+                        <div class="hero-13-txt">
+
+                            <p class="p-title-sm">🔐 Blockchain-Verified References</p>
+                            <p class="p-title-sm">✅ Tamper-Proof & Immutable</p>
+                            <p class="p-title-sm">👥 Peer Validation System</p>
+                            <p class="p-title-sm">🛡️ Complete Privacy Control</p>
+                            <p class="p-title-sm">🚀 Career Growth Accelerator</p>
+
+                            <!-- CTA Button -->
+                            <div class="hero-btn mt-40">
+                                <a href="#" id="create-reference-btn" class="btn btn-violet-red tra-white-hover">Create Your First Reference</a>
+                            </div>
+
+                            <!-- Tech Stack -->
+                            <div class="tech-stack mt-50">
+                                <!-- Text -->
+                                <h6 class="h6-xl mb-25">Built on:</h6>
+                                <!-- Tech Logos -->
+                                <div class="tech-logos d-flex align-items-center">
+                                    <img src="images/base-logo.png" alt="Base" style="height: 40px; margin-right: 20px;" onerror="this.style.display='none'">
+                                    <img src="images/ethereum-logo.png" alt="Ethereum" style="height: 35px; margin-right: 20px;" onerror="this.style.display='none'">
+                                </div>
+                            </div>
+                                                    
+                        </div>
+                    </div>	<!-- END HERO TEXT -->
+
+                    <!-- HERO IMAGE -->
+                    <div class="col-md-6 col-lg-6">	
+                        <div class="hero-13-img text-center">				
+                            <!-- Hero Image --> 
+                            <img class="img-fluid" src="images/Hero Landing HRKey.png" alt="HRKey-hero" style="max-width: 100%; height: auto;">
+                        </div>	
+                    </div>
+
+                </div>	    <!-- End row -->		 											
+            </div>	    <!-- End container -->	
+        </section>	<!-- END HERO-13 -->
 
         <!-- FEATURES-1 -->
         <section id="features-1" class="wide-60 features-section division">
@@ -204,7 +199,7 @@
                     <!-- FEATURE BOX #1 - BLOCKCHAIN SECURITY -->
                     <div class="col-lg-3 col-md-6 col-12">
                         <div class="features-clean mb-40">
-                            <div style="font-size: 60px; color: #00C4C7; margin-bottom: 20px;">
+                            <div style="font-size: 60px; color: #d946ef; margin-bottom: 20px;">
                                 🔒
                             </div>
                             <h5 class="h5-sm mb-20">Blockchain Security</h5>
@@ -215,7 +210,7 @@
                     <!-- FEATURE BOX #2 - PEER VALIDATION -->
                     <div class="col-lg-3 col-md-6 col-12">
                         <div class="features-clean mb-40">
-                            <div style="font-size: 60px; color: #00C4C7; margin-bottom: 20px;">
+                            <div style="font-size: 60px; color: #d946ef; margin-bottom: 20px;">
                                 👥
                             </div>
                             <h5 class="h5-sm mb-20">Peer Validation</h5>
@@ -226,7 +221,7 @@
                     <!-- FEATURE BOX #3 - PRIVACY CONTROL -->
                     <div class="col-lg-3 col-md-6 col-12">
                         <div class="features-clean mb-40">
-                            <div style="font-size: 60px; color: #00C4C7; margin-bottom: 20px;">
+                            <div style="font-size: 60px; color: #d946ef; margin-bottom: 20px;">
                                 🛡️
                             </div>
                             <h5 class="h5-sm mb-20">Privacy Control</h5>
@@ -237,7 +232,7 @@
                     <!-- FEATURE BOX #4 - CAREER GROWTH -->
                     <div class="col-lg-3 col-md-6 col-12">
                         <div class="features-clean mb-40">
-                            <div style="font-size: 60px; color: #00C4C7; margin-bottom: 20px;">
+                            <div style="font-size: 60px; color: #d946ef; margin-bottom: 20px;">
                                 🚀
                             </div>
                             <h5 class="h5-sm mb-20">Career Growth</h5>
@@ -319,7 +314,7 @@
                                     <img class="img-fluid" src="images/img-21.png" alt="user-friendly" />
                                 </div>
                                 <!-- Title -->
-                                <h5 class="h5-md">Profit with your data</h5>
+                                <h5 class="h5-md">User-Friendly Interface</h5>
                                 <!-- Text -->
                                 <p class="p-lg">Intuitive design makes creating and managing professional references simple and efficient for everyone</p>
                             </div>
@@ -333,7 +328,7 @@
                                     <img class="img-fluid" src="images/img-22.png" alt="flexible-platform" />
                                 </div>
                                 <!-- Title -->
-                                <h5 class="h5-md">AI enhanced References</h5>
+                                <h5 class="h5-md">Extremely Flexible</h5>
                                 <!-- Text -->
                                 <p class="p-lg">Customize your references, control visibility, and choose exactly what information to share with employers</p>
                             </div>
@@ -436,7 +431,7 @@
                                 </div>
                             </a>
                             <!-- Preview Image --> 
-                            <img class="img-fluid" src="images/Hero Landing HRKey.png" alt="hrkey-demo">
+                            <img class="img-fluid" src="images/dashboard-07.png" alt="hrkey-demo">
                         </div>
                     </div>
                 </div>
@@ -445,7 +440,7 @@
         </section>	<!-- END CONTENT-9 -->
 
         <!-- TESTIMONIALS-1 -->
-        <section style="display:none;" id="reviews-1" class="wide-100 reviews-section division">
+        <section id="reviews-1" class="wide-100 reviews-section division">
             <div class="container">
 
                 <!-- SECTION TITLE -->	
@@ -572,7 +567,7 @@
         </section>	<!-- END TESTIMONIALS-1 -->
 
         <!-- PRICING-3 -->
-        <section style="display:none;" id="pricing-3" class="bg-lightgrey wide-60 pricing-section division">
+        <section id="pricing-3" class="bg-lightgrey wide-60 pricing-section division">
             <div class="container">
 
                 <!-- SECTION TITLE -->	
@@ -607,6 +602,9 @@
                                     <li><p class="p-md"><span>3</span> Verified References</p></li>
                                     <li><p class="p-md">Blockchain Storage</p></li>
                                     <li><p class="p-md">Basic Privacy Controls</p></li>
+                                    <li class="disabled-option"><p class="p-md">Peer Validations</p></li>
+                                    <li class="disabled-option"><p class="p-md">Advanced Analytics</p></li>
+                                    <li class="disabled-option"><p class="p-md">Priority Support</p></li>
                                     <li><p class="p-md">Community Support</p></li>
                                 </ul>
                                 <!-- Pricing Plan Button -->
@@ -638,6 +636,7 @@
                                     <li><p class="p-md">Advanced Privacy Controls</p></li>
                                     <li><p class="p-md">Peer Validations</p></li>
                                     <li><p class="p-md">Advanced Analytics</p></li>
+                                    <li class="disabled-option"><p class="p-md">Priority Support</p></li>
                                     <li><p class="p-md"><span>Email</span> Support</p></li>
                                 </ul>
                                 <!-- Pricing Plan Button -->
@@ -687,7 +686,7 @@
         </section>	<!-- END PRICING-3 -->
 
         <!-- CALL TO ACTION-6 -->
-        <section style="display:none;" id="cta-6" class="bg-04 pt-70 pb-70 cta-section division">
+        <section id="cta-6" class="bg-04 pt-70 pb-70 cta-section division">
             <div class="container">
                 <div class="row justify-content-md-center">
 

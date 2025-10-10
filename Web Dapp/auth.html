@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="author" content="HRKey"/>	
+    <meta name="description" content="HRKey Authentication - Secure Login with Web3 & Social Options"/>
+    <meta name="keywords" content="HRKey, Authentication, Web3, Wallet, Social Login">	
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+            
+    <!-- SITE TITLE -->
+    <title>HRKey - Secure Authentication</title>
+                        
+    <!-- FAVICON AND TOUCH ICONS -->
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+
+    <!-- GOOGLE FONTS -->
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- BOOTSTRAP CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+            
+    <!-- FONT ICONS -->
+    <link href="css/flaticon.css" rel="stylesheet">
+
+    <!-- PLUGINS STYLESHEET -->
+    <link href="css/menu.css" rel="stylesheet">	
+    <link href="css/animate.css" rel="stylesheet">
+
+    <!-- TEMPLATE CSS -->
+    <link href="css/style.css" rel="stylesheet"> 
+    
+    <!-- RESPONSIVE CSS -->
+    <link href="css/responsive.css" rel="stylesheet">
+
+    <!-- CUSTOM AUTH STYLES -->
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .auth-logo {
+            width: 240px;
+            height: 240px;
+            margin: 0 auto 30px;
+        }
+        
+        .auth-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        
+        .auth-subtitle {
+            color: #6b7280;
+            margin-bottom: 40px;
+            font-size: 16px;
+        }
+        
+        .auth-method {
+            display: block;
+            width: 100%;
+            padding: 16px 24px;
+            margin-bottom: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            background: white;
+            color: #374151;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .auth-method:hover {
+            border-color: #00C4C7;
+            background: #fdf4ff;
+            color: #374151;
+            text-decoration: none;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(217, 70, 239, 0.15);
+        }
+        
+        .auth-method-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+            vertical-align: middle;
+        }
+        
+        .web3-methods {
+            margin-bottom: 30px;
+        }
+        
+        .social-methods {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 30px;
+        }
+        
+        .divider {
+            position: relative;
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e5e7eb;
+        }
+        
+        .divider span {
+            background: white;
+            color: #9ca3af;
+            padding: 0 20px;
+            font-size: 14px;
+        }
+        
+        .security-badge {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #166534;
+        }
+        
+        .back-link {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s ease;
+        }
+        
+        .back-link:hover {
+            opacity: 0.8;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .auth-method.primary {
+            background: linear-gradient(135deg, #00C4C7 0%, #00C4C7 100%);
+            color: white;
+            border-color: transparent;
+        }
+        
+        .auth-method.primary:hover {
+            background: linear-gradient(135deg, #c026d3 0%, #00C4C7 100%);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .wallet-status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        
+        .wallet-status.success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+        
+        .wallet-status.error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+        }
+    </style>
+
+    <!-- WEB3 LIBRARIES -->
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <script src="https://cdn.base.org/miniapps-sdk/v1/base-miniapps.js"></script>
+    <!-- BASE SMART WALLET SDK -->
+    <script src="https://unpkg.com/@coinbase/onchainkit@latest/dist/index.js"></script>
+    <script src="https://unpkg.com/@coinbase/wallet-sdk@latest/dist/index.js"></script>
+</head>
+
+<body>
+
+    <div class="auth-container">
+        <!-- BACK TO HOME LINK -->
+        <a href="index.html" class="back-link">← Back to Home</a>
+
+        <div class="auth-card">
+            <!-- LOGO -->
+            <div class="auth-logo">
+                <img src="images/logo-01.png" alt="HRKey" style="width: 100%; height: 100%; object-fit: contain;">
+            </div>
+
+            <!-- TITLE -->
+            <h1 class="auth-title">Welcome to HRKey</h1>
+            <p class="auth-subtitle">Choose your preferred way to access your professional references</p>
+
+            <!-- WALLET STATUS -->
+            <div id="wallet-status" class="wallet-status"></div>
+
+            <!-- WEB3 AUTHENTICATION METHODS -->
+            <div class="web3-methods">
+                <h6 style="color: #6b7280; font-size: 14px; font-weight: 600; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.5px;">Web3 Wallets (Recommended)</h6>
+                
+                <a href="#" class="auth-method primary" id="metamask-btn">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" class="auth-method-icon">
+                    Connect with MetaMask
+                </a>
+
+                <a href="#" class="auth-method" id="coinbase-btn">
+                    <img src="https://avatars.githubusercontent.com/u/18060234?s=200&v=4" alt="Coinbase Wallet" class="auth-method-icon">
+                    Connect with Coinbase Wallet
+                </a>
+
+                <a href="#" class="auth-method" id="walletconnect-btn">
+                    <img src="images/walletconnect-logo.png" alt="WalletConnect" class="auth-method-icon">
+                    Connect with WalletConnect
+                </a>
+            </div>
+
+            <!-- DIVIDER -->
+            <div class="divider">
+                <span>Or continue with</span>
+            </div>
+
+            <!-- SOCIAL AUTHENTICATION METHODS -->
+            <div class="social-methods">
+                <a href="#" class="auth-method" id="google-btn">
+                    <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="auth-method-icon">
+                    Continue with Google
+                </a>
+
+                <a href="#" class="auth-method" id="linkedin-btn">
+                    <img src="https://content.linkedin.com/content/dam/me/business/en-us/amp/brand-site/v2/bg/LI-Bug.svg.original.svg" alt="LinkedIn" class="auth-method-icon">
+                    Continue with LinkedIn
+                </a>
+
+                <a href="#" class="auth-method" id="github-btn">
+                    <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" class="auth-method-icon">
+                    Continue with GitHub
+                </a>
+            </div>
+
+            <!-- SECURITY BADGE -->
+            <div class="security-badge">
+                <strong>🔒 Secure & Private</strong><br>
+                Your data is encrypted and stored on the blockchain. We never store your private keys.
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+
+    <!-- AUTHENTICATION SCRIPT -->
+    <script>
+        class HRKeyAuth {
+            constructor() {
+                this.smartWallet = null;
+                this.walletSDK = null;
+                this.init();
+            }
+
+            async init() {
+                // Initialize Coinbase Wallet SDK for Smart Wallets
+                this.walletSDK = new CoinbaseWalletSDK({
+                    appName: 'HRKey',
+                    appLogoUrl: 'https://hrkey.com/logo.png',
+                    darkMode: false
+                });
+
+                // Initialize Base Mini Apps
+                if (typeof BaseMiniApps !== 'undefined') {
+                    await BaseMiniApps.init({
+                        appId: 'hrkey-dapp',
+                        network: 'base-mainnet'
+                    });
+                }
+
+                this.setupEventListeners();
+                this.checkExistingAuth();
+            }
+
+            setupEventListeners() {
+                // Web3 Wallet Connections
+                document.getElementById('metamask-btn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.connectMetaMask();
+                });
+
+                document.getElementById('coinbase-btn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.connectCoinbaseWallet();
+                });
+
+                document.getElementById('walletconnect-btn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.connectWalletConnect();
+                });
+
+                // Social Logins - Each creates Smart Wallet behind the scenes
+                document.getElementById('google-btn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.href = 'app.html';
+                });
+
+                document.getElementById('linkedin-btn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.socialLoginWithSmartWallet('linkedin');
+                });
+
+                document.getElementById('github-btn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.socialLoginWithSmartWallet('github');
+                });
+            }
+
+            async createSmartWallet(authProvider, socialData = null) {
+                try {
+                    this.showWalletStatus('Creating your secure wallet...', 'success');
+
+                    // Create smart wallet instance
+                    const ethereum = this.walletSDK.makeWeb3Provider();
+                    
+                    // Request accounts (this triggers wallet creation)
+                    const accounts = await ethereum.request({
+                        method: 'eth_requestAccounts'
+                    });
+
+                    const walletAddress = accounts[0];
+                    
+                    // Store wallet info with social auth data
+                    const walletData = {
+                        address: walletAddress,
+                        authProvider: authProvider,
+                        socialData: socialData,
+                        isSmartWallet: true,
+                        createdAt: Date.now()
+                    };
+
+                    localStorage.setItem('hrkey_wallet', JSON.stringify(walletData));
+                    
+                    this.showWalletStatus(`Wallet created: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`, 'success');
+                    
+                    return walletData;
+
+                } catch (error) {
+                    console.error('Smart wallet creation error:', error);
+                    this.showWalletStatus('Failed to create wallet. Please try again.', 'error');
+                    throw error;
+                }
+            }
+
+            async socialLoginWithSmartWallet(provider) {
+                try {
+                    this.showWalletStatus(`Connecting with ${provider.charAt(0).toUpperCase() + provider.slice(1)}...`, 'success');
+
+                    // Simulate social login flow (replace with real OAuth)
+                    const socialData = await this.performSocialLogin(provider);
+                    
+                    // Create smart wallet after successful social login
+                    const walletData = await this.createSmartWallet(provider, socialData);
+                    
+                    // Initialize user profile in backend
+                    await this.initializeUserProfile(walletData);
+                    
+                    // Redirect to app
+                    setTimeout(() => {
+                        this.redirectToApp(walletData);
+                    }, 2000);
+
+                } catch (error) {
+                    console.error('Social login with smart wallet error:', error);
+                    this.showWalletStatus('Authentication failed. Please try again.', 'error');
+                }
+            }
+
+            async performSocialLogin(provider) {
+                localStorage.setItem("hrkey_auth", JSON.stringify({
+                    address: "0x1234567890abcdef1234567890abcdef12345678",
+                    authProvider: provider,
+                    email: "user@test.com",
+                    name: "Test User",
+                    createdAt: Date.now()
+                }));
+                window.location.href = "app.html";
+                return { success: true };
+            }
+                            name: `User from ${provider}`,
+                            verified: true
+                        });
+                    }, 1500);
+                });
+            }
+
+            async initializeUserProfile(walletData) {
+                try {
+                    // Call your backend API to initialize user profile
+                    const response = await fetch('/api/user/initialize', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            walletAddress: walletData.address,
+                            authProvider: walletData.authProvider,
+                            socialData: walletData.socialData,
+                            timestamp: walletData.createdAt
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to initialize user profile');
+                    }
+
+                    const userData = await response.json();
+                    console.log('User profile initialized:', userData);
+
+                } catch (error) {
+                    console.error('Profile initialization error:', error);
+                    // Continue anyway - profile can be completed later
+                }
+            }
+
+            async connectMetaMask() {
+                try {
+                    if (typeof window.ethereum === 'undefined') {
+                        this.showWalletStatus('MetaMask not detected. Please install MetaMask extension.', 'error');
+                        window.open('https://metamask.io/download/', '_blank');
+                        return;
+                    }
+
+                    this.showWalletStatus('Connecting to MetaMask...', 'success');
+
+                    const accounts = await window.ethereum.request({
+                        method: 'eth_requestAccounts'
+                    });
+
+                    // Switch to Base network
+                    await this.switchToBaseNetwork();
+
+                    const address = accounts[0];
+                    
+                    const walletData = {
+                        address: address,
+                        authProvider: 'metamask',
+                        isSmartWallet: false,
+                        createdAt: Date.now()
+                    };
+
+                    localStorage.setItem('hrkey_wallet', JSON.stringify(walletData));
+                    
+                    this.showWalletStatus(`Connected: ${address.slice(0, 6)}...${address.slice(-4)}`, 'success');
+                    
+                    // Initialize user profile
+                    await this.initializeUserProfile(walletData);
+                    
+                    // Redirect to app after successful connection
+                    setTimeout(() => {
+                        this.redirectToApp(walletData);
+                    }, 2000);
+
+                } catch (error) {
+                    console.error('MetaMask connection error:', error);
+                    this.showWalletStatus('Connection failed. Please try again.', 'error');
+                }
+            }
+
+            async switchToBaseNetwork() {
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x2105' }], // Base Mainnet
+                    });
+                } catch (switchError) {
+                    // Network not added, try to add it
+                    if (switchError.code === 4902) {
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: '0x2105',
+                                    chainName: 'Base',
+                                    nativeCurrency: {
+                                        name: 'Ethereum',
+                                        symbol: 'ETH',
+                                        decimals: 18,
+                                    },
+                                    rpcUrls: ['https://mainnet.base.org'],
+                                    blockExplorerUrls: ['https://basescan.org'],
+                                }],
+                            });
+                        } catch (addError) {
+                            throw addError;
+                        }
+                    } else {
+                        throw switchError;
+                    }
+                }
+            }
+
+            async connectCoinbaseWallet() {
+                try {
+                    this.showWalletStatus('Connecting to Coinbase Wallet...', 'success');
+                    
+                    const ethereum = this.walletSDK.makeWeb3Provider();
+                    const accounts = await ethereum.request({
+                        method: 'eth_requestAccounts'
+                    });
+
+                    const address = accounts[0];
+                    
+                    const walletData = {
+                        address: address,
+                        authProvider: 'coinbase',
+                        isSmartWallet: true,
+                        createdAt: Date.now()
+                    };
+
+                    localStorage.setItem('hrkey_wallet', JSON.stringify(walletData));
+                    
+                    this.showWalletStatus(`Connected: ${address.slice(0, 6)}...${address.slice(-4)}`, 'success');
+                    
+                    await this.initializeUserProfile(walletData);
+                    
+                    setTimeout(() => {
+                        this.redirectToApp(walletData);
+                    }, 2000);
+
+                } catch (error) {
+                    console.error('Coinbase Wallet connection error:', error);
+                    this.showWalletStatus('Connection failed. Please try again.', 'error');
+                }
+            }
+
+            async connectWalletConnect() {
+                this.showWalletStatus('WalletConnect integration coming soon...', 'success');
+                // TODO: Implement WalletConnect
+            }
+
+            showWalletStatus(message, type) {
+                const statusDiv = document.getElementById('wallet-status');
+                statusDiv.textContent = message;
+                statusDiv.className = `wallet-status ${type}`;
+                statusDiv.style.display = 'block';
+            }
+
+            checkExistingAuth() {
+                const existingWallet = localStorage.getItem('hrkey_wallet');
+                if (existingWallet) {
+                    const walletData = JSON.parse(existingWallet);
+                    this.showWalletStatus(`Previously connected via ${walletData.authProvider}: ${walletData.address.slice(0, 6)}...${walletData.address.slice(-4)}`, 'success');
+                }
+            }
+
+            redirectToApp(walletData) {
+                // Store complete auth data
+                localStorage.setItem('hrkey_auth', JSON.stringify({
+                    ...walletData,
+                    lastLogin: Date.now()
+                }));
+
+                // Redirect to main app
+                window.location.href = 'app.html';
+            }
+        }
+
+        // Initialize authentication when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new HRKeyAuth();
+        });
+    </script>
+
+</body>
+</html>

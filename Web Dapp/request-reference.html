@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="author" content="HRKey"/>	
+    <meta name="description" content="HRKey - Request Professional Reference"/>
+    <meta name="keywords" content="HRKey, Reference Request, Professional References">	
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+            
+    <!-- SITE TITLE -->
+    <title>Request Reference - HRKey</title>
+                        
+    <!-- FAVICON AND TOUCH ICONS -->
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+
+    <!-- GOOGLE FONTS -->
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- BOOTSTRAP CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+            
+    <!-- FONT ICONS -->
+    <link href="css/flaticon.css" rel="stylesheet">
+
+    <!-- TEMPLATE CSS -->
+    <link href="css/style.css" rel="stylesheet"> 
+    
+    <!-- RESPONSIVE CSS -->
+    <link href="css/responsive.css" rel="stylesheet">
+
+    <!-- FORM CUSTOM STYLES -->
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Rubik', sans-serif;
+        }
+
+        .form-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .form-container {
+            max-width: 800px;
+            margin: 30px auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .form-section {
+            padding: 30px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .section-subtitle {
+            color: #6b7280;
+            margin-bottom: 25px;
+            font-size: 16px;
+        }
+
+        .progress-indicators {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .progress-indicator {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+            position: relative;
+        }
+
+        .progress-indicator span {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 10px;
+            z-index: 2;
+            position: relative;
+        }
+
+        .step-number.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .step-number.completed {
+            background: #22c55e;
+            color: white;
+        }
+
+        .step-line {
+            width: 60px;
+            height: 2px;
+            background: #e5e7eb;
+            margin: 0 20px;
+        }
+
+        .step-line.completed {
+            background: #22c55e;
+        }
+
+        .step-content {
+            display: none;
+        }
+
+        .step-content.active {
+            display: block;
+        }
+
+        .reference-option {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .reference-option:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+        }
+
+        .reference-option.selected {
+            border-color: #667eea;
+            background: #f8faff;
+        }
+
+        .reference-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .reference-option h4 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .reference-option p {
+            color: #6b7280;
+            margin-bottom: 0;
+            font-size: 14px;
+        }
+
+        .expand-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .reference-option.selected .expand-icon {
+            background: #667eea;
+            color: white;
+            transform: rotate(45deg);
+        }
+
+        .benefit-tag {
+            display: inline-block;
+            background: #dcfce7;
+            color: #166534;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-control-custom {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            background: white;
+        }
+
+        .form-control-custom:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary-custom {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary-custom:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary-custom {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-secondary-custom:hover {
+            background: #e5e7eb;
+        }
+
+        .back-link {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        .back-link:hover {
+            color: #e5e7eb;
+            text-decoration: none;
+        }
+
+        .back-link::before {
+            content: "←";
+            margin-right: 8px;
+            font-size: 18px;
+        }
+
+        .relationship-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .relationship-option {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .relationship-option:hover {
+            border-color: #667eea;
+        }
+
+        .relationship-option.selected {
+            border-color: #667eea;
+            background: #f8faff;
+        }
+
+        .relationship-option input[type="radio"] {
+            display: none;
+        }
+
+        .kpi-categories {
+            display: grid;
+            gap: 20px;
+        }
+
+        .kpi-category {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            background: #fafbfc;
+        }
+
+        .kpi-category h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .kpi-category-icon {
+            width: 24px;
+            height: 24px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 10px;
+            font-size: 12px;
+        }
+
+        .kpi-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+
+        .kpi-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .kpi-option:hover {
+            border-color: #667eea;
+            background: #f8faff;
+        }
+
+        .kpi-option input[type="checkbox"] {
+            margin-right: 10px;
+            accent-color: #667eea;
+        }
+
+        .kpi-option span {
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .review-section {
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .review-section h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .review-section p {
+            color: #6b7280;
+            margin-bottom: 5px;
+        }
+
+        .selected-kpis {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .kpi-tag {
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .progress-indicators {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+            
+            .step-line {
+                display: none;
+            }
+            
+            .form-container {
+                margin: 15px;
+                border-radius: 15px;
+            }
+            
+            .form-section {
+                padding: 20px;
+            }
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- LOADING OVERLAY -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h3>Sending Reference Request</h3>
+            <p>Saving to blockchain and sending invitation email...</p>
+        </div>
+    </div>
+
+    <!-- FORM HEADER -->
+    <div class="form-header">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <a href="app.html" class="back-link">Back to Dashboard</a>
+                        <h1 style="margin: 0; font-size: 24px; font-weight: 600;">Request Professional Reference</h1>
+                        <div style="width: 160px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN FORM -->
+    <div class="form-container">
+        <!-- PROGRESS INDICATORS -->
+        <div class="progress-indicators">
+            <div class="progress-indicator active" data-step="1">
+                <div class="step-number active" id="step-1-indicator">1</div><span>Reference Type</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="progress-indicator" data-step="2">
+                <div class="step-number" id="step-2-indicator">2</div><span>Your Context</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="progress-indicator" data-step="3">
+                <div class="step-number" id="step-3-indicator">3</div><span>KPIs & Objectives</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="progress-indicator" data-step="4">
+                <div class="step-number" id="step-4-indicator">4</div><span>Additional Context</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="progress-indicator" data-step="5">
+                <div class="step-number" id="step-5-indicator">5</div><span>Review & Send</span>
+            </div>
+        </div>
+
+        <!-- STEP 1: REFERENCE TYPE -->
+        <div class="step-content active" id="step-1">
+            <div class="form-section">
+                <h3 class="section-title">What type of reference do you need?</h3>
+                <p class="section-subtitle">Choose the timing that best fits your situation.</p>
+                
+                <div class="reference-option" onclick="selectReferenceType('proactive')">
+                    <input type="radio" name="referenceType" value="proactive" id="proactive">
+                    <h4>
+                        Proactive Reference
+                        <span class="expand-icon">+</span>
+                    </h4>
+                    <p>Start building your reference now with clear KPIs and objectives for ongoing or upcoming work.</p>
+                    <div class="benefit-tag">Higher credibility • More objective • Better outcomes</div>
+                </div>
+
+                <div class="reference-option" onclick="selectReferenceType('retroactive')">
+                    <input type="radio" name="referenceType" value="retroactive" id="retroactive">
+                    <h4>
+                        Retroactive Reference
+                        <span class="expand-icon">+</span>
+                    </h4>
+                    <p>Request a reference for past work relationships where collaboration has already ended.</p>
+                </div>
+
+                <div class="form-actions">
+                    <div></div>
+                    <button class="btn btn-primary-custom" onclick="nextStep()">Next Step</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 2: YOUR CONTEXT -->
+        <div class="step-content" id="step-2">
+            <div class="form-section">
+                <h3 class="section-title">Your Professional Context</h3>
+                <p class="section-subtitle">Tell us about your role and the person who will provide the reference.</p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Your Position *</label>
+                            <input type="text" class="form-control-custom" id="applicantPosition" placeholder="e.g., Senior Software Engineer" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Company/Organization *</label>
+                            <input type="text" class="form-control-custom" id="applicantCompany" placeholder="e.g., Tech Innovations Inc." required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Working Relationship *</label>
+                    <div class="relationship-grid">
+                        <div class="relationship-option" onclick="selectRelationship('direct-supervisor')">
+                            <input type="radio" name="relationship" value="direct-supervisor" id="direct-supervisor">
+                            <strong>Direct Supervisor</strong>
+                            <p>Your immediate manager or boss</p>
+                        </div>
+                        <div class="relationship-option" onclick="selectRelationship('team-lead')">
+                            <input type="radio" name="relationship" value="team-lead" id="team-lead">
+                            <strong>Team Lead</strong>
+                            <p>Technical or project lead</p>
+                        </div>
+                        <div class="relationship-option" onclick="selectRelationship('colleague')">
+                            <input type="radio" name="relationship" value="colleague" id="colleague">
+                            <strong>Colleague</strong>
+                            <p>Peer or teammate</p>
+                        </div>
+                        <div class="relationship-option" onclick="selectRelationship('client')">
+                            <input type="radio" name="relationship" value="client" id="client">
+                            <strong>Client</strong>
+                            <p>External client or customer</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Referee's Name *</label>
+                            <input type="text" class="form-control-custom" id="refereeName" placeholder="e.g., Sarah Johnson" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Referee's Email *</label>
+                            <input type="email" class="form-control-custom" id="refereeEmail" placeholder="e.g., sarah@company.com" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Referee's Position *</label>
+                            <input type="text" class="form-control-custom" id="refereePosition" placeholder="e.g., Engineering Manager" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Referee's Company</label>
+                            <input type="text" class="form-control-custom" id="refereeCompany" placeholder="Same as yours or different">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Collaboration Start Date *</label>
+                            <input type="month" class="form-control-custom" id="collaborationStartDate" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Collaboration End Date</label>
+                            <input type="month" class="form-control-custom" id="collaborationEndDate" placeholder="Leave empty if ongoing">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Project/Team Context</label>
+                    <textarea class="form-control-custom" id="projectContext" rows="3" placeholder="Briefly describe the project, team, or context where you worked together..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-secondary-custom" onclick="prevStep()">Previous</button>
+                    <button class="btn btn-primary-custom" onclick="nextStep()">Continue to KPIs</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 3: KPIs & OBJECTIVES -->
+        <div class="step-content" id="step-3">
+            <div class="form-section">
+                <h3 class="section-title">Define Success Metrics & KPIs</h3>
+                <p class="section-subtitle">Why define KPIs upfront?</p>
+                <p style="color: #3730a3; margin-bottom: 10px;">✓ Creates objective evaluation criteria</p>
+                <p style="color: #3730a3; margin-bottom: 10px;">✓ Helps your referee provide specific examples</p>
+                <p style="color: #3730a3; margin-bottom: 25px;">✓ Makes your reference more credible to employers</p>
+
+                <div class="kpi-categories">
+                    <div class="kpi-category">
+                        <h4>
+                            <span class="kpi-category-icon">📊</span>
+                            Quantitative Metrics
+                        </h4>
+                        <div class="kpi-options">
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="project-delivery-time">
+                                <span>Project delivery time/speed</span>
+                            </label>
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="quality-metrics">
+                                <span>Quality metrics (bug rates, accuracy)</span>
+                            </label>
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="cost-efficiency">
+                                <span>Cost efficiency or budget management</span>
+                            </label>
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="productivity-metrics">
+                                <span>Productivity metrics</span>
+                            </label>
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="revenue-impact">
+                                <span>Revenue impact or business results</span>
+                            </label>
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="customer-satisfaction">
+                                <span>Customer satisfaction scores</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="kpi-category">
+                        <h4>
+                            <span class="kpi-category-icon">🚀</span>
+                            Performance & Skills
+                        </h4>
+                        <div class="kpi-options">
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="technical-proficiency">
+                                <span>Technical proficiency and expertise</span>
+                            </label>
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="problem-solving">
+                                <span>Problem-solving ability</span>
+                            </label>
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="innovation-creativity">
+                                <span>Innovation and creativity</span>
+                            </label>
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="learning-adaptation">
+                                <span>Learning speed and adaptation</span>
+                            </label>
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="attention-to-detail">
+                                <span>Attention to detail</span>
+                            </label>
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="initiative-proactivity">
+                                <span>Initiative and proactivity</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="kpi-category">
+                        <h4>
+                            <span class="kpi-category-icon">👥</span>
+                            Collaboration & Leadership
+                        </h4>
+                        <div class="kpi-options">
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="teamwork-collaboration">
+                                <span>Teamwork and collaboration</span>
+                            </label>
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="communication-skills">
+                                <span>Communication effectiveness</span>
+                            </label>
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="leadership-mentoring">
+                                <span>Leadership and mentoring</span>
+                            </label>
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="conflict-resolution">
+                                <span>Conflict resolution</span>
+                            </label>
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="cross-functional-work">
+                                <span>Cross-functional collaboration</span>
+                            </label>
+                            <label class="kpi-option">
+                                <input type="checkbox" name="kpis" value="reliability-dependability">
+                                <span>Reliability and dependability</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-secondary-custom" onclick="prevStep()">Previous</button>
+                    <button class="btn btn-primary-custom" onclick="nextStep()">Continue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 4: ADDITIONAL CONTEXT -->
+        <div class="step-content" id="step-4">
+            <div class="form-section">
+                <h3 class="section-title">Additional Context</h3>
+                <p class="section-subtitle">Provide any additional information that would help create a comprehensive reference.</p>
+
+                <div class="form-group">
+                    <label class="form-label">Specific Achievements or Projects</label>
+                    <textarea class="form-control-custom" id="achievements" rows="4" placeholder="Describe specific projects, achievements, or accomplishments you'd like highlighted..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Areas of Growth or Development</label>
+                    <textarea class="form-control-custom" id="growthAreas" rows="3" placeholder="Any areas where you've shown significant improvement or development..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Special Circumstances or Context</label>
+                    <textarea class="form-control-custom" id="specialContext" rows="3" placeholder="Any special circumstances, challenges overcome, or additional context that would be valuable..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Reference Usage Context</label>
+                    <select class="form-control-custom" id="usageContext">
+                        <option value="">Select where you'll use this reference...</option>
+                        <option value="job-application">Job application</option>
+                        <option value="promotion-review">Internal promotion/review</option>
+                        <option value="freelance-profile">Freelance/contractor profile</option>
+                        <option value="academic-application">Academic application</option>
+                        <option value="business-partnership">Business partnership</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-secondary-custom" onclick="prevStep()">Previous</button>
+                    <button class="btn btn-primary-custom" onclick="nextStep()">Review & Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 5: REVIEW & SEND -->
+        <div class="step-content" id="step-5">
+            <div class="form-section">
+                <h3 class="section-title">Review Your Reference Request</h3>
+                <p class="section-subtitle">Please review all information before sending your request.</p>
+
+                <div class="review-section">
+                    <h4>Your Information</h4>
+                    <p><strong>Position:</strong> <span id="reviewApplicantPosition">-</span></p>
+                    <p><strong>Company:</strong> <span id="reviewApplicantCompany">-</span></p>
+                    <p><strong>Relationship:</strong> <span id="reviewRelationship">-</span></p>
+                </div>
+
+                <div class="review-section">
+                    <h4>Referee Information</h4>
+                    <p><strong>Name:</strong> <span id="reviewRefereeName">-</span></p>
+                    <p><strong>Email:</strong> <span id="reviewRefereeEmail">-</span></p>
+                    <p><strong>Position:</strong> <span id="reviewRefereePosition">-</span></p>
+                    <p><strong>Company:</strong> <span id="reviewRefereeCompany">-</span></p>
+                    <p><strong>Collaboration Period:</strong> <span id="reviewCollaborationPeriod">-</span></p>
+                </div>
+
+                <div class="review-section">
+                    <h4>Selected KPIs & Metrics</h4>
+                    <div class="selected-kpis" id="reviewSelectedKPIs">
+                        <!-- KPIs will be populated here -->
+                    </div>
+                </div>
+
+                <div class="review-section">
+                    <h4>Additional Context</h4>
+                    <p><strong>Achievements:</strong> <span id="reviewAchievements">-</span></p>
+                    <p><strong>Usage Context:</strong> <span id="reviewUsageContext">-</span></p>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-secondary-custom" onclick="prevStep()">Previous</button>
+                    <button class="btn btn-primary-custom" onclick="submitReferenceRequest()">Send Reference Request</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOOTSTRAP JS -->
+    <script src="js/bootstrap.min.js"></script>
+
+    <!-- FORM JAVASCRIPT -->
+    <script>
+        let currentStep = 1;
+        const totalSteps = 5;
+
+        // Step navigation functions
+        function nextStep() {
+            if (validateCurrentStep()) {
+                if (currentStep < totalSteps) {
+                    currentStep++;
+                    updateStepDisplay();
+                    updateProgressIndicators();
+                }
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStepDisplay();
+                updateProgressIndicators();
+            }
+        }
+
+        function updateStepDisplay() {
+            // Hide all steps
+            document.querySelectorAll('.step-content').forEach(step => {
+                step.classList.remove('active');
+            });
+            
+            // Show current step
+            document.getElementById(`step-${currentStep}`).classList.add('active');
+            
+            // If we're on step 5 (review), update the review section
+            if (currentStep === 5) {
+                updateReviewSection();
+            }
+        }
+
+        function updateProgressIndicators() {
+            for (let i = 1; i <= totalSteps; i++) {
+                const indicator = document.getElementById(`step-${i}-indicator`);
+                const progressIndicator = document.querySelector(`[data-step="${i}"]`);
+                
+                if (i < currentStep) {
+                    indicator.classList.remove('active');
+                    indicator.classList.add('completed');
+                    progressIndicator.classList.add('completed');
+                } else if (i === currentStep) {
+                    indicator.classList.add('active');
+                    indicator.classList.remove('completed');
+                    progressIndicator.classList.add('active');
+                } else {
+                    indicator.classList.remove('active', 'completed');
+                    progressIndicator.classList.remove('active', 'completed');
+                }
+            }
+
+            // Update step lines
+            document.querySelectorAll('.step-line').forEach((line, index) => {
+                if (index < currentStep - 1) {
+                    line.classList.add('completed');
+                } else {
+                    line.classList.remove('completed');
+                }
+            });
+        }
+
+        // Reference type selection
+        function selectReferenceType(type) {
+            // Remove selected class from all options
+            document.querySelectorAll('.reference-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked option
+            event.currentTarget.classList.add('selected');
+            
+            // Check the radio button
+            document.getElementById(type).checked = true;
+        }
+
+        // Relationship selection
+        function selectRelationship(relationship) {
+            // Remove selected class from all options
+            document.querySelectorAll('.relationship-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked option
+            event.currentTarget.classList.add('selected');
+            
+            // Check the radio button
+            document.getElementById(relationship).checked = true;
+        }
+
+        // Form validation
+        function validateCurrentStep() {
+            switch(currentStep) {
+                case 1:
+                    const referenceType = document.querySelector('input[name="referenceType"]:checked');
+                    if (!referenceType) {
+                        alert('Please select a reference type.');
+                        return false;
+                    }
+                    break;
+                    
+                case 2:
+                    const requiredFields = [
+                        'applicantPosition', 'applicantCompany', 'refereeName', 
+                        'refereeEmail', 'refereePosition', 'collaborationStartDate'
+                    ];
+                    
+                    for (let field of requiredFields) {
+                        const element = document.getElementById(field);
+                        if (!element.value.trim()) {
+                            alert(`Please fill in ${element.previousElementSibling.textContent.replace('*', '')}.`);
+                            element.focus();
+                            return false;
+                        }
+                    }
+                    
+                    const relationship = document.querySelector('input[name="relationship"]:checked');
+                    if (!relationship) {
+                        alert('Please select your working relationship.');
+                        return false;
+                    }
+                    break;
+                    
+                case 3:
+                    const selectedKPIs = document.querySelectorAll('input[name="kpis"]:checked');
+                    if (selectedKPIs.length === 0) {
+                        alert('Please select at least one KPI or metric.');
+                        return false;
+                    }
+                    if (selectedKPIs.length < 3) {
+                        const proceed = confirm('We recommend selecting at least 3 KPIs for a comprehensive reference. Do you want to continue with fewer KPIs?');
+                        if (!proceed) return false;
+                    }
+                    break;
+                    
+                case 4:
+                    // Optional validation for step 4
+                    break;
+                    
+                case 5:
+                    updateReviewSection();
+                    break;
+            }
+            return true;
+        }
+
+        // Update review section
+        function updateReviewSection() {
+            // Reference type
+            const referenceType = document.querySelector('input[name="referenceType"]:checked');
+            document.getElementById('reviewReferenceType').textContent = 
+                referenceType ? referenceType.value.charAt(0).toUpperCase() + referenceType.value.slice(1) + ' Reference' : '-';
+
+            // Applicant info
+            document.getElementById('reviewApplicantPosition').textContent = 
+                document.getElementById('applicantPosition').value || '-';
+            document.getElementById('reviewApplicantCompany').textContent = 
+                document.getElementById('applicantCompany').value || '-';
+
+            // Relationship
+            const relationship = document.querySelector('input[name="relationship"]:checked');
+            document.getElementById('reviewRelationship').textContent = 
+                relationship ? relationship.value.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : '-';
+
+            // Referee info
+            document.getElementById('reviewRefereeName').textContent = 
+                document.getElementById('refereeName').value || '-';
+            document.getElementById('reviewRefereeEmail').textContent = 
+                document.getElementById('refereeEmail').value || '-';
+            document.getElementById('reviewRefereePosition').textContent = 
+                document.getElementById('refereePosition').value || '-';
+            document.getElementById('reviewRefereeCompany').textContent = 
+                document.getElementById('refereeCompany').value || '-';
+
+            // Collaboration period
+            const startDate = document.getElementById('collaborationStartDate').value;
+            const endDate = document.getElementById('collaborationEndDate').value;
+            const period = startDate ? `${startDate} - ${endDate || 'Present'}` : '-';
+            document.getElementById('reviewCollaborationPeriod').textContent = period;
+
+            // Selected KPIs
+            const selectedKPIs = document.querySelectorAll('input[name="kpis"]:checked');
+            const kpiContainer = document.getElementById('reviewSelectedKPIs');
+            kpiContainer.innerHTML = '';
+            
+            if (selectedKPIs.length > 0) {
+                selectedKPIs.forEach(kpi => {
+                    const kpiTag = document.createElement('span');
+                    kpiTag.className = 'kpi-tag';
+                    kpiTag.textContent = kpi.nextElementSibling.textContent;
+                    kpiContainer.appendChild(kpiTag);
+                });
+            } else {
+                kpiContainer.innerHTML = '<span>No KPIs selected</span>';
+            }
+
+            // Additional context
+            document.getElementById('reviewAchievements').textContent = 
+                document.getElementById('achievements').value.substring(0, 100) + 
+                (document.getElementById('achievements').value.length > 100 ? '...' : '') || '-';
+            
+            const usageContext = document.getElementById('usageContext');
+            document.getElementById('reviewUsageContext').textContent = 
+                usageContext.options[usageContext.selectedIndex].text || '-';
+        }
+
+        // Submit form - INTEGRADO CON BACKEND
+        async function submitReferenceRequest() {
+            // Show loading overlay
+            document.getElementById('loadingOverlay').style.display = 'flex';
+
+            try {
+                // Recopilar datos del formulario
+                const formData = {
+                    // Datos del referee (quien dará la referencia)
+                    email: document.getElementById('refereeEmail').value,
+                    name: document.getElementById('refereeName').value,
+                    days: 30, // 30 días para completar la referencia
+                    
+                    // Datos adicionales del solicitante
+                    applicantData: {
+                        position: document.getElementById('applicantPosition').value,
+                        company: document.getElementById('applicantCompany').value,
+                        relationship: document.querySelector('input[name="relationship"]:checked')?.value,
+                        refereePosition: document.getElementById('refereePosition').value,
+                        refereeCompany: document.getElementById('refereeCompany').value,
+                        collaborationStartDate: document.getElementById('collaborationStartDate').value,
+                        collaborationEndDate: document.getElementById('collaborationEndDate').value,
+                        projectContext: document.getElementById('projectContext').value,
+                        selectedKPIs: Array.from(document.querySelectorAll('input[name="kpis"]:checked')).map(cb => cb.value),
+                        achievements: document.getElementById('achievements').value,
+                        growthAreas: document.getElementById('growthAreas').value,
+                        specialContext: document.getElementById('specialContext').value,
+                        usageContext: document.getElementById('usageContext').value,
+                        referenceType: document.querySelector('input[name="referenceType"]:checked')?.value
+                    }
+                };
+
+                console.log('Enviando datos a la API:', formData);
+
+                // Llamar a tu API real
+                const response = await fetch('http://localhost:3000/api/invite', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('Respuesta de la API:', result);
+
+                // Hide loading overlay
+                document.getElementById('loadingOverlay').style.display = 'none';
+
+                // Si la API devuelve éxito
+                if (result.success) {
+                    // Guardar también en localStorage para compatibilidad con el frontend actual
+                    const localData = {
+                        id: result.reference_id || Date.now(),
+                        ...formData.applicantData,
+                        refereeName: formData.name,
+                        refereeEmail: formData.email,
+                        status: 'pending',
+                        createdAt: new Date().toISOString(),
+                        inviteToken: result.token,
+                        inviteUrl: result.verification_url
+                    };
+
+                    // Actualizar localStorage para que el dashboard se actualice
+                    const existingRequests = JSON.parse(localStorage.getItem('hrkey_requests') || '[]');
+                    existingRequests.push(localData);
+                    localStorage.setItem('hrkey_requests', JSON.stringify(existingRequests));
+
+                    // Actualizar stats
+                    const stats = JSON.parse(localStorage.getItem('hrkey_stats') || '{}');
+                    stats.totalReferences = (stats.totalReferences || 0) + 1;
+                    stats.pendingReferences = (stats.pendingReferences || 0) + 1;
+                    localStorage.setItem('hrkey_stats', JSON.stringify(stats));
+
+                    // Mostrar mensaje de éxito
+                    alert(`✅ Reference request sent successfully! 
+                    
+Invitation sent to: ${formData.email}
+Reference ID: ${result.reference_id}
+Email will be sent with verification link.`);
+
+                    // Redirigir al dashboard
+                    window.location.href = 'app.html?updated=true';
+
+                } else {
+                    throw new Error(result.error || 'Failed to send reference request');
+                }
+
+            } catch (error) {
+                console.error('Error sending reference request:', error);
+                
+                // Hide loading overlay
+                document.getElementById('loadingOverlay').style.display = 'none';
+                
+                // Si falla la API, usar localStorage como fallback
+                console.log('Using localStorage fallback...');
+                
+                const fallbackData = {
+                    id: Date.now(),
+                    referenceType: document.querySelector('input[name="referenceType"]:checked')?.value,
+                    applicantPosition: document.getElementById('applicantPosition').value,
+                    applicantCompany: document.getElementById('applicantCompany').value,
+                    relationship: document.querySelector('input[name="relationship"]:checked')?.value,
+                    refereeName: document.getElementById('refereeName').value,
+                    refereeEmail: document.getElementById('refereeEmail').value,
+                    refereePosition: document.getElementById('refereePosition').value,
+                    refereeCompany: document.getElementById('refereeCompany').value,
+                    collaborationStartDate: document.getElementById('collaborationStartDate').value,
+                    collaborationEndDate: document.getElementById('collaborationEndDate').value,
+                    projectContext: document.getElementById('projectContext').value,
+                    selectedKPIs: Array.from(document.querySelectorAll('input[name="kpis"]:checked')).map(cb => cb.value),
+                    achievements: document.getElementById('achievements').value,
+                    growthAreas: document.getElementById('growthAreas').value,
+                    specialContext: document.getElementById('specialContext').value,
+                    usageContext: document.getElementById('usageContext').value,
+                    status: 'pending',
+                    createdAt: new Date().toISOString()
+                };
+
+                // Guardar en localStorage como fallback
+                const existingRequests = JSON.parse(localStorage.getItem('hrkey_requests') || '[]');
+                existingRequests.push(fallbackData);
+                localStorage.setItem('hrkey_requests', JSON.stringify(existingRequests));
+
+                // Actualizar stats
+                const stats = JSON.parse(localStorage.getItem('hrkey_stats') || '{}');
+                stats.totalReferences = (stats.totalReferences || 0) + 1;
+                stats.pendingReferences = (stats.pendingReferences || 0) + 1;
+                localStorage.setItem('hrkey_stats', JSON.stringify(stats));
+
+                alert(`⚠️ Reference request saved locally (API temporarily unavailable)
+                
+Error: ${error.message}
+Data saved locally and dashboard will be updated.`);
+
+                // Redirigir al dashboard
+                window.location.href = 'app.html?updated=true';
+            }
+        }
+
+        // Initialize form
+        document.addEventListener('DOMContentLoaded', function() {
+            updateProgressIndicators();
+        });
+    </script>
+
+</body>
+</html>>Reference Type</h4>
+                    <p id="reviewReferenceType">-</p>
+                </div>
+
+                <div class="review-section">
+                    <h4

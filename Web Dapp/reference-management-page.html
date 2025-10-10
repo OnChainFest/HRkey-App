@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage References - HRKey</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header-left p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-5px);
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .reference-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .reference-card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .reference-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .reference-info h3 {
+            color: #1e293b;
+            font-size: 1.3em;
+            margin-bottom: 8px;
+        }
+
+        .reference-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #64748b;
+            font-size: 0.9em;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .rating-summary {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .overall-score {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .rating-breakdown {
+            flex: 1;
+        }
+
+        .rating-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .stars {
+            color: #f59e0b;
+        }
+
+        .management-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .action-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .action-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .action-secondary {
+            background: #10b981;
+            color: white;
+        }
+
+        .action-secondary:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .action-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .action-warning:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+        }
+
+        .action-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .action-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h3 {
+            color: #1e293b;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1em;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 25px;
+        }
+
+        .modal-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .modal-btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .context-section {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .context-section h4 {
+            color: #0369a1;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .context-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #0ea5e9;
+        }
+
+        .context-meta {
+            font-size: 0.8em;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        .empty-state h3 {
+            color: #374151;
+            margin-bottom: 15px;
+        }
+
+        .blockchain-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #ede9fe;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            color: #5b21b6;
+            width: fit-content;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+
+            .header {
+                padding: 20px;
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .content {
+                padding: 25px;
+            }
+
+            .reference-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .management-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .rating-summary {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>Manage My References</h1>
+                <p>View, edit, and manage your professional references</p>
+            </div>
+            <a href="app.html" class="back-btn">
+                ← Back to Dashboard
+            </a>
+        </div>
+
+        <div class="content">
+            <div id="referencesContainer">
+                <!-- References will be loaded here -->
+            </div>
+
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <h3>📋 No References Yet</h3>
+                <p>You haven't received any references yet. Start by requesting references from your colleagues and supervisors.</p>
+                <a href="request-reference.html" class="action-btn action-primary" style="margin-top: 20px; display: inline-flex;">
+                    + Request New Reference
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Context Modal -->
+    <div class="modal-overlay" id="contextModal">
+        <div class="modal">
+            <h3>📝 Add Your Context</h3>
+            <p style="color: #64748b; margin-bottom: 20px;">Provide additional context, clarifications, or achievements that complement this reference.</p>
+            
+            <div class="form-group">
+                <label>Context Type</label>
+                <select id="contextType">
+                    <option value="clarification">Clarification</option>
+                    <option value="additional_achievement">Additional Achievement</option>
+                    <option value="project_details">Project Details</option>
+                    <option value="skills_highlight">Skills Highlight</option>
+                    <option value="correction">Correction</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Your Context</label>
+                <textarea id="contextText" placeholder="Provide specific details, examples, or clarifications..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Supporting Evidence (Optional)</label>
+                <textarea id="evidenceText" placeholder="Links to work samples, metrics, testimonials, etc..."></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('contextModal')">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="addContext()">Add Context</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invite Referee Modal -->
+    <div class="modal-overlay" id="inviteModal">
+        <div class="modal">
+            <h3>👥 Invite Additional Referee</h3>
+            <p style="color: #64748b; margin-bottom: 20px;">Invite another colleague to provide context or a complementary perspective on this reference.</p>
+            
+            <div class="form-group">
+                <label>Referee Name</label>
+                <input type="text" id="inviteeName" placeholder="Full name">
+            </div>
+
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="inviteeEmail" placeholder="professional@email.com">
+            </div>
+
+            <div class="form-group">
+                <label>Their Role/Relationship</label>
+                <select id="inviteeRole">
+                    <option value="colleague">Colleague</option>
+                    <option value="team_lead">Team Lead</option>
+                    <option value="direct_report">Direct Report</option>
+                    <option value="client">Client</option>
+                    <option value="vendor">Vendor/Partner</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Context Request</label>
+                <textarea id="inviteContext" placeholder="What specific perspective or context would you like them to provide?"></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('inviteModal')">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="sendInvite()">Send Invite</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suppress Modal -->
+    <div class="modal-overlay" id="suppressModal">
+        <div class="modal">
+            <h3>⚠️ Suppress Reference</h3>
+            <p style="color: #64748b; margin-bottom: 20px;">Choose how you want to handle this reference. This action will be recorded on the blockchain.</p>
+            
+            <div class="form-group">
+                <label>Suppression Type</label>
+                <select id="suppressType">
+                    <option value="partial">Partial - Hide specific sections</option>
+                    <option value="full">Full - Hide entire reference</option>
+                    <option value="temporary">Temporary - Hide until resolved</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Reason for Suppression</label>
+                <textarea id="suppressReason" placeholder="Explain why this reference needs to be suppressed..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Additional Notes</label>
+                <textarea id="suppressNotes" placeholder="Any additional context or planned actions..."></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('suppressModal')">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="suppressReference()">Suppress Reference</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentReferenceId = null;
+
+        // Load references when page loads
+        window.addEventListener('load', loadReferences);
+
+        function loadReferences() {
+            const dashboardData = JSON.parse(localStorage.getItem('dashboardData') || '{}');
+            const references = dashboardData.references || [];
+
+            if (references.length === 0) {
+                document.getElementById('emptyState').style.display = 'block';
+                return;
+            }
+
+            const container = document.getElementById('referencesContainer');
+            container.innerHTML = '';
+
+            references.forEach(ref => {
+                const referenceCard = createReferenceCard(ref);
+                container.appendChild(referenceCard);
+            });
+        }
+
+        function createReferenceCard(reference) {
+            const card = document.createElement('div');
+            card.className = 'reference-card';
+            card.innerHTML = `
+                <div class="reference-header">
+                    <div class="reference-info">
+                        <h3>${reference.refereeName || 'Anonymous Referee'}</h3>
+                        <div class="reference-meta">
+                            <div class="meta-item">
+                                <span>💼</span>
+                                <span>${reference.refereeTitle || 'Professional Contact'}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span>📅</span>
+                                <span>${formatDate(reference.completedDate)}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span>🔗</span>
+                                <span>${reference.type || 'Professional'}</span>
+                            </div>
+                        </div>
+                        <div class="blockchain-indicator">
+                            <span>🔐</span>
+                            <span>Blockchain Verified</span>
+                        </div>
+                    </div>
+                    <div class="status-badge status-${reference.status}">
+                        ${reference.status}
+                    </div>
+                </div>
+
+                ${reference.status === 'completed' ? `
+                    <div class="rating-summary">
+                        <div class="overall-score">${reference.overallScore || '0.0'}</div>
+                        <div class="rating-breakdown">
+                            ${generateRatingBreakdown(reference.ratings)}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${reference.contexts && reference.contexts.length > 0 ? `
+                    <div class="context-section">
+                        <h4>💬 Your Added Context</h4>
+                        ${reference.contexts.map(context => `
+                            <div class="context-item">
+                                <div class="context-meta">
+                                    ${context.type} • ${formatDate(context.timestamp)}
+                                </div>
+                                <p>${context.text}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+
+                <div class="management-actions">
+                    <button class="action-btn action-primary" onclick="viewReference('${reference.id}')">
+                        👁️ View Full Reference
+                    </button>
+                    <button class="action-btn action-secondary" onclick="openAddContext('${reference.id}')">
+                        📝 Add Context
+                    </button>
+                    <button class="action-btn action-warning" onclick="openInviteReferee('${reference.id}')">
+                        👥 Invite Referee
+                    </button>
+                    <button class="action-btn action-danger" onclick="openSuppressReference('${reference.id}')">
+                        🚫 Suppress
+                    </button>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function generateRatingBreakdown(ratings) {
+            if (!ratings) return '<p>No ratings available</p>';
+            
+            return Object.entries(ratings).map(([kpi, rating]) => `
+                <div class="rating-item">
+                    <span>${formatKpiName(kpi)}</span>
+                    <span class="stars">${'★'.repeat(rating)}${'☆'.repeat(5-rating)}</span>
+                </div>
+            `).join('');
+        }
+
+        function formatKpiName(kpi) {
+            return kpi.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function viewReference(referenceId) {
+            // In real app, this would open a detailed view
+            alert(`Opening detailed view for reference ${referenceId}`);
+        }
+
+        function openAddContext(referenceId) {
+            currentReferenceId = referenceId;
+            document.getElementById('contextModal').style.display = 'flex';
+        }
+
+        function openInviteReferee(referenceId) {
+            currentReferenceId = referenceId;
+            document.getElementById('inviteModal').style.display = 'flex';
+        }
+
+        function openSuppressReference(referenceId) {
+            currentReferenceId = referenceId;
+            document.getElementById('suppressModal').style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            currentReferenceId = null;
+        }
+
+        function addContext() {
+            const type = document.getElementById('contextType').value;
+            const text = document.getElementById('contextText').value;
+            const evidence = document.getElementById('evidenceText').value;
+
+            if (!text.trim()) {
+                alert('Please provide context text');
+                return;
+            }
+
+            // Get current dashboard data
+            let dashboardData = JSON.parse(localStorage.getItem('dashboardData') || '{}');
+            
+            // Find and update the reference
+            const refIndex = dashboardData.references.findIndex(r => r.id === currentReferenceId);
+            if (refIndex !== -1) {
+                if (!dashboardData.references[refIndex].contexts) {
+                    dashboardData.references[refIndex].contexts = [];
+                }
+
+                dashboardData.references[refIndex].contexts.push({
+                    id: 'context-' + Date.now(),
+                    type: type,
+                    text: text,
+                    evidence: evidence,
+                    timestamp: new Date().toISOString()
+                });
+
+                localStorage.setItem('dashboardData', JSON.stringify(dashboardData));
+                
+                // Add notification
+                addNotification('context_added', 'Context Added Successfully', 
+                    `You've added additional context to your reference from ${dashboardData.references[refIndex].refereeName}`);
+                
+                closeModal('contextModal');
+                loadReferences(); // Reload to show changes
+                
+                // Clear form
+                document.getElementById('contextText').value = '';
+                document.getElementById('evidenceText').value = '';
+            }
+        }
+
+        function sendInvite() {
+            const name = document.getElementById('inviteeName').value;
+            const email = document.getElementById('inviteeEmail').value;
+            const role = document.getElementById('inviteeRole').value;
+            const context = document.getElementById('inviteContext').value;
+
+            if (!name || !email) {
+                alert('Please provide name and email');
+                return;
+            }
+
+            // Simulate sending invite
+            addNotification('invite_sent', 'Referee Invitation Sent', 
+                `Invitation sent to ${name} (${email}) to provide additional context on your reference.`);
+
+            closeModal('inviteModal');
+            
+            // Clear form
+            document.getElementById('inviteeName').value = '';
+            document.getElementById('inviteeEmail').value = '';
+            document.getElementById('inviteContext').value = '';
+            
+            alert(`Invitation sent to ${name} at ${email}`);
+        }
+
+        function suppressReference() {
+            const type = document.getElementById('suppressType').value;
+            const reason = document.getElementById('suppressReason').value;
+            const notes = document.getElementById('suppressNotes').value;
+
+            if (!reason.trim()) {
+                alert('Please provide a reason for suppression');
+                return;
+            }
+
+            // Get current dashboard data
+            let dashboardData = JSON.parse(localStorage.getItem('dashboardData') || '{}');
+            
+            // Find and update the reference
+            const refIndex = dashboardData.references.findIndex(r => r.id === currentReferenceId);
+            if (refIndex !== -1) {
+                dashboardData.references[refIndex].suppressed = {
+                    type: type,
+                    reason: reason,
+                    notes: notes,
+                    timestamp: new Date().toISOString()
+                };
+
+                dashboardData.references[refIndex].status = 'suppressed';
+
+                localStorage.setItem('dashboardData', JSON.stringify(dashboardData));
+                
+                addNotification('reference_suppressed', 'Reference Suppressed', 
+                    `Reference has been ${type}ly suppressed as requested.`);
+                
+                closeModal('suppressModal');
+                loadReferences(); // Reload to show changes
+                
+                // Clear form
+                document.getElementById('suppressReason').value = '';
+                document.getElementById('suppressNotes').value = '';
+            }
+        }
+
+        function addNotification(type, title, message) {
+            let notifications = JSON.parse(localStorage.getItem('userNotifications') || '[]');
+            
+            notifications.unshift({
+                id: 'notif-' + Date.now(),
+                type: type,
+                title: title,
+                message: message,
+                timestamp: new Date().toISOString(),
+                isRead: false
+            });
+
+            localStorage.setItem('userNotifications', JSON.stringify(notifications));
+            
+            // Update notification count
+            let count = JSON.parse(localStorage.getItem('notificationCount') || '0');
+            localStorage.setItem('notificationCount', JSON.stringify(count + 1));
+        }
+
+        // Close modals when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.style.display = 'none';
+                currentReferenceId = null;
+            }
+        });
+    </script>
+</body>
+</html>

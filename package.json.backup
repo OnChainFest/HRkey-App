@@ -1,0 +1,12 @@
+{
+  "devDependencies": {
+    "@nomicfoundation/hardhat-verify": "^3.0.0",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.0",
+    "hardhat": "^3.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.0",
+    "viem": "^2.3.0"
+  },
+  "type": "module"
+}

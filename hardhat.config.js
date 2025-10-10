@@ -1,22 +1,27 @@
-// hardhat.config.js  (ESM porque tu package.json tiene "type":"module")
-import "@nomicfoundation/hardhat-ethers";
-import "@nomicfoundation/hardhat-verify";
-import dotenv from "dotenv";
-dotenv.config();
+require("@nomicfoundation/hardhat-chai-matchers");
+require("@nomicfoundation/hardhat-verify");
+require("dotenv/config");
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const BASE_SEPOLIA_RPC_URL = process.env.BASE_SEPOLIA_RPC_URL;
-const BASESCAN_API_KEY = process.env.BASESCAN_API_KEY;
-
-export default {
+/** @type import('hardhat/config').HardhatUserConfig */
+module.exports = {
   solidity: "0.8.24",
   networks: {
     baseSepolia: {
-      url: BASE_SEPOLIA_RPC_URL,
-      accounts: [PRIVATE_KEY],
+      url: process.env.BASE_SEPOLIA_RPC,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
   },
   etherscan: {
-    apiKey: { baseSepolia: BASESCAN_API_KEY },
+    apiKey: { baseSepolia: process.env.BASESCAN_API_KEY || "" },
+    customChains: [
+      {
+        network: "baseSepolia",
+        chainId: 84532,
+        urls: {
+          apiURL: "https://api-sepolia.basescan.org/api",
+          browserURL: "https://sepolia.basescan.org",
+        },
+      },
+    ],
   },
 };
