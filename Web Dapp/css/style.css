@@ -1,7 +1,5 @@
 
 
-
-
 /*
   Template Name: OLMO - Software, App, SaaS & Startup Landing Pages Pack
   Theme URL: https://themeforest.net/user/dsathemes
@@ -2251,7 +2249,7 @@ p.terms-txt a,
 
 
 /* ==========================================================================
-  04. HEADER & NAVIGATION
+  04. HEADER & NAVIGATION - HRKEY CUSTOMIZADO
   =========================================================================== */
 
 #header {
@@ -2311,13 +2309,98 @@ p.terms-txt a,
 }
 
 /*------------------------------------------*/
-/*  HEADER LOGO
+/*  HEADER LOGO - HRKEY DEFINITIVO
 /*------------------------------------------*/
 
-.desktoplogo img {
-  width: auto;
-  max-width: inherit;
-  max-height: 38px;
+/* FORZAR tamaño GRANDE del logo */
+.desktoplogo img,
+.desktoplogo a img,
+.desktoplogo .logo-black img,
+.desktoplogo .logo-white img,
+header .desktoplogo img,
+#header .desktoplogo img,
+.header .desktoplogo a.logo-black img,
+.header .desktoplogo a.logo-white img {
+  height: 65px !important;
+  width: auto !important;
+  max-height: 65px !important;
+  min-height: 65px !important;
+}
+
+/* Pantallas XL - logo aún más grande */
+@media (min-width: 1400px) {
+  .desktoplogo img,
+  .desktoplogo a img,
+  #header .desktoplogo img,
+  .header .desktoplogo a.logo-black img,
+  .header .desktoplogo a.logo-white img {
+    height: 75px !important;
+    max-height: 75px !important;
+    min-height: 75px !important;
+  }
+}
+
+/* Logo mobile */
+.wsmobileheader .smllogo img {
+  height: 50px !important;
+  width: auto !important;
+}
+
+/* Container del header con más espacio */
+.wsmainfull {
+  padding: 20px 30px !important;
+  min-height: 100px !important;
+}
+
+/* Layout Flexbox del header */
+.header .wsmainfull,
+.wsmainfull .wsmainwp {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+}
+
+/* Logo contenedor */
+.desktoplogo {
+  flex: 0 0 auto !important;
+  margin-right: 50px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Menú alineado a la derecha */
+.wsmenu {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  margin-left: auto !important;
+}
+
+.wsmenu > .wsmenu-list {
+  display: flex !important;
+  align-items: center !important;
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.wsmenu > .wsmenu-list > li {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 5px !important;
+}
+
+.wsmenu > .wsmenu-list > li > a {
+  line-height: 1.4 !important;
+  padding: 12px 15px !important;
+}
+
+/* Ocultar header móvil en desktop */
+@media (min-width: 992px) {
+  .wsmobileheader { 
+    display: none !important; 
+  }
 }
 
 /*------------------------------------------*/
@@ -2772,10 +2855,6 @@ p.terms-txt a,
 .tra-menu.navbar-dark.dark-scroll .scroll .logo-white {
   display: block;
 }
-
-
-
-
 /* ==========================================================================
   05. HERO
   =========================================================================== */

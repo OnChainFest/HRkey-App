@@ -1,0 +1,188 @@
+/* ==========================================================================
+   HRKEY - CUSTOM HEADER DEFINITIVO V2
+   ========================================================================== */
+
+/* LOGO GRANDE - Esquina superior izquierda */
+body #header .desktoplogo a img,
+body #header .desktoplogo img,
+body .header .desktoplogo a.logo-black img,
+body .header .desktoplogo a.logo-white img,
+.desktoplogo a img,
+.desktoplogo img {
+    height: 110px !important;
+    width: auto !important;
+    max-height: 110px !important;
+    min-height: 110px !important;
+}
+
+/* Pantallas XL - logo aún más grande */
+@media (min-width: 1400px) {
+    body #header .desktoplogo a img,
+    body #header .desktoplogo img {
+        height: 120px !important;
+        max-height: 120px !important;
+        min-height: 120px !important;
+    }
+}
+
+/* Header fondo blanco */
+body #header.header,
+body .header-wrapper,
+body .wsmainfull.menu {
+    background-color: #ffffff !important;
+}
+
+body .wsmainfull {
+    padding: 15px 40px !important;
+    min-height: 110px !important;
+}
+
+/* CONTENEDOR PRINCIPAL - Layout centrado */
+body .wsmainfull .wsmainwp {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    position: relative !important;
+}
+
+/* LOGO - Posición izquierda fija */
+body .desktoplogo {
+    position: absolute !important;
+    left: 0 !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin: 0 !important;
+    z-index: 10 !important;
+}
+
+body .desktoplogo a {
+    display: inline-block !important;
+}
+
+body .desktoplogo a img {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Ocultar logo duplicado */
+body .desktoplogo + .desktoplogo {
+    display: none !important;
+}
+
+/* MENÚ - PERFECTAMENTE CENTRADO */
+body nav.wsmenu {
+    flex: 1 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0 !important;
+}
+
+body .wsmenu-list {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Items del menú - solo los 3 primeros */
+body .wsmenu-list > li {
+    display: inline-flex !important;
+    align-items: center !important;
+    margin: 0 !important;
+}
+
+body .wsmenu-list > li > a {
+    padding: 12px 22px !important;
+    line-height: 1.4 !important;
+    white-space: nowrap !important;
+    color: #2c3e50 !important;
+    font-size: 17px !important;
+    font-weight: 500 !important;
+}
+
+body .wsmenu-list > li > a:hover {
+    color: #00C4C7 !important;
+}
+
+/* BOTÓN GET STARTED - Esquina derecha */
+body .wsmenu-list > li:last-child {
+    position: absolute !important;
+    right: 0 !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+}
+
+body .wsmenu-list > li:last-child > a.btn-hrkey {
+    margin: 0 !important;
+    padding: 14px 32px !important;
+    font-size: 16px !important;
+}
+
+/* Logo Mobile */
+.wsmobileheader .smllogo img {
+    height: 55px !important;
+    width: auto !important;
+}
+
+/* Ocultar header móvil en desktop */
+@media (min-width: 992px) {
+    .wsmobileheader { 
+        display: none !important; 
+    }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    body #header .desktoplogo a img,
+    body #header .desktoplogo img {
+        height: 75px !important;
+        max-height: 75px !important;
+    }
+    
+    body .wsmenu-list > li > a {
+        padding: 10px 16px !important;
+        font-size: 16px !important;
+    }
+}
+
+@media (max-width: 991px) {
+    body .wsmainfull {
+        padding: 15px 20px !important;
+        min-height: 80px !important;
+    }
+    
+    body #header .desktoplogo a img {
+        height: 60px !important;
+        max-height: 60px !important;
+    }
+}
+
+/* Espaciado Hero */
+#HRKEY-HERO,
+body #HRKEY-HERO {
+    padding-top: 180px !important;
+    margin-top: 0 !important;
+}
+
+@media (max-width: 991px) {
+    #HRKEY-HERO,
+    body #HRKEY-HERO {
+        padding-top: 140px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #HRKEY-HERO,
+    body #HRKEY-HERO {
+        padding-top: 120px !important;
+    }
+}

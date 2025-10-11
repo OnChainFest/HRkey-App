@@ -33,70 +33,129 @@
     <link href="css/owl.theme.default.min.css" rel="stylesheet">
 
     <!-- ON SCROLL ANIMATION -->
-    <link href="css/animate.css" rel="stylesheet">
+<link href="css/animate.css" rel="stylesheet">
 
-    <!-- TEMPLATE CSS -->
-    <link href="css/style.css" rel="stylesheet"> 
-    
-    <!-- RESPONSIVE CSS -->
-    <link href="css/responsive.css" rel="stylesheet">
+<!-- TEMPLATE CSS -->
+<link href="css/style.css" rel="stylesheet"> 
 
-    <!-- CUSTOM CSS TO FIX LAYOUT ISSUES -->
-    <style>
-        /* Force remove any empty boxes or placeholder elements */
-        .fbox-1::before,
-        .fbox-1::after,
-        .fbox-ico-center::before,
-        .fbox-ico-center::after,
-        .features-section .col::before,
-        .features-section .col::after {
-            display: none !important;
-            content: none !important;
-        }
-        
-        /* Remove any border styling that might create empty boxes */
-        .features-section * {
-            border: none !important;
-            outline: none !important;
-        }
-        
-        /* Ensure proper alignment */
-        .features-clean {
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            text-align: center !important;
-        }
-    </style>
+<!-- RESPONSIVE CSS -->
+<link href="css/responsive.css" rel="stylesheet">
 
-    <!-- BASE MINI APPS SDK -->
-    <script src="https://cdn.base.org/miniapps-sdk/v1/base-miniapps.js"></script>
+<!-- HRKEY CUSTOM CSS -->
+<link href="css/custom-hrkey.css" rel="stylesheet">
 
-    <style>
-    /* Forzar fondo blanco permanente en el header */
+<!-- CUSTOM STYLES -->
+<style>
+    /* Header blanco permanente */
     #header.header {
         background-color: #ffffff !important;
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
     }
     
-    /* Header en todas las variantes */
     .header.tra-menu,
     .header.navbar-light,
     .header.scrolled {
         background-color: #ffffff !important;
     }
     
-    /* Links del menú en color oscuro para que se vean sobre fondo blanco */
     .header.navbar-light .wsmenu-list > li > a {
         color: #333333 !important;
     }
     
-    /* Hover en los links */
     .header.navbar-light .wsmenu-list > li > a:hover {
-        color: #00d4d4 !important;
+        color: #00C4C7 !important;
+    }
+
+    /* Hero Section con layout lado a lado */
+    #HRKEY-HERO {
+        padding: 100px 0 80px 0;
+    }
+
+    .hero-title {
+        font-size: 48px;
+        font-weight: 700;
+        color: #0E1E22;
+        line-height: 1.2;
+        margin-bottom: 30px;
+        text-align: left;
+    }
+
+    .hero-title .text-teal {
+        color: #00C4C7;
+    }
+
+    .hero-svg-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .hero-svg {
+        width: 100%;
+        height: auto;
+        max-height: 500px;
+        display: block;
+    }
+
+    /* Botones HRKey con gradiente */
+    .btn-hrkey {
+        background: linear-gradient(135deg, #00C4C7, #4DE7E8);
+        color: white;
+        padding: 14px 32px;
+        border-radius: 10px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+        border: none;
+    }
+
+    .btn-hrkey:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 196, 199, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    /* Tech Stack */
+    .tech-stack h6 {
+        color: #666;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    /* Features clean styling */
+    .features-clean {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    /* Responsive */
+    @media (max-width: 991px) {
+        .hero-title {
+            font-size: 36px;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        #HRKEY-HERO .col-lg-6:first-child {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        
+        .tech-stack {
+            justify-content: center;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 32px;
+        }
     }
 </style>
+
 </head>
 
 <body>
@@ -116,138 +175,115 @@
     <!-- PAGE CONTENT -->	
     <div id="page" class="page">
 
-       <!-- HEADER -->
-<header id="header" class="header tra-menu navbar-light">
-    <div class="header-wrapper">
+        <!-- HEADER -->
+        <header id="header" class="header tra-menu navbar-light">
+            <div class="header-wrapper">
 
-        <!-- MOBILE HEADER -->
-        <div class="wsmobileheader clearfix">	  	
-            <span class="smllogo"><img src="images/LogoHRKEY-transparente.png" alt="HRKey-logo"/></span>
-            <a id="wsnavtoggle" class="wsanimated-arrow"><span></span></a>	
-        </div>
+                <!-- MOBILE HEADER -->
+                <div class="wsmobileheader clearfix">	  	
+                    <span class="smllogo"><img src="images/LogoHRKEY-transparente.png" alt="HRKey-logo"/></span>
+                    <a id="wsnavtoggle" class="wsanimated-arrow"><span></span></a>	
+                </div>
 
-        <!-- NAVIGATION MENU -->
-        <div class="wsmainfull menu clearfix">
-            <div class="wsmainwp clearfix">
+                <!-- NAVIGATION MENU -->
+                <div class="wsmainfull menu clearfix">
+                    <div class="wsmainwp clearfix">
 
-                <!-- HEADER LOGO -->
-                <div class="desktoplogo"><a href="#hero-13" class="logo-black"><img src="images/LogoHRKEY-transparente.png" alt="HRKey-logo"></a></div>
-                <div class="desktoplogo"><a href="#hero-13" class="logo-white"><img src="images/LogoHRKEY-transparente.png" alt="HRKey-logo"></a></div>
+                        <!-- HEADER LOGO -->
+                        <div class="desktoplogo"><a href="#HRKEY-HERO" class="logo-black"><img src="images/LogoHRKEY-transparente.png" alt="HRKey-logo"></a></div>
+                        <div class="desktoplogo"><a href="#HRKEY-HERO" class="logo-white"><img src="images/LogoHRKEY-transparente.png" alt="HRKey-logo"></a></div>
 
-                <!-- MAIN MENU -->
-                <nav class="wsmenu clearfix">
-                    <ul class="wsmenu-list nav-violet-red-hover">
+                        <!-- MAIN MENU -->
+                        <nav class="wsmenu clearfix">
+                            <ul class="wsmenu-list nav-violet-red-hover">
+                                <li class="nl-simple" aria-haspopup="true"><a href="#features-1">Why HRKey?</a></li>
+                                <li class="nl-simple" aria-haspopup="true"><a href="#features-8">Features</a></li>
+                                <li class="nl-simple" aria-haspopup="true"><a href="#content-9">How It Works</a></li>
+                                <li class="nl-simple" aria-haspopup="true"><a href="auth.html" class="btn-hrkey last-link">Get Started</a></li> 
+                            </ul>
+                        </nav>
 
-                        <!-- NAVIGATION LINKS -->
-                        <li class="nl-simple" aria-haspopup="true"><a href="#features-1">Why HRKey?</a></li>
-                        <li class="nl-simple" aria-haspopup="true"><a href="#features-8">Features</a></li>
-                        <li class="nl-simple" aria-haspopup="true"><a href="#content-9">How It Works</a></li>
-                        <li class="nl-simple" aria-haspopup="true"><a href="#pricing-3">Pricing</a></li>
-                        <li class="nl-simple" aria-haspopup="true"><a href="#reviews-1">Reviews</a></li>
-
-                        <!-- HEADER BUTTON -->
-                        <li class="nl-simple" aria-haspopup="true">
-                            <a href="#" id="get-started-btn" class="btn btn-violet-red tra-violet-red-hover last-link">Get Started</a>
-                        </li> 
-                    </ul>
-                </nav>	<!-- END MAIN MENU -->
-
-            </div>
-        </div>	<!-- END NAVIGATION MENU -->
-
-    </div>     <!-- End header-wrapper -->
-</header>	<!-- END HEADER -->
-        <section id="HRKEY-HERO" class="hero-section">
-                <div class="container">
-                    <!-- Título Principal -->
-                    <div class="row justify-content-center mb-4">
-                        <div class="col-lg-10 text-center">
-                            <h1 class="hero-title">Build Verifiable Professional <br><span class="text-teal">References on Blockchain</span></h1>
-                        </div>
-                    </div>
-
-                    <!-- SVG Hero Background -->
-                    <div class="row justify-content-center mb-4">
-                        <div class="col-lg-10">
-                            <div class="hero-svg-container">
-                                <object type="image/svg+xml" data="images/HRHERO.svg" class="hero-svg"></object>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- CTA y Tech Stack -->
-                    <div class="row justify-content-center">
-                        <div class="col-lg-8 text-center">
-                            <a href="#" id="create-reference-btn" class="btn btn-teal mb-4">Request Your First Reference</a>
-                            
-                            <div class="tech-stack mt-4">
-                                <h6 class="mb-3">Built on:</h6>
-                                <div class="d-flex align-items-center justify-content-center">
-                                    <img src="images/base-logo.png" alt="Base" style="height: 40px; margin-right: 20px;" onerror="this.style.display='none'">
-                                    <img src="images/ethereum-logo.png" alt="Ethereum" style="height: 35px;" onerror="this.style.display='none'">
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
+
+            </div>
+        </header>
+
+        <!-- HERO SECTION -->
+        <section id="HRKEY-HERO" class="hero-section">
+            <div class="container">
+                <div class="row align-items-center">
+                    
+                    <!-- COLUMNA IZQUIERDA - Título y CTA -->
+                    <div class="col-lg-6">
+                        <h1 class="hero-title">Build Verifiable Professional <br><span class="text-teal">References on Blockchain</span></h1>
+                        
+                        <a href="auth.html" class="btn-hrkey mb-4">Request Your First Reference</a>
+                        
+                        <div class="tech-stack mt-4">
+                            <h6 class="mb-3">Built on:</h6>
+                            <div class="d-flex align-items-center gap-3">
+                                <img src="images/base-logo.png" alt="Base" style="height: 40px;" onerror="this.style.display='none'">
+                                <img src="images/ethereum-logo.png" alt="Ethereum" style="height: 35px;" onerror="this.style.display='none'">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COLUMNA DERECHA - SVG Hero -->
+                    <div class="col-lg-6">
+                        <div class="hero-svg-container">
+                            <object type="image/svg+xml" data="images/HRHERO.svg" class="hero-svg"></object>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </section>
-
-        <!-- HERO-13 -->
-
-
 
         <!-- FEATURES-1 -->
         <section id="features-1" class="wide-60 features-section division">
             <div class="container">
                 <div class="row">
 
-                    <!-- FEATURE BOX #1 - BLOCKCHAIN SECURITY -->
+                    <!-- FEATURE BOX #1 -->
                     <div class="col-lg-3 col-md-6 col-12">
                         <div class="features-clean mb-40">
-                            <div style="font-size: 60px; color: #00C4C7; margin-bottom: 20px;">
-                                🔒
-                            </div>
+                            <div style="font-size: 60px; color: #00C4C7; margin-bottom: 20px;">🔒</div>
                             <h5 class="h5-sm mb-20">Blockchain Security</h5>
                             <p class="p-lg">Immutable references stored securely on Base blockchain</p>
                         </div>
                     </div>	
 
-                    <!-- FEATURE BOX #2 - PEER VALIDATION -->
+                    <!-- FEATURE BOX #2 -->
                     <div class="col-lg-3 col-md-6 col-12">
                         <div class="features-clean mb-40">
-                            <div style="font-size: 60px; color: #00C4C7; margin-bottom: 20px;">
-                                👥
-                            </div>
+                            <div style="font-size: 60px; color: #00C4C7; margin-bottom: 20px;">👥</div>
                             <h5 class="h5-sm mb-20">Peer Validation</h5>
                             <p class="p-lg">Get additional validations from colleagues and peers</p>
                         </div>
                     </div>	
 
-                    <!-- FEATURE BOX #3 - PRIVACY CONTROL -->
+                    <!-- FEATURE BOX #3 -->
                     <div class="col-lg-3 col-md-6 col-12">
                         <div class="features-clean mb-40">
-                            <div style="font-size: 60px; color: #00C4C7; margin-bottom: 20px;">
-                                🛡️
-                            </div>
+                            <div style="font-size: 60px; color: #00C4C7; margin-bottom: 20px;">🛡️</div>
                             <h5 class="h5-sm mb-20">Privacy Control</h5>
                             <p class="p-lg">Choose what to share and maintain full control of your data</p>
                         </div>
                     </div>	
 
-                    <!-- FEATURE BOX #4 - CAREER GROWTH -->
+                    <!-- FEATURE BOX #4 -->
                     <div class="col-lg-3 col-md-6 col-12">
                         <div class="features-clean mb-40">
-                            <div style="font-size: 60px; color: #00C4C7; margin-bottom: 20px;">
-                                🚀
-                            </div>
+                            <div style="font-size: 60px; color: #00C4C7; margin-bottom: 20px;">🚀</div>
                             <h5 class="h5-sm mb-20">Career Growth</h5>
                             <p class="p-lg">Accelerate your professional growth with verified references</p>
                         </div>
                     </div>	
 
                 </div>
-            </div>     <!-- End container --> 	
-        </section>	<!-- END FEATURES-1 -->
+            </div>
+        </section>
 
         <!-- CONTENT-2 -->
         <section id="content-2" class="content-2 bg-snow wide-60 content-section division">
@@ -264,14 +300,8 @@
                     <!-- TEXT BLOCK -->	
                     <div class="col-md-7 col-lg-6">
                         <div class="txt-block right-column wow fadeInLeft">
-
-                            <!-- Section ID -->	
                             <span class="section-id txt-upcase">Revolutionary Technology</span>
-
-                            <!-- Title -->	
                             <h2 class="h2-xs">Apply smarter with blockchain-verified references</h2>
-
-                            <!-- List -->	
                             <ul class="simple-list">
                                 <li class="list-item">
                                     <p class="p-lg">Create tamper-proof professional references that employers can instantly verify and trust, eliminating fraud and saving time in the hiring process</p>
@@ -283,13 +313,12 @@
                                     <p class="p-lg">Take control of your professional narrative with privacy settings and selective sharing capabilities</p>
                                 </li>
                             </ul>
-
                         </div>
-                    </div>	<!-- END TEXT BLOCK -->	
+                    </div>
 
-                </div>	   <!-- End row -->
-            </div>	   <!-- End container -->
-        </section>	<!-- END CONTENT-2 -->
+                </div>
+            </div>
+        </section>
 
         <!-- FEATURES-8 -->
         <section id="features-8" class="wide-60 features-section division">
@@ -299,9 +328,7 @@
                 <div class="row justify-content-center">	
                     <div class="col-lg-10 col-xl-8">
                         <div class="section-title title-01 mb-70">		
-                            <!-- Title -->	
                             <h2 class="h2-md">Get Ready to Transform Your Career</h2>	
-                            <!-- Text -->	
                             <p class="p-xl">Join thousands of professionals who are building verifiable reputations on the blockchain with HRKey's innovative reference platform</p>
                         </div>	
                     </div>
@@ -314,13 +341,10 @@
                         <!-- FEATURE BOX #1 -->
                         <div class="col">
                             <div class="fbox-8 mb-40 wow fadeInUp">
-                                <!-- Image -->
                                 <div class="fbox-img bg-whitesmoke-gradient">
                                     <img class="img-fluid" src="images/img-21.png" alt="user-friendly" />
                                 </div>
-                                <!-- Title -->
                                 <h5 class="h5-md">Profit with your data</h5>
-                                <!-- Text -->
                                 <p class="p-lg">Intuitive design makes creating and managing professional references simple and efficient for everyone</p>
                             </div>
                         </div>
@@ -328,13 +352,10 @@
                         <!-- FEATURE BOX #2 -->
                         <div class="col">
                             <div class="fbox-8 mb-40 wow fadeInUp">
-                                <!-- Image -->
                                 <div class="fbox-img bg-whitesmoke-gradient">
                                     <img class="img-fluid" src="images/img-22.png" alt="flexible-platform" />
                                 </div>
-                                <!-- Title -->
                                 <h5 class="h5-md">AI enhanced References</h5>
-                                <!-- Text -->
                                 <p class="p-lg">Customize your references, control visibility, and choose exactly what information to share with employers</p>
                             </div>
                         </div>
@@ -342,22 +363,19 @@
                         <!-- FEATURE BOX #3 -->
                         <div class="col">
                             <div class="fbox-8 mb-40 wow fadeInUp">
-                                <!-- Image -->
                                 <div class="fbox-img bg-whitesmoke-gradient">
                                     <img class="img-fluid" src="images/img-24.png" alt="integrations" />
                                 </div>
-                                <!-- Title -->
                                 <h5 class="h5-md">Seamless Integrations</h5>
-                                <!-- Text -->
                                 <p class="p-lg">Connect with popular job platforms, LinkedIn, and HR systems for streamlined reference sharing</p>
                             </div>
                         </div>	
 
-                    </div>  <!-- End row -->	
-                </div>	<!-- END FEATURES-8 WRAPPER -->	
+                    </div>
+                </div>
 
-            </div>	   <!-- End container -->		
-        </section>	<!-- END FEATURES-8 -->	
+            </div>
+        </section>
 
         <!-- DIVIDER LINE -->
         <hr class="divider">
@@ -377,7 +395,6 @@
                     <!-- STATISTIC BLOCK #1 -->
                     <div class="col-sm-5 col-md-4 col-lg-3 offset-sm-1 offset-md-2 offset-lg-1">						
                         <div class="statistic-block wow fadeInUp">	
-                            <!-- Text -->
                             <h2 class="h2-title-xs statistic-number"><span class="count-element">10</span>K+</h2>
                             <p class="p-lg mt-20">Verified references <br /> created on blockchain</p>		
                         </div>						
@@ -386,11 +403,9 @@
                     <!-- STATISTIC BLOCK #2 -->
                     <div class="col-sm-5 col-md-4 col-lg-2">						
                         <div class="statistic-block wow fadeInUp">	
-                            <!-- Text -->
                             <h2 class="h2-title-xs statistic-number">
                                 <span class="count-element">4</span>.<span class="count-element">9</span>
                             </h2>
-                            <!-- Rating -->
                             <div class="txt-block-rating ico-15 yellow-color">
                                 <span class="flaticon-star-1"></span>
                                 <span class="flaticon-star-1"></span>
@@ -402,9 +417,9 @@
                         </div>								
                     </div>
 
-                </div>    <!-- End row -->
-            </div>	   <!-- End container -->		
-        </section>	<!-- END STATISTIC-2 -->
+                </div>
+            </div>
+        </section>
 
         <!-- DIVIDER LINE -->
         <hr class="divider">
@@ -417,9 +432,7 @@
                 <div class="row justify-content-center">	
                     <div class="col-md-10 col-lg-8">
                         <div class="section-title title-02 mb-60">	
-                            <!-- Section ID -->	
                             <span class="section-id txt-upcase">How It Works</span>	
-                            <!-- Title -->	
                             <h2 class="h2-xs">Discover how easy it is to build your professional reputation</h2>	
                         </div>	
                     </div>
@@ -429,294 +442,18 @@
                 <div class="row">	
                     <div class="col">
                         <div class="content-9-img video-preview wow fadeInUp">
-                            <!-- Play Icon --> 
                             <a class="video-popup1" href="https://www.youtube.com/embed/SZEflIVnhH8">				
                                 <div class="video-btn video-btn-xl bg-violet-red ico-90">	
                                     <div class="video-block-wrapper"><span class="flaticon-play-button"></span></div>
                                 </div>
                             </a>
-                            <!-- Preview Image --> 
-                            <img class="img-fluid" src="images/Hero Landing HRKey.png" alt="hrkey-demo">
+                            <img class="img-fluid" src="images/HRHERO.svg" alt="hrkey-demo">
                         </div>
                     </div>
                 </div>
 
-            </div>	   <!-- End container -->
-        </section>	<!-- END CONTENT-9 -->
-
-        <!-- TESTIMONIALS-1 -->
-        <section style="display:none;" id="reviews-1" class="wide-100 reviews-section division">
-            <div class="container">
-
-                <!-- SECTION TITLE -->	
-                <div class="row justify-content-center">	
-                    <div class="col-lg-10 col-xl-8">
-                        <div class="section-title title-01 mb-70">		
-                            <!-- Title -->	
-                            <h2 class="h2-md">Stories From Our Users</h2>	
-                            <!-- Text -->	
-                            <p class="p-xl">Hear from professionals who have transformed their careers with blockchain-verified references</p>
-                        </div>	
-                    </div>
-                </div>
-
-                <!-- TESTIMONIALS CONTENT -->
-                <div class="row">
-                    <div class="col">					
-                        <div class="owl-carousel owl-theme reviews-1-wrapper">
-
-                            <!-- TESTIMONIAL #1 -->
-                            <div class="review-1">
-                                <!-- Quote Icon -->
-                                <div class="review-1-ico ico-25">
-                                    <span class="flaticon-left-quote"></span>
-                                </div>
-                                <!-- Text -->
-                                <div class="review-1-txt">
-                                    <!-- Text -->
-                                    <p class="p-lg">HRKey revolutionized how I present my professional background. Having blockchain-verified references gave me a huge advantage in job interviews.</p>
-                                    <!-- Testimonial Author -->
-                                    <div class="author-data clearfix">
-                                        <!-- Testimonial Avatar -->
-                                        <div class="review-avatar">
-                                            <img src="images/review-author-1.jpg" alt="review-avatar">
-                                        </div>
-                                        <!-- Testimonial Author -->
-                                        <div class="review-author">
-                                            <h6 class="h6-xl">Sarah Chen</h6>
-                                            <p class="p-md">Software Engineer</p>
-                                            <!-- Rating -->
-                                            <div class="review-rating ico-15 yellow-color">
-                                                <span class="flaticon-star-1"></span>
-                                                <span class="flaticon-star-1"></span>
-                                                <span class="flaticon-star-1"></span>
-                                                <span class="flaticon-star-1"></span>
-                                                <span class="flaticon-star-1"></span>	
-                                            </div>
-                                        </div>	
-                                    </div>	<!-- End Testimonial Author -->
-                                </div>	<!-- End Text -->
-                            </div>	<!-- END TESTIMONIAL #1 -->
-
-                            <!-- TESTIMONIAL #2 -->
-                            <div class="review-1">
-                                <!-- Quote Icon -->
-                                <div class="review-1-ico ico-25">
-                                    <span class="flaticon-left-quote"></span>
-                                </div>
-                                <!-- Text -->
-                                <div class="review-1-txt">
-                                    <!-- Text -->
-                                    <p class="p-lg">As an HR manager, HRKey saves us countless hours in reference verification. The blockchain verification gives us complete confidence in authenticity.</p>
-                                    <!-- Testimonial Author -->
-                                    <div class="author-data clearfix">
-                                        <!-- Testimonial Avatar -->
-                                        <div class="review-avatar">
-                                            <img src="images/review-author-2.jpg" alt="review-avatar">
-                                        </div>
-                                        <!-- Testimonial Author -->
-                                        <div class="review-author">
-                                            <h6 class="h6-xl">Michael Rodriguez</h6>
-                                            <p class="p-md">HR Director</p>
-                                            <!-- Rating -->
-                                            <div class="review-rating ico-15 yellow-color">
-                                                <span class="flaticon-star-1"></span>
-                                                <span class="flaticon-star-1"></span>
-                                                <span class="flaticon-star-1"></span>
-                                                <span class="flaticon-star-1"></span>
-                                                <span class="flaticon-star-1"></span>	
-                                            </div>
-                                        </div>	
-                                    </div>	<!-- End Testimonial Author -->
-                                </div>	<!-- End Text -->
-                            </div>	<!-- END TESTIMONIAL #2 -->
-
-                            <!-- TESTIMONIAL #3 -->
-                            <div class="review-1">
-                                <!-- Quote Icon -->
-                                <div class="review-1-ico ico-25">
-                                    <span class="flaticon-left-quote"></span>
-                                </div>
-                                <!-- Text -->
-                                <div class="review-1-txt">
-                                    <!-- Text -->
-                                    <p class="p-lg">The peer validation feature is genius! Getting additional endorsements from colleagues made my references incredibly strong and comprehensive.</p>
-                                    <!-- Testimonial Author -->
-                                    <div class="author-data clearfix">
-                                        <!-- Testimonial Avatar -->
-                                        <div class="review-avatar">
-                                            <img src="images/review-author-3.jpg" alt="review-avatar">
-                                        </div>
-                                        <!-- Testimonial Author -->
-                                        <div class="review-author">
-                                            <h6 class="h6-xl">Emma Thompson</h6>
-                                            <p class="p-md">Marketing Manager</p>
-                                            <!-- Rating -->
-                                            <div class="review-rating ico-15 yellow-color">
-                                                <span class="flaticon-star-1"></span>
-                                                <span class="flaticon-star-1"></span>
-                                                <span class="flaticon-star-1"></span>
-                                                <span class="flaticon-star-1"></span>
-                                                <span class="flaticon-star-1"></span>	
-                                            </div>
-                                        </div>	
-                                    </div>	<!-- End Testimonial Author -->
-                                </div>	<!-- End Text -->
-                            </div>	<!-- END TESTIMONIAL #3 -->
-
-                        </div>
-                    </div>									
-                </div>	<!-- END TESTIMONIALS CONTENT --> 
-
-            </div>     <!-- End container -->
-        </section>	<!-- END TESTIMONIALS-1 -->
-
-        <!-- PRICING-3 -->
-        <section style="display:none;" id="pricing-3" class="bg-lightgrey wide-60 pricing-section division">
-            <div class="container">
-
-                <!-- SECTION TITLE -->	
-                <div class="row justify-content-center">	
-                    <div class="col-lg-10 col-xl-8">
-                        <div class="section-title title-01 mb-80">		
-                            <!-- Title -->	
-                            <h2 class="h2-md">Simple and Transparent Pricing</h2>	
-                            <!-- Text -->	
-                            <p class="p-xl">Choose the plan that fits your professional needs. All plans include blockchain security and verification.</p>
-                        </div>	
-                    </div>
-                </div>
-
-                <!-- PRICING TABLES -->
-                <div class="pricing-3-row pc-20">
-                    <div class="row row-cols-1 row-cols-md-3">
-
-                        <!-- BASIC PLAN -->
-                        <div class="col">
-                            <div class="pricing-3-table bg-white mb-40 wow fadeInUp">	
-                                <!-- Plan Price  -->
-                                <div class="pricing-plan">
-                                    <h6 class="h6-xl">Starter</h6>									
-                                    <sup class="dark-color">$</sup>								
-                                    <span class="price dark-color">0</span>
-                                    <sup class="coins dark-color">00</sup>
-                                    <p class="p-lg">Forever Free</p>
-                                </div>	
-                                <!-- Plan Features  -->
-                                <ul class="features">
-                                    <li><p class="p-md"><span>3</span> Verified References</p></li>
-                                    <li><p class="p-md">Blockchain Storage</p></li>
-                                    <li><p class="p-md">Basic Privacy Controls</p></li>
-                                    <li><p class="p-md">Community Support</p></li>
-                                </ul>
-                                <!-- Pricing Plan Button -->
-                                <a href="#" class="btn btn-tra-grey tra-violet-red-hover">Get Started Free</a>
-                            </div>
-                        </div>	<!-- END BASIC PLAN -->
-
-                        <!-- ADVANCED PLAN -->
-                        <div class="col">
-                            <div class="pricing-3-table bg-white rel mb-40 wow fadeInUp">	
-                                <!-- Hightlight Badge -->
-                                <div class="badge-wrapper">
-                                    <div class="highlight-badge bg-violet-red white-color">
-                                        <h6 class="h6-md">Most Popular</h6>
-                                    </div>
-                                </div>	
-                                <!-- Plan Price  -->
-                                <div class="pricing-plan">
-                                    <h6 class="h6-xl">Professional</h6>									
-                                    <sup class="dark-color">$</sup>								
-                                    <span class="price dark-color">19</span>
-                                    <sup class="coins dark-color">99</sup>
-                                    <p class="p-lg">Per Month</p>
-                                </div>	
-                                <!-- Plan Features  -->
-                                <ul class="features">
-                                    <li><p class="p-md"><span>Unlimited</span> References</p></li>
-                                    <li><p class="p-md">Blockchain Storage</p></li>
-                                    <li><p class="p-md">Advanced Privacy Controls</p></li>
-                                    <li><p class="p-md">Peer Validations</p></li>
-                                    <li><p class="p-md">Advanced Analytics</p></li>
-                                    <li><p class="p-md"><span>Email</span> Support</p></li>
-                                </ul>
-                                <!-- Pricing Plan Button -->
-                                <a href="#" class="btn btn-violet-red tra-grey-hover">Get Started</a>
-                            </div>
-                        </div>	<!-- END ADVANCED PLAN -->
-
-                        <!-- PREMIUM PLAN -->
-                        <div class="col">
-                            <div class="pricing-3-table bg-white mb-40 wow fadeInUp">	
-                                <!-- Plan Price  -->
-                                <div class="pricing-plan">
-                                    <h6 class="h6-xl">Enterprise</h6>									
-                                    <sup class="dark-color">$</sup>								
-                                    <span class="price dark-color">49</span>
-                                    <sup class="coins dark-color">99</sup>
-                                    <p class="p-lg">Per Month</p>
-                                </div>	
-                                <!-- Plan Features  -->
-                                <ul class="features">
-                                    <li><p class="p-md"><span>Unlimited</span> References</p></li>
-                                    <li><p class="p-md">Blockchain Storage</p></li>
-                                    <li><p class="p-md">Enterprise Privacy Controls</p></li>
-                                    <li><p class="p-md">Peer Validations</p></li>
-                                    <li><p class="p-md">Advanced Analytics</p></li>
-                                    <li><p class="p-md">API Access</p></li>
-                                    <li><p class="p-md"><span>Priority</span> Support</p></li>
-                                </ul>
-                                <!-- Pricing Plan Button -->
-                                <a href="#" class="btn btn-tra-grey tra-violet-red-hover">Contact Sales</a>
-                            </div>
-                        </div>	<!-- END PREMIUM PLAN -->
-
-                    </div>
-                </div>	<!-- END PRICING TABLES -->
-
-                <!-- PRICING NOTICE TEXT -->
-                <div class="row">
-                    <div class="col-lg-10 offset-lg-1">
-                        <div class="pricing-notice text-center mb-40">						
-                            <p>All plans include blockchain security and tamper-proof storage. No setup fees or hidden charges. Cancel anytime.</p>
-                        </div>	
-                    </div>
-                </div>
-
-            </div>	   <!-- End container -->
-        </section>	<!-- END PRICING-3 -->
-
-        <!-- CALL TO ACTION-6 -->
-        <section style="display:none;" id="cta-6" class="bg-04 pt-70 pb-70 cta-section division">
-            <div class="container">
-                <div class="row justify-content-md-center">
-
-                    <!-- BANNER TEXT -->
-                    <div class="col col-lg-8">
-                        <div class="cta-6-txt white-color text-center">
-
-                            <!-- Title -->	
-                            <h2 class="h2-sm">Ready to build your professional reputation with HRKey?</h2>
-
-                            <!-- Buttons Group -->
-                            <div class="btns-group mb-30">
-                                <a href="#" id="main-cta-btn" class="btn btn-md btn-violet-red tra-white-hover mr-15">Start Free Trial</a>
-                                <a href="#pricing-3" class="btn btn-md btn-tra-white white-hover">View Pricing</a>
-                            </div>
-
-                            <!-- Advantages List -->
-                            <ul class="advantages text-center clearfix">
-                                <li class="first-li"><p>Forever Free Plan</p></li>
-                                <li><p>Blockchain Security</p></li>
-                                <li class="last-li"><p>No Setup Fees</p></li>
-                            </ul>	
-
-                        </div>
-                    </div>	<!-- END BANNER TEXT -->
-
-                </div>    <!-- End row -->	
-            </div>	   <!-- End container -->	
-        </section>	<!-- END CALL TO ACTION-6 -->
+            </div>
+        </section>
 
         <!-- FOOTER-2 -->
         <footer id="footer-2" class="footer division">
@@ -728,14 +465,10 @@
                     <!-- FOOTER LINKS -->
                     <div class="col-sm-6 col-md-3 col-lg-2">
                         <div class="footer-links mb-40">
-                            <!-- Title -->
                             <h6 class="h6-xl">Platform</h6>
-                            <!-- Footer Links -->
                             <ul class="foo-links text-secondary clearfix">
                                 <li><p class="p-md"><a href="#features-1">Features</a></p></li>
-                                <li><p class="p-md"><a href="#pricing-3">Pricing</a></p></li>
-                                <li><p class="p-md"><a href="#content-9">How It Works</a></p></li>
-                                <li><p class="p-md"><a href="#reviews-1">Reviews</a></p></li>							
+                                <li><p class="p-md"><a href="#content-9">How It Works</a></p></li>						
                             </ul>
                         </div>
                     </div>
@@ -743,13 +476,10 @@
                     <!-- FOOTER LINKS -->
                     <div class="col-sm-6 col-md-3 col-lg-2">
                         <div class="footer-links mb-40">
-                            <!-- Title -->
                             <h6 class="h6-xl">Support</h6>
-                            <!-- Footer List -->
                             <ul class="foo-links text-secondary clearfix">
                                 <li><p class="p-md"><a href="#">Help Center</a></p></li>
                                 <li><p class="p-md"><a href="#">Documentation</a></p></li>						
-                                <li><p class="p-md"><a href="#">API Reference</a></p></li>
                                 <li><p class="p-md"><a href="#">Community</a></p></li>							
                             </ul>
                         </div>	
@@ -758,13 +488,10 @@
                     <!-- FOOTER LINKS -->
                     <div class="col-sm-6 col-md-3 col-lg-2">
                         <div class="footer-links mb-40">
-                            <!-- Title -->
                             <h6 class="h6-xl">Legal</h6>
-                            <!-- Footer List -->
                             <ul class="foo-links text-secondary clearfix">							
                                 <li><p class="p-md"><a href="#">Terms of Service</a></p></li>										
                                 <li><p class="p-md"><a href="#">Privacy Policy</a></p></li>
-                                <li><p class="p-md"><a href="#">Cookie Policy</a></p></li>
                                 <li><p class="p-md"><a href="#">Security</a></p></li>					
                             </ul>
                         </div>
@@ -773,13 +500,10 @@
                     <!-- FOOTER LINKS -->
                     <div class="col-sm-6 col-md-3 col-lg-2">
                         <div class="footer-links mb-40">
-                            <!-- Title -->
                             <h6 class="h6-xl">Company</h6>
-                            <!-- Footer Links -->
                             <ul class="foo-links text-secondary clearfix">
                                 <li><p class="p-md"><a href="#">About Us</a></p></li>
-                                <li><p class="p-md"><a href="#">Blog</a></p></li>
-                                <li><p class="p-md"><a href="#">Careers</a></p></li>											
+                                <li><p class="p-md"><a href="#">Blog</a></p></li>											
                                 <li><p class="p-md"><a href="#">Contact</a></p></li>								
                             </ul>
                         </div>
@@ -788,11 +512,7 @@
                     <!-- FOOTER NEWSLETTER FORM -->
                     <div class="col-md-7 col-lg-4">
                         <div class="footer-form pl-30 mb-20">
-
-                            <!-- Title -->
                             <h6 class="h6-xl">Stay Updated</h6>
-
-                            <!-- Newsletter Form Input -->
                             <form class="newsletter-form mt-25">
                                 <div class="input-group">
                                     <input type="email" class="form-control" placeholder="Email Address" required id="s-email">								
@@ -802,46 +522,40 @@
                                         </button>
                                     </span>
                                 </div>
-                                <!-- Newsletter Form Notification -->		
                                 <label for="s-email" class="form-notification"></label>
                             </form>
-                                                    
                         </div>
-                    </div>	<!-- END FOOTER NEWSLETTER FORM -->
+                    </div>
 
-                </div>	<!-- END FOOTER CONTENT -->
+                </div>
 
                 <hr>
 
                 <!-- BOTTOM FOOTER -->
                 <div class="bottom-footer">
                     <div class="row row-cols-1 row-cols-md-2 d-flex align-items-center">
-
-                        <!-- FOOTER COPYRIGHT -->
                         <div class="col">
                             <div class="footer-copyright">
                                 <p>&copy; 2024 HRKey. All Rights Reserved</p>
                             </div>
                         </div>
-
-                        <!-- BOTTOM FOOTER LINKS -->
                         <div class="col">
                             <ul class="bottom-footer-list text-secondary text-end">
                                 <li class="first-li"><p>Built on Base Blockchain</p></li>
                                 <li class="last-li"><p>Powered by Web3</p></li>
                             </ul>
                         </div>
-
-                    </div>  <!-- End row -->
-                </div>	<!-- BOTTOM FOOTER -->
+                    </div>
+                </div>
 
             </div>
-        </footer>	<!-- END FOOTER -->
+        </footer>
 
-    </div>	<!-- END PAGE CONTENT -->	
+    </div>
 
     <!-- EXTERNAL SCRIPTS -->	
     <script src="js/jquery-3.6.0.min.js"></script>
+    <script src="js/jquery.validate.min.js"></script>
     <script src="js/bootstrap.min.js"></script>	
     <script src="js/modernizr.custom.js"></script>
     <script src="js/jquery.easing.js"></script>
@@ -853,40 +567,7 @@
     <script src="js/owl.carousel.min.js"></script>
     <script src="js/jquery.magnific-popup.min.js"></script>
     <script src="js/wow.js"></script>
-
-    <!-- Custom Script -->		
     <script src="js/custom.js"></script>
-
-    <!-- HRKey Integration Script -->
-    <script>
-        // Base Mini Apps Initialization
-        window.addEventListener('DOMContentLoaded', function() {
-            // Initialize Base Mini Apps if available
-            if (typeof BaseMiniApps !== 'undefined') {
-                BaseMiniApps.init({
-                    appId: 'hrkey-dapp',
-                    network: 'base-mainnet'
-                });
-            }
-
-            // Button handlers
-            document.getElementById('get-started-btn').addEventListener('click', function(e) {
-                e.preventDefault();
-                // Redirect to auth system
-                window.location.href = 'auth.html';
-            });
-
-            document.getElementById('create-reference-btn').addEventListener('click', function(e) {
-                e.preventDefault();
-                window.location.href = 'auth.html';
-            });
-
-            document.getElementById('main-cta-btn').addEventListener('click', function(e) {
-                e.preventDefault();
-                window.location.href = 'auth.html';
-            });
-        });
-    </script>
 
 </body>
 </html>
