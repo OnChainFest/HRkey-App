@@ -1,188 +1,682 @@
-/* ==========================================================================
-   HRKEY - CUSTOM HEADER DEFINITIVO V2
-   ========================================================================== */
-
-/* LOGO GRANDE - Esquina superior izquierda */
-body #header .desktoplogo a img,
-body #header .desktoplogo img,
-body .header .desktoplogo a.logo-black img,
-body .header .desktoplogo a.logo-white img,
-.desktoplogo a img,
-.desktoplogo img {
-    height: 110px !important;
-    width: auto !important;
-    max-height: 110px !important;
-    min-height: 110px !important;
+/* ===== Header siempre transparente: logo izq, menú centrado negro, CTA der ===== */
+.hrkey-header {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  background: transparent !important;
+  box-shadow: none;
+  z-index: 1000;
+}
+.hrkey-header-inner {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr; /* logo | nav | cta */
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+}
+.hrkey-logo img {
+  height: 36px;
+  width: auto;
+  display: block;
+  justify-self: start;
+}
+.hrkey-nav { justify-self: center; }
+.hrkey-nav .wsmenu-list {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin: 0; padding: 0;
+}
+.hrkey-nav .wsmenu-list > li > a {
+  color: #111111 !important;     /* negro */
+  font-weight: 600;
+  letter-spacing: .2px;
+  padding: 8px 0 !important;
+  line-height: 1;
+}
+.hrkey-nav .wsmenu-list > li > a:hover { color: #00C4C7 !important; }
+.hrkey-cta { justify-self: end; }
+.hrkey-cta .btn-hrkey {
+  padding: 10px 18px;
+  border-radius: 9999px;
+  background: #00C4C7;
+  color: #fff !important;
+  font-weight: 700;
+  box-shadow: 0 8px 16px rgba(0,196,199,.25);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.hrkey-cta .btn-hrkey:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(0,196,199,.32);
 }
 
-/* Pantallas XL - logo aún más grande */
-@media (min-width: 1400px) {
-    body #header .desktoplogo a img,
-    body #header .desktoplogo img {
-        height: 120px !important;
-        max-height: 120px !important;
-        min-height: 120px !important;
-    }
-}
+/* ===== Hero con SVG de fondo ===== */
+.hero-section.hero-has-bg {
+  position: relative;
+  min-height: 88vh;
+  padding: 140px 0 120px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
 
-/* Header fondo blanco */
-body #header.header,
-body .header-wrapper,
-body .wsmainfull.menu {
-    background-color: #ffffff !important;
+  background-image: url("../images/HRHERO.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
-
-body .wsmainfull {
-    padding: 15px 40px !important;
-    min-height: 110px !important;
+.hero-section.hero-has-bg::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,.45) 0%,
+    rgba(0,0,0,.25) 35%,
+    rgba(0,0,0,.45) 100%
+  );
+  z-index: 0;
 }
+#HRKEY-HERO .container { position: relative; z-index: 1; }
 
-/* CONTENEDOR PRINCIPAL - Layout centrado */
-body .wsmainfull .wsmainwp {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    width: 100% !important;
-    position: relative !important;
+/* Tipografía/colores hero */
+.hero-title {
+  color: #ffffff;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 14px;
+  text-shadow: 0 3px 25px rgba(0,0,0,.5);
 }
-
-/* LOGO - Posición izquierda fija */
-body .desktoplogo {
-    position: absolute !important;
-    left: 0 !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    margin: 0 !important;
-    z-index: 10 !important;
+.text-teal { color: #00C4C7; }
+.btn-hrkey {
+  display: inline-block;
+  padding: 12px 22px;
+  border-radius: 9999px;
+  background: #00C4C7;
+  color: #fff !important;
+  font-weight: 700;
+  transition: transform .12s ease, box-shadow .12s ease;
 }
+.btn-hrkey:hover { transform: translateY(-1px); box-shadow: 0 10px 18px rgba(0,196,199,.25); }
 
-body .desktoplogo a {
-    display: inline-block !important;
+/* Emojis features */
+.emoji-xxl { font-size: 60px; color: #00C4C7; margin-bottom: 20px; }
+
+/* ===== Pricing ===== */
+.pricing-section { padding: 80px 0; }
+.pricing-card {
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.05);
 }
-
-body .desktoplogo a img {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+.pricing-card .card-body { padding: 28px; }
+.plan-badge {
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  font-weight: 700;
+  color: #00C4C7;
+  margin-bottom: 8px;
 }
-
-/* Ocultar logo duplicado */
-body .desktoplogo + .desktoplogo {
-    display: none !important;
+.price-title {
+  font-size: 44px;
+  font-weight: 800;
+  margin: 0;
 }
+.price-small { font-size: 18px; font-weight: 600; color: #666; }
+.price-sub { color: #667085; margin-bottom: 18px; }
 
-/* MENÚ - PERFECTAMENTE CENTRADO */
-body nav.wsmenu {
-    flex: 1 !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    margin: 0 !important;
+.price-list { list-style: none; padding: 0; margin: 0 0 22px 0; }
+.price-list li {
+  padding-left: 24px;
+  position: relative;
+  margin: 10px 0;
 }
-
-body .wsmenu-list {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 10px !important;
-    list-style: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
+.price-list li::before {
+  content: "✓";
+  position: absolute; left: 0; top: 0;
+  color: #00C4C7; font-weight: 900;
 }
+.price-list .muted { color: #98A2B3; }
+.price-list .muted::before { content: "—"; color: #98A2B3; }
 
-/* Items del menú - solo los 3 primeros */
-body .wsmenu-list > li {
-    display: inline-flex !important;
-    align-items: center !important;
-    margin: 0 !important;
+/* Featured plan */
+.pricing-card.featured {
+  border: 2px solid #00C4C7;
+  box-shadow: 0 16px 32px rgba(0,196,199,.15);
 }
-
-body .wsmenu-list > li > a {
-    padding: 12px 22px !important;
-    line-height: 1.4 !important;
-    white-space: nowrap !important;
-    color: #2c3e50 !important;
-    font-size: 17px !important;
-    font-weight: 500 !important;
-}
-
-body .wsmenu-list > li > a:hover {
-    color: #00C4C7 !important;
-}
-
-/* BOTÓN GET STARTED - Esquina derecha */
-body .wsmenu-list > li:last-child {
-    position: absolute !important;
-    right: 0 !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-}
-
-body .wsmenu-list > li:last-child > a.btn-hrkey {
-    margin: 0 !important;
-    padding: 14px 32px !important;
-    font-size: 16px !important;
-}
-
-/* Logo Mobile */
-.wsmobileheader .smllogo img {
-    height: 55px !important;
-    width: auto !important;
-}
-
-/* Ocultar header móvil en desktop */
-@media (min-width: 992px) {
-    .wsmobileheader { 
-        display: none !important; 
-    }
+.ribbon {
+  position: absolute; top: 16px; right: 16px;
+  background: #00C4C7; color: #fff;
+  padding: 6px 10px; border-radius: 9999px;
+  font-size: 12px; font-weight: 800; letter-spacing: .3px;
 }
 
 /* Responsive */
-@media (max-width: 1200px) {
-    body #header .desktoplogo a img,
-    body #header .desktoplogo img {
-        height: 75px !important;
-        max-height: 75px !important;
-    }
-    
-    body .wsmenu-list > li > a {
-        padding: 10px 16px !important;
-        font-size: 16px !important;
-    }
+@media (max-width: 991.98px) {
+  .hrkey-header-inner { padding: 12px 16px; }
+  .hero-section.hero-has-bg { padding: 120px 0 90px; min-height: 75vh; }
+}
+/* PEGA ESTE BLOQUE AL FINAL DE css/custom-hrkey.css */
+
+/* Header overlay fijo */
+.hrkey-header{
+  position:absolute; top:0; left:0; right:0; z-index:1000;
+  background:transparent !important;
+}
+.header-bar{
+  position:relative;
+  height:88px;                     /* altura del header */
+  padding:0 32px;                  /* espacio lateral */
+  display:block;
 }
 
-@media (max-width: 991px) {
-    body .wsmainfull {
-        padding: 15px 20px !important;
-        min-height: 80px !important;
-    }
-    
-    body #header .desktoplogo a img {
-        height: 60px !important;
-        max-height: 60px !important;
-    }
+/* LOGO grande, proporcional al CTA */
+.hrkey-logo{ position:absolute; left:32px; top:50%; transform:translateY(-50%); }
+.hrkey-logo img{ height:56px; width:auto; display:block; }  /* ↑ ajusta si lo quieres aún más grande */
+
+/* MENÚ centrado perfectamente y bien desplegado */
+.hrkey-nav{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); }
+.hrkey-menu{
+  display:flex; align-items:center; justify-content:center;
+  gap:80px;                        /* separación amplia entre items */
+  margin:0; padding:0; list-style:none;
+}
+.hrkey-menu a{
+  color:#111 !important;
+  font-weight:800;
+  letter-spacing:.2px;
+  text-decoration:none;
+  padding:8px 0;
+}
+.hrkey-menu a:hover{ color:#00C4C7 !important; }
+
+/* CTA anclado a esquina superior derecha, alineado verticalmente */
+.hrkey-cta{
+  position:absolute; right:32px; top:50%;
+  transform:translateY(-50%);
+  padding:11px 22px; border-radius:9999px;
+  background:#00C4C7; color:#fff !important; font-weight:800;
+  box-shadow:0 10px 22px rgba(0,196,199,.25);
+  transition:transform .12s, box-shadow .12s;
+}
+.hrkey-cta:hover{ transform:translateY(-50%) translateY(-1px); box-shadow:0 14px 28px rgba(0,196,199,.32); }
+
+/* Asegura que el hero no quede tapado por el header */
+.hero-section.hero-has-bg{ padding-top:140px; }
+
+/* Responsive */
+@media (max-width:991.98px){
+  .header-bar{ height:72px; padding:0 16px; }
+  .hrkey-logo{ left:16px; }
+  .hrkey-logo img{ height:40px; }
+  .hrkey-nav{ position:static; transform:none; margin-top:8px; }
+  .hrkey-menu{ gap:28px; flex-wrap:wrap; }
+  .hrkey-cta{ right:16px; }
+}
+<!-- PEGA ESTE CSS AL FINAL DE css/custom-hrkey.css -->
+<style>
+.hrkey-header{
+  position:absolute; top:0; left:0; right:0; z-index:1000; background:transparent!important;
+}
+.header-bar{ position:relative; height:104px; padding:0 32px; display:block; }
+
+/* LOGO (doble tamaño respecto a 56px) */
+.hrkey-logo{ position:absolute; left:32px; top:50%; transform:translateY(-50%); }
+.hrkey-logo img{ height:112px; width:auto; display:block; }
+
+/* MENÚ centrado absoluto */
+.hrkey-nav{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); }
+.hrkey-menu{ display:flex; gap:84px; list-style:none; margin:0; padding:0; }
+
+/* CONTRASTE DINÁMICO: por defecto oscuro; en hero -> claro */
+.hrkey-menu a{ color:#111 !important; font-weight:800; letter-spacing:.2px; text-decoration:none; padding:8px 0; transition:color .15s ease; }
+.header-on-hero .hrkey-menu a{ color:#ffffff !important; text-shadow:0 2px 14px rgba(0,0,0,.45); }
+.hrkey-menu a:hover{ color:#00C4C7 !important; }
+
+/* CTA anclado esquina sup. derecha */
+.hrkey-cta{
+  position:absolute; right:32px; top:50%; transform:translateY(-50%);
+  padding:12px 24px; border-radius:9999px; background:#00C4C7; color:#fff !important; font-weight:800;
+  box-shadow:0 12px 22px rgba(0,196,199,.25); transition:transform .12s, box-shadow .12s;
+}
+.hrkey-cta:hover{ transform:translateY(-50%) translateY(-1px); box-shadow:0 16px 28px rgba(0,196,199,.32); }
+
+/* Espacio para que el header no tape el hero */
+.hero-section.hero-has-bg{ padding-top:180px; }
+
+/* Responsive */
+@media (max-width: 1199.98px){
+  .hrkey-menu{ gap:56px; }
+  .hrkey-logo img{ height:90px; }
+  .header-bar{ height:92px; }
+}
+@media (max-width: 991.98px){
+  .header-bar{ height:76px; padding:0 16px; }
+  .hrkey-logo{ left:16px; }
+  .hrkey-logo img{ height:56px; }
+  .hrkey-nav{ position:static; transform:none; margin-top:8px; }
+  .hrkey-menu{ gap:28px; flex-wrap:wrap; justify-content:center; }
+  .hrkey-cta{ right:16px; }
+  .hero-section.hero-has-bg{ padding-top:140px; }
+}
+</style>
+
+/* PEGA AL FINAL DE css/custom-hrkey.css */
+
+/* Header overlay */
+.hrkey-header{ position:absolute; top:0; left:0; right:0; z-index:1000; background:transparent!important; }
+.header-bar{ position:relative; height:104px; padding:0 32px; display:block; }
+
+/* Logo (aún más grande) */
+.hrkey-logo{ position:absolute; left:32px; top:50%; transform:translateY(-50%); }
+.hrkey-logo img{ height:120px; width:auto; display:block; }  /* ajusta si quieres más */
+
+/* Menú centrado absoluto */
+.hrkey-nav{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); }
+.hrkey-menu{ display:flex; gap:84px; list-style:none; margin:0; padding:0; }
+
+/* Estado por defecto (secciones claras) = negro */
+.hrkey-menu a{
+  color:#111 !important; font-weight:800; letter-spacing:.2px;
+  text-decoration:none; padding:8px 0; transition:color .15s ease, text-shadow .15s ease;
 }
 
-/* Espaciado Hero */
-#HRKEY-HERO,
-body #HRKEY-HERO {
-    padding-top: 180px !important;
-    margin-top: 0 !important;
+/* Cuando el header está sobre el HERO oscuro -> blanco con contorno para máxima legibilidad */
+.hrkey-header.on-hero .hrkey-menu a{
+  color:#fff !important;
+  /* “doble trazo” con sombras para que se lea sobre cualquier fondo */
+  text-shadow:
+    0 1px 0 rgba(0,0,0,.85),  1px 0 0 rgba(0,0,0,.85),
+    0 -1px 0 rgba(0,0,0,.85), -1px 0 0 rgba(0,0,0,.85),
+    1px 1px 0 rgba(0,0,0,.85), -1px 1px 0 rgba(0,0,0,.85),
+    1px -1px 0 rgba(0,0,0,.85), -1px -1px 0 rgba(0,0,0,.85);
 }
 
-@media (max-width: 991px) {
-    #HRKEY-HERO,
-    body #HRKEY-HERO {
-        padding-top: 140px !important;
-    }
+.hrkey-menu a:hover{ color:#00C4C7 !important; }
+
+/* CTA anclado arriba derecha */
+.hrkey-cta{
+  position:absolute; right:32px; top:50%; transform:translateY(-50%);
+  padding:12px 24px; border-radius:9999px; background:#00C4C7; color:#fff !important; font-weight:800;
+  box-shadow:0 12px 22px rgba(0,196,199,.25); transition:transform .12s, box-shadow .12s;
+}
+.hrkey-cta:hover{ transform:translateY(-50%) translateY(-1px); box-shadow:0 16px 28px rgba(0,196,199,.32); }
+
+/* Espacio del hero bajo header */
+.hero-section.hero-has-bg{ padding-top:190px; }
+
+/* Responsive */
+@media (max-width:1199.98px){
+  .hrkey-logo img{ height:96px; }
+  .header-bar{ height:96px; }
+  .hrkey-menu{ gap:60px; }
+}
+@media (max-width:991.98px){
+  .header-bar{ height:76px; padding:0 16px; }
+  .hrkey-logo{ left:16px; }
+  .hrkey-logo img{ height:56px; }
+  .hrkey-nav{ position:static; transform:none; margin-top:8px; }
+  .hrkey-menu{ gap:28px; flex-wrap:wrap; justify-content:center; }
+  .hrkey-cta{ right:16px; }
+  .hero-section.hero-has-bg{ padding-top:150px; }
+}
+/* === Pega AL FINAL de css/custom-hrkey.css (sobrescribe reglas previas del header) === */
+
+/* LOGO aún más grande */
+.hrkey-logo img{
+  height:140px;   /* antes 120px */
+  width:auto;
+  display:block;
 }
 
+/* MENÚ SIEMPRE LEGIBLE sobre fondos oscuros y claros
+   - Texto blanco con trazo/contorno negro sutil
+   - Funciona sin JS ni cambios de clase */
+.hrkey-menu a{
+  color:#ffffff !important;
+  font-weight:800;
+  letter-spacing:.2px;
+  text-decoration:none;
+  padding:8px 0;
+  transition:transform .12s ease, text-shadow .12s ease;
+  /* contorno negro fino alrededor del texto */
+  -webkit-text-stroke: .6px rgba(0,0,0,.85);
+  text-shadow:
+    0 1px 0 rgba(0,0,0,.85),  1px 0 0 rgba(0,0,0,.85),
+    0 -1px 0 rgba(0,0,0,.85), -1px 0 0 rgba(0,0,0,.85);
+}
+
+/* Hover mantiene legibilidad y marca el teal */
+.hrkey-menu a:hover{
+  color:#00C4C7 !important;
+  -webkit-text-stroke: .6px rgba(0,0,0,.65);
+  text-shadow:
+    0 1px 0 rgba(0,0,0,.65),  1px 0 0 rgba(0,0,0,.65),
+    0 -1px 0 rgba(0,0,0,.65), -1px 0 0 rgba(0,0,0,.65);
+}
+
+/* CTA (sin cambios, solo para mantener posición fija arriba derecha) */
+.hrkey-cta{
+  position:absolute; right:32px; top:50%;
+  transform:translateY(-50%);
+  padding:12px 24px; border-radius:9999px;
+  background:#00C4C7; color:#fff !important; font-weight:800;
+  box-shadow:0 12px 22px rgba(0,196,199,.25);
+}
+.hrkey-cta:hover{ transform:translateY(-50%) translateY(-1px); box-shadow:0 16px 28px rgba(0,196,199,.32); }
+
+/* Espacio del hero bajo header para que no tape contenido */
+.hero-section.hero-has-bg{ padding-top:190px; }
+
+/* Responsive: ajusta tamaños para móviles */
+@media (max-width:1199.98px){
+  .hrkey-logo img{ height:110px; }
+}
+@media (max-width:991.98px){
+  .hrkey-logo img{ height:64px; }
+  .hero-section.hero-has-bg{ padding-top:150px; }
+}
+/* --- VIDEO SECTION STYLES --- */
+.hrkey-video-wrap{
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,.25);
+  background: #000;
+  aspect-ratio: 16/9;
+}
+.hrkey-video{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.hrkey-video-play{
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  background: radial-gradient(250px 250px at center, rgba(0,196,199,.25), rgba(0,0,0,.0));
+  border: 0; cursor: pointer;
+  transition: background .2s ease, opacity .2s ease;
+}
+.hrkey-video-play span{
+  display:inline-block;
+  font-size: 52px; line-height: 1;
+  padding: 18px 22px 18px 26px;
+  border-radius: 9999px;
+  background: #00C4C7; color: #fff;
+  box-shadow: 0 16px 36px rgba(0,196,199,.35);
+}
+.hrkey-video-play:hover{ background: radial-gradient(260px 260px at center, rgba(0,196,199,.35), rgba(0,0,0,.0)); }
+.hrkey-video-wrap.playing .hrkey-video-play{ opacity: 0; pointer-events: none; }
+/* Mantiene la proporción del video cover igual a la vista anterior */
+.video-preview img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(0,196,199,0.25);
+}
+/* Mantiene proporción 16:9 y limita el ancho máximo para que se vea más equilibrado */
+.video-preview img {
+  width: 80%;                /* antes era 100% */
+  max-width: 960px;          /* no pasa de este ancho en pantallas grandes */
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(0,196,199,0.25);
+  transition: transform 0.3s ease;
+}
+
+/* Efecto sutil de zoom al pasar el mouse (opcional y elegante) */
+.video-preview img:hover {
+  transform: scale(1.02);
+}
+/* === AJUSTE MINIMO (manteniendo tu CSS original) === */
+/* Portada del video: tamaño similar al de antes, centrado y 16:9 */
+.video-preview img {
+  width: 80%;
+  max-width: 960px;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(0,196,199,0.25);
+  transition: transform 0.3s ease;
+}
+.video-preview img:hover {
+  transform: scale(1.02);
+}
+
+@media (max-width: 991.98px) {
+  .video-preview img {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+/* === FIX: Sección de video muestra solo la mitad === */
+.video-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: visible;
+  padding: 40px 0; /* espacio arriba y abajo */
+}
+
+.video-preview img {
+  width: 100%;
+  max-width: 960px;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(0,196,199,0.25);
+  transition: transform 0.3s ease;
+}
+
+.video-preview img:hover {
+  transform: scale(1.02);
+}
+/* === HRKEY FOOTER === */
+.hrkey-footer {
+  background: #000;
+  color: #bbb;
+  text-align: center;
+  padding: 60px 20px 30px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.footer-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.footer-brand img {
+  height: 50px;
+  width: auto;
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+.footer-brand p {
+  margin: 0;
+  font-size: 14px;
+  color: #888;
+}
+
+.footer-links {
+  list-style: none;
+  display: flex;
+  gap: 32px;
+  padding: 0;
+  margin: 0;
+}
+.footer-links a {
+  color: #00C4C7;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.25s ease;
+}
+.footer-links a:hover {
+  color: #fff;
+}
+
+.footer-social {
+  display: flex;
+  gap: 22px;
+}
+.footer-social a svg {
+  transition: transform 0.25s ease, fill 0.25s ease;
+}
+.footer-social a:hover svg {
+  transform: scale(1.1);
+  fill: #fff;
+}
+
+.footer-bottom {
+  margin-top: 28px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding-top: 20px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-    #HRKEY-HERO,
-    body #HRKEY-HERO {
-        padding-top: 120px !important;
-    }
+  .footer-links {
+    flex-direction: column;
+    gap: 14px;
+  }
+}
+/* === AJUSTE: Quitar espacio blanco entre video y footer === */
+.video-preview {
+  margin-bottom: 0 !important; /* elimina espacio extra */
+  padding-bottom: 0 !important;
+}
+.hrkey-footer {
+  margin-top: 0 !important; /* pega el footer al video */
+  background: #000;
+  color: #bbb;
+  text-align: center;
+  padding: 60px 20px 30px;
+  border-top: none; /* elimina cualquier línea divisoria blanca */
+}
+
+/* === ACTUALIZACIÓN: Logo blanco === */
+.footer-brand img {
+  content: url("images/logo-white(1).png");
+  height: 56px;
+  width: auto;
+  margin-bottom: 8px;
+  opacity: 0.95;
+}
+.footer-brand p {
+  margin: 0;
+  font-size: 14px;
+  color: #888;
+}
+
+/* Links y redes mantienen mismo estilo */
+.footer-links {
+  list-style: none;
+  display: flex;
+  gap: 32px;
+  padding: 0;
+  margin: 0;
+  justify-content: center;
+}
+.footer-links a {
+  color: #00C4C7;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.25s ease;
+}
+.footer-links a:hover {
+  color: #fff;
+}
+
+.footer-social {
+  display: flex;
+  gap: 22px;
+  justify-content: center;
+}
+.footer-social a svg {
+  transition: transform 0.25s ease, fill 0.25s ease;
+}
+.footer-social a:hover svg {
+  transform: scale(1.1);
+  fill: #fff;
+}
+
+/* Footer bottom */
+.footer-bottom {
+  margin-top: 28px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding-top: 20px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .footer-links {
+    flex-direction: column;
+    gap: 14px;
+  }
+  .footer-brand img {
+    height: 48px;
+  }
+}
+/* --- ELIMINAR GAP ENTRE VIDEO Y FOOTER --- */
+#content-9{
+  background:#000 !important;   /* el fondo de toda la sección en negro */
+  margin-bottom:0 !important;
+  padding-bottom:0 !important;
+}
+#content-9 .container{
+  margin-bottom:0 !important;
+  padding-bottom:0 !important;
+}
+.video-preview{
+  margin:0 !important;
+  padding:40px 0 0 !important;  /* si querés menos aire arriba, baja a 24px */
+  display:flex; justify-content:center; align-items:center;
+  overflow:visible;
+}
+/* por si hubiera una línea divisoria */
+hr.divider, .divider{ display:none !important; }
+
+/* el footer se pega inmediatamente */
+.hrkey-footer{ margin-top:0 !important; }
+/* fallback (no ideal) si no podés tocar HTML */
+.footer-brand img{
+  content: url("images/logo-white(1).png") !important;
+}
+/* --- LOGO FOOTER COMO BACKGROUND --- */
+.footer-logo-bg {
+  width: 160px;
+  height: 56px;
+  display: block;
+  background: url("images/logo-white(1).png") center/contain no-repeat;
+  margin: 0 auto 8px auto;
+  opacity: 0.95;
+  transition: opacity 0.25s ease;
+}
+.footer-logo-bg:hover {
+  opacity: 1;
+}
+/* === LOGO BLANCO DEL FOOTER === */
+.footer-logo-bg {
+  width: 160px;
+  height: 56px;
+  display: block;
+  background-image: url("../images/logo-white(1).png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  margin: 0 auto 8px;
+  opacity: 0.95;
+  transition: opacity 0.25s ease;
+}
+.footer-logo-bg:hover {
+  opacity: 1;
 }
