@@ -13,11 +13,11 @@
   gap: 12px;
   padding: 16px 24px;
 }
-.hrkey-logo img {
-  height: 36px;
-  width: auto;
-  display: block;
-  justify-self: start;
+.hrkey-logo {
+  position: absolute;
+  left: 32px;
+  top: 54%;
+  transform: translateY(-50%);
 }
 .hrkey-nav { justify-self: center; }
 .hrkey-nav .wsmenu-list {
@@ -679,4 +679,194 @@ hr.divider, .divider{ display:none !important; }
 }
 .footer-logo-bg:hover {
   opacity: 1;
+}
+@keyframes slideInRight {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.title-animate {
+  animation: slideInRight 1s ease-out forwards;
+}
+
+.title-white {
+  color: #ffffff;   /* blanco */
+}
+
+.title-teal {
+  color: #00d2cc;  /* teal, ajusta al código exacto que usabas antes */
+}
+/* Contenedor del hero (ajusta el selector al tuyo) */
+.hero {
+  position: relative;
+  background: #bfbfbf; /* tu gris */
+  overflow: hidden;
+}
+
+/* La imagen/SVG del héroe */
+.hero__media {
+  display: block;
+  width: 100%;
+  height: auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* Capa de integración: degrade + leve noise */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  /* De gris a transparente y un toque teal radial para “pegarlo” */
+  background:
+    radial-gradient(60% 70% at 45% 50%, rgba(0,210,204,0.25) 0%, rgba(0,210,204,0.0) 60%),
+    linear-gradient(90deg, rgba(191,191,191,1) 0%, rgba(191,191,191,0.85) 18%, rgba(191,191,191,0) 36%);
+  mix-blend-mode: screen;   /* hace que el teal “ilumine” el gris */
+  opacity: .9;
+}
+
+/* (Opcional) Borde suave tipo viñeta para unificar */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(120% 120% at 30% 50%, rgba(0,0,0,0) 60%, rgba(0,0,0,.25) 100%);
+  mix-blend-mode: multiply;
+  opacity: .6;
+}
+
+/* Aplica al section que ya tenés */
+#HRKEY-HERO {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Capa de integración: degrade + toque teal */
+#HRKEY-HERO::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(60% 70% at 45% 50%, rgba(0,210,204,0.25) 0%, rgba(0,210,204,0) 60%),
+    linear-gradient(90deg, rgba(191,191,191,1) 0%, rgba(191,191,191,0.85) 18%, rgba(191,191,191,0) 36%);
+  mix-blend-mode: screen;
+  opacity: .9;
+}
+
+/* Viñeta suave para unificar bordes */
+#HRKEY-HERO::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(120% 120% at 30% 50%, rgba(0,0,0,0) 60%, rgba(0,0,0,.25) 100%);
+  mix-blend-mode: multiply;
+  opacity: .55;
+}
+
+/* Asegurá que el contenido quede por encima de las capas */
+#HRKEY-HERO .container {
+  position: relative;
+  z-index: 2;
+}
+/* SVG de chispas ocupando todo el héroe detrás del contenido */
+#HRKEY-HERO .hero-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;         /* debajo del contenido, encima del fondo */
+  pointer-events: none;
+  opacity: .9;        /* ajusta si querés más/menos presencia */
+}
+
+/* Pulso del núcleo */
+@keyframes pulseGlow {
+  0%   { transform: scale(1);   opacity: 0.9; }
+  50%  { transform: scale(1.25); opacity: 1;   }
+  100% { transform: scale(1);   opacity: 0.9; }
+}
+.star-core {
+  transform-origin: center;
+  animation: pulseGlow 1.8s ease-in-out infinite;
+}
+
+/* Chispas */
+@keyframes sparkle {
+  0%   { transform: scale(0.6); opacity: 0; }
+  20%  { transform: scale(1);   opacity: 1; }
+  100% { transform: scale(0.6); opacity: 0; }
+}
+.spark {
+  transform-origin: center;
+  animation: sparkle 1.6s ease-out infinite;
+  filter: drop-shadow(0 0 6px rgba(0,210,204,.9));
+}
+.spark:nth-of-type(1) { animation-delay: 0s; }
+.spark:nth-of-type(2) { animation-delay: .35s; }
+.spark:nth-of-type(3) { animation-delay: .7s; }
+
+/* Respeta “reducir movimiento” */
+@media (prefers-reduced-motion: reduce) {
+  .star-core, .spark { animation: none !important; }
+  #HRKEY-HERO::before, #HRKEY-HERO::after { opacity: .4; }
+}
+/* Pega al final de custom-hrkey.css */
+.hero-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, rgba(0,0,0,.55), rgba(0,0,0,.25));
+  z-index: 0;
+}
+.hero-section h1,
+.hero-section .hero-title,
+.hero-section .btn-hrkey {
+  position: relative;
+  z-index: 1;
+}
+/* --- HERO TITLE GRADIENT COLOR SPLIT --- */
+.hero-title {
+  background: linear-gradient(90deg, #111 0%, #111 45%, #fff 55%, #fff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+/* === HERO TITLE SPLIT COLOR === */
+.hero-title-split {
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.hero-title-split .part-left {
+  color: #111; /* negro para zona clara */
+  display: inline;
+}
+
+.hero-title-split .part-right {
+  color: #fff; /* blanco para zona oscura (SVG) */
+  display: inline;
+}
+
+.hero-title-split .text-teal {
+  color: #00C4C7; /* tu color teal */
+}
+
+@media (max-width: 768px) {
+  .hero-title-split .part-left,
+  .hero-title-split .part-right {
+    display: block;
+  }
 }
