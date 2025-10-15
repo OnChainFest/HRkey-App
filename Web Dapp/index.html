@@ -325,9 +325,7 @@
 </section>
 
 
-    <!-- CONTENT-9 -->
-    <!-- REEMPLAZA COMPLETO tu sección "How It Works" (id="content-9") POR ESTA -->
- <!-- 🔹 REEMPLAZA tu sección actual <section id="content-9">...</section> por este bloque -->
+<!-- CONTENT-9 - VIDEO SECTION -->
 <section id="content-9" class="content-9 bg-black pt-100 content-section division" style="background-color:#000;">
   <div class="container text-center">
 
@@ -335,44 +333,136 @@
     <h2 class="h2-xs text-white mb-4">See HRKey in Action</h2>
     <p class="p-lg text-light mb-5">Experience how verifiable professional references come to life on-chain</p>
 
-    <!-- PREVIEW ESTÁTICA CON EFECTO DE PULSO -->
-    <div class="video-preview" style="position:relative; display:inline-block;">
-      <img src="images/Video-Cover.png" alt="HRKey Demo Preview">
+    <!-- VIDEO CONTAINER -->
+    <div class="video-container" style="position:relative; display:inline-block; max-width:900px; width:100%;">
+      
+      <!-- COVER IMAGE (se oculta cuando se reproduce el video) -->
+      <img id="video-cover" src="images/Video-Cover.png" alt="HRKey Demo Preview" style="width:100%; border-radius:12px; cursor:pointer;">
 
-      <!-- BOTÓN PULSANTE (no enlaza a video por ahora) -->
-      <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);">
+      <!-- VIDEO REAL (oculto por defecto) -->
+      <video id="hrkey-video" 
+             style="width:100%; border-radius:12px; display:none;"
+             controls>
+        <source src="images/HRkey Video.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+
+      <!-- BOTÓN PLAY PULSANTE (se oculta cuando se reproduce) -->
+      <div id="play-button" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); cursor:pointer;">
         <div class="pulse-btn">
-          <span class="flaticon-play-button" style="font-size:40px; color:#00C4C7;"></span>
+          <span class="flaticon-play-button" style="font-size:60px; color:#00C4C7;"></span>
         </div>
       </div>
+
     </div>
 
   </div>
 </section>
 
-<!-- 🔹 AGREGA ESTE CSS AL FINAL DE css/custom-hrkey.css -->
+<!-- CSS PARA EL EFECTO PULSE -->
 <style>
 /* Fondo negro sobrio */
-.bg-black { background-color: #000 !important; }
+.bg-black { 
+  background-color: #000 !important; 
+  padding: 80px 0;
+}
+
+/* Container del video */
+.video-container {
+  box-shadow: 0 20px 60px rgba(0,196,199,0.3);
+  border-radius: 12px;
+}
 
 /* Efecto de brillo/pulso */
 .pulse-btn {
-  width: 100px;
-  height: 100px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
+  background: rgba(0,196,199,0.2);
+  backdrop-filter: blur(10px);
   border: 3px solid #00C4C7;
   display: flex;
   align-items: center;
   justify-content: center;
   animation: pulse 2s infinite;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
+
+.pulse-btn:hover {
+  background: rgba(0,196,199,0.4);
+  transform: scale(1.1);
+}
+
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(0,196,199,0.45); }
-  70% { box-shadow: 0 0 0 25px rgba(0,196,199,0); }
-  100% { box-shadow: 0 0 0 0 rgba(0,196,199,0); }
+  0% { 
+    box-shadow: 0 0 0 0 rgba(0,196,199,0.7);
+  }
+  70% { 
+    box-shadow: 0 0 0 30px rgba(0,196,199,0);
+  }
+  100% { 
+    box-shadow: 0 0 0 0 rgba(0,196,199,0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pulse-btn {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .pulse-btn .flaticon-play-button {
+    font-size: 40px !important;
+  }
 }
 </style>
+
+<!-- JAVASCRIPT PARA REPRODUCIR EL VIDEO -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const videoCover = document.getElementById('video-cover');
+  const playButton = document.getElementById('play-button');
+  const video = document.getElementById('hrkey-video');
+
+  if (!videoCover || !playButton || !video) {
+    console.log('⚠️ Video elements not found');
+    return;
+  }
+
+  // Función para iniciar el video
+  function playVideo() {
+    // Ocultar cover y botón
+    videoCover.style.display = 'none';
+    playButton.style.display = 'none';
+    
+    // Mostrar y reproducir video
+    video.style.display = 'block';
+    video.play();
+    
+    console.log('▶️ Video iniciado');
+  }
+
+  // Click en el botón play
+  playButton.addEventListener('click', playVideo);
+  
+  // Click en el cover también inicia el video
+  videoCover.addEventListener('click', playVideo);
+
+  // Cuando el video termina, volver a mostrar el cover
+  video.addEventListener('ended', function() {
+    video.style.display = 'none';
+    videoCover.style.display = 'block';
+    playButton.style.display = 'block';
+    video.currentTime = 0; // Resetear al inicio
+    
+    console.log('⏹️ Video terminado, mostrando cover de nuevo');
+  });
+
+  console.log('🎬 Video section initialized');
+});
+</script>
 
 
 <footer class="hrkey-footer">
