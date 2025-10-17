@@ -1,3 +1,6 @@
+// DEPRECATED: This script relied on the Biconomy API. Use
+// backend/monitor-paymaster-onchain.js for on-chain monitoring instead.
+
 import dotenv from 'dotenv';
 import pkg from 'pg';
 
