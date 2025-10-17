@@ -1,8 +1,11 @@
-require('dotenv').config({ path: '../.env' });
+import dotenv from 'dotenv';
+import express from 'express';
+import cors from 'cors';
+import pkg from 'pg';
 
-const express = require('express');
-const cors = require('cors');
-const { Pool } = require('pg'); // PostgreSQL
+dotenv.config({ path: '../.env' });
+
+const { Pool } = pkg; // PostgreSQL
 const app = express();
 
 app.use(cors());

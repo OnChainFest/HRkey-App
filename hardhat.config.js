@@ -1,9 +1,9 @@
-require("@nomicfoundation/hardhat-chai-matchers");
-require("@nomicfoundation/hardhat-verify");
-require("dotenv/config");
+import "@nomicfoundation/hardhat-chai-matchers";
+import "@nomicfoundation/hardhat-verify";
+import "dotenv/config";
 
-/** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
+/** @type import("hardhat/config").HardhatUserConfig */
+const config = {
   solidity: "0.8.24",
   networks: {
     baseSepolia: {
@@ -25,3 +25,5 @@ module.exports = {
     ],
   },
 };
+
+export default config;
