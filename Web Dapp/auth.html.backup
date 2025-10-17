@@ -89,6 +89,7 @@
             text-decoration: none;
             transition: all 0.3s ease;
             position: relative;
+            cursor: pointer;
         }
         
         .auth-method:hover {
@@ -196,14 +197,13 @@
             border: 1px solid #fecaca;
             color: #dc2626;
         }
+        
+        .wallet-status.loading {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
+        }
     </style>
-
-    <!-- WEB3 LIBRARIES -->
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
-    <script src="https://cdn.base.org/miniapps-sdk/v1/base-miniapps.js"></script>
-    <!-- BASE SMART WALLET SDK -->
-    <script src="https://unpkg.com/@coinbase/onchainkit@latest/dist/index.js"></script>
-    <script src="https://unpkg.com/@coinbase/wallet-sdk@latest/dist/index.js"></script>
 </head>
 
 <body>
@@ -235,11 +235,6 @@
                 <a href="#" class="auth-method" id="coinbase-btn">
                     <img src="https://avatars.githubusercontent.com/u/18060234?s=200&v=4" alt="Coinbase Wallet" class="auth-method-icon">
                     Connect with Coinbase Wallet
-                </a>
-
-                <a href="#" class="auth-method" id="walletconnect-btn">
-                    <img src="images/walletconnect-logo.png" alt="WalletConnect" class="auth-method-icon">
-                    Connect with WalletConnect
                 </a>
             </div>
 
@@ -277,224 +272,179 @@
     <!-- SCRIPTS -->
     <script src="js/jquery-3.6.0.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- AUTHENTICATION SCRIPT -->
     <script>
+        console.log('📜 HRKey Auth script loading...');
+
+        // Configuración de Supabase
+        const SUPABASE_URL = 'https://wrervcydgdrlcndtjboy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXJ2Y3lkZ2RybGNuZHRqYm95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NzYxNTYsImV4cCI6MjA3MzU1MjE1Nn0.63M53sZW4LEYMOaxScvtLhQr_6VUj7rOaaGtlR745IM';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         class HRKeyAuth {
             constructor() {
-                this.smartWallet = null;
-                this.walletSDK = null;
+                console.log('🚀 HRKeyAuth initialized');
+                this.BACKEND_URL = 'http://localhost:3001';
                 this.init();
             }
 
             async init() {
-                // Initialize Coinbase Wallet SDK for Smart Wallets
-                this.walletSDK = new CoinbaseWalletSDK({
-                    appName: 'HRKey',
-                    appLogoUrl: 'https://hrkey.com/logo.png',
-                    darkMode: false
-                });
-
-                // Initialize Base Mini Apps
-                if (typeof BaseMiniApps !== 'undefined') {
-                    await BaseMiniApps.init({
-                        appId: 'hrkey-dapp',
-                        network: 'base-mainnet'
-                    });
-                }
-
+                console.log('⚙️ Setting up event listeners...');
+                await this.waitForMetaMask();
                 this.setupEventListeners();
                 this.checkExistingAuth();
+                console.log('✅ HRKeyAuth ready!');
+            }
+
+            async waitForMetaMask() {
+                console.log('⏳ Waiting for wallet providers to initialize...');
+                for (let i = 0; i < 10; i++) {
+                    if (typeof window.ethereum !== 'undefined') {
+                        console.log('✅ Wallet provider detected!');
+                        return;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                console.log('⚠️ No wallet provider detected after waiting');
             }
 
             setupEventListeners() {
                 // Web3 Wallet Connections
-                document.getElementById('metamask-btn').addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.connectMetaMask();
-                });
+                const metamaskBtn = document.getElementById('metamask-btn');
+                if (metamaskBtn) {
+                    metamaskBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        console.log('🦊 MetaMask button clicked');
+                        this.connectMetaMask();
+                    });
+                }
 
-                document.getElementById('coinbase-btn').addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.connectCoinbaseWallet();
-                });
-
-                document.getElementById('walletconnect-btn').addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.connectWalletConnect();
-                });
+                const coinbaseBtn = document.getElementById('coinbase-btn');
+                if (coinbaseBtn) {
+                    coinbaseBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        console.log('💙 Coinbase Wallet button clicked');
+                        this.connectCoinbaseWallet();
+                    });
+                }
 
                 // Social Logins
-                document.getElementById('google-btn').addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.socialLoginWithSmartWallet('google');
-                });
-
-                document.getElementById('linkedin-btn').addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.socialLoginWithSmartWallet('linkedin');
-                });
-
-                document.getElementById('github-btn').addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.socialLoginWithSmartWallet('github');
-                });
-            }
-
-            async createSmartWallet(authProvider, socialData = null) {
-                try {
-                    this.showWalletStatus('Creating your secure wallet...', 'success');
-
-                    // Create smart wallet instance
-                    const ethereum = this.walletSDK.makeWeb3Provider();
-                    
-                    // Request accounts (this triggers wallet creation)
-                    const accounts = await ethereum.request({
-                        method: 'eth_requestAccounts'
+                const googleBtn = document.getElementById('google-btn');
+                if (googleBtn) {
+                    googleBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        console.log('🔍 Google button clicked');
+                        this.socialLogin('google');
                     });
-
-                    const walletAddress = accounts[0];
-                    
-                    // Store wallet info with social auth data
-                    const walletData = {
-                        address: walletAddress,
-                        authProvider: authProvider,
-                        socialData: socialData,
-                        isSmartWallet: true,
-                        createdAt: Date.now()
-                    };
-
-                    localStorage.setItem('hrkey_wallet', JSON.stringify(walletData));
-                    
-                    this.showWalletStatus(`Wallet created: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`, 'success');
-                    
-                    return walletData;
-
-                } catch (error) {
-                    console.error('Smart wallet creation error:', error);
-                    this.showWalletStatus('Failed to create wallet. Please try again.', 'error');
-                    throw error;
                 }
-            }
 
-            async socialLoginWithSmartWallet(provider) {
-                try {
-                    this.showWalletStatus(`Connecting with ${provider.charAt(0).toUpperCase() + provider.slice(1)}...`, 'success');
-
-                    // Simulate social login flow
-                    const socialData = await this.performSocialLogin(provider);
-                    
-                    // Create smart wallet after successful social login
-                    const walletData = await this.createSmartWallet(provider, socialData);
-                    
-                    // Initialize user profile in backend
-                    await this.initializeUserProfile(walletData);
-                    
-                    // Redirect to app
-                    setTimeout(() => {
-                        this.redirectToApp(walletData);
-                    }, 2000);
-
-                } catch (error) {
-                    console.error('Social login with smart wallet error:', error);
-                    this.showWalletStatus('Authentication failed. Please try again.', 'error');
-                }
-            }
-
-            async performSocialLogin(provider) {
-                // Simulate social login
-                return new Promise((resolve) => {
-                    setTimeout(() => {
-                        resolve({
-                            email: `user@${provider}.com`,
-                            name: `User from ${provider}`,
-                            verified: true
-                        });
-                    }, 1500);
-                });
-            }
-
-            async initializeUserProfile(walletData) {
-                try {
-                    // Call your backend API to initialize user profile
-                    const response = await fetch('/api/user/initialize', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            walletAddress: walletData.address,
-                            authProvider: walletData.authProvider,
-                            socialData: walletData.socialData,
-                            timestamp: walletData.createdAt
-                        })
+                const linkedinBtn = document.getElementById('linkedin-btn');
+                if (linkedinBtn) {
+                    linkedinBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        console.log('💼 LinkedIn button clicked');
+                        this.socialLogin('linkedin');
                     });
-
-                    if (!response.ok) {
-                        throw new Error('Failed to initialize user profile');
-                    }
-
-                    const userData = await response.json();
-                    console.log('User profile initialized:', userData);
-
-                } catch (error) {
-                    console.error('Profile initialization error:', error);
-                    // Continue anyway - profile can be completed later
                 }
+
+                const githubBtn = document.getElementById('github-btn');
+                if (githubBtn) {
+                    githubBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        console.log('🐙 GitHub button clicked');
+                        this.socialLogin('github');
+                    });
+                }
+
+                console.log('✅ All event listeners attached');
             }
 
             async connectMetaMask() {
                 try {
+                    console.log('🔍 Checking for MetaMask...');
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
                     if (typeof window.ethereum === 'undefined') {
-                        this.showWalletStatus('MetaMask not detected. Please install MetaMask extension.', 'error');
-                        window.open('https://metamask.io/download/', '_blank');
+                        console.error('❌ MetaMask not found');
+                        this.showWalletStatus('MetaMask not detected. Please install it.', 'error');
+                        if (confirm('MetaMask not detected. Would you like to install it?')) {
+                            window.open('https://metamask.io/download/', '_blank');
+                        }
                         return;
                     }
 
-                    this.showWalletStatus('Connecting to MetaMask...', 'success');
+                    console.log('✅ MetaMask detected!');
+                    this.showWalletStatus('Connecting to MetaMask...', 'loading');
 
                     const accounts = await window.ethereum.request({
                         method: 'eth_requestAccounts'
                     });
 
-                    // Switch to Base network
                     await this.switchToBaseNetwork();
-
                     const address = accounts[0];
+                    console.log('💰 Connected wallet:', address);
                     
-                    const walletData = {
+                    // Usuario conectó wallet existente - NO crear nueva
+                    await this.handleAuthSuccess({
                         address: address,
-                        authProvider: 'metamask',
-                        isSmartWallet: false,
-                        createdAt: Date.now()
-                    };
-
-                    localStorage.setItem('hrkey_wallet', JSON.stringify(walletData));
-                    
-                    this.showWalletStatus(`Connected: ${address.slice(0, 6)}...${address.slice(-4)}`, 'success');
-                    
-                    // Initialize user profile
-                    await this.initializeUserProfile(walletData);
-                    
-                    // Redirect to app after successful connection
-                    setTimeout(() => {
-                        this.redirectToApp(walletData);
-                    }, 2000);
+                        authProvider: 'metamask'
+                    }, 'wallet');
 
                 } catch (error) {
-                    console.error('MetaMask connection error:', error);
-                    this.showWalletStatus('Connection failed. Please try again.', 'error');
+                    console.error('❌ MetaMask connection error:', error);
+                    this.showWalletStatus(`Connection failed: ${error.message}`, 'error');
+                }
+            }
+
+            async connectCoinbaseWallet() {
+                try {
+                    console.log('💙 Coinbase Wallet clicked');
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                    if (typeof window.ethereum === 'undefined') {
+                        console.error('❌ No wallet detected');
+                        this.showWalletStatus('No wallet detected. Please install Coinbase Wallet.', 'error');
+                        if (confirm('Coinbase Wallet not detected. Would you like to install it?')) {
+                            window.open('https://www.coinbase.com/wallet/downloads', '_blank');
+                        }
+                        return;
+                    }
+
+                    const isCoinbaseWallet = window.ethereum.isCoinbaseWallet;
+                    this.showWalletStatus('Connecting to Coinbase Wallet...', 'loading');
+
+                    const accounts = await window.ethereum.request({
+                        method: 'eth_requestAccounts'
+                    });
+
+                    await this.switchToBaseNetwork();
+                    const address = accounts[0];
+                    console.log('💰 Connected wallet:', address);
+                    
+                    // Usuario conectó wallet existente - NO crear nueva
+                    await this.handleAuthSuccess({
+                        address: address,
+                        authProvider: isCoinbaseWallet ? 'coinbase' : 'wallet'
+                    }, 'wallet');
+
+                } catch (error) {
+                    console.error('❌ Coinbase Wallet connection error:', error);
+                    this.showWalletStatus(`Connection failed: ${error.message}`, 'error');
                 }
             }
 
             async switchToBaseNetwork() {
                 try {
+                    console.log('🌐 Switching to Base network...');
                     await window.ethereum.request({
                         method: 'wallet_switchEthereumChain',
-                        params: [{ chainId: '0x2105' }], // Base Mainnet
+                        params: [{ chainId: '0x2105' }],
                     });
+                    console.log('✅ Switched to Base network');
                 } catch (switchError) {
-                    // Network not added, try to add it
                     if (switchError.code === 4902) {
                         try {
                             await window.ethereum.request({
@@ -511,7 +461,9 @@
                                     blockExplorerUrls: ['https://basescan.org'],
                                 }],
                             });
+                            console.log('✅ Base network added successfully');
                         } catch (addError) {
+                            console.error('❌ Failed to add Base network:', addError);
                             throw addError;
                         }
                     } else {
@@ -520,76 +472,173 @@
                 }
             }
 
-            async connectCoinbaseWallet() {
+            async socialLogin(provider) {
                 try {
-                    this.showWalletStatus('Connecting to Coinbase Wallet...', 'success');
-                    
-                    const ethereum = this.walletSDK.makeWeb3Provider();
-                    const accounts = await ethereum.request({
-                        method: 'eth_requestAccounts'
+                    console.log(`🔐 Starting ${provider} social login...`);
+                    this.showWalletStatus(`Connecting with ${provider.charAt(0).toUpperCase() + provider.slice(1)}...`, 'loading');
+
+                    // Login con Supabase OAuth
+                    const { data, error } = await supabase.auth.signInWithOAuth({
+                        provider: provider,
+                        options: {
+                            redirectTo: window.location.origin + '/auth.html'
+                        }
                     });
 
-                    const address = accounts[0];
-                    
-                    const walletData = {
-                        address: address,
-                        authProvider: 'coinbase',
-                        isSmartWallet: true,
-                        createdAt: Date.now()
-                    };
+                    if (error) throw error;
 
-                    localStorage.setItem('hrkey_wallet', JSON.stringify(walletData));
-                    
-                    this.showWalletStatus(`Connected: ${address.slice(0, 6)}...${address.slice(-4)}`, 'success');
-                    
-                    await this.initializeUserProfile(walletData);
-                    
-                    setTimeout(() => {
-                        this.redirectToApp(walletData);
-                    }, 2000);
+                    // El redirect se maneja automáticamente por Supabase
+                    // Cuando regrese, checkExistingAuth() manejará el resto
 
                 } catch (error) {
-                    console.error('Coinbase Wallet connection error:', error);
-                    this.showWalletStatus('Connection failed. Please try again.', 'error');
+                    console.error(`❌ ${provider} login error:`, error);
+                    this.showWalletStatus('Authentication failed. Please try again.', 'error');
                 }
             }
 
-            async connectWalletConnect() {
-                this.showWalletStatus('WalletConnect integration coming soon...', 'success');
-                // TODO: Implement WalletConnect
+            /**
+             * CRÍTICO: Maneja el éxito de autenticación
+             * authType: 'wallet' = MetaMask/Coinbase (ya tiene wallet)
+             * authType: 'social' = Google/LinkedIn/GitHub (NECESITA crear wallet)
+             */
+            async handleAuthSuccess(authData, authType) {
+                console.log(`✅ Auth successful via ${authType}`, authData);
+                
+                let walletAddress;
+                let userId;
+                
+                if (authType === 'wallet') {
+                    // Usuario conectó wallet existente
+                    walletAddress = authData.address;
+                    console.log('🔗 Using existing wallet:', walletAddress);
+                    
+                    // Guardar en localStorage
+                    const userData = {
+                        address: walletAddress,
+                        authProvider: authData.authProvider,
+                        authType: 'wallet',
+                        hasCustomWallet: false, // Wallet externa
+                        createdAt: Date.now()
+                    };
+                    
+                    localStorage.setItem('hrkey_wallet', JSON.stringify(userData));
+                    this.showWalletStatus(`✅ Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`, 'success');
+                    
+                } else if (authType === 'social') {
+                    // Usuario usó social login - CREAR WALLET CUSTODIAL
+                    console.log('🔧 Creating custodial wallet for social login user...');
+                    this.showWalletStatus('🔐 Creating your secure wallet...', 'loading');
+                    
+                    userId = authData.userId;
+                    const email = authData.email;
+                    
+                    try {
+                        // Llamar al backend para crear wallet
+                        console.log('📡 Calling wallet creation API...');
+                        const response = await fetch(`${this.BACKEND_URL}/api/wallet/create`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                userId: userId,
+                                email: email
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || 'Wallet creation failed');
+                        }
+                        
+                        const result = await response.json();
+                        walletAddress = result.wallet.address;
+                        
+                        console.log('✅ Custodial wallet created:', walletAddress);
+                        this.showWalletStatus(`✅ Wallet created: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`, 'success');
+                        
+                        // Guardar en localStorage
+                        const userData = {
+                            address: walletAddress,
+                            authProvider: authData.authProvider,
+                            authType: 'social',
+                            hasCustomWallet: true, // Wallet custodial creada por nosotros
+                            userId: userId,
+                            email: email,
+                            name: authData.name,
+                            createdAt: Date.now()
+                        };
+                        
+                        localStorage.setItem('hrkey_wallet', JSON.stringify(userData));
+                        
+                    } catch (error) {
+                        console.error('❌ Error creating wallet:', error);
+                        this.showWalletStatus('Failed to create wallet. Please try again.', 'error');
+                        return;
+                    }
+                }
+                
+                // Redirigir al dashboard
+                console.log('🔄 Redirecting to dashboard in 2 seconds...');
+                setTimeout(() => {
+                    window.location.href = 'app.html';
+                }, 2000);
             }
 
-            showWalletStatus(message, type) {
-                const statusDiv = document.getElementById('wallet-status');
-                statusDiv.textContent = message;
-                statusDiv.className = `wallet-status ${type}`;
-                statusDiv.style.display = 'block';
-            }
-
-            checkExistingAuth() {
+            async checkExistingAuth() {
+                // Verificar si hay sesión activa de Supabase (social login)
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (session) {
+                    console.log('📝 Found active Supabase session:', session.user);
+                    
+                    // Verificar si ya tiene wallet
+                    const existingWallet = localStorage.getItem('hrkey_wallet');
+                    
+                    if (!existingWallet) {
+                        // Tiene sesión pero no wallet - crear wallet
+                        console.log('⚠️ User has session but no wallet - creating...');
+                        await this.handleAuthSuccess({
+                            userId: session.user.id,
+                            email: session.user.email,
+                            name: session.user.user_metadata?.name || session.user.email,
+                            authProvider: session.user.app_metadata.provider
+                        }, 'social');
+                    } else {
+                        console.log('✅ User already has wallet');
+                        const walletData = JSON.parse(existingWallet);
+                        this.showWalletStatus(`Connected: ${walletData.address.slice(0, 6)}...${walletData.address.slice(-4)}`, 'success');
+                    }
+                }
+                
+                // Verificar wallet conectada previamente
                 const existingWallet = localStorage.getItem('hrkey_wallet');
                 if (existingWallet) {
                     const walletData = JSON.parse(existingWallet);
-                    this.showWalletStatus(`Previously connected via ${walletData.authProvider}: ${walletData.address.slice(0, 6)}...${walletData.address.slice(-4)}`, 'success');
+                    console.log('📝 Found existing wallet:', walletData);
+                    this.showWalletStatus(`Previously connected: ${walletData.address.slice(0, 6)}...${walletData.address.slice(-4)}`, 'success');
                 }
             }
 
-            redirectToApp(walletData) {
-                // Store complete auth data
-                localStorage.setItem('hrkey_auth', JSON.stringify({
-                    ...walletData,
-                    lastLogin: Date.now()
-                }));
-
-                // Redirect to main app
-                window.location.href = 'app.html';
+            showWalletStatus(message, type) {
+                console.log(`📢 Status: [${type}] ${message}`);
+                const statusDiv = document.getElementById('wallet-status');
+                if (statusDiv) {
+                    statusDiv.textContent = message;
+                    statusDiv.className = `wallet-status ${type}`;
+                    statusDiv.style.display = 'block';
+                }
             }
         }
 
-        // Initialize authentication when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            new HRKeyAuth();
-        });
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('🎬 DOM loaded, initializing HRKeyAuth...');
+                window.hrKeyAuth = new HRKeyAuth();
+            });
+        } else {
+            console.log('🎬 DOM already loaded, initializing HRKeyAuth...');
+            window.hrKeyAuth = new HRKeyAuth();
+        }
     </script>
 
 </body>

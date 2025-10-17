@@ -1,0 +1,505 @@
+// Esto lo hará pricing-selection.html
+const userData = {
+  address: "0x...",
+  plan: "free", // o "pro"
+  referencesLimit: 1,
+  features: {
+    canUseBlockchain: false,
+    // ... etc
+  }
+};
+
+localStorage.setItem('hrkey_user_plan', JSON.stringify(userData));
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="author" content="HRKey"/>	
+    <meta name="description" content="Upgrade to HRKey Pro - Unlimited References"/>
+    <meta name="keywords" content="HRKey, Pro, Upgrade, Pricing">	
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Upgrade to Pro - HRKey</title>
+
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+
+    <style>
+        body { 
+            background: linear-gradient(135deg, #0E1E22 0%, #00C4C7 100%); 
+            font-family: 'Rubik', sans-serif; 
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .pricing-container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        
+        .back-link {
+            color: white;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .back-link:hover {
+            color: #00C4C7;
+        }
+        
+        .page-title {
+            text-align: center;
+            color: white;
+            margin-bottom: 10px;
+            font-size: 36px;
+            font-weight: 700;
+        }
+        
+        .page-subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 50px;
+            font-size: 18px;
+        }
+        
+        .pricing-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .pricing-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .pricing-card.featured {
+            border: 3px solid #fbbf24;
+            box-shadow: 0 10px 60px rgba(251, 191, 36, 0.4);
+        }
+        
+        .featured-badge {
+            position: absolute;
+            top: -15px;
+            right: 20px;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .plan-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 15px;
+        }
+        
+        .plan-price {
+            font-size: 48px;
+            font-weight: 700;
+            color: #00C4C7;
+            margin-bottom: 5px;
+        }
+        
+        .plan-price sup {
+            font-size: 24px;
+            vertical-align: super;
+        }
+        
+        .plan-period {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin: 30px 0;
+            text-align: left;
+        }
+        
+        .plan-features li {
+            padding: 12px 0;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .plan-features li:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-icon {
+            color: #00C4C7;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .feature-icon.disabled {
+            color: #d1d5db;
+        }
+        
+        .btn-select-plan {
+            width: 100%;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-free {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+        
+        .btn-free:hover {
+            background: #d1d5db;
+        }
+        
+        .btn-pro {
+            background: linear-gradient(135deg, #00C4C7 0%, #00a8aa 100%);
+            color: white;
+        }
+        
+        .btn-pro:hover {
+            background: linear-gradient(135deg, #00a8aa 0%, #008f91 100%);
+            transform: scale(1.02);
+        }
+        
+        .btn-current {
+            background: #4ade80;
+            color: white;
+            cursor: default;
+            pointer-events: none;
+        }
+        
+        .faq-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-top: 50px;
+        }
+        
+        .faq-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .faq-item {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .faq-item:last-child {
+            border-bottom: none;
+        }
+        
+        .faq-question {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .faq-answer {
+            color: #6b7280;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="pricing-container">
+        <a href="app.html" class="back-link">
+            ← Back to Dashboard
+        </a>
+        
+        <h1 class="page-title">Choose Your Plan</h1>
+        <p class="page-subtitle">Unlock unlimited references and premium features</p>
+        
+        <div class="pricing-cards">
+            <!-- FREE PLAN -->
+            <div class="pricing-card">
+                <h3 class="plan-name">Starter</h3>
+                <div class="plan-price">
+                    <sup>$</sup>0<span style="font-size: 24px;">.00</span>
+                </div>
+                <p class="plan-period">Forever Free</p>
+                
+                <ul class="plan-features">
+                    <li>
+                        <span class="feature-icon">✓</span>
+                        <span>1 Verified Reference</span>
+                    </li>
+                    <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Basic Privacy Controls</span>
+                    </li>
+                    <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Community Support</span>
+                    </li>
+                    <li>
+                        <span class="feature-icon disabled">✗</span>
+                        <span style="color: #d1d5db;">Blockchain Storage</span>
+                    </li>
+                    <li>
+                        <span class="feature-icon disabled">✗</span>
+                        <span style="color: #d1d5db;">Unlimited References</span>
+                    </li>
+                    <li>
+                        <span class="feature-icon disabled">✗</span>
+                        <span style="color: #d1d5db;">Priority Support</span>
+                    </li>
+                </ul>
+                
+                <button class="btn-select-plan btn-free" id="btn-free" onclick="selectPlan('free')">
+                    Current Plan
+                </button>
+            </div>
+            
+            <!-- PRO PLAN -->
+            <div class="pricing-card featured">
+                <span class="featured-badge">⭐ Most Popular</span>
+                <h3 class="plan-name">Professional</h3>
+                <div class="plan-price">
+                    <sup>$</sup>5<span style="font-size: 24px;">.99</span>
+                </div>
+                <p class="plan-period">Annually</p>
+                
+                <ul class="plan-features">
+                    <li>
+                        <span class="feature-icon">✓</span>
+                        <span><strong>Unlimited References</strong></span>
+                    </li>
+                    <li>
+                        <span class="feature-icon">✓</span>
+                        <span><strong>Blockchain Verification</strong></span>
+                    </li>
+                    <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Advanced Privacy Controls</span>
+                    </li>
+                    <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Priority Support</span>
+                    </li>
+                    <li>
+                        <span class="feature-icon">✓</span>
+                        <span>Profit from Your Data</span>
+                    </li>
+                    <li>
+                        <span class="feature-icon">✓</span>
+                        <span>AI-Enhanced References</span>
+                    </li>
+                </ul>
+                
+                <button class="btn-select-plan btn-pro" id="btn-pro" onclick="selectPlan('pro')">
+                    Upgrade to Pro
+                </button>
+            </div>
+        </div>
+        
+        <!-- FAQ SECTION -->
+        <div class="faq-section">
+            <h2 class="faq-title">Frequently Asked Questions</h2>
+            
+            <div class="faq-item">
+                <div class="faq-question">💳 What payment methods do you accept?</div>
+                <div class="faq-answer">
+                    We accept USDC payments via your Web3 wallet on Base Network. It's fast, secure, and transparent.
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">🔄 Can I downgrade from Pro to Free?</div>
+                <div class="faq-answer">
+                    Yes, you can cancel anytime. Your Pro benefits will remain active until your annual subscription ends.
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">🔒 What happens to my references if I downgrade?</div>
+                <div class="faq-answer">
+                    All your references remain safe and accessible. You just won't be able to add new ones beyond the free limit.
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">⛓️ What is blockchain verification?</div>
+                <div class="faq-answer">
+                    Your references are stored on the Base blockchain, making them permanent, tamper-proof, and independently verifiable by employers.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Verificar plan actual del usuario
+        let currentPlan = 'free';
+        
+        function init() {
+            const userPlan = localStorage.getItem('hrkey_user_plan');
+            if (userPlan) {
+                const planData = JSON.parse(userPlan);
+                currentPlan = planData.plan;
+                updateButtons();
+            }
+        }
+        
+        function updateButtons() {
+            const btnFree = document.getElementById('btn-free');
+            const btnPro = document.getElementById('btn-pro');
+            
+            if (currentPlan === 'free') {
+                btnFree.classList.add('btn-current');
+                btnFree.textContent = '✓ Current Plan';
+                btnPro.textContent = 'Upgrade to Pro';
+            } else {
+                btnPro.classList.add('btn-current');
+                btnPro.textContent = '✓ Current Plan';
+                btnFree.textContent = 'Downgrade to Free';
+            }
+        }
+        
+        function selectPlan(plan) {
+            if (plan === currentPlan) {
+                return; // Ya está en este plan
+            }
+            
+            if (plan === 'pro') {
+                // Redirigir a pago con Stripe/USDC
+                initiateProPayment();
+            } else {
+                // Downgrade a Free
+                if (confirm('Are you sure you want to downgrade to Free? You will lose access to Pro features.')) {
+                    downgradeToPro();
+                }
+            }
+        }
+        
+        async function initiateProPayment() {
+            // Obtener wallet del usuario
+            const authData = localStorage.getItem('hrkey_auth') || localStorage.getItem('hrkey_wallet');
+            if (!authData) {
+                alert('Please connect your wallet first');
+                window.location.href = 'auth.html';
+                return;
+            }
+            
+            const userData = JSON.parse(authData);
+            
+            // Mostrar modal de pago
+            const confirmPayment = confirm(
+                '💎 Upgrade to HRKey Pro\n\n' +
+                'Price: $5.99 USDC (annually)\n' +
+                'Network: Base\n\n' +
+                '✓ Unlimited References\n' +
+                '✓ Blockchain Verification\n' +
+                '✓ Priority Support\n\n' +
+                'Proceed to payment?'
+            );
+            
+            if (confirmPayment) {
+                // Aquí iría la integración real con Web3
+                // Por ahora simulamos el pago
+                alert('🚀 Redirecting to payment gateway...\n\nIn production, this will connect to your wallet and process the USDC payment on Base Network.');
+                
+                // Simular pago exitoso (REMOVER EN PRODUCCIÓN)
+                setTimeout(() => {
+                    upgradeToPro(userData.address, 'simulated_tx_hash');
+                }, 2000);
+            }
+        }
+        
+        function upgradeToPro(address, txHash) {
+            const proPlan = {
+                address: address,
+                plan: 'pro',
+                referencesUsed: 0,
+                referencesLimit: -1, // Ilimitado
+                features: {
+                    canUseBlockchain: true,
+                    canAddPeerValidations: true,
+                    canAddCustomerValidations: true,
+                    canProfitFromData: true,
+                    canShareReferences: true
+                },
+                paymentTxHash: txHash,
+                upgradedAt: new Date().toISOString(),
+                expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 año
+            };
+            
+            localStorage.setItem('hrkey_user_plan', JSON.stringify(proPlan));
+            
+            alert('🎉 Welcome to HRKey Pro!\n\nYou now have unlimited references and all premium features.');
+            window.location.href = 'app.html';
+        }
+        
+        function downgradeToPro() {
+            const authData = localStorage.getItem('hrkey_auth') || localStorage.getItem('hrkey_wallet');
+            const userData = JSON.parse(authData);
+            
+            const freePlan = {
+                address: userData.address,
+                plan: 'free',
+                referencesUsed: 0,
+                referencesLimit: 1,
+                features: {
+                    canUseBlockchain: false,
+                    canAddPeerValidations: false,
+                    canAddCustomerValidations: false,
+                    canProfitFromData: false,
+                    canShareReferences: true
+                },
+                paymentTxHash: null
+            };
+            
+            localStorage.setItem('hrkey_user_plan', JSON.stringify(freePlan));
+            alert('You have been downgraded to Free plan.');
+            window.location.href = 'app.html';
+        }
+        
+        // Inicializar al cargar la página
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

@@ -23,11 +23,9 @@
         .header-content { display: flex; justify-content: space-between; align-items: center; }
         .logo-section { display: flex; align-items: center; }
         .logo-section img { width: 100px; height: 100px; margin-right: 0; }
-        .user-section { display: flex; align-items: center; gap: 20px; position: relative; z-index: 100; }
+        .user-section { display: flex; align-items: center; gap: 20px; }
         .wallet-info { background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 25px; font-size: 14px; }
-        .notification-badge { position: relative; z-index: 101; }
-        .notification-bell { background: rgba(255,255,255,0.2); border: none; color: white; padding: 10px; border-radius: 50%; cursor: pointer; font-size: 18px; }
-        .notification-count { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .user-name-display { background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 25px; font-size: 14px; margin-right: 10px; display: flex; align-items: center; gap: 10px; }
         .main-content { padding: 30px 0; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
         .stat-card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-left: 4px solid #00C4C7; transition: transform 0.3s ease; }
@@ -37,711 +35,162 @@
         .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
         .section-title { font-size: 24px; font-weight: 600; color: #1f2937; margin-bottom: 0; }
         .btn-primary-custom { background: linear-gradient(135deg, #00C4C7 0%, #00C4C7 100%); border: none; border-radius: 10px; padding: 12px 24px; font-weight: 600; color: white; transition: all 0.3s ease; text-decoration: none; }
-        .btn-primary-custom:hover { background: linear-gradient(135deg, #c026d3 0%, #00C4C7 100%); transform: translateY(-1px); color: white; text-decoration: none; }
-        .reference-card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: all 0.3s ease; }
-        .reference-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.12); }
-        .reference-card.blockchain-verified { border: 2px solid #4DE7E8; background: linear-gradient(to right, #ffffff, #faf5ff); }
-        .reference-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px; }
-        .reference-info h5 { color: #1f2937; font-weight: 600; margin-bottom: 5px; }
-        .reference-meta { color: #6b7280; font-size: 14px; }
-        .reference-status { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-        .status-verified { background: #dcfce7; color: #166534; }
-        .status-pending { background: #fef3c7; color: #92400e; }
-        .status-completed { background: #dcfce7; color: #166534; }
-        .status-draft { background: #e5e7eb; color: #374151; }
-        .blockchain-badge { display: inline-flex; align-items: center; background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%); color: #5b21b6; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; margin-top: 10px; cursor: pointer; transition: all 0.3s ease; border: 1px solid #c4b5fd; }
-        .blockchain-badge:hover { background: linear-gradient(135deg, #ddd6fe 0%, #e9d5ff 100%); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
+        .btn-primary-custom:hover { background: linear-gradient(135deg, #00a8aa 0%, #008f91 100%); transform: translateY(-1px); color: white; text-decoration: none; }
         .quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .quick-action-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.08); cursor: pointer; transition: all 0.3s ease; border: 2px solid transparent; }
+        .quick-action-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.08); cursor: pointer; transition: all 0.3s ease; border: 2px solid transparent; position: relative; }
         .quick-action-card:hover { border-color: #00C4C7; transform: translateY(-2px); }
+        .quick-action-card.locked { opacity: 0.5; cursor: not-allowed; }
+        .quick-action-card.locked:hover { border-color: transparent; transform: none; }
+        .pro-lock-icon { position: absolute; top: 10px; right: 10px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
         .quick-action-icon { width: 50px; height: 50px; background: linear-gradient(135deg, #00C4C7 0%, #00C4C7 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: white; font-size: 24px; }
-        .empty-state { text-align: center; padding: 60px 20px; color: #6b7280; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #6b7280; background: white; border-radius: 15px; }
         .empty-state-icon { font-size: 64px; margin-bottom: 20px; opacity: 0.5; }
-        .filter-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .filter-tab { padding: 8px 16px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; font-size: 14px; font-weight: 500; }
-        .filter-tab.active { background: #00C4C7; color: white; border-color: #00C4C7; }
-        .navbar-custom { padding: 8px 0; }
-        .dropdown-menu-custom { border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border-radius: 10px; }
-        .notification-dropdown { position: fixed !important; top: 80px !important; right: 20px !important; background: white; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); width: 350px; max-height: 400px; overflow-y: auto; z-index: 9999 !important; display: none; border: 1px solid #e5e7eb; }
-        .notification-header { padding: 15px 20px; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #1f2937; background: #f9fafb; border-radius: 10px 10px 0 0; }
-        .notification-item { padding: 15px 20px; border-bottom: 1px solid #f3f4f6; cursor: pointer; transition: background-color 0.3s ease; }
-        .notification-item:hover { background: #f8fafc; }
-        .notification-item.unread { background: #fef3c7; }
-        .notification-title { font-weight: 600; color: #1f2937; margin-bottom: 5px; }
-        .notification-message { color: #6b7280; font-size: 14px; margin-bottom: 5px; }
-        .notification-time { color: #9ca3af; font-size: 12px; }
-        .simulation-panel { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 10px; padding: 15px; margin-bottom: 20px; }
-        .simulation-title { font-weight: 600; color: #92400e; margin-bottom: 10px; }
-        .simulation-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-        .simulation-btn { background: #f59e0b; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 14px; cursor: pointer; transition: all 0.3s ease; }
-        .simulation-btn:hover { background: #d97706; }
+        
+        /* Upgrade Banner */
+        .upgrade-banner { 
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(251, 191, 36, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        
+        .upgrade-banner a {
+            color: white;
+            text-decoration: underline;
+            margin-left: 10px;
+            font-weight: 700;
+        }
+        
+        .upgrade-banner a:hover {
+            text-decoration: none;
+        }
+        
+        /* Plan Badge */
+        .plan-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .plan-badge.pro {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        }
+        
+        /* Pro Feature Modal */
+        .pro-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .pro-modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 10px 60px rgba(0,0,0,0.3);
+        }
+        
+        .pro-modal-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .pro-modal h3 {
+            color: #1f2937;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        
+        .pro-modal p {
+            color: #6b7280;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .pro-modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .btn-modal {
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-upgrade {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+        }
+        
+        .btn-upgrade:hover {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .btn-cancel {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+        
+        .btn-cancel:hover {
+            background: #d1d5db;
+        }
+        
+        /* Upgrade Button in Header */
+        .btn-upgrade-header {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-upgrade-header:hover {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            transform: scale(1.05);
+            color: white;
+        }
     </style>
 </head>
+
 <body>
-    <header class="dashboard-header">
-        <div class="container">
-            <div class="header-content">
-                <div class="logo-section">
-                    <img src="images/logo-white.png" alt="HRKey">
-                </div>
-                <div class="user-section">
-                    <div class="notification-badge">
-                        <button class="notification-bell" id="notificationBtn">
-                            🔔
-                            <span class="notification-count" id="notificationCount">3</span>
-                        </button>
-                        <div class="notification-dropdown" id="notificationDropdown">
-                            <div class="notification-header">Notifications</div>
-                            <div id="notificationList"></div>
-                        </div>
-                    </div>
-                    <div class="wallet-info" id="wallet-display">
-                        <span id="wallet-address">0x1234...5678</span>
-                    </div>
-                    <div class="dropdown">
-                        <button class="btn btn-link text-white dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown">
-                            <div style="width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;">
-                                <span style="font-size:18px;">👤</span>
-                            </div>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-custom">
-                            <li><a class="dropdown-item" href="#" id="profile-link">Profile Settings</a></li>
-                            <li><a class="dropdown-item" href="#" id="privacy-link">Privacy Controls</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" id="logout-link">Sign Out</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <main class="main-content">
-        <div class="container">
-            <div class="stats-grid">
-                <div class="stat-card"><div class="stat-number" id="total-references">0</div><div class="stat-label">Total References</div></div>
-                <div class="stat-card"><div class="stat-number" id="verified-references">0</div><div class="stat-label">Verified on Blockchain</div></div>
-                <div class="stat-card"><div class="stat-number" id="pending-validations">0</div><div class="stat-label">Pending Validations</div></div>
-                <div class="stat-card"><div class="stat-number" id="profile-views">0</div><div class="stat-label">Profile Views This Month</div></div>
-            </div>
-
-            <div class="section-header">
-                <h3 class="section-title">Quick Actions</h3>
-                <a href="request-reference.html" class="btn btn-primary-custom">+ Request New Reference</a>
-            </div>
-            
-            <div class="quick-actions">
-                <div class="quick-action-card" id="create-reference-action"><div class="quick-action-icon">📝</div><h6>Request New Reference</h6><p style="color:#6b7280;font-size:14px;margin:0;">Ask a colleague or supervisor for a reference</p></div>
-                <div class="quick-action-card" id="manage-references-action"><div class="quick-action-icon">⚙️</div><h6>Manage References</h6><p style="color:#6b7280;font-size:14px;margin:0;">View, edit, and control your references</p></div>
-                <div class="quick-action-card" id="share-profile-action"><div class="quick-action-icon">🔗</div><h6>Share Profile</h6><p style="color:#6b7280;font-size:14px;margin:0;">Generate shareable link for employers</p></div>
-                <div class="quick-action-card" id="privacy-settings-action"><div class="quick-action-icon">🛡️</div><h6>Privacy Settings</h6><p style="color:#6b7280;font-size:14px;margin:0;">Control what information is visible</p></div>
-            </div>
-
-            <div class="section-header"><h3 class="section-title">Your References</h3></div>
-
-            <div class="filter-tabs">
-                <div class="filter-tab active" data-filter="all">All</div>
-                <div class="filter-tab" data-filter="verified">Verified</div>
-                <div class="filter-tab" data-filter="pending">Pending</div>
-                <div class="filter-tab" data-filter="completed">Completed</div>
-                <div class="filter-tab" data-filter="draft">Drafts</div>
-            </div>
-
-            <div id="references-container"></div>
-
-            <div class="simulation-panel">
-                <div class="simulation-title">Testing Panel - Blockchain Integration (Simple Mode)</div>
-                <div class="simulation-actions">
-                    <button class="simulation-btn" onclick="simulateRefereeEmail()">📧 Open Referee Email</button>
-                    <button class="simulation-btn" onclick="simulateReferenceCompletion()">✅ Simulate Reference Completed</button>
-                    <button class="simulation-btn" onclick="openManagementPage()">⚙️ Manage References</button>
-                    <button class="simulation-btn" onclick="clearTestData()">🗑️ Clear Test Data</button>
-                    <button class="simulation-btn" onclick="testDirectBlockchainCall()">🔗 Test Direct Contract Call</button>
-                </div>
-                <p style="margin-top:10px;font-size:12px;color:#92400e;">
-                    <strong>Note:</strong> Biconomy gasless está disponible pero requiere configuración adicional. Por ahora usamos llamadas directas al contrato.
-                </p>
-            </div>
-        </div>
-    </main>
-
-    <!-- Libs -->
-    <script src="js/jquery-3.6.0.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
-
-    <!-- Ethers.js v5 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-
-    <!-- Config y ABI -->
-    <script src="js/contracts-config.js"></script>
-    <script src="js/contract-abi.js"></script>
-    <script src="js/blockchain-service.js"></script>
-
-    <!-- Blockchain Integration - Direct Contract Calls -->
-    <script>
-        const DirectBlockchainService = {
-            CONTRACT_ADDRESS: "0xFE79Ee969C7590467c89df9062846fb39Dbd5DCF", // Base Sepolia
-            CONTRACT_ABI: [
-                "function createReference(bytes32 refId, address employee, address reviewer, bytes32 dataHash)",
-                "function references(bytes32) view returns (address employee, address reviewer, bytes32 dataHash, uint64 createdAt, uint8 status)"
-            ],
-            
-            provider: null,
-            signer: null,
-            contract: null,
-            userAddress: null,
-
-            async initialize() {
-                try {
-                    if (!window.ethereum) {
-                        throw new Error("No wallet detected. Please install MetaMask.");
-                    }
-
-                    this.provider = new ethers.providers.Web3Provider(window.ethereum);
-                    await this.provider.send("eth_requestAccounts", []);
-                    this.signer = this.provider.getSigner();
-                    this.userAddress = await this.signer.getAddress();
-                    
-                    this.contract = new ethers.Contract(
-                        this.CONTRACT_ADDRESS,
-                        this.CONTRACT_ABI,
-                        this.signer
-                    );
-
-                    console.log('✅ Blockchain initialized:', this.userAddress);
-                    console.log('✅ Contract connected:', this.CONTRACT_ADDRESS);
-                    
-                    return true;
-                } catch (error) {
-                    console.error('❌ Error initializing blockchain:', error);
-                    alert(`Blockchain initialization failed: ${error.message}`);
-                    return false;
-                }
-            },
-
-            async createReference(refId, employee, reviewer, dataHash) {
-                try {
-                    console.log('📤 Sending transaction to blockchain...');
-                    console.log('Parameters:', { refId, employee, reviewer, dataHash });
-
-                    const tx = await this.contract.createReference(
-                        refId,
-                        employee,
-                        reviewer,
-                        dataHash
-                    );
-
-                    console.log('⏳ Transaction sent, waiting for confirmation...');
-                    console.log('Transaction hash:', tx.hash);
-
-                    const receipt = await tx.wait();
-                    console.log('✅ Transaction confirmed!', receipt);
-
-                    return {
-                        success: true,
-                        transactionHash: receipt.transactionHash,
-                        receipt
-                    };
-
-                } catch (error) {
-                    console.error('❌ Error creating reference:', error);
-                    return {
-                        success: false,
-                        error: error.message
-                    };
-                }
-            },
-
-            generateReferenceIds(employee, reviewer, referenceData) {
-                const refIdInput = `${employee}${reviewer}${Date.now()}${Math.random()}`;
-                const refId = ethers.utils.id(refIdInput);
-                
-                const dataString = JSON.stringify(referenceData);
-                const dataHash = ethers.utils.id(dataString);
-                
-                return { refId, dataHash };
-            },
-
-            async getReference(refId) {
-                try {
-                    const ref = await this.contract.references(refId);
-                    return {
-                        employee: ref.employee,
-                        reviewer: ref.reviewer,
-                        dataHash: ref.dataHash,
-                        createdAt: ref.createdAt.toString(),
-                        status: ref.status
-                    };
-                } catch (error) {
-                    console.error('Error getting reference:', error);
-                    return null;
-                }
-            }
-        };
-
-        window.DirectBlockchainService = DirectBlockchainService;
-    </script>
-
-    <!-- App logic -->
-    <script>
-        class HRKeyDashboard {
-            constructor() {
-                this.currentUser = null;
-                this.references = [];
-                this.notifications = [];
-
-                this.init();
-            }
-            
-            async init() {
-                await this.checkAuth();
-                await this.loadUserData();
-                this.setupEventListeners();
-                await this.loadReferences();
-                this.loadNotifications();
-                this.checkForUpdates();
-            }
-
-            checkForUpdates() {
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.get('updated') === 'true') {
-                    this.loadUserData(); this.loadReferences();
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                }
-            }
-
-            async checkAuth() {
-                let authData = localStorage.getItem('hrkey_auth');
-                if (!authData) {
-                    const mockAuth = { address: '0x1234567890abcdef1234567890abcdef12345678', authProvider: 'development', isSmartWallet: false, createdAt: Date.now() };
-                    localStorage.setItem('hrkey_auth', JSON.stringify(mockAuth));
-                    authData = JSON.stringify(mockAuth);
-                }
-                this.currentUser = JSON.parse(authData);
-                this.updateWalletDisplay();
-            }
-
-            updateWalletDisplay() {
-                const walletDisplay = document.getElementById('wallet-address');
-                if (this.currentUser && this.currentUser.address) {
-                    const address = this.currentUser.address;
-                    walletDisplay.textContent = `${address.slice(0, 6)}...${address.slice(-4)}`;
-                }
-            }
-
-            setupEventListeners() {
-                document.getElementById('create-reference-action').addEventListener('click', () => this.createNewReference());
-                document.getElementById('manage-references-action').addEventListener('click', () => this.openManagementPage());
-                document.getElementById('share-profile-action').addEventListener('click', () => this.shareProfile());
-                document.getElementById('privacy-settings-action').addEventListener('click', () => this.openPrivacySettings());
-                
-                document.querySelectorAll('.filter-tab').forEach(tab => {
-                    tab.addEventListener('click', (e) => this.filterReferences(e.target.dataset.filter));
-                });
-
-                document.getElementById('logout-link').addEventListener('click', (e) => { e.preventDefault(); this.logout(); });
-                
-                document.getElementById('notificationBtn').addEventListener('click', () => this.toggleNotifications());
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('.notification-badge')) {
-                        document.getElementById('notificationDropdown').style.display = 'none';
-                    }
-                });
-            }
-
-            async loadUserData() {
-                try {
-                    const storedRequests = JSON.parse(localStorage.getItem('hrkey_requests') || '[]');
-                    const dashboardData = JSON.parse(localStorage.getItem('dashboardData') || '{}');
-                    
-                    const totalReferences = storedRequests.length + (dashboardData.references ? dashboardData.references.length : 0);
-                    const pendingReferences = storedRequests.filter(r => r.status === 'pending').length;
-                    
-                    // Count blockchain verified references
-                    let blockchainVerified = 0;
-                    if (dashboardData.references) {
-                        blockchainVerified = dashboardData.references.filter(r => r.blockchainHash && r.blockchainVerified).length;
-                    }
-                    
-                    this.updateStats({
-                        totalReferences: totalReferences,
-                        verifiedReferences: blockchainVerified,
-                        pendingValidations: pendingReferences,
-                        profileViews: 145
-                    });
-                } catch (error) {
-                    console.error('Error loading user data:', error);
-                    this.updateStats({ totalReferences: 0, verifiedReferences: 0, pendingValidations: 0, profileViews: 0 });
-                }
-            }
-
-            updateStats(stats) {
-                document.getElementById('total-references').textContent = stats.totalReferences;
-                document.getElementById('verified-references').textContent = stats.verifiedReferences;
-                document.getElementById('pending-validations').textContent = stats.pendingValidations;
-                document.getElementById('profile-views').textContent = stats.profileViews;
-            }
-
-            async loadReferences() {
-                try {
-                    const storedRequests = JSON.parse(localStorage.getItem('hrkey_requests') || '[]');
-                    this.references = storedRequests.map(request => ({
-                        id: request.id,
-                        refereeName: request.refereeName,
-                        position: request.refereePosition,
-                        company: request.refereeCompany || request.applicantCompany,
-                        status: request.status || 'pending',
-                        createdAt: request.createdAt,
-                        blockchainHash: null,
-                        blockchainVerified: false,
-                        validations: 0,
-                        referenceType: `${request.referenceType} Reference`,
-                        kpis: request.selectedKPIs || []
-                    }));
-
-                    const dashboardData = JSON.parse(localStorage.getItem('dashboardData') || '{}');
-                    if (dashboardData.references) {
-                        this.references = [...this.references, ...dashboardData.references];
-                    }
-
-                    this.renderReferences();
-                } catch (error) {
-                    console.error('Error loading references:', error);
-                    this.showEmptyState();
-                }
-            }
-
-            renderReferences(filter = 'all') {
-                const container = document.getElementById('references-container');
-                let filteredReferences = this.references;
-                if (filter !== 'all') filteredReferences = this.references.filter(ref => ref.status === filter);
-
-                if (filteredReferences.length === 0) { this.showEmptyState(); return; }
-
-                const html = filteredReferences.map(ref => `
-                    <div class="reference-card ${ref.blockchainHash && ref.blockchainVerified ? 'blockchain-verified' : ''}" data-id="${ref.id}">
-                        <div class="reference-header">
-                            <div class="reference-info">
-                                <h5>${ref.refereeName || 'Unknown Referee'}</h5>
-                                <div class="reference-meta">
-                                    ${ref.position || 'Position Unknown'} at ${ref.company || 'Company Unknown'} • ${this.formatDate(ref.createdAt || ref.completedDate)}
-                                </div>
-                                ${ref.blockchainHash && ref.blockchainVerified ? `
-                                    <div class="blockchain-badge" onclick="window.open('https://sepolia.basescan.org/tx/${ref.blockchainHash}', '_blank')" title="Click to view on BaseScan">
-                                        ⛓️ Verified on Blockchain
-                                    </div>
-                                ` : ''}
-                            </div>
-                            <div class="reference-status status-${ref.status}">
-                                ${this.getStatusText(ref.status)}
-                            </div>
-                        </div>
-                        <div class="reference-content">
-                            <p style="color:#6b7280;margin:0;">
-                                ${ref.validations || 0} peer validations • 
-                                <a href="#" onclick="dashboard.viewReference('${ref.id}')">View Details</a> • 
-                                <a href="#" onclick="dashboard.shareReference('${ref.id}')">Share</a> •
-                                <a href="reference-management-page.html" style="color:#00C4C7;">Manage</a>
-                                ${ref.blockchainHash ? ` • <a href="https://sepolia.basescan.org/tx/${ref.blockchainHash}" target="_blank" style="color:#4DE7E8;">View on BaseScan</a>` : ''}
-                            </p>
-                        </div>
-                    </div>
-                `).join('');
-
-                container.innerHTML = html;
-            }
-
-            showEmptyState() {
-                const container = document.getElementById('references-container');
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📋</div>
-                        <h5>No references found</h5>
-                        <p>Start building your professional reputation by requesting your first reference.</p>
-                        <a href="request-reference.html" class="btn btn-primary-custom mt-3">Request Your First Reference</a>
-                    </div>
-                `;
-            }
-
-            filterReferences(filter) {
-                document.querySelectorAll('.filter-tab').forEach(tab => {
-                    tab.classList.toggle('active', tab.dataset.filter === filter);
-                });
-                this.renderReferences(filter);
-            }
-
-            getStatusText(status) {
-                const map = { verified: 'Verified', pending: 'Pending', completed: 'Completed', draft: 'Draft' };
-                return map[status] || status;
-            }
-
-            formatDate(dateString) {
-                if (!dateString) return 'Date Unknown';
-                const date = new Date(dateString);
-                return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-            }
-
-            loadNotifications() {
-                this.notifications = JSON.parse(localStorage.getItem('userNotifications') || '[]');
-                this.updateNotificationCount();
-                this.renderNotifications();
-            }
-
-            updateNotificationCount() {
-                const unread = this.notifications.filter(n => !n.isRead).length;
-                const el = document.getElementById('notificationCount');
-                el.textContent = unread;
-                el.style.display = unread > 0 ? 'flex' : 'none';
-            }
-
-            renderNotifications() {
-                const container = document.getElementById('notificationList');
-                if (this.notifications.length === 0) {
-                    container.innerHTML = '<div style="padding:20px;text-align:center;color:#6b7280;">No notifications yet</div>';
-                    return;
-                }
-
-                container.innerHTML = this.notifications.slice(0, 10).map(n => `
-                    <div class="notification-item ${!n.isRead ? 'unread' : ''}" onclick="dashboard.handleNotificationClick('${n.id}')">
-                        <div class="notification-title">${n.title}</div>
-                        <div class="notification-message">${n.message}</div>
-                        <div class="notification-time">${this.formatDate(n.timestamp)}</div>
-                    </div>
-                `).join('');
-            }
-
-            toggleNotifications() {
-                const existing = document.getElementById('dynamicNotificationDropdown');
-                if (existing) { existing.remove(); return; }
-
-                const dropdown = document.createElement('div');
-                dropdown.id = 'dynamicNotificationDropdown';
-                dropdown.style.cssText = `
-                    position:fixed; top:80px; right:20px; background:#fff; border-radius:10px;
-                    box-shadow:0 20px 60px rgba(0,0,0,0.25); width:350px; max-height:400px;
-                    overflow-y:auto; z-index:999999; border:1px solid #e5e7eb;
-                `;
-
-                const header = document.createElement('div');
-                header.style.cssText = `padding:15px 20px;border-bottom:1px solid #e5e7eb;font-weight:600;color:#1f2937;background:#f9fafb;border-radius:10px 10px 0 0;`;
-                header.textContent = 'Notifications';
-                dropdown.appendChild(header);
-
-                const list = document.createElement('div');
-                if (this.notifications.length === 0) {
-                    list.innerHTML = '<div style="padding:20px;text-align:center;color:#6b7280;">No notifications yet</div>';
-                } else {
-                    list.innerHTML = this.notifications.slice(0, 10).map(n => `
-                        <div class="dynamic-notification-item" onclick="dashboard.handleNotificationClick('${n.id}')" style="
-                            padding:15px 20px;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background-color .3s ease; ${!n.isRead ? 'background:#fef3c7;' : ''}
-                        " onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='${!n.isRead ? '#fef3c7' : 'white'}'">
-                            <div style="font-weight:600;color:#1f2937;margin-bottom:5px;">${n.title}</div>
-                            <div style="color:#6b7280;font-size:14px;margin-bottom:5px;">${n.message}</div>
-                            <div style="color:#9ca3af;font-size:12px;">${this.formatDate(n.timestamp)}</div>
-                        </div>
-                    `).join('');
-                }
-                dropdown.appendChild(list);
-
-                document.body.appendChild(dropdown);
-
-                setTimeout(() => {
-                    document.addEventListener('click', function closeDropdown(e) {
-                        if (!e.target.closest('#dynamicNotificationDropdown') && !e.target.closest('.notification-badge')) {
-                            const dd = document.getElementById('dynamicNotificationDropdown');
-                            if (dd) dd.remove();
-                            document.removeEventListener('click', closeDropdown);
-                        }
-                    });
-                }, 100);
-            }
-
-            handleNotificationClick(id) {
-                const n = this.notifications.find(x => x.id === id);
-                if (n && !n.isRead) {
-                    n.isRead = true;
-                    localStorage.setItem('userNotifications', JSON.stringify(this.notifications));
-                    this.updateNotificationCount();
-                    this.renderNotifications();
-                }
-                if (n && n.actions) {
-                    const a = n.actions[0];
-                    if (a.action === 'view_reference') this.viewReference(a.referenceId);
-                    else if (a.action === 'manage_reference') this.openManagementPage();
-                    else if (a.action === 'view_blockchain' && a.txHash) {
-                        window.open(`https://sepolia.basescan.org/tx/${a.txHash}`, '_blank');
-                    }
-                }
-            }
-
-            createNewReference() { window.location.href = 'request-reference.html'; }
-            openManagementPage() { window.location.href = 'reference-management-page.html'; }
-            viewReference(id) { alert(`Viewing reference ${id}`); }
-
-            shareReference(id) {
-                const url = `https://hrkey.com/reference/${id}`;
-                navigator.clipboard.writeText(url);
-                alert('Reference link copied to clipboard!');
-            }
-
-            shareProfile() {
-                const url = `https://hrkey.com/profile/${this.currentUser.address}`;
-                navigator.clipboard.writeText(url);
-                alert('Profile link copied to clipboard!');
-            }
-
-            openPrivacySettings() { alert('Opening privacy settings...'); }
-
-            logout() {
-                localStorage.removeItem('hrkey_auth');
-                localStorage.removeItem('hrkey_wallet');
-                window.location.href = 'index.html';
-            }
-        }
-
-        // Funciones globales de simulación
-        function simulateRefereeEmail() { window.open('referee-evaluation-page.html', '_blank'); }
-
-        function simulateReferenceCompletion() {
-            let dashboardData = JSON.parse(localStorage.getItem('dashboardData') || '{}');
-            if (!dashboardData.references) dashboardData.references = [];
-
-            const newReference = {
-                id: 'ref-' + Date.now(),
-                refereeName: 'Sarah Johnson',
-                refereeTitle: 'Senior Product Manager',
-                position: 'Senior Product Manager',
-                company: 'Tech Corp',
-                status: 'completed',
-                completedDate: new Date().toISOString(),
-                createdAt: new Date().toISOString(),
-                ratings: { leadership: 5, innovation: 4, communication: 5, delivery: 4 },
-                overallScore: 4.5,
-                blockchainHash: '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join(''),
-                blockchainVerified: true,
-                canRectify: true,
-                type: 'proactive',
-                validations: 1
-            };
-
-            dashboardData.references.push(newReference);
-            dashboardData.stats = {
-                totalReferences: dashboardData.references.length,
-                completedReferences: dashboardData.references.filter(r => r.status === 'completed').length,
-                pendingReferences: dashboardData.references.filter(r => r.status === 'pending').length,
-                averageRating: 4.5
-            };
-
-            localStorage.setItem('dashboardData', JSON.stringify(dashboardData));
-
-            let notifications = JSON.parse(localStorage.getItem('userNotifications') || '[]');
-            notifications.unshift({
-                id: 'notif-' + Date.now(),
-                type: 'reference_completed',
-                title: 'New Reference Completed & Verified on Blockchain!',
-                message: 'Sarah Johnson has completed your professional reference.',
-                timestamp: new Date().toISOString(),
-                isRead: false,
-                actions: [
-                    { label: 'View Reference', action: 'view_reference', referenceId: newReference.id },
-                    { label: 'View on BaseScan', action: 'view_blockchain', txHash: newReference.blockchainHash }
-                ]
-            });
-            localStorage.setItem('userNotifications', JSON.stringify(notifications));
-
-            alert('Reference completion simulated! Check your notifications and dashboard.');
-            location.reload();
-        }
-
-        function openManagementPage() { window.location.href = 'reference-management-page.html'; }
-
-        function clearTestData() {
-            if (confirm('Are you sure you want to clear all test data?')) {
-                localStorage.removeItem('dashboardData');
-                localStorage.removeItem('hrkey_requests');
-                localStorage.removeItem('userNotifications');
-                localStorage.removeItem('hrkey_stats');
-                alert('Test data cleared!');
-                location.reload();
-            }
-        }
-
-        async function testDirectBlockchainCall() {
-            try {
-                console.log('🧪 Testing direct blockchain call...');
-                
-                const initialized = await window.DirectBlockchainService.initialize();
-                if (!initialized) {
-                    alert('Failed to initialize blockchain service. Check console for details.');
-                    return;
-                }
-
-                const network = await window.DirectBlockchainService.provider.getNetwork();
-                console.log('Current network:', network);
-                
-                if (network.chainId !== 84532) {
-                    alert(`❌ Wrong network!\n\nYou're on: ${network.name} (Chain ID: ${network.chainId})\n\nPlease switch to Base Sepolia in MetaMask and try again.`);
-                    
-                    try {
-                        await window.ethereum.request({
-                            method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: '0x14a34' }],
-                        });
-                        alert('Network switched to Base Sepolia. Please try again.');
-                        return;
-                    } catch (switchError) {
-                        console.error('Error switching network:', switchError);
-                        return;
-                    }
-                }
-
-                const employee = window.DirectBlockchainService.userAddress;
-                const reviewer = "0x0987654321098765432109876543210987654321";
-                const referenceData = {
-                    position: "Senior Developer",
-                    company: "Test Company",
-                    skills: ["JavaScript", "Blockchain"],
-                    rating: 5
-                };
-
-                const { refId, dataHash } = window.DirectBlockchainService.generateReferenceIds(
-                    employee,
-                    reviewer,
-                    referenceData
-                );
-
-                console.log('Generated IDs:', { refId, dataHash });
-
-                alert('Transaction will require MetaMask approval and gas payment in Base Sepolia. Click OK to continue.');
-
-                const result = await window.DirectBlockchainService.createReference(
-                    refId,
-                    employee,
-                    reviewer,
-                    dataHash
-                );
-
-                if (result.success) {
-                    alert(`✅ Reference created successfully!\n\nTransaction Hash:\n${result.transactionHash}\n\nView on BaseScan:\nhttps://sepolia.basescan.org/tx/${result.transactionHash}`);
-                    console.log('Transaction:', result);
-                } else {
-                    alert(`❌ Error: ${result.error}`);
-                }
-
-            } catch (error) {
-                console.error('Test error:', error);
-                alert(`❌ Test failed: ${error.message}`);
-            }
-        }
-
-        let dashboard;
-        document.addEventListener('DOMContentLoaded', () => {
-            dashboard = new HRKeyDashboard();
-        });
-    </script>
-    <!-- Reemplazar todos los scripts de blockchain por: -->
-    <script type="module" src="./main.js"></script>
-</body>
-</html>
-</body>
-</html>
+    <!-- Pro Feature Modal -->
+    <div class="pro-modal" id="pro-modal">
+        <div class="pro-modal-content">
+            <div class="pro-modal-icon">🔒</div>
+            <h3>This is a Pro Feature</h3>
+            <p>Upgrade to HRKey Pro to unlock unlimited references, blockchain verification, and all premium features for just $5.99/year.</p>
+            <div class="pro-modal-buttons">
+                <button class="btn-modal btn-upgrade" onclick="go
