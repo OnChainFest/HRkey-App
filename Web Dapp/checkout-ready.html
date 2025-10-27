@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - HRKey PRO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Stripe.js -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Rubik', Arial, sans-serif; 
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 40px;
+        }
+        .checkout-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .order-summary {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 40px;
+            border: 2px solid rgba(255,255,255,0.1);
+            color: white;
+            height: fit-content;
+            position: sticky;
+            top: 40px;
+        }
+        h1 {
+            font-size: 32px;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+        .summary-title {
+            font-size: 24px;
+            color: #00C4C7;
+            margin-bottom: 25px;
+        }
+        .beta-banner {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border-left: 4px solid #fbbf24;
+        }
+        .beta-banner strong {
+            color: #92400e;
+            font-size: 15px;
+        }
+        .beta-banner p {
+            color: #78350f;
+            font-size: 13px;
+            margin-top: 8px;
+            margin-bottom: 0;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Rubik', Arial, sans-serif;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #00C4C7;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        #card-element {
+            padding: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            background: white;
+            transition: border-color 0.3s;
+        }
+        #card-element.StripeElement--focus {
+            border-color: #00C4C7;
+        }
+        #card-errors {
+            color: #ef4444;
+            font-size: 13px;
+            margin-top: 8px;
+            min-height: 20px;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            color: #cbd5e1;
+        }
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+        .summary-item.total {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            padding-top: 20px;
+            margin-top: 10px;
+            border-top: 2px solid rgba(255,255,255,0.2);
+        }
+        .plan-details {
+            background: rgba(0,196,199,0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border-left: 4px solid #00C4C7;
+        }
+        .plan-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #00C4C7;
+            margin-bottom: 10px;
+        }
+        .plan-features {
+            list-style: none;
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+        .plan-features li {
+            padding: 5px 0;
+        }
+        .plan-features li::before {
+            content: '✓ ';
+            color: #10b981;
+            font-weight: 700;
+            margin-right: 8px;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 30px rgba(251,191,36,0.4);
+            margin-top: 25px;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(251,191,36,0.6);
+        }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .security-badge {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: #888;
+            font-size: 13px;
+        }
+        .security-badge span {
+            color: #10b981;
+            font-weight: 600;
+        }
+        .stripe-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+        .back-link {
+            margin-top: 20px;
+        }
+        .back-link a {
+            color: #64748b;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .back-link a:hover {
+            color: #00C4C7;
+        }
+        .promo-code {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0,196,199,0.05);
+            border-radius: 10px;
+            border: 1px dashed rgba(0,196,199,0.3);
+        }
+        .promo-code input {
+            margin-bottom: 10px;
+        }
+        .btn-apply {
+            padding: 10px 20px;
+            background: #00C4C7;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .discount-applied {
+            background: rgba(16,185,129,0.1);
+            color: #10b981;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #000;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .order-summary {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Checkout Form -->
+        <div class="checkout-section">
+            <h1>🛒 Complete Your Order</h1>
+            <p class="subtitle">One-time payment of $9.99 for lifetime PRO access</p>
+            
+            <div class="beta-banner">
+                <strong>🎉 Early Bird Special</strong>
+                <p>Pay once, use forever. Limited time offer!</p>
+            </div>
+
+            <form id="payment-form">
+                <!-- Billing Email -->
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="email" placeholder="your.email@company.com" required>
+                </div>
+
+                <!-- Stripe Card Element -->
+                <div class="form-group">
+                    <label>Card Information</label>
+                    <div id="card-element"></div>
+                    <div id="card-errors" role="alert"></div>
+                </div>
+
+                <!-- Cardholder Name -->
+                <div class="form-group">
+                    <label>Cardholder Name</label>
+                    <input type="text" id="cardholderName" placeholder="John Doe" required>
+                </div>
+
+                <!-- Billing Information -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Country</label>
+                        <input type="text" id="country" placeholder="United States" required>
+                    </div>
+                    <div class="form-group">
+                        <label>ZIP Code</label>
+                        <input type="text" id="zipCode" placeholder="10001" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary" id="submit-button">
+                    🚀 Complete Payment - $<span id="payment-amount">9.99</span>
+                </button>
+
+                <div class="stripe-badge">
+                    <svg width="32" height="14" viewBox="0 0 60 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M59.64 14.28h-8.06c.19 1.93 1.6 2.55 3.2 2.55 1.64 0 2.96-.37 4.05-.95v3.32a8.33 8.33 0 01-4.56 1.1c-4.01 0-6.83-2.5-6.83-7.48 0-4.19 2.39-7.52 6.3-7.52 3.92 0 5.96 3.28 5.96 7.5 0 .4-.04 1.26-.06 1.48zm-5.92-5.62c-1.03 0-2.17.73-2.17 2.58h4.25c0-1.85-1.07-2.58-2.08-2.58zM40.95 20.3c-1.44 0-2.32-.6-2.9-1.04l-.02 4.63-4.12.87V5.57h3.76l.08 1.02a4.7 4.7 0 013.23-1.29c2.9 0 5.62 2.6 5.62 7.4 0 5.23-2.7 7.6-5.65 7.6zM40 8.95c-.95 0-1.54.34-1.97.81l.02 6.12c.4.44.98.78 1.95.78 1.52 0 2.54-1.65 2.54-3.87 0-2.15-1.04-3.84-2.54-3.84zM28.24 5.57h4.13v14.44h-4.13V5.57zm0-4.7L32.37 0v3.36l-4.13.88V.88zm-4.32 9.35v9.79H19.8V5.57h3.7l.12 1.22c1-1.77 3.07-1.41 3.62-1.22v3.79c-.52-.17-2.29-.43-3.32.86zm-8.55 4.72c0 2.43 2.6 1.68 3.12 1.46v3.36c-.55.3-1.54.54-2.89.54a4.15 4.15 0 01-4.27-4.24l.01-13.17 4.02-.86v3.54h3.14V9.1h-3.13v5.85zm-4.91.7c0 2.97-2.31 4.66-5.73 4.66a11.2 11.2 0 01-4.46-.93v-3.93c1.38.75 3.1 1.31 4.46 1.31.92 0 1.53-.24 1.53-1C6.26 13.77 0 14.51 0 9.95 0 7.04 2.28 5.3 5.62 5.3c1.36 0 2.72.2 4.09.75v3.88a9.23 9.23 0 00-4.1-1.06c-.86 0-1.44.25-1.44.9 0 1.85 6.29.97 6.29 5.88z" fill="#635BFF"/>
+                    </svg>
+                    Powered by Stripe
+                </div>
+            </form>
+
+            <div class="back-link">
+                <a href="pricing.html">← Back to pricing</a>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="order-summary">
+            <h2 class="summary-title">📋 Order Summary</h2>
+
+            <div class="plan-details">
+                <div class="plan-name">⚡ HRKey PRO - Lifetime (Early Bird)</div>
+                <ul class="plan-features">
+                    <li>Unlimited references forever</li>
+                    <li>Request more context</li>
+                    <li>Export to PDF</li>
+                    <li>Blockchain verification</li>
+                    <li>Priority support</li>
+                    <li>All future updates included</li>
+                </ul>
+            </div>
+
+            <div class="summary-item">
+                <span>PRO Plan (Lifetime - Early Bird)</span>
+                <span>$9.99</span>
+            </div>
+            <div class="summary-item">
+                <span>Regular Price</span>
+                <span style="text-decoration: line-through; color: #888;">$9.99/year</span>
+            </div>
+            <div class="summary-item" id="discountRow" style="display: none; color: #10b981;">
+                <span>Promo Discount</span>
+                <span id="discountAmount">-$0.00</span>
+            </div>
+            <div class="summary-item total">
+                <span>Total (One-time)</span>
+                <span id="totalAmount">$9.99</span>
+            </div>
+
+            <div class="promo-code">
+                <label style="color: #cbd5e1; font-size: 13px; margin-bottom: 10px;">Have a promo code?</label>
+                <input type="text" id="promoCode" placeholder="Enter code" style="margin-bottom: 10px;">
+                <button type="button" class="btn-apply" onclick="applyPromoCode()">Apply</button>
+                <div class="discount-applied" id="discountMessage"></div>
+            </div>
+
+            <div class="security-badge">
+                🔒 <span>Secure Payment</span> • 256-bit SSL Encrypted<br>
+                <small style="display: block; margin-top: 8px; color: #10b981;">✓ Lifetime access • No recurring charges</small>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // IMPORTANTE: Reemplaza con tu Publishable Key de Stripe
+        // Para testing: usa tu Test Publishable Key (pk_test_...)
+        // Para producción: usa tu Live Publishable Key (pk_live_...)
+        const STRIPE_PUBLISHABLE_KEY = 'pk_test_51SMAIVGxb8jjp6WHbFnvISzyZNWTb0ntZ1NQqZAAov0ZLMda7VKNfqFKPUu1oMeOCq27I0wNAIWpXsW37LtUFVL4007UPxx33q'; // ⚠️ REEMPLAZAR CON TU KEY
+
+        // Initialize Stripe
+        const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+        const elements = stripe.elements();
+
+        // Create card element
+        const cardElement = elements.create('card', {
+            style: {
+                base: {
+                    fontSize: '16px',
+                    color: '#1e293b',
+                    fontFamily: 'Rubik, Arial, sans-serif',
+                    '::placeholder': {
+                        color: '#94a3b8',
+                    },
+                },
+                invalid: {
+                    color: '#ef4444',
+                },
+            },
+        });
+
+        cardElement.mount('#card-element');
+
+        // Handle card errors
+        cardElement.on('change', (event) => {
+            const displayError = document.getElementById('card-errors');
+            if (event.error) {
+                displayError.textContent = event.error.message;
+            } else {
+                displayError.textContent = '';
+            }
+        });
+
+        // Variables for pricing
+        let appliedDiscount = 0;
+        let finalAmount = 9.99;
+
+        function applyPromoCode() {
+            const code = document.getElementById('promoCode').value.trim().toUpperCase();
+            const validCodes = {
+                'BETA10': 0.10,
+                'FOUNDER': 0.20,
+                'EARLY': 0.30
+            };
+
+            if (validCodes[code]) {
+                appliedDiscount = validCodes[code];
+                const discountAmount = 9.99 * appliedDiscount;
+                finalAmount = 9.99 - discountAmount;
+
+                document.getElementById('discountRow').style.display = 'flex';
+                document.getElementById('discountAmount').textContent = `-$${discountAmount.toFixed(2)}`;
+                document.getElementById('totalAmount').textContent = `$${finalAmount.toFixed(2)}`;
+                document.getElementById('payment-amount').textContent = finalAmount.toFixed(2);
+
+                const message = document.getElementById('discountMessage');
+                message.textContent = `✅ Promo code applied! You saved $${discountAmount.toFixed(2)}`;
+                message.style.display = 'block';
+            } else {
+                alert('❌ Invalid promo code');
+            }
+        }
+
+        // Handle form submission
+        const form = document.getElementById('payment-form');
+        const submitButton = document.getElementById('submit-button');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            // Disable submit button
+            submitButton.disabled = true;
+            const originalText = submitButton.innerHTML;
+            submitButton.innerHTML = '<span class="spinner"></span>Processing payment...';
+
+            try {
+                // Get form data
+                const email = document.getElementById('email').value;
+                const cardholderName = document.getElementById('cardholderName').value;
+
+                // OPCIÓN 1: PAGO DIRECTO SIN BACKEND (Para testing rápido)
+                // Esto usa Stripe.js para crear el token del método de pago
+                const {paymentMethod, error} = await stripe.createPaymentMethod({
+                    type: 'card',
+                    card: cardElement,
+                    billing_details: {
+                        name: cardholderName,
+                        email: email,
+                    },
+                });
+
+                if (error) {
+                    throw new Error(error.message);
+                }
+
+                console.log('✅ Payment method created:', paymentMethod.id);
+
+                // AQUÍ NORMALMENTE ENVIARÍAS paymentMethod.id A TU BACKEND
+                // Para este demo, simulamos un pago exitoso
+                await simulatePayment(paymentMethod.id, email);
+
+                // OPCIÓN 2: CON BACKEND (Descomenta esto cuando tengas backend)
+                // const response = await fetch('YOUR_BACKEND_URL/create-payment-intent', {
+                //     method: 'POST',
+                //     headers: {'Content-Type': 'application/json'},
+                //     body: JSON.stringify({
+                //         amount: Math.round(finalAmount * 100), // Stripe usa centavos
+                //         email: email,
+                //         promoCode: document.getElementById('promoCode').value.trim()
+                //     })
+                // });
+                // const {clientSecret} = await response.json();
+                // const {error: confirmError} = await stripe.confirmCardPayment(clientSecret, {
+                //     payment_method: {
+                //         card: cardElement,
+                //         billing_details: {name: cardholderName, email: email}
+                //     }
+                // });
+                // if (confirmError) throw new Error(confirmError.message);
+
+            } catch (error) {
+                console.error('❌ Payment error:', error);
+                alert('Payment failed: ' + error.message);
+                
+                // Re-enable button
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+            }
+        });
+
+        async function simulatePayment(paymentMethodId, email) {
+            // Simulate processing delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Update plan to PRO
+            const plan = {
+                plan: 'pro',
+                planType: 'lifetime',
+                features: {
+                    maxReferences: -1,
+                    canUseBlockchain: true,
+                    canExportPDF: true,
+                    canRequestContext: true,
+                    canAddPeerValidations: true,
+                    canAddCustomerValidations: true,
+                    canShareReferences: true,
+                    hasAIEnhancement: true,
+                    hasAdvancedPrivacy: true
+                },
+                usage: {
+                    referencesUsed: JSON.parse(localStorage.getItem('hrkey_references') || '[]').filter(r => r.status === 'completed').length
+                },
+                payment: {
+                    amount: finalAmount.toFixed(2),
+                    method: 'card',
+                    date: new Date().toISOString(),
+                    promoCode: document.getElementById('promoCode').value.trim() || null,
+                    type: 'lifetime',
+                    stripePaymentMethodId: paymentMethodId,
+                    email: email
+                },
+                expiresAt: null
+            };
+
+            localStorage.setItem('hrkey_user_plan', JSON.stringify(plan));
+
+            console.log('✅ Payment successful! Plan upgraded to PRO');
+            console.log('Payment details:', plan.payment);
+
+            // Redirect to success page
+            window.location.href = 'upgrade-success.html';
+        }
+
+        // Pre-fill email from user data
+        window.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem('hrkey_user_data') || '{}');
+            if (user.email) {
+                document.getElementById('email').value = user.email;
+            }
+        });
+    </script>
+</body>
+</html>

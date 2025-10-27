@@ -1,1246 +1,343 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <meta name="author" content="HRKey"/>	
-    <meta name="description" content="HRKey - Request Professional Reference"/>
-    <meta name="keywords" content="HRKey, Reference Request, Professional References">	
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-            
-    <!-- SITE TITLE -->
-    <title>Request Reference - HRKey</title>
-                        
-    <!-- FAVICON AND TOUCH ICONS -->
-    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
-    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
-
-    <!-- GOOGLE FONTS -->
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- BOOTSTRAP CSS -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-            
-    <!-- FONT ICONS -->
-    <link href="css/flaticon.css" rel="stylesheet">
-
-    <!-- TEMPLATE CSS -->
-    <link href="css/style.css" rel="stylesheet"> 
-    
-    <!-- RESPONSIVE CSS -->
-    <link href="css/responsive.css" rel="stylesheet">
-
-    <!-- FORM CUSTOM STYLES -->
-    <style>
-        body {
-            background-color: #f8fafc;
-            font-family: 'Rubik', sans-serif;
-        }
-
-        .form-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 0;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
-
-        .form-container {
-            max-width: 800px;
-            margin: 30px auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-            overflow: hidden;
-        }
-
-        .form-section {
-            padding: 30px;
-        }
-
-        .section-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 10px;
-        }
-
-        .section-subtitle {
-            color: #6b7280;
-            margin-bottom: 25px;
-            font-size: 16px;
-        }
-
-        .progress-indicators {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 30px 20px;
-            background: #f9fafb;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .progress-indicator {
-            display: flex;
-            align-items: center;
-            flex-direction: column;
-            text-align: center;
-            position: relative;
-        }
-
-        .progress-indicator span {
-            font-size: 12px;
-            color: #6b7280;
-            margin-top: 8px;
-            font-weight: 500;
-        }
-
-        .step-number {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #e5e7eb;
-            color: #6b7280;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            margin-right: 10px;
-            z-index: 2;
-            position: relative;
-        }
-
-        .step-number.active {
-            background: #667eea;
-            color: white;
-        }
-
-        .step-number.completed {
-            background: #22c55e;
-            color: white;
-        }
-
-        .step-line {
-            width: 60px;
-            height: 2px;
-            background: #e5e7eb;
-            margin: 0 20px;
-        }
-
-        .step-line.completed {
-            background: #22c55e;
-        }
-
-        .step-content {
-            display: none;
-        }
-
-        .step-content.active {
-            display: block;
-        }
-
-        .reference-option {
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 15px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .reference-option:hover {
-            border-color: #667eea;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
-        }
-
-        .reference-option.selected {
-            border-color: #667eea;
-            background: #f8faff;
-        }
-
-        .reference-option input[type="radio"] {
-            position: absolute;
-            opacity: 0;
-        }
-
-        .reference-option h4 {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .reference-option p {
-            color: #6b7280;
-            margin-bottom: 0;
-            font-size: 14px;
-        }
-
-        .expand-icon {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: #f3f4f6;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-
-        .reference-option.selected .expand-icon {
-            background: #667eea;
-            color: white;
-            transform: rotate(45deg);
-        }
-
-        .benefit-tag {
-            display: inline-block;
-            background: #dcfce7;
-            color: #166534;
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            font-weight: 500;
-            margin-top: 10px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .form-control-custom {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
-            background: white;
-        }
-
-        .form-control-custom:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .form-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 500;
-            font-size: 14px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn-primary-custom {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary-custom:hover {
-            background: #5a67d8;
-            transform: translateY(-1px);
-        }
-
-        .btn-secondary-custom {
-            background: #f3f4f6;
-            color: #374151;
-            border: 1px solid #d1d5db;
-        }
-
-        .btn-secondary-custom:hover {
-            background: #e5e7eb;
-        }
-
-        .back-link {
-            color: white;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            font-weight: 500;
-        }
-
-        .back-link:hover {
-            color: #e5e7eb;
-            text-decoration: none;
-        }
-
-        .back-link::before {
-            content: "←";
-            margin-right: 8px;
-            font-size: 18px;
-        }
-
-        .relationship-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .relationship-option {
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .relationship-option:hover {
-            border-color: #667eea;
-        }
-
-        .relationship-option.selected {
-            border-color: #667eea;
-            background: #f8faff;
-        }
-
-        .relationship-option input[type="radio"] {
-            display: none;
-        }
-
-        .kpi-categories {
-            display: grid;
-            gap: 20px;
-        }
-
-        .kpi-category {
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 20px;
-            background: #fafbfc;
-        }
-
-        .kpi-category h4 {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-        }
-
-        .kpi-category-icon {
-            width: 24px;
-            height: 24px;
-            background: #667eea;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            margin-right: 10px;
-            font-size: 12px;
-        }
-
-        .kpi-options {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 10px;
-        }
-
-        .kpi-option {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .kpi-option:hover {
-            border-color: #667eea;
-            background: #f8faff;
-        }
-
-        .kpi-option input[type="checkbox"] {
-            margin-right: 10px;
-            accent-color: #667eea;
-        }
-
-        .kpi-option span {
-            font-size: 14px;
-            color: #374151;
-        }
-
-        .review-section {
-            background: #f9fafb;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .review-section h4 {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 10px;
-        }
-
-        .review-section p {
-            color: #6b7280;
-            margin-bottom: 5px;
-        }
-
-        .selected-kpis {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .kpi-tag {
-            background: #e0e7ff;
-            color: #3730a3;
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        @media (max-width: 768px) {
-            .progress-indicators {
-                flex-wrap: wrap;
-                gap: 15px;
-            }
-            
-            .step-line {
-                display: none;
-            }
-            
-            .form-container {
-                margin: 15px;
-                border-radius: 15px;
-            }
-            
-            .form-section {
-                padding: 20px;
-            }
-        }
-
-        .loading-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 9999;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .loading-content {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            max-width: 400px;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+  <meta charset="utf-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HRKey – Request Reference</title>
+
+  <link rel="shortcut icon" href="./images/favicon.ico" type="image/x-icon">
+  <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="./css/bootstrap.min.css" rel="stylesheet">
+  <link href="./css/style.css" rel="stylesheet">
+  <link href="./css/responsive.css" rel="stylesheet">
+
+  <style>
+    body { background:#0a0a0a; font-family:'Rubik',sans-serif; }
+    .page { max-width: 980px; margin: 40px auto; }
+    .card { background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,196,199,0.2); padding: 28px; border: 1px solid rgba(0,196,199,0.2); }
+    h1 { font-size: 28px; margin: 0 0 8px; color:#ffffff; }
+    p.lead { color:#888888; margin: 0 0 24px; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap:18px; }
+    .row-1 { grid-template-columns: 1fr; }
+    label { display:block; font-weight:600; color:#00C4C7; margin: 10px 0 6px; }
+    input, select, textarea {
+      width: 100%; padding: 12px; border: 1px solid rgba(0,196,199,0.3); border-radius: 10px; font-size: 14px;
+      background: #1a1a1a; color: #ffffff;
+    }
+    input:focus, select:focus, textarea:focus { outline:none; border-color:#00C4C7; box-shadow:0 0 0 3px rgba(0,196,199,.3); }
+    input:disabled { background: #0a0a0a; color: #666666; }
+    .actions { margin-top: 20px; display: flex; gap: 12px; align-items: center; }
+    .btn-primary {
+      background: linear-gradient(135deg, #00C4C7 0%, #00d2cc 100%);
+      border: none; padding: 12px 24px; border-radius: 12px; color: #000000; font-weight:600; cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,196,199,0.4);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,196,199,0.6); }
+    .btn-secondary { background:transparent; border:2px solid #00C4C7; color:#00C4C7; padding:10px 18px; border-radius:10px; font-weight:600; cursor: pointer; }
+    .btn-secondary:hover { background:#00C4C7; color:#000000; }
+    .alert { margin-top:16px; padding: 14px 16px; border-radius: 10px; }
+    .alert-success { background:rgba(16,185,129,0.1); color:#10b981; border-left:4px solid #10b981; }
+    .alert-error { background:rgba(239,68,68,0.1); color:#ef4444; border-left:4px solid #ef4444; }
+    .muted { color:#888888; font-size: 12px; }
+    .back-link { color: #00C4C7; text-decoration: none; }
+    .back-link:hover { color: #00d2cc; }
+  </style>
 </head>
-
 <body>
-    <!-- LOADING OVERLAY -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-content">
-            <div class="spinner"></div>
-            <h3>Sending Reference Request</h3>
-            <p>Saving to blockchain and sending invitation email...</p>
+  <div class="page">
+    <div class="card">
+      <a href="./app.html" class="back-link muted">&larr; Back to Dashboard</a>
+      <h1>Request a New Reference</h1>
+      <p class="lead">Send a request to your manager, colleague, or client.</p>
+
+      <form id="refForm">
+        <div class="row">
+          <div>
+            <label for="refereeName">Referee Name *</label>
+            <input type="text" id="refereeName" required placeholder="e.g. Ana Manager">
+          </div>
+          <div>
+            <label for="refereeEmail">Referee Email *</label>
+            <input type="email" id="refereeEmail" required placeholder="e.g. ana@empresa.com">
+          </div>
+          <div>
+            <label for="relationship">Relationship *</label>
+            <select id="relationship" required>
+              <option value="">Select relationship</option>
+              <option value="Direct Manager">Direct Manager</option>
+              <option value="Supervisor">Supervisor</option>
+              <option value="Colleague">Colleague</option>
+              <option value="HR Manager">HR Manager</option>
+              <option value="Client">Client</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label for="company">Company *</label>
+            <input type="text" id="company" required placeholder="e.g. Empresa X">
+          </div>
+          <div>
+            <label for="position">Your Position *</label>
+            <input type="text" id="position" required placeholder="e.g. Frontend Developer">
+          </div>
+          <div>
+            <label for="wallet">Your Wallet</label>
+            <input type="text" id="wallet" disabled placeholder="Wallet from your session">
+          </div>
         </div>
+
+        <div class="row row-1">
+          <div>
+            <label for="message">Personal message (optional)</label>
+            <textarea id="message" rows="4" placeholder="Add a short personal note to your referee..."></textarea>
+          </div>
+        </div>
+
+        <!-- KPIs Section -->
+        <div class="row row-1" style="margin-top: 30px;">
+          <div style="background: rgba(0,196,199,0.05); padding: 20px; border-radius: 10px; border-left: 4px solid #00C4C7;">
+            <h3 style="color: #00C4C7; margin: 0 0 10px 0; font-size: 18px;">📊 Define KPIs for Evaluation</h3>
+            <p style="color: #888888; font-size: 13px; margin: 0 0 20px 0;">Specify 2-3 key performance indicators that you'd like the referee to evaluate.</p>
+            
+            <div style="margin-bottom: 15px;">
+              <label for="kpi1Title">KPI 1: Title *</label>
+              <input type="text" id="kpi1Title" required placeholder="e.g. Product Launch Success">
+            </div>
+            <div style="margin-bottom: 20px;">
+              <label for="kpi1Description">KPI 1: Description *</label>
+              <input type="text" id="kpi1Description" required placeholder="e.g. Successfully launch 2 major product features within Q4 timeline">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+              <label for="kpi2Title">KPI 2: Title *</label>
+              <input type="text" id="kpi2Title" required placeholder="e.g. Team Leadership">
+            </div>
+            <div style="margin-bottom: 20px;">
+              <label for="kpi2Description">KPI 2: Description *</label>
+              <input type="text" id="kpi2Description" required placeholder="e.g. Lead cross-functional team of 8+ members effectively">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+              <label for="kpi3Title">KPI 3: Title (optional)</label>
+              <input type="text" id="kpi3Title" placeholder="e.g. Client Satisfaction">
+            </div>
+            <div>
+              <label for="kpi3Description">KPI 3: Description (optional)</label>
+              <input type="text" id="kpi3Description" placeholder="e.g. Maintain 95%+ client satisfaction rating">
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn-primary" id="submitBtn">🚀 Send Request</button>
+          <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+          <span class="muted" id="statusText"></span>
+        </div>
+      </form>
+
+      <div id="alertBox"></div>
     </div>
+  </div>
 
-    <!-- FORM HEADER -->
-    <div class="form-header">
-        <div class="container">
-            <div class="row">
-                <div class="col-12">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <a href="app.html" class="back-link">Back to Dashboard</a>
-                        <h1 style="margin: 0; font-size: 24px; font-weight: 600;">Request Professional Reference</h1>
-                        <div style="width: 160px;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+  <script>
+    // ✅ TUS CREDENCIALES DE EMAILJS
+    const EMAILJS_SERVICE_ID = "service_yvtzlvf";
+    const EMAILJS_TEMPLATE_ID = "template_3zat2bq";
+    const EMAILJS_PUBLIC_KEY  = "8kTeUTmDNbaWwqDWQ";
 
-    <!-- MAIN FORM -->
-    <div class="form-container">
-        <!-- PROGRESS INDICATORS -->
-        <div class="progress-indicators">
-            <div class="progress-indicator active" data-step="1">
-                <div class="step-number active" id="step-1-indicator">1</div><span>Reference Type</span>
-            </div>
-            <div class="step-line"></div>
-            <div class="progress-indicator" data-step="2">
-                <div class="step-number" id="step-2-indicator">2</div><span>Your Context</span>
-            </div>
-            <div class="step-line"></div>
-            <div class="progress-indicator" data-step="3">
-                <div class="step-number" id="step-3-indicator">3</div><span>KPIs & Objectives</span>
-            </div>
-            <div class="step-line"></div>
-            <div class="progress-indicator" data-step="4">
-                <div class="step-number" id="step-4-indicator">4</div><span>Additional Context</span>
-            </div>
-            <div class="step-line"></div>
-            <div class="progress-indicator" data-step="5">
-                <div class="step-number" id="step-5-indicator">5</div><span>Review & Send</span>
-            </div>
-        </div>
+    console.log('✅ EmailJS Config loaded:', {
+      SERVICE_ID: EMAILJS_SERVICE_ID,
+      TEMPLATE_ID: EMAILJS_TEMPLATE_ID,
+      PUBLIC_KEY: EMAILJS_PUBLIC_KEY.substring(0, 5) + '...'
+    });
 
-        <!-- STEP 1: REFERENCE TYPE -->
-        <div class="step-content active" id="step-1">
-            <div class="form-section">
-                <h3 class="section-title">What type of reference do you need?</h3>
-                <p class="section-subtitle">Choose the timing that best fits your situation.</p>
-                
-                <div class="reference-option" onclick="selectReferenceType('proactive')">
-                    <input type="radio" name="referenceType" value="proactive" id="proactive">
-                    <h4>
-                        Proactive Reference
-                        <span class="expand-icon">+</span>
-                    </h4>
-                    <p>Start building your reference now with clear KPIs and objectives for ongoing or upcoming work.</p>
-                    <div class="benefit-tag">Higher credibility • More objective • Better outcomes</div>
-                </div>
+    // Helpers UI
+    function showAlert(msg, type='success') {
+      const box = document.getElementById('alertBox');
+      box.innerHTML = `<div class="alert ${type==='success'?'alert-success':'alert-error'}">${msg}</div>`;
+    }
+    function setStatus(msg) {
+      document.getElementById('statusText').textContent = msg || '';
+    }
 
-                <div class="reference-option" onclick="selectReferenceType('retroactive')">
-                    <input type="radio" name="referenceType" value="retroactive" id="retroactive">
-                    <h4>
-                        Retroactive Reference
-                        <span class="expand-icon">+</span>
-                    </h4>
-                    <p>Request a reference for past work relationships where collaboration has already ended.</p>
-                </div>
+    // Cargar sesión y prellenar wallet
+    function loadSessionOrRedirect() {
+      const raw = localStorage.getItem('hrkey_user_data');
+      if (!raw) {
+        location.replace('./auth.html');
+        return null;
+      }
+      try {
+        const user = JSON.parse(raw);
+        const w = document.getElementById('wallet');
+        if (w && user?.wallet) w.value = user.wallet;
+        return user;
+      } catch(e) {
+        console.error('Invalid hrkey_user_data:', e);
+        location.replace('./auth.html');
+        return null;
+      }
+    }
 
-                <div class="form-actions">
-                    <div></div>
-                    <button class="btn btn-primary-custom" onclick="nextStep()">Next Step</button>
-                </div>
-            </div>
-        </div>
+    // Guarda referencia en localStorage
+    function saveReferenceLocal(ref) {
+      const list = JSON.parse(localStorage.getItem('hrkey_references') || '[]');
+      list.push(ref);
+      localStorage.setItem('hrkey_references', JSON.stringify(list));
 
-        <!-- STEP 2: YOUR CONTEXT -->
-        <div class="step-content" id="step-2">
-            <div class="form-section">
-                <h3 class="section-title">Your Professional Context</h3>
-                <p class="section-subtitle">Tell us about your role and the person who will provide the reference.</p>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">Your Position *</label>
-                            <input type="text" class="form-control-custom" id="applicantPosition" placeholder="e.g., Senior Software Engineer" required>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">Company/Organization *</label>
-                            <input type="text" class="form-control-custom" id="applicantCompany" placeholder="e.g., Tech Innovations Inc." required>
-                        </div>
-                    </div>
-                </div>
+      // Actualiza uso del plan si existe
+      const planRaw = localStorage.getItem('hrkey_user_plan');
+      if (planRaw) {
+        try {
+          const plan = JSON.parse(planRaw);
+          plan.usage = plan.usage || { referencesUsed: 0 };
+          plan.usage.referencesUsed = (plan.usage.referencesUsed || 0) + 1;
+          localStorage.setItem('hrkey_user_plan', JSON.stringify(plan));
+        } catch(_) {}
+      }
+    }
 
-                <div class="form-group">
-                    <label class="form-label">Working Relationship *</label>
-                    <div class="relationship-grid">
-                        <div class="relationship-option" onclick="selectRelationship('direct-supervisor')">
-                            <input type="radio" name="relationship" value="direct-supervisor" id="direct-supervisor">
-                            <strong>Direct Supervisor</strong>
-                            <p>Your immediate manager or boss</p>
-                        </div>
-                        <div class="relationship-option" onclick="selectRelationship('team-lead')">
-                            <input type="radio" name="relationship" value="team-lead" id="team-lead">
-                            <strong>Team Lead</strong>
-                            <p>Technical or project lead</p>
-                        </div>
-                        <div class="relationship-option" onclick="selectRelationship('colleague')">
-                            <input type="radio" name="relationship" value="colleague" id="colleague">
-                            <strong>Colleague</strong>
-                            <p>Peer or teammate</p>
-                        </div>
-                        <div class="relationship-option" onclick="selectRelationship('client')">
-                            <input type="radio" name="relationship" value="client" id="client">
-                            <strong>Client</strong>
-                            <p>External client or customer</p>
-                        </div>
-                    </div>
-                </div>
+    // Carga EmailJS script on-demand e inicializa
+    async function ensureEmailJS() {
+      if (window.emailjs) return;
+      
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = "https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js";
+        s.onload = () => {
+          console.log('✅ EmailJS library loaded');
+          emailjs.init(EMAILJS_PUBLIC_KEY);
+          console.log('✅ EmailJS initialized with Public Key');
+          resolve();
+        };
+        s.onerror = () => reject(new Error('No se pudo cargar emailjs'));
+        document.head.appendChild(s);
+      });
+    }
 
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">Referee's Name *</label>
-                            <input type="text" class="form-control-custom" id="refereeName" placeholder="e.g., Sarah Johnson" required>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">Referee's Email *</label>
-                            <input type="email" class="form-control-custom" id="refereeEmail" placeholder="e.g., sarah@company.com" required>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">Referee's Position *</label>
-                            <input type="text" class="form-control-custom" id="refereePosition" placeholder="e.g., Engineering Manager" required>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">Referee's Company</label>
-                            <input type="text" class="form-control-custom" id="refereeCompany" placeholder="Same as yours or different">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">Collaboration Start Date *</label>
-                            <input type="month" class="form-control-custom" id="collaborationStartDate" required>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">Collaboration End Date</label>
-                            <input type="month" class="form-control-custom" id="collaborationEndDate" placeholder="Leave empty if ongoing">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Project/Team Context</label>
-                    <textarea class="form-control-custom" id="projectContext" rows="3" placeholder="Briefly describe the project, team, or context where you worked together..."></textarea>
-                </div>
-
-                <div class="form-actions">
-                    <button class="btn btn-secondary-custom" onclick="prevStep()">Previous</button>
-                    <button class="btn btn-primary-custom" onclick="nextStep()">Continue to KPIs</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- STEP 3: KPIs & OBJECTIVES -->
-        <div class="step-content" id="step-3">
-            <div class="form-section">
-                <h3 class="section-title">Define Success Metrics & KPIs</h3>
-                <p class="section-subtitle">Why define KPIs upfront?</p>
-                <p style="color: #3730a3; margin-bottom: 10px;">✓ Creates objective evaluation criteria</p>
-                <p style="color: #3730a3; margin-bottom: 10px;">✓ Helps your referee provide specific examples</p>
-                <p style="color: #3730a3; margin-bottom: 25px;">✓ Makes your reference more credible to employers</p>
-
-                <div class="kpi-categories">
-                    <div class="kpi-category">
-                        <h4>
-                            <span class="kpi-category-icon">📊</span>
-                            Quantitative Metrics
-                        </h4>
-                        <div class="kpi-options">
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="project-delivery-time">
-                                <span>Project delivery time/speed</span>
-                            </label>
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="quality-metrics">
-                                <span>Quality metrics (bug rates, accuracy)</span>
-                            </label>
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="cost-efficiency">
-                                <span>Cost efficiency or budget management</span>
-                            </label>
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="productivity-metrics">
-                                <span>Productivity metrics</span>
-                            </label>
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="revenue-impact">
-                                <span>Revenue impact or business results</span>
-                            </label>
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="customer-satisfaction">
-                                <span>Customer satisfaction scores</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="kpi-category">
-                        <h4>
-                            <span class="kpi-category-icon">🚀</span>
-                            Performance & Skills
-                        </h4>
-                        <div class="kpi-options">
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="technical-proficiency">
-                                <span>Technical proficiency and expertise</span>
-                            </label>
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="problem-solving">
-                                <span>Problem-solving ability</span>
-                            </label>
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="innovation-creativity">
-                                <span>Innovation and creativity</span>
-                            </label>
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="learning-adaptation">
-                                <span>Learning speed and adaptation</span>
-                            </label>
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="attention-to-detail">
-                                <span>Attention to detail</span>
-                            </label>
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="initiative-proactivity">
-                                <span>Initiative and proactivity</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="kpi-category">
-                        <h4>
-                            <span class="kpi-category-icon">👥</span>
-                            Collaboration & Leadership
-                        </h4>
-                        <div class="kpi-options">
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="teamwork-collaboration">
-                                <span>Teamwork and collaboration</span>
-                            </label>
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="communication-skills">
-                                <span>Communication effectiveness</span>
-                            </label>
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="leadership-mentoring">
-                                <span>Leadership and mentoring</span>
-                            </label>
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="conflict-resolution">
-                                <span>Conflict resolution</span>
-                            </label>
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="cross-functional-work">
-                                <span>Cross-functional collaboration</span>
-                            </label>
-                            <label class="kpi-option">
-                                <input type="checkbox" name="kpis" value="reliability-dependability">
-                                <span>Reliability and dependability</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button class="btn btn-secondary-custom" onclick="prevStep()">Previous</button>
-                    <button class="btn btn-primary-custom" onclick="nextStep()">Continue</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- STEP 4: ADDITIONAL CONTEXT -->
-        <div class="step-content" id="step-4">
-            <div class="form-section">
-                <h3 class="section-title">Additional Context</h3>
-                <p class="section-subtitle">Provide any additional information that would help create a comprehensive reference.</p>
-
-                <div class="form-group">
-                    <label class="form-label">Specific Achievements or Projects</label>
-                    <textarea class="form-control-custom" id="achievements" rows="4" placeholder="Describe specific projects, achievements, or accomplishments you'd like highlighted..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Areas of Growth or Development</label>
-                    <textarea class="form-control-custom" id="growthAreas" rows="3" placeholder="Any areas where you've shown significant improvement or development..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Special Circumstances or Context</label>
-                    <textarea class="form-control-custom" id="specialContext" rows="3" placeholder="Any special circumstances, challenges overcome, or additional context that would be valuable..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Reference Usage Context</label>
-                    <select class="form-control-custom" id="usageContext">
-                        <option value="">Select where you'll use this reference...</option>
-                        <option value="job-application">Job application</option>
-                        <option value="promotion-review">Internal promotion/review</option>
-                        <option value="freelance-profile">Freelance/contractor profile</option>
-                        <option value="academic-application">Academic application</option>
-                        <option value="business-partnership">Business partnership</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-
-                <div class="form-actions">
-                    <button class="btn btn-secondary-custom" onclick="prevStep()">Previous</button>
-                    <button class="btn btn-primary-custom" onclick="nextStep()">Review & Send</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- STEP 5: REVIEW & SEND -->
-        <div class="step-content" id="step-5">
-            <div class="form-section">
-                <h3 class="section-title">Review Your Reference Request</h3>
-                <p class="section-subtitle">Please review all information before sending your request.</p>
-
-                <div class="review-section">
-                    <h4>Your Information</h4>
-                    <p><strong>Position:</strong> <span id="reviewApplicantPosition">-</span></p>
-                    <p><strong>Company:</strong> <span id="reviewApplicantCompany">-</span></p>
-                    <p><strong>Relationship:</strong> <span id="reviewRelationship">-</span></p>
-                </div>
-
-                <div class="review-section">
-                    <h4>Referee Information</h4>
-                    <p><strong>Name:</strong> <span id="reviewRefereeName">-</span></p>
-                    <p><strong>Email:</strong> <span id="reviewRefereeEmail">-</span></p>
-                    <p><strong>Position:</strong> <span id="reviewRefereePosition">-</span></p>
-                    <p><strong>Company:</strong> <span id="reviewRefereeCompany">-</span></p>
-                    <p><strong>Collaboration Period:</strong> <span id="reviewCollaborationPeriod">-</span></p>
-                </div>
-
-                <div class="review-section">
-                    <h4>Selected KPIs & Metrics</h4>
-                    <div class="selected-kpis" id="reviewSelectedKPIs">
-                        <!-- KPIs will be populated here -->
-                    </div>
-                </div>
-
-                <div class="review-section">
-                    <h4>Additional Context</h4>
-                    <p><strong>Achievements:</strong> <span id="reviewAchievements">-</span></p>
-                    <p><strong>Usage Context:</strong> <span id="reviewUsageContext">-</span></p>
-                </div>
-
-                <div class="form-actions">
-                    <button class="btn btn-secondary-custom" onclick="prevStep()">Previous</button>
-                    <button class="btn btn-primary-custom" onclick="submitReferenceRequest()">Send Reference Request</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- BOOTSTRAP JS -->
-    <script src="js/bootstrap.min.js"></script>
-
-    <!-- FORM JAVASCRIPT -->
-    <script>
-        let currentStep = 1;
-        const totalSteps = 5;
-
-        // Step navigation functions
-        function nextStep() {
-            if (validateCurrentStep()) {
-                if (currentStep < totalSteps) {
-                    currentStep++;
-                    updateStepDisplay();
-                    updateProgressIndicators();
-                }
-            }
+    // Enviar por EmailJS
+    async function sendEmailJS(ref, user) {
+      try {
+        console.log('📧 Preparing to send email via EmailJS...');
+        await ensureEmailJS();
+        
+        if (!window.emailjs) {
+          console.error('❌ EmailJS library not loaded');
+          return false;
         }
 
-        function prevStep() {
-            if (currentStep > 1) {
-                currentStep--;
-                updateStepDisplay();
-                updateProgressIndicators();
-            }
-        }
+        const params = {
+          to_name: ref.refereeName,
+          to_email: ref.refereeEmail,
+          requester_name: user?.name || 'HRKey User',
+          requester_email: user?.email || 'noreply@hrkey.xyz',
+          relationship: ref.relationship,
+          company: ref.company,
+          position: ref.position,
+          message: ref.message || 'No additional message provided',
+          reference_id: ref.id  // ID único para el link
+        };
+        
+        console.log('📤 Sending email with params:', params);
+        
+        const response = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
+        
+        console.log('✅ EmailJS SUCCESS:', response);
+        console.log('📧 Email sent to:', ref.refereeEmail);
+        return true;
+      } catch (e) {
+        console.error('❌ EmailJS error:', e);
+        return false;
+      }
+    }
 
-        function updateStepDisplay() {
-            // Hide all steps
-            document.querySelectorAll('.step-content').forEach(step => {
-                step.classList.remove('active');
-            });
-            
-            // Show current step
-            document.getElementById(`step-${currentStep}`).classList.add('active');
-            
-            // If we're on step 5 (review), update the review section
-            if (currentStep === 5) {
-                updateReviewSection();
-            }
-        }
+    // Submit principal
+    async function submitReferenceRequest(e) {
+      e.preventDefault();
+      const user = loadSessionOrRedirect();
+      if (!user) return;
 
-        function updateProgressIndicators() {
-            for (let i = 1; i <= totalSteps; i++) {
-                const indicator = document.getElementById(`step-${i}-indicator`);
-                const progressIndicator = document.querySelector(`[data-step="${i}"]`);
-                
-                if (i < currentStep) {
-                    indicator.classList.remove('active');
-                    indicator.classList.add('completed');
-                    progressIndicator.classList.add('completed');
-                } else if (i === currentStep) {
-                    indicator.classList.add('active');
-                    indicator.classList.remove('completed');
-                    progressIndicator.classList.add('active');
-                } else {
-                    indicator.classList.remove('active', 'completed');
-                    progressIndicator.classList.remove('active', 'completed');
-                }
-            }
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      const original = submitBtn.textContent;
+      submitBtn.textContent = '⏳ Sending...';
+      setStatus('Sending request…');
 
-            // Update step lines
-            document.querySelectorAll('.step-line').forEach((line, index) => {
-                if (index < currentStep - 1) {
-                    line.classList.add('completed');
-                } else {
-                    line.classList.remove('completed');
-                }
-            });
-        }
+      const ref = {
+        id: 'ref_' + Date.now(),
+        refereeName: document.getElementById('refereeName').value.trim(),
+        refereeEmail: document.getElementById('refereeEmail').value.trim(),
+        relationship: document.getElementById('relationship').value,
+        company: document.getElementById('company').value.trim(),
+        position: document.getElementById('position').value.trim(),
+        message: document.getElementById('message').value.trim(),
+        kpis: [
+          {
+            title: document.getElementById('kpi1Title').value.trim(),
+            description: document.getElementById('kpi1Description').value.trim()
+          },
+          {
+            title: document.getElementById('kpi2Title').value.trim(),
+            description: document.getElementById('kpi2Description').value.trim()
+          }
+        ],
+        status: 'pending',
+        dateRequested: new Date().toISOString(),
+        requestedBy: user.email || ''
+      };
 
-        // Reference type selection
-        function selectReferenceType(type) {
-            // Remove selected class from all options
-            document.querySelectorAll('.reference-option').forEach(option => {
-                option.classList.remove('selected');
-            });
-            
-            // Add selected class to clicked option
-            event.currentTarget.classList.add('selected');
-            
-            // Check the radio button
-            document.getElementById(type).checked = true;
-        }
-
-        // Relationship selection
-        function selectRelationship(relationship) {
-            // Remove selected class from all options
-            document.querySelectorAll('.relationship-option').forEach(option => {
-                option.classList.remove('selected');
-            });
-            
-            // Add selected class to clicked option
-            event.currentTarget.classList.add('selected');
-            
-            // Check the radio button
-            document.getElementById(relationship).checked = true;
-        }
-
-        // Form validation
-        function validateCurrentStep() {
-            switch(currentStep) {
-                case 1:
-                    const referenceType = document.querySelector('input[name="referenceType"]:checked');
-                    if (!referenceType) {
-                        alert('Please select a reference type.');
-                        return false;
-                    }
-                    break;
-                    
-                case 2:
-                    const requiredFields = [
-                        'applicantPosition', 'applicantCompany', 'refereeName', 
-                        'refereeEmail', 'refereePosition', 'collaborationStartDate'
-                    ];
-                    
-                    for (let field of requiredFields) {
-                        const element = document.getElementById(field);
-                        if (!element.value.trim()) {
-                            alert(`Please fill in ${element.previousElementSibling.textContent.replace('*', '')}.`);
-                            element.focus();
-                            return false;
-                        }
-                    }
-                    
-                    const relationship = document.querySelector('input[name="relationship"]:checked');
-                    if (!relationship) {
-                        alert('Please select your working relationship.');
-                        return false;
-                    }
-                    break;
-                    
-                case 3:
-                    const selectedKPIs = document.querySelectorAll('input[name="kpis"]:checked');
-                    if (selectedKPIs.length === 0) {
-                        alert('Please select at least one KPI or metric.');
-                        return false;
-                    }
-                    if (selectedKPIs.length < 3) {
-                        const proceed = confirm('We recommend selecting at least 3 KPIs for a comprehensive reference. Do you want to continue with fewer KPIs?');
-                        if (!proceed) return false;
-                    }
-                    break;
-                    
-                case 4:
-                    // Optional validation for step 4
-                    break;
-                    
-                case 5:
-                    updateReviewSection();
-                    break;
-            }
-            return true;
-        }
-
-        // Update review section
-        function updateReviewSection() {
-            // Reference type
-            const referenceType = document.querySelector('input[name="referenceType"]:checked');
-            document.getElementById('reviewReferenceType').textContent = 
-                referenceType ? referenceType.value.charAt(0).toUpperCase() + referenceType.value.slice(1) + ' Reference' : '-';
-
-            // Applicant info
-            document.getElementById('reviewApplicantPosition').textContent = 
-                document.getElementById('applicantPosition').value || '-';
-            document.getElementById('reviewApplicantCompany').textContent = 
-                document.getElementById('applicantCompany').value || '-';
-
-            // Relationship
-            const relationship = document.querySelector('input[name="relationship"]:checked');
-            document.getElementById('reviewRelationship').textContent = 
-                relationship ? relationship.value.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : '-';
-
-            // Referee info
-            document.getElementById('reviewRefereeName').textContent = 
-                document.getElementById('refereeName').value || '-';
-            document.getElementById('reviewRefereeEmail').textContent = 
-                document.getElementById('refereeEmail').value || '-';
-            document.getElementById('reviewRefereePosition').textContent = 
-                document.getElementById('refereePosition').value || '-';
-            document.getElementById('reviewRefereeCompany').textContent = 
-                document.getElementById('refereeCompany').value || '-';
-
-            // Collaboration period
-            const startDate = document.getElementById('collaborationStartDate').value;
-            const endDate = document.getElementById('collaborationEndDate').value;
-            const period = startDate ? `${startDate} - ${endDate || 'Present'}` : '-';
-            document.getElementById('reviewCollaborationPeriod').textContent = period;
-
-            // Selected KPIs
-            const selectedKPIs = document.querySelectorAll('input[name="kpis"]:checked');
-            const kpiContainer = document.getElementById('reviewSelectedKPIs');
-            kpiContainer.innerHTML = '';
-            
-            if (selectedKPIs.length > 0) {
-                selectedKPIs.forEach(kpi => {
-                    const kpiTag = document.createElement('span');
-                    kpiTag.className = 'kpi-tag';
-                    kpiTag.textContent = kpi.nextElementSibling.textContent;
-                    kpiContainer.appendChild(kpiTag);
-                });
-            } else {
-                kpiContainer.innerHTML = '<span>No KPIs selected</span>';
-            }
-
-            // Additional context
-            document.getElementById('reviewAchievements').textContent = 
-                document.getElementById('achievements').value.substring(0, 100) + 
-                (document.getElementById('achievements').value.length > 100 ? '...' : '') || '-';
-            
-            const usageContext = document.getElementById('usageContext');
-            document.getElementById('reviewUsageContext').textContent = 
-                usageContext.options[usageContext.selectedIndex].text || '-';
-        }
-
-        // Submit form - INTEGRADO CON BACKEND
-        async function submitReferenceRequest() {
-            // Show loading overlay
-            document.getElementById('loadingOverlay').style.display = 'flex';
-
-            try {
-                // Recopilar datos del formulario
-                const formData = {
-                    // Datos del referee (quien dará la referencia)
-                    email: document.getElementById('refereeEmail').value,
-                    name: document.getElementById('refereeName').value,
-                    days: 30, // 30 días para completar la referencia
-                    
-                    // Datos adicionales del solicitante
-                    applicantData: {
-                        position: document.getElementById('applicantPosition').value,
-                        company: document.getElementById('applicantCompany').value,
-                        relationship: document.querySelector('input[name="relationship"]:checked')?.value,
-                        refereePosition: document.getElementById('refereePosition').value,
-                        refereeCompany: document.getElementById('refereeCompany').value,
-                        collaborationStartDate: document.getElementById('collaborationStartDate').value,
-                        collaborationEndDate: document.getElementById('collaborationEndDate').value,
-                        projectContext: document.getElementById('projectContext').value,
-                        selectedKPIs: Array.from(document.querySelectorAll('input[name="kpis"]:checked')).map(cb => cb.value),
-                        achievements: document.getElementById('achievements').value,
-                        growthAreas: document.getElementById('growthAreas').value,
-                        specialContext: document.getElementById('specialContext').value,
-                        usageContext: document.getElementById('usageContext').value,
-                        referenceType: document.querySelector('input[name="referenceType"]:checked')?.value
-                    }
-                };
-
-                console.log('Enviando datos a la API:', formData);
-
-                // Llamar a tu API real
-                const response = await fetch('http://localhost:3000/api/invite', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                console.log('Respuesta de la API:', result);
-
-                // Hide loading overlay
-                document.getElementById('loadingOverlay').style.display = 'none';
-
-                // Si la API devuelve éxito
-                if (result.success) {
-                    // Guardar también en localStorage para compatibilidad con el frontend actual
-                    const localData = {
-                        id: result.reference_id || Date.now(),
-                        ...formData.applicantData,
-                        refereeName: formData.name,
-                        refereeEmail: formData.email,
-                        status: 'pending',
-                        createdAt: new Date().toISOString(),
-                        inviteToken: result.token,
-                        inviteUrl: result.verification_url
-                    };
-
-                    // Actualizar localStorage para que el dashboard se actualice
-                    const existingRequests = JSON.parse(localStorage.getItem('hrkey_requests') || '[]');
-                    existingRequests.push(localData);
-                    localStorage.setItem('hrkey_requests', JSON.stringify(existingRequests));
-
-                    // Actualizar stats
-                    const stats = JSON.parse(localStorage.getItem('hrkey_stats') || '{}');
-                    stats.totalReferences = (stats.totalReferences || 0) + 1;
-                    stats.pendingReferences = (stats.pendingReferences || 0) + 1;
-                    localStorage.setItem('hrkey_stats', JSON.stringify(stats));
-
-                    // Mostrar mensaje de éxito
-                    alert(`✅ Reference request sent successfully! 
-                    
-Invitation sent to: ${formData.email}
-Reference ID: ${result.reference_id}
-Email will be sent with verification link.`);
-
-                    // Redirigir al dashboard
-                    window.location.href = 'app.html?updated=true';
-
-                } else {
-                    throw new Error(result.error || 'Failed to send reference request');
-                }
-
-            } catch (error) {
-                console.error('Error sending reference request:', error);
-                
-                // Hide loading overlay
-                document.getElementById('loadingOverlay').style.display = 'none';
-                
-                // Si falla la API, usar localStorage como fallback
-                console.log('Using localStorage fallback...');
-                
-                const fallbackData = {
-                    id: Date.now(),
-                    referenceType: document.querySelector('input[name="referenceType"]:checked')?.value,
-                    applicantPosition: document.getElementById('applicantPosition').value,
-                    applicantCompany: document.getElementById('applicantCompany').value,
-                    relationship: document.querySelector('input[name="relationship"]:checked')?.value,
-                    refereeName: document.getElementById('refereeName').value,
-                    refereeEmail: document.getElementById('refereeEmail').value,
-                    refereePosition: document.getElementById('refereePosition').value,
-                    refereeCompany: document.getElementById('refereeCompany').value,
-                    collaborationStartDate: document.getElementById('collaborationStartDate').value,
-                    collaborationEndDate: document.getElementById('collaborationEndDate').value,
-                    projectContext: document.getElementById('projectContext').value,
-                    selectedKPIs: Array.from(document.querySelectorAll('input[name="kpis"]:checked')).map(cb => cb.value),
-                    achievements: document.getElementById('achievements').value,
-                    growthAreas: document.getElementById('growthAreas').value,
-                    specialContext: document.getElementById('specialContext').value,
-                    usageContext: document.getElementById('usageContext').value,
-                    status: 'pending',
-                    createdAt: new Date().toISOString()
-                };
-
-                // Guardar en localStorage como fallback
-                const existingRequests = JSON.parse(localStorage.getItem('hrkey_requests') || '[]');
-                existingRequests.push(fallbackData);
-                localStorage.setItem('hrkey_requests', JSON.stringify(existingRequests));
-
-                // Actualizar stats
-                const stats = JSON.parse(localStorage.getItem('hrkey_stats') || '{}');
-                stats.totalReferences = (stats.totalReferences || 0) + 1;
-                stats.pendingReferences = (stats.pendingReferences || 0) + 1;
-                localStorage.setItem('hrkey_stats', JSON.stringify(stats));
-
-                alert(`⚠️ Reference request saved locally (API temporarily unavailable)
-                
-Error: ${error.message}
-Data saved locally and dashboard will be updated.`);
-
-                // Redirigir al dashboard
-                window.location.href = 'app.html?updated=true';
-            }
-        }
-
-        // Initialize form
-        document.addEventListener('DOMContentLoaded', function() {
-            updateProgressIndicators();
+      // Agregar KPI 3 si está lleno
+      const kpi3Title = document.getElementById('kpi3Title').value.trim();
+      const kpi3Desc = document.getElementById('kpi3Description').value.trim();
+      if (kpi3Title && kpi3Desc) {
+        ref.kpis.push({
+          title: kpi3Title,
+          description: kpi3Desc
         });
-    </script>
+      }
 
+      console.log('🚀 Submitting reference request:', ref);
+
+      try {
+        // Enviar por EmailJS
+        const mailOk = await sendEmailJS(ref, user);
+
+        // Guardar local siempre
+        saveReferenceLocal(ref);
+
+        if (mailOk) {
+          showAlert('✅ Reference request sent successfully! Email delivered.', 'success');
+          console.log('✅ Request completed successfully');
+        } else {
+          showAlert('⚠️ Request saved locally. Email may not have been sent. Check console.', 'error');
+        }
+        
+        setStatus('');
+        setTimeout(()=> location.replace('./app.html'), 1500);
+
+      } catch(err) {
+        console.error('❌ submitReferenceRequest error:', err);
+        showAlert('❌ Unexpected error. Please try again.', 'error');
+        setStatus('');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = original;
+      }
+    }
+
+    // init
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('🎬 Page loaded');
+      const user = loadSessionOrRedirect();
+      if (!user) return;
+      
+      document.getElementById('refForm').addEventListener('submit', submitReferenceRequest);
+      document.getElementById('cancelBtn').addEventListener('click', () => location.replace('./app.html'));
+      
+      console.log('✅ Form initialized and ready');
+    });
+  </script>
 </body>
-</html>>Reference Type</h4>
-                    <p id="reviewReferenceType">-</p>
-                </div>
-
-                <div class="review-section">
-                    <h4
+</html>

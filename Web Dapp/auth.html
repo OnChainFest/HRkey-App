@@ -1,338 +1,354 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-  <meta name="author" content="HRKey"/>	
-  <meta name="description" content="HRKey Authentication - Secure Login with Web3 & Social Options"/>
-  <meta name="keywords" content="HRKey, Authentication, Web3, Wallet, Social Login">	
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-  <title>HRKey - Secure Authentication</title>
-
-  <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
-  <link rel="icon" href="images/favicon.ico" type="image/x-icon">
-
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link href="css/bootstrap.min.css" rel="stylesheet">
-  <link href="css/flaticon.css" rel="stylesheet">
-  <link href="css/menu.css" rel="stylesheet">	
-  <link href="css/animate.css" rel="stylesheet">
-  <link href="css/style.css" rel="stylesheet"> 
-  <link href="css/responsive.css" rel="stylesheet">
-
-  <style>
-    .auth-container{min-height:100vh;background:#000;display:flex;align-items:center;justify-content:center;padding:20px}
-    .auth-card{background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(255,255,255,.1);padding:40px;max-width:480px;width:100%;text-align:center;position:relative}
-    .auth-logo{width:200px;height:auto;margin:0 auto 30px;display:block}
-    .auth-title{font-size:28px;font-weight:600;color:#1f2937;margin-bottom:10px}
-    .auth-subtitle{color:#6b7280;margin-bottom:40px;font-size:16px}
-    .auth-method{display:block;width:100%;padding:16px 24px;margin-bottom:16px;border:2px solid #e5e7eb;border-radius:12px;background:#fff;color:#374151;font-weight:500;text-decoration:none;transition:all .3s ease;position:relative;cursor:pointer}
-    .auth-method:hover{border-color:#00C4C7;background:#f0fdfa;color:#374151;text-decoration:none;transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,196,199,.15)}
-    .auth-method-icon{width:24px;height:24px;margin-right:12px;vertical-align:middle}
-    .web3-methods{margin-bottom:30px}
-    .social-methods{border-top:1px solid #e5e7eb;padding-top:30px}
-    .divider{position:relative;text-align:center;margin:30px 0}
-    .divider::before{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:#e5e7eb}
-    .divider span{background:#fff;color:#9ca3af;padding:0 20px;font-size:14px;position:relative}
-    .security-badge{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin-top:30px;font-size:14px;color:#166534}
-    .back-link{position:absolute;top:30px;left:30px;color:#fff;text-decoration:none;font-weight:500;transition:opacity .3s ease}
-    .back-link:hover{opacity:.8;color:#fff;text-decoration:none}
-    .auth-method.primary{background:linear-gradient(135deg,#00C4C7 0%,#00a8aa 100%);color:#fff;border-color:transparent}
-    .auth-method.primary:hover{background:linear-gradient(135deg,#00a8aa 0%,#008f91 100%);color:#fff;transform:translateY(-2px)}
-    .wallet-status{padding:12px;border-radius:8px;margin-bottom:16px;display:none}
-    .wallet-status.success{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
-    .wallet-status.error{background:#fef2f2;border:1px solid #fecaca;color:#dc2626}
-    .wallet-status.loading{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HRKey - Sign Up / Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Rubik', Arial, sans-serif; 
+            background: linear-gradient(135deg, #000000 0%, #00C4C7 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            padding: 40px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .header h1 {
+            color: #00C4C7;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #888;
+            font-size: 14px;
+        }
+        .content {
+            padding: 40px;
+        }
+        .referee-banner {
+            background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+            border-left: 4px solid #00C4C7;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: none;
+        }
+        .referee-banner.active {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .referee-banner h3 {
+            color: #00C4C7;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .referee-banner p {
+            color: #1e293b;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Rubik', Arial, sans-serif;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #00C4C7;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #00C4C7 0%, #00d2cc 100%);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,196,199,0.4);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,196,199,0.6);
+        }
+        .btn-wallet {
+            width: 100%;
+            padding: 16px;
+            background: transparent;
+            color: #00C4C7;
+            border: 2px solid #00C4C7;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+        .btn-wallet:hover {
+            background: #00C4C7;
+            color: #000;
+        }
+        .divider {
+            text-align: center;
+            margin: 25px 0;
+            color: #94a3b8;
+            font-size: 14px;
+            position: relative;
+        }
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 40%;
+            height: 1px;
+            background: #e2e8f0;
+        }
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+        .benefits {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .benefit-icon {
+            font-size: 20px;
+            margin-right: 12px;
+        }
+        .footer-note {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+    </style>
 </head>
 <body>
-  <div class="auth-container">
-    <a href="index.html" class="back-link">← Back to Home</a>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🔐</div>
+            <h1>Welcome to HRKey</h1>
+            <p id="headerSubtitle">Build your verified professional profile</p>
+        </div>
 
-    <div class="auth-card">
-      <img src="images/LogoHRKEY-transparente.png" alt="HRKey" class="auth-logo">
+        <div class="content">
+            <!-- Banner especial para referees -->
+            <div class="referee-banner" id="refereeBanner">
+                <h3>🎉 Thanks for providing a reference!</h3>
+                <p>You've seen how HRKey works. Now create your own profile and start building your decentralized professional reputation with blockchain-verified references.</p>
+            </div>
 
-      <h1 class="auth-title">Welcome to HRKey</h1>
-      <p class="auth-subtitle">Choose your preferred way to access your professional references</p>
+            <form id="authForm">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" placeholder="Enter your full name" required>
+                </div>
 
-      <div id="wallet-status" class="wallet-status"></div>
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="your.email@company.com" required>
+                </div>
 
-      <div class="web3-methods">
-        <h6 style="color:#6b7280;font-size:14px;font-weight:600;margin-bottom:20px;text-transform:uppercase;letter-spacing:.5px;">Web3 Wallets (Recommended)</h6>
-        <a href="#" class="auth-method primary" id="metamask-btn">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" class="auth-method-icon">
-          Connect with MetaMask
-        </a>
-        <a href="#" class="auth-method" id="coinbase-btn">
-          <img src="https://avatars.githubusercontent.com/u/18060234?s=200&v=4" alt="Coinbase Wallet" class="auth-method-icon">
-          Connect with Coinbase Wallet
-        </a>
-      </div>
+                <button type="submit" class="btn-primary" id="submitBtn">
+                    🚀 Create Free Account
+                </button>
+            </form>
 
-      <div class="divider"><span>Or continue with</span></div>
+            <div class="divider">OR</div>
 
-      <div class="social-methods">
-        <a href="#" class="auth-method" id="google-btn">
-          <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="auth-method-icon">
-          Continue with Google
-        </a>
+            <button class="btn-wallet" id="walletBtn">
+                🦊 Connect with MetaMask
+            </button>
 
-        <!-- Dejar ocultos hasta configurar -->
-        <a href="#" class="auth-method" id="linkedin-btn" style="display:none;">
-          <img src="https://content.linkedin.com/content/dam/me/business/en-us/amp/brand-site/v2/bg/LI-Bug.svg.original.svg" alt="LinkedIn" class="auth-method-icon">
-          Continue with LinkedIn
-        </a>
+            <div class="benefits">
+                <div class="benefit-item">
+                    <span class="benefit-icon">✅</span>
+                    <span>1 free blockchain-verified reference</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">⚡</span>
+                    <span>Setup in less than 2 minutes</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">🔐</span>
+                    <span>Secure & decentralized profile</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">🌐</span>
+                    <span>Share with employers worldwide</span>
+                </div>
+            </div>
 
-        <a href="#" class="auth-method" id="github-btn" style="display:none;">
-          <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" class="auth-method-icon">
-          Continue with GitHub
-        </a>
-      </div>
-
-      <div class="security-badge">
-        <strong>🔒 Secure & Private</strong><br>
-        Your data is encrypted and stored on the blockchain. We never store your private keys.
-      </div>
+            <div class="footer-note">
+                <p>By signing up, you agree to our Terms of Service</p>
+                <p style="margin-top: 5px;">Already have an account? <a href="#" style="color: #00C4C7; text-decoration: none;">Sign in</a></p>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- SCRIPTS -->
-  <script src="js/jquery-3.6.0.min.js"></script>
-  <script src="js/bootstrap.min.js"></script>
-  <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-
-    console.log('📜 HRKey Auth script loading...');
-
-    // ⚠️ Producción: está bien exponer el anon key en el front.
-    const SUPABASE_URL = 'https://wrervcydgdrlcndtjboy.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXJ2Y3lkZ2RybGNuZHRqYm95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NzYxNTYsImV4cCI6MjA3MzU1MjE1Nn0.63M53sZW4LEYMOaxScvtLhQr_6VUj7rOaaGtlR745IM';
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    class HRKeyAuth {
-      constructor() {
-        console.log('🚀 HRKeyAuth initialized');
-        this.BACKEND_URL = 'http://localhost:3001';
-        this.init();
-      }
-
-      async init() {
-        console.log('⚙️ Setting up event listeners...');
-        await this.waitForMetaMask();
-        this.setupEventListeners();
-        this.checkExistingAuth();
-        console.log('✅ HRKeyAuth ready!');
-      }
-
-      async waitForMetaMask() {
-        console.log('⏳ Waiting for wallet providers to initialize...');
-        for (let i = 0; i < 10; i++) {
-          if (typeof window.ethereum !== 'undefined') {
-            console.log('✅ Wallet provider detected!');
-            return;
-          }
-          await new Promise(r => setTimeout(r, 100));
+    <script>
+        // Detectar si el usuario viene de completar una referencia
+        function checkRefereeStatus() {
+            const refereeInfo = localStorage.getItem('hrkey_referee_info');
+            if (refereeInfo) {
+                const data = JSON.parse(refereeInfo);
+                if (data.hasProvidedReference) {
+                    // Mostrar banner especial
+                    document.getElementById('refereeBanner').classList.add('active');
+                    document.getElementById('headerSubtitle').textContent = 'Now build your own verified profile!';
+                    
+                    console.log('✨ Referee detected - showing personalized onboarding');
+                    
+                    // Track conversion funnel
+                    if (window.gtag) {
+                        gtag('event', 'referee_reached_signup', {
+                            'event_category': 'conversion',
+                            'event_label': 'referee_funnel'
+                        });
+                    }
+                }
+            }
         }
-        console.log('⚠️ No wallet provider detected after waiting');
-      }
 
-      setupEventListeners() {
-        document.getElementById('metamask-btn')?.addEventListener('click', (e) => {
-          e.preventDefault();
-          console.log('🦊 MetaMask button clicked');
-          this.connectMetaMask();
+        // Demo login/signup
+        document.getElementById('authForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Creating account...';
+            
+            setTimeout(() => {
+                // Crear cuenta
+                const userData = {
+                    name: name,
+                    email: email,
+                    wallet: '0x' + Math.random().toString(16).substr(2, 40),
+                    authenticated: true,
+                    loginDate: new Date().toISOString(),
+                    source: localStorage.getItem('hrkey_referee_info') ? 'referee_conversion' : 'direct_signup'
+                };
+                
+                localStorage.setItem('hrkey_user_data', JSON.stringify(userData));
+                
+                // Crear plan FREE
+                const plan = {
+                    plan: 'free',
+                    features: {
+                        maxReferences: 1,
+                        canUseBlockchain: false,
+                        canExportPDF: false
+                    },
+                    usage: {
+                        referencesUsed: 0
+                    }
+                };
+                localStorage.setItem('hrkey_user_plan', JSON.stringify(plan));
+                
+                // Track conversión
+                if (window.gtag && userData.source === 'referee_conversion') {
+                    gtag('event', 'referee_converted', {
+                        'event_category': 'conversion',
+                        'event_label': 'signup_completed'
+                    });
+                }
+                
+                console.log('✅ Account created:', userData);
+                
+                // Redirigir al dashboard
+                window.location.href = 'app.html';
+            }, 1500);
         });
 
-        document.getElementById('coinbase-btn')?.addEventListener('click', (e) => {
-          e.preventDefault();
-          console.log('💙 Coinbase Wallet button clicked');
-          this.connectCoinbaseWallet();
+        // Conectar con MetaMask (demo)
+        document.getElementById('walletBtn').addEventListener('click', async () => {
+            const walletBtn = document.getElementById('walletBtn');
+            walletBtn.disabled = true;
+            walletBtn.textContent = '⏳ Connecting...';
+            
+            // Simular conexión
+            setTimeout(() => {
+                const userData = {
+                    name: 'Web3 User',
+                    email: 'user@wallet.xyz',
+                    wallet: '0x' + Math.random().toString(16).substr(2, 40),
+                    authenticated: true,
+                    loginDate: new Date().toISOString(),
+                    source: localStorage.getItem('hrkey_referee_info') ? 'referee_conversion_wallet' : 'direct_signup_wallet'
+                };
+                
+                localStorage.setItem('hrkey_user_data', JSON.stringify(userData));
+                
+                const plan = {
+                    plan: 'free',
+                    features: {
+                        maxReferences: 1,
+                        canUseBlockchain: false,
+                        canExportPDF: false
+                    },
+                    usage: {
+                        referencesUsed: 0
+                    }
+                };
+                localStorage.setItem('hrkey_user_plan', JSON.stringify(plan));
+                
+                console.log('✅ Wallet connected:', userData);
+                window.location.href = 'app.html';
+            }, 2000);
         });
 
-        document.getElementById('google-btn')?.addEventListener('click', async (e) => {
-          e.preventDefault();
-          console.log('🔍 Google button clicked');
-          this.socialLogin('google');
-        });
-
-        console.log('✅ All event listeners attached');
-      }
-
-      async connectMetaMask() {
-        try {
-          console.log('🔍 Checking for MetaMask...');
-          await new Promise(resolve => setTimeout(resolve, 100));
-
-          if (typeof window.ethereum === 'undefined') {
-            console.error('❌ MetaMask not found');
-            this.showWalletStatus('MetaMask not detected. Please install it.', 'error');
-            if (confirm('MetaMask not detected. Would you like to install it?')) {
-              window.open('https://metamask.io/download/', '_blank');
-            }
-            return;
-          }
-
-          console.log('✅ MetaMask detected!');
-          this.showWalletStatus('Connecting to MetaMask...', 'loading');
-
-          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-          await this.switchToBaseNetwork();
-          const address = accounts[0];
-          console.log('💰 Connected wallet:', address);
-
-          await this.handleAuthSuccess({ address, authProvider: 'metamask' }, 'wallet');
-        } catch (error) {
-          console.error('❌ MetaMask connection error:', error);
-          this.showWalletStatus(`Connection failed: ${error.message}`, 'error');
-        }
-      }
-
-      async connectCoinbaseWallet() {
-        try {
-          console.log('💙 Coinbase Wallet clicked');
-          await new Promise(resolve => setTimeout(resolve, 100));
-
-          if (typeof window.ethereum === 'undefined') {
-            console.error('❌ No wallet detected');
-            this.showWalletStatus('No wallet detected. Please install Coinbase Wallet.', 'error');
-            if (confirm('Coinbase Wallet not detected. Would you like to install it?')) {
-              window.open('https://www.coinbase.com/wallet/downloads', '_blank');
-            }
-            return;
-          }
-
-          const isCoinbaseWallet = window.ethereum.isCoinbaseWallet;
-          this.showWalletStatus('Connecting to Coinbase Wallet...', 'loading');
-
-          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-          await this.switchToBaseNetwork();
-          const address = accounts[0];
-          console.log('💰 Connected wallet:', address);
-
-          await this.handleAuthSuccess({ address, authProvider: isCoinbaseWallet ? 'coinbase' : 'wallet' }, 'wallet');
-        } catch (error) {
-          console.error('❌ Coinbase Wallet connection error:', error);
-          this.showWalletStatus(`Connection failed: ${error.message}`, 'error');
-        }
-      }
-
-      async switchToBaseNetwork() {
-        try {
-          console.log('🌐 Switching to Base network...');
-          await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
-          console.log('✅ Switched to Base network');
-        } catch (switchError) {
-          if (switchError.code === 4902) {
-            await window.ethereum.request({
-              method: 'wallet_addEthereumChain',
-              params: [{
-                chainId: '0x2105',
-                chainName: 'Base',
-                nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
-                rpcUrls: ['https://mainnet.base.org'],
-                blockExplorerUrls: ['https://basescan.org'],
-              }],
-            });
-            console.log('✅ Base network added successfully');
-          } else {
-            throw switchError;
-          }
-        }
-      }
-
-      async socialLogin(provider) {
-        try {
-          console.log(`🔐 Starting ${provider} social login...`);
-          this.showWalletStatus(`Connecting with ${provider.charAt(0).toUpperCase() + provider.slice(1)}...`, 'loading');
-
-          const { data, error } = await supabase.auth.signInWithOAuth({
-            provider,
-            options: {
-              // Después del callback en Supabase, te devuelve a tu app:
-              redirectTo: window.location.origin + '/app.html'
-            }
-          });
-
-          if (error) throw error;
-          // Supabase maneja el redirect automáticamente.
-        } catch (error) {
-          console.error(`❌ ${provider} login error:`, error);
-          this.showWalletStatus('Authentication failed. Please try again.', 'error');
-        }
-      }
-
-      async handleAuthSuccess(authData, authType) {
-        console.log(`✅ Auth successful via ${authType}`, authData);
-
-        let walletAddress;
-
-        if (authType === 'wallet') {
-          walletAddress = authData.address;
-          console.log('🔗 Using existing wallet:', walletAddress);
-
-          const userData = {
-            address: walletAddress,
-            authProvider: authData.authProvider,
-            authType: 'wallet',
-            hasCustomWallet: false,
-            createdAt: Date.now()
-          };
-
-          localStorage.setItem('hrkey_wallet', JSON.stringify(userData));
-          this.showWalletStatus(`✅ Connected: ${walletAddress.slice(0,6)}...${walletAddress.slice(-4)}`, 'success');
-
-          // Redirigir al dashboard
-          setTimeout(() => { window.location.href = 'app.html'; }, 1200);
-        }
-      }
-
-      async checkExistingAuth() {
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (session) {
-          console.log('📝 Found active Supabase session:', session.user);
-          const existingWallet = localStorage.getItem('hrkey_wallet');
-
-          if (!existingWallet) {
-            // Si entró por social, tu backend podría crear wallet aquí (omito llamada por ahora)
-            this.showWalletStatus('Signed in with Google. Redirecting...', 'success');
-            setTimeout(() => { window.location.href = 'app.html'; }, 800);
-          } else {
-            const walletData = JSON.parse(existingWallet);
-            this.showWalletStatus(`Connected: ${walletData.address.slice(0,6)}...${walletData.address.slice(-4)}`, 'success');
-          }
-        }
-
-        const existingWallet = localStorage.getItem('hrkey_wallet');
-        if (existingWallet) {
-          const walletData = JSON.parse(existingWallet);
-          console.log('📝 Found existing wallet:', walletData);
-          this.showWalletStatus(`Previously connected: ${walletData.address.slice(0,6)}...${walletData.address.slice(-4)}`, 'success');
-        }
-      }
-
-      showWalletStatus(message, type) {
-        console.log(`📢 Status: [${type}] ${message}`);
-        const statusDiv = document.getElementById('wallet-status');
-        if (statusDiv) {
-          statusDiv.textContent = message;
-          statusDiv.className = `wallet-status ${type}`;
-          statusDiv.style.display = 'block';
-        }
-      }
-    }
-
-    // Init
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        console.log('🎬 DOM loaded, initializing HRKeyAuth...');
-        window.hrKeyAuth = new HRKeyAuth();
-      });
-    } else {
-      console.log('🎬 DOM already loaded, initializing HRKeyAuth...');
-      window.hrKeyAuth = new HRKeyAuth();
-    }
-  </script>
+        // Check referee status on load
+        window.addEventListener('DOMContentLoaded', checkRefereeStatus);
+    </script>
 </body>
 </html>

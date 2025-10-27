@@ -1,168 +1,81 @@
-require('dotenv').config({ path: '../.env' });
+// server.js - Backend para procesar pagos de Stripe
+// Ejecutar con: node server.js
 
 const express = require('express');
+const stripe = require('stripe')('sk_test_YOUR_SECRET_KEY_HERE'); // ⚠️ REEMPLAZAR con tu Secret Key
 const cors = require('cors');
-const { Pool } = require('pg'); // PostgreSQL
-const app = express();
 
+const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Conexión a base de datos
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  port: 5432
+// Endpoint para crear Payment Intent
+app.post('/create-payment-intent', async (req, res) => {
+    try {
+        const { amount, email, promoCode } = req.body;
+
+        // Crear Payment Intent
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: amount, // Amount en centavos (ej: 1000 = $10.00)
+            currency: 'usd',
+            receipt_email: email,
+            metadata: {
+                promoCode: promoCode || 'none',
+                plan: 'pro-lifetime'
+            },
+            description: 'HRKey PRO - Lifetime Access',
+        });
+
+        res.json({
+            clientSecret: paymentIntent.client_secret,
+            paymentIntentId: paymentIntent.id
+        });
+
+        console.log('✅ Payment Intent created:', paymentIntent.id);
+
+    } catch (error) {
+        console.error('❌ Error creating payment intent:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// Verificar conexión a base de datos
-pool.connect()
-  .then(() => console.log('Database connected'))
-  .catch(err => console.log('Database connection error:', err.message));
+// Webhook para recibir eventos de Stripe
+app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = 'whsec_YOUR_WEBHOOK_SECRET'; // ⚠️ REEMPLAZAR
 
-// Verificar elegibilidad
-app.post('/api/check-gasless', async (req, res) => {
-  const { referenceId, txType, userAddress } = req.body;
-  
-  try {
-    const result = await pool.query(
-      `SELECT COUNT(*) as count FROM reference_transactions 
-       WHERE reference_id = $1 AND transaction_type = $2`,
-      [referenceId, txType]
-    );
-    
-    const used = parseInt(result.rows[0].count);
-    const freeTypes = ['REQUEST', 'REFERENCE', 'CLARIFICATION', 'COMPLEMENT'];
-    const eligible = used === 0 && freeTypes.includes(txType);
-    
-    res.json({ 
-      eligible,
-      reason: eligible ? 'First time free' : `${txType} already used`
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Registrar uso
-app.post('/api/record-gasless', async (req, res) => {
-  const { referenceId, txType, txHash, userAddress } = req.body;
-  
-  try {
-    await pool.query(
-      `INSERT INTO reference_transactions 
-       (reference_id, transaction_type, transaction_hash, user_address, is_gasless, created_at)
-       VALUES ($1, $2, $3, $4, true, NOW())`,
-      [referenceId, txType, txHash, userAddress]
-    );
-    
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Obtener estadísticas de referencias por referenceId
-app.get('/api/stats/:referenceId', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT transaction_type, COUNT(*) as count 
-       FROM reference_transactions 
-       WHERE reference_id = $1 
-       GROUP BY transaction_type`,
-      [req.params.referenceId]
-    );
-    
-    const stats = {
-      REQUEST: 0,
-      REFERENCE: 0,
-      CLARIFICATION: 0,
-      COMPLEMENT: 0
-    };
-    
-    result.rows.forEach(row => {
-      stats[row.transaction_type] = parseInt(row.count);
-    });
-    
-    res.json(stats);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 🆕 NUEVO: Obtener estadísticas del usuario para el dashboard
-app.get('/api/user/stats/:address', async (req, res) => {
-  try {
-    const { address } = req.params;
-    console.log('📊 Getting stats for user:', address);
-
-    // Consultar estadísticas de la base de datos
-    let stats = {
-      totalReferences: 0,
-      verifiedOnChain: 0,
-      pendingValidations: 0,
-      profileViews: 0
-    };
+    let event;
 
     try {
-      // Contar referencias totales del usuario
-      const totalResult = await pool.query(
-        `SELECT COUNT(DISTINCT reference_id) as count 
-         FROM reference_transactions 
-         WHERE user_address = $1`,
-        [address]
-      );
-      stats.totalReferences = parseInt(totalResult.rows[0].count) || 0;
-
-      // Contar referencias verificadas on-chain (con transaction_hash)
-      const verifiedResult = await pool.query(
-        `SELECT COUNT(DISTINCT reference_id) as count 
-         FROM reference_transactions 
-         WHERE user_address = $1 AND transaction_hash IS NOT NULL`,
-        [address]
-      );
-      stats.verifiedOnChain = parseInt(verifiedResult.rows[0].count) || 0;
-
-      // Contar validaciones pendientes
-      const pendingResult = await pool.query(
-        `SELECT COUNT(*) as count 
-         FROM reference_transactions 
-         WHERE user_address = $1 AND transaction_type = 'REQUEST' 
-         AND reference_id NOT IN (
-           SELECT reference_id FROM reference_transactions 
-           WHERE transaction_type = 'REFERENCE'
-         )`,
-        [address]
-      );
-      stats.pendingValidations = parseInt(pendingResult.rows[0].count) || 0;
-
-      // Profile views (por ahora un valor por defecto, puedes agregar tabla de views después)
-      stats.profileViews = 0;
-
-    } catch (dbError) {
-      console.log('⚠️ Database query error, using defaults:', dbError.message);
-      // Si hay error de BD, devolver valores por defecto
+        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } catch (err) {
+        console.error('⚠️ Webhook signature verification failed:', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    console.log('✅ Stats:', stats);
-    res.json(stats);
+    // Handle payment success
+    if (event.type === 'payment_intent.succeeded') {
+        const paymentIntent = event.data.object;
+        
+        console.log('✅ Payment succeeded:', paymentIntent.id);
+        console.log('   Email:', paymentIntent.receipt_email);
+        console.log('   Amount:', paymentIntent.amount / 100);
+        
+        // AQUÍ: Actualizar tu base de datos con el usuario PRO
+        // Por ejemplo:
+        // await db.upgradeToPro(paymentIntent.receipt_email, paymentIntent.id);
+    }
 
-  } catch (error) {
-    console.error('❌ Error getting user stats:', error);
-    res.status(500).json({ 
-      error: 'Internal server error',
-      totalReferences: 0,
-      verifiedOnChain: 0,
-      pendingValidations: 0,
-      profileViews: 0
-    });
-  }
+    res.json({received: true});
 });
 
-// Iniciar servidor
+// Health check
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', message: 'HRKey Payment Server Running' });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Backend running on :${PORT}`);
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/health`);
 });
