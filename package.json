@@ -7,12 +7,15 @@
     "hh": "hardhat",
     "compile": "hardhat compile && node copy-abi.cjs",
     "deploy:base-sepolia": "hardhat run scripts/deploy.js --network baseSepolia && node copy-abi.cjs",
-    "verify:base-sepolia": "hardhat verify --network baseSepolia"
+    "verify:base-sepolia": "hardhat verify --network baseSepolia",
+    "monitor:onchain": "node backend/monitor-paymaster-onchain.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "ethers": "^6.13.2",
     "express": "^5.1.0",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.13",
     "next": "14.2.5",
     "pg": "^8.16.3",
     "react": "18.3.1",
