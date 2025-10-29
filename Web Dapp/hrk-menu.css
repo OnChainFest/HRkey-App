@@ -462,3 +462,13 @@
 @media (min-width: 1025px) {
   #hrk-hamburger, #hrk-mobile-menu { display: none !important; }
 }
+@media (max-width: 1024px) {
+  .hrkey-header .logo,
+  .hrkey-header .logo img {
+    display: inline-flex !important;
+    visibility: visible !important;
+    height: 34px !important;   /* 32–38px según prefieras */
+    width: auto !important;
+    object-fit: contain;
+  }
+}
