@@ -58,11 +58,17 @@
     .pricing-card.featured .price-title { color: #111827; }
     .pricing-card.featured .btn-hrkey { background: #00C4C7; color: #000; font-weight: 700; }
   </style>
+  <link rel="stylesheet" href="hrk-menu.css">
 </head>
 
 <body>
   <div id="page" class="page">
-
+    <!-- Botón hamburguesa fijo (fuera del header) -->
+<button id="hrk-hamburger" class="hrk-hamburger" aria-label="Open menu" aria-controls="hrk-mobile-menu" aria-expanded="false">
+  <span class="hrk-hamburger-bar"></span>
+  <span class="hrk-hamburger-bar"></span>
+  <span class="hrk-hamburger-bar"></span>
+</button>
     <!-- HEADER -->
     <header id="header" class="header hrkey-header transparent-header">
       <div class="header-wrapper">
@@ -342,5 +348,6 @@
       });
     });
   </script>
+  <script src="hrk-menu.js" defer></script>
 </body>
 </html>
