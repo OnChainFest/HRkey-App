@@ -338,3 +338,127 @@
   transform: translateY(0);
   pointer-events: auto;
 }
+/* ===== HRKey - Mobile header: logo left, hamburger right, slide-down menu ===== */
+
+/* 1) Header limpio en mobile: solo logo */
+@media (max-width: 1024px) {
+  /* Header como barra fija */
+  .header.hrkey-header,
+  .hrkey-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 60px;
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(6px);
+    z-index: 9980;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  }
+  .hrkey-header .header-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+  }
+
+  /* Muestra el LOGO (enlace del logo + img) */
+  .hrkey-header .header-wrapper a.logo,
+  .hrkey-header .header-wrapper a.logo img {
+    display: inline-flex !important;
+    visibility: visible !important;
+    align-items: center;
+    max-height: 38px;
+    width: auto;
+  }
+
+  /* Oculta navegación/links/ctas del header (Features, Pricing, etc.) */
+  .hrkey-header nav,
+  .hrkey-header .nav,
+  .hrkey-header .nav-menu,
+  .hrkey-header .menu,
+  .hrkey-header ul,
+  .hrkey-header li,
+  .hrkey-header .btn,
+  .hrkey-header .button,
+  .hrkey-header .get-started,
+  .hrkey-header a:not(.logo) {
+    display: none !important;
+  }
+
+  /* Deja espacio para la barra fija */
+  .hero, .hero-section, .main-content, #page {
+    margin-top: 60px !important;
+  }
+}
+
+/* 2) Hamburguesa (3 rayas teal, vertical) */
+.hrk-hamburger {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  right: calc(12px + env(safe-area-inset-right));
+  width: 40px; height: 40px;
+  display: flex !important;
+  flex-direction: column;            /* ← CLAVE: barras una encima de otra */
+  justify-content: center;
+  align-items: center;
+  row-gap: 6px;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+  z-index: 9999;
+  -webkit-tap-highlight-color: transparent;
+}
+.hrk-hamburger .hrk-hamburger-bar {
+  display: block !important;
+  width: 26px !important;
+  height: 3px !important;
+  background: var(--hrk-teal, #00BFA6) !important; /* TEAL */
+  border-radius: 2px !important;
+  transition: transform 200ms ease, opacity 200ms ease;
+}
+.hrk-hamburger[aria-expanded="true"] .hrk-hamburger-bar:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.hrk-hamburger[aria-expanded="true"] .hrk-hamburger-bar:nth-child(2) { opacity: 0; }
+.hrk-hamburger[aria-expanded="true"] .hrk-hamburger-bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+/* 3) Panel de menú dedicado (slide-down) — usa #hrk-mobile-menu, NO el nav del header */
+#hrk-mobile-menu {
+  position: fixed;
+  top: 60px; left: 12px; right: 12px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(0,0,0,0.12);
+  z-index: 9998;
+
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: max-height 260ms ease, opacity 200ms ease, transform 260ms ease;
+}
+#hrk-mobile-menu.is-open {
+  max-height: 80vh;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+#hrk-mobile-menu .hrk-menu-list {
+  list-style: none; margin: 0; padding: 10px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+#hrk-mobile-menu .hrk-menu-list a {
+  display: block;
+  padding: 12px 14px;
+  text-decoration: none;
+  font-weight: 700;
+  color: #111;
+  border-radius: 10px;
+  background: #fff;
+}
+#hrk-mobile-menu .hrk-menu-list a:active { background: #f5f7f8; }
+
+/* 4) En desktop no mostramos estos elementos móviles */
+@media (min-width: 1025px) {
+  #hrk-hamburger, #hrk-mobile-menu { display: none !important; }
+}
