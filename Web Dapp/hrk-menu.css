@@ -33,3 +33,41 @@
 @media (max-width: 1024px) { .hrk-hamburger { display: inline-flex; } }
 /* Ocultar menú mobile en desktop por seguridad */
 @media (min-width: 1025px) { #hrk-mobile-menu { display: none !important; } }
+
+/* --- HRKEY: Ajustes mobile del header --- */
+
+/* Ocultar botón Get Started solo en mobile */
+@media (max-width: 1024px) {
+  /* Busca la clase exacta del botón (según tu HTML es algo como .btn-get-started o .btn-cta) */
+  .header .btn-get-started,
+  .header .btn,
+  .header .button,
+  .get-started,
+  .btn-hrkey {
+    display: none !important;
+  }
+}
+
+/* Mantener visible el logo y el botón hamburguesa */
+@media (max-width: 1024px) {
+  .hrkey-header .logo,
+  .hrkey-header img,
+  #hrk-hamburger {
+    display: inline-flex !important;
+    visibility: visible !important;
+  }
+
+  /* Alineación del header */
+  .hrkey-header .header-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+  }
+
+  /* Ajustes del logo en mobile */
+  .hrkey-header .logo img {
+    max-height: 36px;
+    width: auto;
+  }
+}
