@@ -1,0 +1,35 @@
+/* ===== HRKey Hamburguesa (aislado) ===== */
+:root { --hrk-teal: #00BFA6; } /* cambia si tu teal oficial es otro */
+
+.hrk-hamburger {
+  position: fixed; top: 12px; right: 12px;
+  width: 40px; height: 40px;
+  display: none; align-items: center; justify-content: center; gap: 5px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: saturate(150%) blur(4px);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+  cursor: pointer; z-index: 9999; -webkit-tap-highlight-color: transparent;
+}
+.hrk-hamburger:focus { outline: 2px solid var(--hrk-teal); outline-offset: 2px; }
+.hrk-hamburger-bar {
+  display: block; width: 22px; height: 2px;
+  background: var(--hrk-teal);
+  transition: transform 200ms ease, opacity 200ms ease, background 200ms ease;
+}
+.hrk-hamburger[aria-expanded="true"] .hrk-hamburger-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hrk-hamburger[aria-expanded="true"] .hrk-hamburger-bar:nth-child(2) { opacity: 0; }
+.hrk-hamburger[aria-expanded="true"] .hrk-hamburger-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* Contenedor del menú móvil (usa tu nav existente poniéndole ese id) */
+#hrk-mobile-menu {
+  position: fixed; top: 60px; right: 12px; left: 12px;
+  background: #fff; border: 1px solid rgba(0,0,0,0.08); border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.12); padding: 12px; z-index: 9998;
+}
+
+/* Mostrar botón solo en mobile/tablet */
+@media (max-width: 1024px) { .hrk-hamburger { display: inline-flex; } }
+/* Ocultar menú mobile en desktop por seguridad */
+@media (min-width: 1025px) { #hrk-mobile-menu { display: none !important; } }
