@@ -148,3 +148,93 @@
   padding: 12px;
   z-index: 9998;
 }
+/* =========================
+   HRKey - Fixes Mobile Header
+   ========================= */
+
+/* 1) Asegurar que el LOGO se vea en mobile */
+@media (max-width: 1024px) {
+  .hrkey-header .logo,
+  .hrkey-header .logo img {
+    display: inline-block !important;
+    visibility: visible !important;
+    max-height: 38px;
+    width: auto;
+  }
+}
+
+/* 2) Forzar HAMBURGUESA a 3 líneas (evita spans globales) */
+.hrk-hamburger { padding: 8px; gap: 6px; }
+.hrk-hamburger .hrk-hamburger-bar {
+  display: block !important;
+  width: 26px !important;
+  height: 3px !important;
+  background: var(--hrk-teal) !important;
+  border-radius: 2px !important;
+  opacity: 1 !important;
+}
+
+/* Animación a “X” funciona igual */
+.hrk-hamburger[aria-expanded="true"] .hrk-hamburger-bar:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.hrk-hamburger[aria-expanded="true"] .hrk-hamburger-bar:nth-child(2) { opacity: 0; }
+.hrk-hamburger[aria-expanded="true"] .hrk-hamburger-bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+/* 3) Panel del menú con SLIDE-DOWN */
+#hrk-mobile-menu {
+  position: fixed;
+  top: 60px;
+  left: 12px;
+  right: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(0,0,0,0.12);
+  z-index: 9998;
+
+  /* estado cerrado */
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: max-height 260ms ease, opacity 200ms ease, transform 260ms ease;
+}
+
+/* estado abierto */
+#hrk-mobile-menu.is-open {
+  max-height: 80vh;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* estilos simples de lista */
+#hrk-mobile-menu .hrk-menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#hrk-mobile-menu .hrk-menu-list a {
+  display: block;
+  padding: 12px 14px;
+  text-decoration: none;
+  font-weight: 600;
+  color: #111;
+  border-radius: 10px;
+  background: #fff;
+}
+#hrk-mobile-menu .hrk-menu-list a:active { background: #f5f7f8; }
+
+/* Ocultar enlaces del header en mobile (dejamos logo visible) */
+@media (max-width: 1024px) {
+  .hrkey-header nav,
+  .hrkey-header .nav-menu,
+  .hrkey-header ul,
+  .hrkey-header li,
+  .hrkey-header a:not(.logo) {
+    display: none !important;
+  }
+}
