@@ -13,7 +13,7 @@
   <link rel="icon" href="images/favicon.ico" type="image/x-icon"/>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet"/>
 
-  <!-- CSS base de tu sitio -->
+  <!-- CSS base del sitio -->
   <link href="css/bootstrap.min.css" rel="stylesheet"/>
   <link href="css/flaticon.css" rel="stylesheet"/>
   <link href="css/menu.css" rel="stylesheet"/>
@@ -29,17 +29,11 @@
   <link href="css/custom-hrkey.css" rel="stylesheet"/>
 
   <style>
-    /* Ajuste del header para dar más espacio al logo */
-    .header-wrapper {
-      padding-top: 24px !important;
-    }
-    
-    .header-bar {
-      padding-top: 12px;
-      padding-bottom: 12px;
-    }
+    /* Ajuste del header para dar más espacio al logo (desktop / general) */
+    .header-wrapper { padding-top: 24px !important; }
+    .header-bar { padding-top: 12px; padding-bottom: 12px; }
 
-    /* Pequeños estilos utilitarios para el comparativo del pricing */
+    /* Utilitarios para el comparativo del pricing */
     .pricing-compare { margin-top: 18px; }
     .pricing-compare ul { list-style: none; padding-left: 0; margin: 0; }
     .pricing-compare li {
@@ -58,48 +52,46 @@
     .pricing-card.featured .price-title { color: #111827; }
     .pricing-card.featured .btn-hrkey { background: #00C4C7; color: #000; font-weight: 700; }
   </style>
+
+  <!-- Parche mobile: logo+hamburguesa y panel slide-down -->
   <link rel="stylesheet" href="hrk-menu.css">
 </head>
 
 <body>
   <div id="page" class="page">
+
     <!-- Botón hamburguesa fijo (fuera del header) -->
-<button id="hrk-hamburger" class="hrk-hamburger" aria-label="Open menu" aria-controls="hrk-mobile-menu" aria-expanded="false">
-  <span class="hrk-hamburger-bar"></span>
-  <span class="hrk-hamburger-bar"></span>
-  <span class="hrk-hamburger-bar"></span>
-</button>
-    <!-- HEADER -->
+    <button id="hrk-hamburger" class="hrk-hamburger" aria-label="Open menu" aria-controls="hrk-mobile-menu" aria-expanded="false">
+      <span class="hrk-hamburger-bar"></span>
+      <span class="hrk-hamburger-bar"></span>
+      <span class="hrk-hamburger-bar"></span>
+    </button>
+
+    <!-- ========== HEADER (único y correcto) ========== -->
     <header id="header" class="header hrkey-header transparent-header">
-  <div class="header-wrapper">
-    <a href="/" class="logo">
-      <img src="images/logo-hrkey.svg" alt="HRKey Logo">
-    </a>
-  </div>
-</header>
+      <div class="header-wrapper">
+        <!-- Logo (mismo de desktop) -->
+        <a href="/" class="logo" aria-label="HRKey Home">
+          <img src="images/logo-hrkey.svg" alt="HRKey Logo">
+        </a>
 
-          <!-- Logo -->
-          <a href="#HRKEY-HERO" class="hrkey-logo" aria-label="HRKey Home">
-            <img src="images/LogoHRKEY-transparente.png" alt="HRKey" />
-          </a>
+        <!-- Menú de escritorio (se oculta en mobile vía CSS en hrk-menu.css) -->
+        <nav class="hrkey-nav" aria-label="Main navigation">
+          <ul class="hrkey-menu">
+            <li><a href="#features-1">Why HRKey?</a></li>
+            <li><a href="#features-8">Features</a></li>
+            <li><a href="#pricing-1">Pricing</a></li>
+            <li><a href="#content-9">How It Works</a></li>
+          </ul>
+        </nav>
 
-          <!-- Menú -->
-          <nav class="hrkey-nav" aria-label="Main navigation">
-            <ul class="hrkey-menu">
-              <li><a href="#features-1">Why HRKey?</a></li>
-              <li><a href="#features-8">Features</a></li>
-              <li><a href="#pricing-1">Pricing</a></li>
-              <li><a href="#content-9">How It Works</a></li>
-            </ul>
-          </nav>
-
-          <!-- CTA derecha -->
-          <a href="auth.html" class="btn-hrkey hrkey-cta">Get Started</a>
-        </div>
+        <!-- CTA derecha (se oculta en mobile) -->
+        <a href="auth.html" class="btn-hrkey hrkey-cta">Get Started</a>
       </div>
     </header>
+    <!-- ========== /HEADER ========== -->
 
-    <!-- HERO -->
+    <!-- ========== HERO ========== -->
     <section id="HRKEY-HERO" class="hero-section hero-has-bg">
       <!-- Arte SVG -->
       <svg class="hero-art" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -139,6 +131,7 @@
         </div>
       </div>
     </section>
+    <!-- ========== /HERO ========== -->
 
     <!-- FEATURES-1 -->
     <section id="features-1" class="wide-60 features-section division">
@@ -190,7 +183,7 @@
       </div>
     </section>
 
-    <!-- PRICING (comparativo alineado con checkout-ready) -->
+    <!-- PRICING -->
     <section id="pricing-1" class="wide-60 pricing-section division">
       <div class="container">
         <div class="row justify-content-center">	
@@ -211,7 +204,6 @@
                 <h3 class="price-title">$0</h3>
                 <p class="price-sub">Forever free</p>
 
-                <!-- Comparativo de features -->
                 <div class="pricing-compare">
                   <ul>
                     <li><span class="feat-no">✗</span> <span>Unlimited references <span class="feat-no">(limited to 2)</span></span></li>
@@ -237,7 +229,6 @@
                 <h3 class="price-title">$9.99</h3>
                 <p class="price-sub badge-one-time">One-time • Early Bird</p>
 
-                <!-- Comparativo de features (idéntico a checkout-ready) -->
                 <div class="pricing-compare">
                   <ul>
                     <li><span class="feat-yes">✓</span> <span class="feat-ok">Unlimited references forever</span></li>
@@ -249,7 +240,6 @@
                   </ul>
                 </div>
 
-                <!-- Este botón va directo al checkout -->
                 <a href="checkout-ready.html" class="btn-hrkey w-100" style="margin-top:16px;">Unlock Pro</a>
               </div>
             </div>
@@ -326,7 +316,7 @@
 
   </div>
 
-  <!-- JS del video (como tenías) -->
+  <!-- JS del video -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const videoCover = document.getElementById('video-cover');
@@ -353,14 +343,18 @@
       });
     });
   </script>
+
+  <!-- Panel del menú móvil (slide-down) -->
   <nav id="hrk-mobile-menu" aria-label="Mobile menu">
-  <ul class="hrk-menu-list">
-    <li><a href="#why">Why HRKey?</a></li>
-    <li><a href="#features">Features</a></li>
-    <li><a href="#pricing">Pricing</a></li>
-    <li><a href="#how-it-works">How It Works</a></li>
-  </ul>
-</nav>
+    <ul class="hrk-menu-list">
+      <li><a href="#features-1">Why HRKey?</a></li>
+      <li><a href="#features-8">Features</a></li>
+      <li><a href="#pricing-1">Pricing</a></li>
+      <li><a href="#content-9">How It Works</a></li>
+    </ul>
+  </nav>
+
+  <!-- Toggle del menú -->
   <script src="hrk-menu.js" defer></script>
 </body>
 </html>
