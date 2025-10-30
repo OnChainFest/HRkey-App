@@ -13,7 +13,7 @@
   <link rel="icon" href="images/favicon.ico" type="image/x-icon"/>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet"/>
 
-  <!-- CSS base del sitio -->
+  <!-- CSS base -->
   <link href="css/bootstrap.min.css" rel="stylesheet"/>
   <link href="css/flaticon.css" rel="stylesheet"/>
   <link href="css/menu.css" rel="stylesheet"/>
@@ -24,16 +24,11 @@
   <link href="css/animate.css" rel="stylesheet"/>
   <link href="css/style.css" rel="stylesheet"/>
   <link href="css/responsive.css" rel="stylesheet"/>
-
-  <!-- Estilos personalizados -->
   <link href="css/custom-hrkey.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/hrk-menu.css">
 
   <style>
-    /* Ajuste del header para dar más espacio al logo (desktop / general) */
-    .header-wrapper { padding-top: 24px !important; }
-    .header-bar { padding-top: 12px; padding-bottom: 12px; }
-
-    /* Utilitarios para el comparativo del pricing */
+    /* Utilitarios del pricing */
     .pricing-compare { margin-top: 18px; }
     .pricing-compare ul { list-style: none; padding-left: 0; margin: 0; }
     .pricing-compare li {
@@ -43,18 +38,22 @@
     }
     .pricing-compare li:last-child { border-bottom: 0; }
     .feat-ok { font-weight: 700; }
-    .feat-yes { color: #16a34a; }   /* verde */
-    .feat-no  { color: #9ca3af; }   /* gris */
+    .feat-yes { color: #16a34a; }
+    .feat-no  { color: #9ca3af; }
     .price-sub.badge-one-time {
       display: inline-block; background: #fef3c7; color: #92400e;
       padding: 4px 8px; border-radius: 8px; font-weight: 600; font-size: 13px;
     }
     .pricing-card.featured .price-title { color: #111827; }
     .pricing-card.featured .btn-hrkey { background: #00C4C7; color: #000; font-weight: 700; }
-  </style>
 
-  <!-- Parche mobile: logo+hamburguesa y panel slide-down -->
-  <link rel="stylesheet" href="hrk-menu.css">
+    /* Promo & Coming Soon mínimos */
+    #promo-hrkey img { width: 100%; height: auto; object-fit: cover; }
+    #coming-soon .benefit-icon {
+      width: 68px; height: auto; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.08));
+    }
+    @media (max-width: 768px) { #coming-soon .benefit-icon { width: 56px; } }
+  </style>
 </head>
 
 <body>
@@ -67,14 +66,14 @@
       <span class="hrk-hamburger-bar"></span>
     </button>
 
-    <!-- ========== HEADER (único y correcto) ========== -->
+    <!-- HEADER -->
     <header id="header" class="header hrkey-header transparent-header">
       <div class="header-wrapper">
-        <!-- Logo (mismo de desktop) -->
         <a href="/" class="logo" aria-label="HRKey Home">
-        <img src="images/LogoHRKEY-transparente.png" alt="HRKey Logo">
-      </a>
-        <!-- Menú de escritorio (se oculta en mobile vía CSS en hrk-menu.css) -->
+          <img src="images/LogoHRKEY-transparente.png" alt="HRKey Logo">
+        </a>
+
+        <!-- Desktop nav (oculto en mobile por CSS) -->
         <nav class="hrkey-nav" aria-label="Main navigation">
           <ul class="hrkey-menu">
             <li><a href="#features-1">Why HRKey?</a></li>
@@ -84,15 +83,13 @@
           </ul>
         </nav>
 
-        <!-- CTA derecha (se oculta en mobile) -->
         <a href="auth.html" class="btn-hrkey hrkey-cta">Get Started</a>
       </div>
     </header>
-    <!-- ========== /HEADER ========== -->
+    <!-- /HEADER -->
 
-    <!-- ========== HERO ========== -->
+    <!-- HERO -->
     <section id="HRKEY-HERO" class="hero-section hero-has-bg">
-      <!-- Arte SVG -->
       <svg class="hero-art" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
           <filter id="hrkey-glow">
@@ -130,60 +127,126 @@
         </div>
       </div>
     </section>
-    <!-- ========== /HERO ========== -->
+    <!-- /HERO -->
+
+    <!-- PROMO / GIRL WITH PHONE -->
+    <section id="promo-hrkey" class="wide-60 division">
+      <div class="container">
+        <div class="row align-items-center g-4">
+          <div class="col-lg-6">
+            <img src="images/img-08.png" alt="Own your professional data" class="img-fluid rounded-3 shadow-sm" />
+          </div>
+          <div class="col-lg-6">
+            <h2 class="h2-md mb-3">Own your professional data</h2>
+            <p class="p-lg mb-4">
+              HRKey turns your professional reputation into a secure, verifiable, and results-based digital asset.
+              Request KPI-driven references, control access, and share on-chain when you’re ready.
+            </p>
+            <a href="auth.html" class="btn-hrkey">Request Your First Reference</a>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- FEATURES-1 -->
     <section id="features-1" class="wide-60 features-section division">
-  <div class="container">
-    <div class="row">
+      <div class="container">
+        <div class="row">
 
-      <!-- Blockchain Security -->
-      <div class="col-lg-3 col-md-6 col-12">
-        <div class="features-clean mb-40">
-          <div class="feature-icon">
-            <img src="images/Imagen%20Candado.png" alt="Blockchain Security" />
-          </div>
-          <h5 class="h5-sm mb-20">Blockchain Security</h5>
-          <p class="p-lg">Immutable references stored securely on Base blockchain</p>
+          <div class="col-lg-3 col-md-6 col-12">
+            <div class="features-clean mb-40">
+              <div class="feature-icon">
+                <img src="images/Imagen%20Candado.png" alt="Blockchain Security" />
+              </div>
+              <h5 class="h5-sm mb-20">Blockchain Security</h5>
+              <p class="p-lg">Immutable references stored securely on Base blockchain</p>
+            </div>
+          </div>	
+
+          <div class="col-lg-3 col-md-6 col-12">
+            <div class="features-clean mb-40">
+              <div class="feature-icon">
+                <img src="images/Imagen%20Peers.png" alt="Peer Validation" />
+              </div>
+              <h5 class="h5-sm mb-20">Peer Validation</h5>
+              <p class="p-lg">Get additional validations from colleagues and peers</p>
+            </div>
+          </div>	
+
+          <div class="col-lg-3 col-md-6 col-12">
+            <div class="features-clean mb-40">
+              <div class="feature-icon">
+                <img src="images/Imagen%20Escudo%20Privacy.png" alt="Privacy Control" />
+              </div>
+              <h5 class="h5-sm mb-20">Privacy Control</h5>
+              <p class="p-lg">Choose what to share and maintain full control of your data</p>
+            </div>
+          </div>	
+
+          <div class="col-lg-3 col-md-6 col-12">
+            <div class="features-clean mb-40">
+              <div class="feature-icon">
+                <img src="images/Imagen%20Cohete.png" alt="Career Growth" />
+              </div>
+              <h5 class="h5-sm mb-20">Career Growth</h5>
+              <p class="p-lg">Accelerate your professional growth with verified references</p>
+            </div>
+          </div>	
+
         </div>
       </div>
+    </section>
 
-      <!-- Peer Validation -->
-      <div class="col-lg-3 col-md-6 col-12">
-        <div class="features-clean mb-40">
-          <div class="feature-icon">
-            <img src="images/Imagen%20Peers.png" alt="Peer Validation" />
+    <!-- COMING SOON -->
+    <section id="coming-soon" class="wide-60 division">
+      <div class="container">
+        <div class="row justify-content-center mb-4">
+          <div class="col-lg-10 text-center">
+            <h2 class="h2-md">Coming Soon…</h2>
+            <p class="p-lg text-secondary">
+              We’re rolling out powerful features to help you monetize your data, leverage AI, and give employers trusted insights.
+            </p>
           </div>
-          <h5 class="h5-sm mb-20">Peer Validation</h5>
-          <p class="p-lg">Get additional validations from colleagues and peers</p>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-3 g-4 text-center">
+          <!-- Digital Wallet Earnings -->
+          <div class="col">
+            <div class="card h-100 border-0 shadow-sm p-4">
+              <img src="images/wallet.png" alt="Digital Wallet" class="mb-3 benefit-icon">
+              <h5 class="h5-sm mb-2">Digital Wallet Earnings</h5>
+              <p class="p-md text-secondary">
+                Earn <strong>$</strong> every time a verified employer pays to consult your on-chain references.
+                You control access; HRKey logs and routes payments transparently.
+              </p>
+            </div>
+          </div>
+
+          <!-- AI Resume Parsing & Positive Feedback -->
+          <div class="col">
+            <div class="card h-100 border-0 shadow-sm p-4">
+              <img src="images/brain.png" alt="AI Resume Parsing" class="mb-3 benefit-icon">
+              <h5 class="h5-sm mb-2">AI Resume Parsing & Positive Feedback</h5>
+              <p class="p-md text-secondary">
+                Transform messy inputs into structured achievements. Get AI suggestions to phrase
+                <em>positive, KPI-driven</em> feedback that elevates your references.
+              </p>
+            </div>
+          </div>
+
+          <!-- Employer Insights Dashboard -->
+          <div class="col">
+            <div class="card h-100 border-0 shadow-sm p-4">
+              <img src="images/Employee_Insights.png" alt="Employer Insights Dashboard" class="mb-3 benefit-icon">
+              <h5 class="h5-sm mb-2">Employer Insights Dashboard</h5>
+              <p class="p-md text-secondary">
+                A trusted portal for companies to request, pay, and review verified references with clear metrics and audit trails.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-
-      <!-- Privacy Control -->
-      <div class="col-lg-3 col-md-6 col-12">
-        <div class="features-clean mb-40">
-          <div class="feature-icon">
-            <img src="images/Imagen%20Escudo%20Privacy.png" alt="Privacy Control" />
-          </div>
-          <h5 class="h5-sm mb-20">Privacy Control</h5>
-          <p class="p-lg">Choose what to share and maintain full control of your data</p>
-        </div>
-      </div>
-
-      <!-- Career Growth -->
-      <div class="col-lg-3 col-md-6 col-12">
-        <div class="features-clean mb-40">
-          <div class="feature-icon">
-            <img src="images/Imagen%20Cohete.png" alt="Career Growth" />
-          </div>
-          <h5 class="h5-sm mb-20">Career Growth</h5>
-          <p class="p-lg">Accelerate your professional growth with verified references</p>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</section>
+    </section>
 
     <!-- FEATURES-8 (intro) -->
     <section id="features-8" class="wide-60 features-section division">
@@ -191,7 +254,7 @@
         <div class="row justify-content-center">	
           <div class="col-lg-10 col-xl-8">
             <div class="section-title title-01 mb-70 text-center">		
-              <h2 class="h2-md">Apply Smarter and Get Ready to Transform Your Career</h2>	
+              <h2 class="h2-md">Get Ready to Transform Your Career</h2>	
               <p class="p-xl">Join thousands of professionals who are building verifiable reputations on the blockchain with HRKey's innovative reference platform</p>
             </div>	
           </div>
@@ -332,7 +395,7 @@
 
   </div>
 
-  <!-- JS del video -->
+  <!-- JS video -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const videoCover = document.getElementById('video-cover');
@@ -360,7 +423,7 @@
     });
   </script>
 
-  <!-- Panel del menú móvil (slide-down) -->
+  <!-- Panel del menú móvil -->
   <nav id="hrk-mobile-menu" aria-label="Mobile menu">
     <ul class="hrk-menu-list">
       <li><a href="#features-1">Why HRKey?</a></li>
