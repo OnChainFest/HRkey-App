@@ -196,4 +196,33 @@
   margin-right: auto !important;
   max-width: 34ch !important; /* ajuste óptimo de ancho de texto */
 }
+/* === HRKey: CENTRADO A PRUEBA DE BALAS EN FEATURES (mobile) === */
+@media (max-width: 1024px) {
+  html body #features-1 .row > [class*="col-"] {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  html body #features-1 .row > [class*="col-"] .features-clean {
+    width: 100% !important;
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  html body #features-1 .row > [class*="col-"] .features-clean h5,
+  html body #features-1 .row > [class*="col-"] .features-clean p {
+    text-align: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  html body #features-1 .row > [class*="col-"] .features-clean p {
+    max-width: 34ch !important;
+  }
+}
 
