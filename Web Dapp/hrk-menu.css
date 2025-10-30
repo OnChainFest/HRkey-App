@@ -472,3 +472,26 @@
     object-fit: contain;
   }
 }
+/* === HRKey: Aumentar tamaño del logo en mobile === */
+@media (max-width: 1024px) {
+  /* Header ligeramente más alto para el nuevo tamaño */
+  .header.hrkey-header {
+    height: 80px !important;
+  }
+  .hrkey-header .header-wrapper {
+    padding: 14px 16px !important;
+  }
+
+  /* Logo más grande (≈ doble) */
+  .hrkey-header .logo img {
+    height: 68px !important;   /* antes 34px */
+    max-height: 70px !important;
+    width: auto !important;
+    object-fit: contain;
+  }
+
+  /* Ajuste del menú móvil para que no se solape con el header más alto */
+  #hrk-mobile-menu {
+    top: 80px !important;
+  }
+}
