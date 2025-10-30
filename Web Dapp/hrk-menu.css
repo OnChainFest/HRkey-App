@@ -236,7 +236,7 @@
 @media (max-width: 1024px) {
   .hrkey-header .logo img {
     position: relative;
-    top: -12px; /* ahora 12px hacia arriba */
+    top: -18px; /* ahora 18px hacia arriba */
   }
 }
 
