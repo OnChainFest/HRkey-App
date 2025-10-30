@@ -512,3 +512,20 @@
     margin-bottom: 10px;
   }
 }
+/* HRKey Feature Icons */
+.feature-icon img {
+  width: 80px;
+  height: auto;
+  display: block;
+  margin: 0 auto 14px auto;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.12));
+  transition: transform 0.3s ease;
+}
+.feature-icon img:hover { transform: scale(1.1); }
+
+@media (max-width: 768px) {
+  .feature-icon img {
+    width: 64px;
+    margin-bottom: 10px;
+  }
+}
