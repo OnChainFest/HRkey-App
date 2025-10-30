@@ -232,4 +232,11 @@
     top: -6px; /* mueve el logo hacia arriba (ajusta -4px si quieres menos) */
   }
 }
+/* HRKey: ajuste fino vertical del logo */
+@media (max-width: 1024px) {
+  .hrkey-header .logo img {
+    position: relative;
+    top: -12px; /* ahora 12px hacia arriba */
+  }
+}
 
