@@ -225,4 +225,11 @@
     max-width: 34ch !important;
   }
 }
+/* HRKey: ajuste fino vertical del logo */
+@media (max-width: 1024px) {
+  .hrkey-header .logo img {
+    position: relative;
+    top: -6px; /* mueve el logo hacia arriba (ajusta -4px si quieres menos) */
+  }
+}
 
