@@ -152,4 +152,25 @@
 @media (max-width: 768px) {
   .feature-icon img { width: 64px; margin-bottom: 10px; }
 }
+/* HRKey: centrar textos de features en mobile */
+@media (max-width: 1024px) {
+  #features-1 .features-clean {
+    text-align: center !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #features-1 .features-clean h5,
+  #features-1 .features-clean p {
+    text-align: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* opcional: limitar ancho del párrafo para mejor lectura */
+  #features-1 .features-clean p {
+    max-width: 32ch;   /* ajústalo a gusto o elimina esta línea */
+  }
+}
 
