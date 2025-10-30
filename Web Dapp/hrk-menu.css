@@ -173,4 +173,27 @@
     max-width: 32ch;   /* ajústalo a gusto o elimina esta línea */
   }
 }
+/* === FIX FINAL: Centrar textos e íconos en sección FEATURES === */
+#features-1 .col-lg-3,
+#features-1 .col-md-6,
+#features-1 .col-12 {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+
+#features-1 .features-clean,
+#features-1 .features-clean h5,
+#features-1 .features-clean p {
+  text-align: center !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#features-1 .features-clean p {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  max-width: 34ch !important; /* ajuste óptimo de ancho de texto */
+}
 
