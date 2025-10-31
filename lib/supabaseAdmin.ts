@@ -1,0 +1,7 @@
+// Centraliza el cliente SERVICE ROLE para APIs del backend
+import { createClient } from '@supabase/supabase-js';
+
+export const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE!
+);
