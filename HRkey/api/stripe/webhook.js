@@ -1,14 +1,16 @@
+// api/stripe/webhook.js
 import { stripe } from "../_lib/stripe.js";
 
-// Simula tu persistencia: aquí solo log
+// TODO: Reemplaza por tu persistencia real (DB)
 async function grantLifetimeToUser({ email, source, promo }) {
   console.log("GRANT (webhook):", { email, source, promo, at: new Date().toISOString() });
-  // TODO: integra con tu DB real (plan = LIFETIME)
+  // Aquí marcarías al usuario con plan = LIFETIME en tu base de datos
   return true;
 }
 
+// Necesario para verificar la firma: desactiva bodyParser
 export const config = {
-  api: { bodyParser: false } // necesario para verificar firma
+  api: { bodyParser: false }
 };
 
 export default async function handler(req, res) {
@@ -17,6 +19,7 @@ export default async function handler(req, res) {
   const sig = req.headers["stripe-signature"];
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+  // Lee cuerpo crudo
   let buf = "";
   await new Promise((resolve) => {
     req.on("data", (chunk) => (buf += chunk));
@@ -43,6 +46,8 @@ export default async function handler(req, res) {
         });
       }
     }
+    // Otros eventos útiles: payment_intent.succeeded, charge.succeeded, etc.
+
     return res.json({ received: true });
   } catch (e) {
     console.error("Webhook handler error:", e);
