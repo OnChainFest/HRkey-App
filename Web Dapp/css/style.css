@@ -7722,3 +7722,35 @@ nav a#pull {
   70% { box-shadow: 0 0 0 25px rgba(0,196,199,0); }
   100% { box-shadow: 0 0 0 0 rgba(0,196,199,0); }
 }
+/* Desktop-only: no afecta mobile */
+@media (min-width: 1024px) {
+  /* Ajusta el selector según tu markup */
+  header .logo img,
+  .site-header .logo img,
+  .navbar .logo img,
+  #logo img {
+    max-height: 56px;   /* Prueba 56–64px según tu header */
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    display: block;
+  }
+
+  /* Asegura que el contenedor del logo no se expanda */
+  header .logo,
+  .site-header .logo,
+  .navbar .logo,
+  #logo {
+    flex: 0 0 auto;
+  }
+
+  /* Centra y evita desbordes en el header */
+  header.site-header,
+  .site-header,
+  .navbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    overflow: visible;
+  }
+}
