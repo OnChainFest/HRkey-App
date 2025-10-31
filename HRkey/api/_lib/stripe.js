@@ -31,3 +31,8 @@ export function handleOptions(req, res) {
   }
   return false;
 }
+export const ALLOWED_ORIGINS = new Set([
+  "https://hrkey.xyz",
+  "https://www.hrkey.xyz",
+  "https://<tu-deploy>.vercel.app" // añade tu dominio de preview
+]);
