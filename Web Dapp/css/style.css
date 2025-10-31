@@ -7754,3 +7754,26 @@ nav a#pull {
     overflow: visible;
   }
 }
+/* Desktop only: controla el logo decorativo del héroe */
+@media (min-width:1024px){
+  /* Ajusta el selector según tu HTML: cualquiera de estos suele agarrarlo */
+  .hero svg,
+  .hero .logo-bg,
+  .hero img[alt*="HRKey"],
+  .hero img[src*="logo"]{
+    width: min(28rem, 28vw);   /* evita que se haga gigante */
+    height: auto;
+    position: absolute;
+    left: clamp(0rem, 8vw, 12rem);
+    bottom: -0.5rem;
+    opacity: .08;              /* efecto marca de agua */
+    z-index: 1;                /* por debajo del contenido */
+    pointer-events: none;
+  }
+
+  /* Asegura la capa del texto/CTA por encima */
+  .hero, .hero * { position: relative; }
+  .hero .container, .hero .content, .hero .cta, .hero h1, .hero p, .hero a {
+    z-index: 2;
+  }
+}
