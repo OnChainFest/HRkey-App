@@ -15,16 +15,17 @@ export async function POST(req: NextRequest) {
     const reference_id = randomUUID(); // <- GENERAMOS EL reference_id AQUÍ
     const expires_at = new Date(Date.now() + Number(days) * 24 * 60 * 60 * 1000).toISOString();
 
-    const { error } = await supabaseAdmin
-      .from("reference_invites")
-      .insert({
-        token,
-        reference_id,             // <- LO ENVIAMOS EN EL INSERT
-        referrer_email: email || null,
-        referrer_name: name || null,
-        invite_status: "pending",
-        expires_at,
-      });
+  const { error } = await supabaseAdmin
+  .from("reference_invites")
+  .insert({
+    token,
+    reference_id,
+    referee_email: email || null, // ← destinatario real (Marvin)
+    referee_name: name || null,
+    invite_status: "pending",
+    expires_at,
+  });
+
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
