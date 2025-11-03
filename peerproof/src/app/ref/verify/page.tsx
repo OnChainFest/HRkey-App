@@ -8,6 +8,8 @@ type InviteRow = {
   reference_id: string
   referrer_email: string | null
   referrer_name: string | null
+  referee_email: string | null     // ← agrega
+  referee_name: string | null      // ← agrega
   expires_at: string | null
   invite_status: string | null
 }
@@ -78,7 +80,7 @@ export default function VerifyReferencePage() {
       <p>Gracias por ayudar con una referencia verificada.</p>
 
       <div style={{ marginTop: 16, padding: 12, border: "1px solid #eee", borderRadius: 8 }}>
-        <div><b>Para:</b> {invite.referrer_name || "—"} {invite.referrer_email ? `(${invite.referrer_email})` : ""}</div>
+        <div><b>Para:</b> {invite.referee_name || "—"} {invite.referee_email ? `(${invite.referee_email})` : ""}</div>
         <div><b>Vence:</b> {expires ? expires.toLocaleString() : "—"}</div>
         <div><b>Estado de invitación:</b> {status}</div>
       </div>
