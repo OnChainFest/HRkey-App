@@ -29,8 +29,9 @@ export async function POST(req: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const verifyUrl = `${baseUrl}/ref/verify?token=${token}`;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL; 
+    const verifyUrl = `${baseUrl}/ref/verify?token=${response_token}`;
+
 
     return NextResponse.json({ token, reference_id, verifyUrl, expires_at });
   } catch (e: any) {
