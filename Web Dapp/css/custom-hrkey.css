@@ -870,3 +870,95 @@ hr.divider, .divider{ display:none !important; }
     display: block;
   }
 }
+/* ===== PRICING FIXES (desktop) ===== */
+
+/* 1) Centavos pequeños y subrayados solo en desktop */
+@media (min-width: 992px) {
+  .pricing-card .price-title sup {
+    font-size: 0.5em;        /* mitad del tamaño del número */
+    vertical-align: super;   /* sube los centavos */
+    text-decoration: underline;
+    margin-left: 2px;
+    line-height: 0;
+    font-weight: 700;
+  }
+}
+
+/* 2) Alinear botones de ambas tarjetas a la misma altura */
+.pricing-card .card-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.pricing-card .pricing-compare { 
+  flex-grow: 1;              /* empuja el botón hacia abajo */
+}
+.pricing-card .pricing-cta { 
+  margin-top: auto;          /* pega el botón al fondo */
+}
+
+/* Emparejar alturas de columnas en desktop */
+@media (min-width: 768px) {
+  #pricing-1 .row.row-cols-1.row-cols-md-2 > .col {
+    display: flex;
+  }
+  #pricing-1 .pricing-card {
+    width: 100%;
+  }
+}
+
+/* ===== PRICING FIXES (desktop) ===== */
+
+/* 1) Centavos pequeños y subrayados solo en desktop */
+@media (min-width: 992px) {
+  .pricing-card .price-title sup {
+    font-size: 0.5em;        /* mitad del tamaño del número */
+    vertical-align: super;   /* sube los centavos */
+    text-decoration: underline;
+    margin-left: 2px;
+    line-height: 0;
+    font-weight: 700;
+  }
+}
+
+/* 2) Alinear botones de ambas tarjetas a la misma altura */
+.pricing-card .card-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.pricing-card .pricing-compare { 
+  flex-grow: 1;              /* empuja el botón hacia abajo */
+}
+.pricing-card .pricing-cta { 
+  margin-top: auto;          /* pega el botón al fondo */
+}
+
+/* Emparejar alturas de columnas en desktop */
+@media (min-width: 768px) {
+  #pricing-1 .row.row-cols-1.row-cols-md-2 > .col {
+    display: flex;
+  }
+  #pricing-1 .pricing-card {
+    width: 100%;
+  }
+}
+
+/* ===== PRICING FIXES (desktop) ===== */
+@media (min-width: 992px) {
+  .pricing-card .price-title sup {
+    font-size: 0.5em;
+    vertical-align: super;
+    text-decoration: underline;
+    margin-left: 2px;
+    line-height: 0;
+    font-weight: 700;
+  }
+}
+.pricing-card .card-body { display:flex; flex-direction:column; height:100%; }
+.pricing-card .pricing-compare { flex-grow:1; }
+.pricing-card .pricing-cta { margin-top:auto; }
+@media (min-width: 768px) {
+  #pricing-1 .row.row-cols-1.row-cols-md-2 > .col { display:flex; }
+  #pricing-1 .pricing-card { width:100%; }
+}
