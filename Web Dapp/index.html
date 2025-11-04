@@ -51,6 +51,33 @@
     }
     .pricing-card.featured .price-title { color: #111827; }
     .pricing-card.featured .btn-hrkey { background: #00C4C7; color: #000; font-weight: 700; }
+
+    /* ===== Correcciones solicitadas (desktop) ===== */
+
+    /* 1) Centavos más pequeños y subrayados en el precio */
+    .price-title sup {
+      font-size: 0.5em;           /* 50% del tamaño del número principal */
+      vertical-align: super;      /* sube los centavos */
+      text-decoration: underline; /* subrayado */
+      margin-left: 2px;
+      font-weight: 700;
+      line-height: 0;
+    }
+
+    /* 2) Alinear botones Get Started y Unlock Pro a la misma altura */
+    .pricing-card .card-body {
+      display: flex;
+      flex-direction: column;     /* apila contenido */
+      height: 100%;
+    }
+    .pricing-card .pricing-compare { flex-grow: 1; } /* empuja el botón hacia abajo */
+    .pricing-card .pricing-cta { margin-top: auto; } /* asegura alineación inferior */
+
+    /* contenedor de tarjetas para alturas parejas */
+    @media (min-width: 768px) {
+      #pricing-1 .row.row-cols-1.row-cols-md-2 > .col { display: flex; }
+      #pricing-1 .pricing-card { width: 100%; }
+    }
   </style>
 
   <!-- Parche mobile: logo+hamburguesa y panel slide-down -->
@@ -290,7 +317,7 @@
                   </ul>
                 </div>
 
-                <a href="auth.html" class="btn-hrkey w-100" style="margin-top:16px;">Get Started</a>
+                <a href="auth.html" class="btn-hrkey w-100 pricing-cta">Get Started</a>
               </div>
             </div>
           </div>
@@ -301,7 +328,8 @@
               <div class="card-body">
                 <div class="ribbon">Most Popular</div>
                 <h6 class="plan-badge">Pro</h6>
-                <h3 class="price-title">$9.99</h3>
+                <!-- Centavos pequeños y subrayados -->
+                <h3 class="price-title">$9<sup>99</sup></h3>
                 <p class="price-sub badge-one-time">One-time • Early Bird</p>
 
                 <div class="pricing-compare">
@@ -315,7 +343,7 @@
                   </ul>
                 </div>
 
-                <a href="checkout-ready.html" class="btn-hrkey w-100" style="margin-top:16px;">Unlock Pro</a>
+                <a href="checkout-ready.html" class="btn-hrkey w-100 pricing-cta">Unlock Pro</a>
               </div>
             </div>
           </div>
@@ -502,14 +530,11 @@
       `
     };
 
-    // Función para abrir modal
     function openModal(type) {
       content.innerHTML = modals[type];
       overlay.style.display = 'flex';
       document.body.style.overflow = 'hidden';
     }
-
-    // Función para cerrar modal
     function closeModal() {
       overlay.style.display = 'none';
       document.body.style.overflow = 'auto';
@@ -518,7 +543,6 @@
     closeBtn.addEventListener('click', closeModal);
     overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
 
-    // Asignar a los links del footer
     document.querySelector('a[href="#about"]').addEventListener('click', e => { e.preventDefault(); openModal('about'); });
     document.querySelector('a[href="#privacy"]').addEventListener('click', e => { e.preventDefault(); openModal('privacy'); });
     document.querySelector('a[href="mailto:vicvalch@onchainfest.xyz"]').addEventListener('click', e => { e.preventDefault(); openModal('contact'); });
@@ -533,10 +557,10 @@
 
       var tried = 0;
       var candidates = [
-        'images/hrkey-monitor-blue-gold.PNG?v=3',     // extensión en mayúscula
-        'img/hrkey-monitor-blue-gold.png?v=3',        // carpeta img
-        'public/img/hrkey-monitor-blue-gold.png?v=3', // carpeta public/img (algunos repos)
-        'images/Employee_Insights.png?v=3'            // último recurso: imagen anterior si existe
+        'images/hrkey-monitor-blue-gold.PNG?v=3',
+        'img/hrkey-monitor-blue-gold.png?v=3',
+        'public/img/hrkey-monitor-blue-gold.png?v=3',
+        'images/Employee_Insights.png?v=3'
       ];
 
       img.addEventListener('error', function onErr() {
