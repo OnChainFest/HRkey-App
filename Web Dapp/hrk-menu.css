@@ -102,8 +102,8 @@
   .hrkey-header .hrkey-logo img,
   header .logo img,
   header img {
-    height: 34px !important;  /* tamaño normal del logo en desktop */
-    max-height: 36px !important;
+    height: 48px !important;  /* tamaño balanceado para desktop */
+    max-height: 50px !important;
     width: auto !important;
     object-fit: contain;
     position: static !important;
