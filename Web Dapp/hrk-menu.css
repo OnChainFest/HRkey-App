@@ -36,10 +36,10 @@
 .hrk-hamburger[aria-expanded="true"] .hrk-hamburger-bar:nth-child(3){ transform: translateY(-6px) rotate(-45deg); }
 
 /* Mostrar hamburguesa solo en mobile */
-@media (max-width: 1024px) { .hrk-hamburger { display: flex; } }
+@media (max-width: 991px) { .hrk-hamburger { display: flex; } }
 
 /* ---------- HEADER (mobile) ---------- */
-@media (max-width: 1024px) {
+@media (max-width: 991px) {
   /* Barra fija */
   .header.hrkey-header,
   .hrkey-header {
@@ -95,7 +95,7 @@
 }
 
 /* ---------- DESKTOP: Asegurar que el logo tenga tamaño normal ---------- */
-@media (min-width: 1025px) {
+@media (min-width: 992px) {
   .header .logo img,
   .hrkey-header .logo img,
   .header .hrkey-logo img,
@@ -165,7 +165,7 @@
 #hrk-mobile-menu .hrk-menu-list a:active { background: #f5f7f8; }
 
 /* Ocultar elementos móviles en desktop por seguridad */
-@media (min-width: 1025px) {
+@media (min-width: 992px) {
   #hrk-hamburger, #hrk-mobile-menu { display: none !important; }
 }
 
@@ -208,7 +208,7 @@
 }
 
 /* Mobile extra enforcement */
-@media (max-width: 1024px) {
+@media (max-width: 991px) {
   html body #features-1 .row > [class*="col-"] {
     display: flex !important;
     flex-direction: column !important;
