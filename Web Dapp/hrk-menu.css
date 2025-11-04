@@ -96,12 +96,24 @@
 
 /* ---------- DESKTOP: Asegurar que el logo tenga tamaño normal ---------- */
 @media (min-width: 1025px) {
+  .header .logo img,
   .hrkey-header .logo img,
-  .hrkey-header .hrkey-logo img {
+  .header .hrkey-logo img,
+  .hrkey-header .hrkey-logo img,
+  header .logo img,
+  header img {
     height: 34px !important;  /* tamaño normal del logo en desktop */
     max-height: 36px !important;
     width: auto !important;
     object-fit: contain;
+    position: static !important;
+    top: 0 !important;
+  }
+  
+  /* Reset específico para el header en desktop */
+  .header-wrapper,
+  .header-bar {
+    padding-top: 12px !important;
   }
 }
 
