@@ -58,18 +58,24 @@
     padding: 14px 16px;                        /* respira con logo grande */
   }
 
-  /* Logo visible y más grande (~doble) */
+  /* Logo visible y más grande (~doble) - SOLO EN MOBILE */
   .hrkey-header .logo,
-  .hrkey-header .logo img {
+  .hrkey-header .logo img,
+  .hrkey-header .hrkey-logo,
+  .hrkey-header .hrkey-logo img {
     display: inline-flex !important;
     visibility: visible !important;
     align-items: center;
   }
-  .hrkey-header .logo img {
+  
+  .hrkey-header .logo img,
+  .hrkey-header .hrkey-logo img {
     height: 68px !important;                   /* antes ~34px */
     max-height: 70px !important;
     width: auto !important;
     object-fit: contain;
+    position: relative;
+    top: -18px; /* ajuste fino vertical */
   }
 
   /* Ocultar navegación y CTA del header SOLO dentro del header */
@@ -77,6 +83,7 @@
   .hrkey-header .nav,
   .hrkey-header .menu,
   .hrkey-header .nav-menu,
+  .hrkey-header .hrkey-nav,
   .hrkey-header ul,
   .hrkey-header li,
   .hrkey-header .hrkey-cta {                   /* evita ocultar botones fuera del header */
@@ -85,6 +92,17 @@
 
   /* Empuja el contenido por el header fijo más alto */
   .hero, .hero-section, .main-content, #page { margin-top: 80px !important; }
+}
+
+/* ---------- DESKTOP: Asegurar que el logo tenga tamaño normal ---------- */
+@media (min-width: 1025px) {
+  .hrkey-header .logo img,
+  .hrkey-header .hrkey-logo img {
+    height: 34px !important;  /* tamaño normal del logo en desktop */
+    max-height: 36px !important;
+    width: auto !important;
+    object-fit: contain;
+  }
 }
 
 /* ---------- MENÚ MÓVIL (panel deslizante) ---------- */
@@ -152,28 +170,8 @@
 @media (max-width: 768px) {
   .feature-icon img { width: 64px; margin-bottom: 10px; }
 }
-/* HRKey: centrar textos de features en mobile */
-@media (max-width: 1024px) {
-  #features-1 .features-clean {
-    text-align: center !important;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
 
-  #features-1 .features-clean h5,
-  #features-1 .features-clean p {
-    text-align: center !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-
-  /* opcional: limitar ancho del párrafo para mejor lectura */
-  #features-1 .features-clean p {
-    max-width: 32ch;   /* ajústalo a gusto o elimina esta línea */
-  }
-}
-/* === FIX FINAL: Centrar textos e íconos en sección FEATURES === */
+/* === HRKey: CENTRADO EN FEATURES (mobile y desktop) === */
 #features-1 .col-lg-3,
 #features-1 .col-md-6,
 #features-1 .col-12 {
@@ -194,9 +192,10 @@
 #features-1 .features-clean p {
   margin-left: auto !important;
   margin-right: auto !important;
-  max-width: 34ch !important; /* ajuste óptimo de ancho de texto */
+  max-width: 34ch !important;
 }
-/* === HRKey: CENTRADO A PRUEBA DE BALAS EN FEATURES (mobile) === */
+
+/* Mobile extra enforcement */
 @media (max-width: 1024px) {
   html body #features-1 .row > [class*="col-"] {
     display: flex !important;
@@ -225,18 +224,3 @@
     max-width: 34ch !important;
   }
 }
-/* HRKey: ajuste fino vertical del logo */
-@media (max-width: 1024px) {
-  .hrkey-header .logo img {
-    position: relative;
-    top: -6px; /* mueve el logo hacia arriba (ajusta -4px si quieres menos) */
-  }
-}
-/* HRKey: ajuste fino vertical del logo */
-@media (max-width: 1024px) {
-  .hrkey-header .logo img {
-    position: relative;
-    top: -18px; /* ahora 18px hacia arriba */
-  }
-}
-
