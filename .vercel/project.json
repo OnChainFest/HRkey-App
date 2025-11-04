@@ -1,0 +1,16 @@
+{
+  "projectId": "prj_mc6nc5ZqFLjjBEG6n6XRm0FcKpIP",
+  "orgId": "team_SdZph29JfRT5FQzfENQWk37i",
+  "projectName": "h-rkey-app",
+  "settings": {
+    "createdAt": 1760504963989,
+    "framework": null,
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": ".",
+    "rootDirectory": "Web Dapp",
+    "directoryListing": false,
+    "nodeVersion": "22.x"
+  }
+}
