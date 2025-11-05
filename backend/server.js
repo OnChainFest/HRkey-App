@@ -17,9 +17,11 @@ dotenv.config();
 // ===== Config =====
 const PORT = process.env.PORT || 3001;
 
-// URL pública del frontend (producción por defecto)
+// URL pública del frontend (UNIFICADA)
 const APP_URL =
+  process.env.APP_URL ||
   process.env.PUBLIC_APP_URL ||
+  process.env.FRONTEND_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://hrkey.xyz');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrervcydgdrlcndtjboy.supabase.co';
@@ -143,7 +145,8 @@ class ReferenceService {
 
     if (error) throw error;
 
-    const verificationUrl = makeRefereeLink(inviteToken);
+    // Siempre construimos con base pública (APP_URL) para evitar localhost
+    const verificationUrl = makeRefereeLink(inviteToken, APP_URL);
     await this.sendRefereeInviteEmail(email, name, applicantData, verificationUrl);
 
     return { success: true, reference_id: invite.id, token: inviteToken, verification_url: verificationUrl };
@@ -300,11 +303,10 @@ class ReferenceService {
 
 const app = express();
 
-// Nota importante: Stripe webhook necesita body sin parsear (raw). Lo configuramos
-// SOLO para esa ruta más abajo. Para el resto: JSON normal.
+// Stripe webhook necesita body RAW; para el resto usamos JSON normal
 app.use(cors());
 app.use((req, res, next) => {
-  if (req.path === '/webhook') return next(); // se parsea raw más abajo
+  if (req.path === '/webhook') return next();
   return express.json()(req, res, next);
 });
 
@@ -320,7 +322,6 @@ app.get('/health', (req, res) => {
 });
 
 // ============ Wallet endpoints ============
-
 app.post('/api/wallet/create', async (req, res) => {
   try {
     const { userId, email } = req.body || {};
@@ -346,7 +347,6 @@ app.get('/api/wallet/:userId', async (req, res) => {
 });
 
 // ============ Reference endpoints ============
-
 app.post('/api/reference/request', async (req, res) => {
   try {
     const result = await ReferenceService.createReferenceRequest(req.body);
@@ -378,7 +378,6 @@ app.get('/api/reference/by-token/:token', async (req, res) => {
 });
 
 // ============ Stripe Payments ============
-
 app.post('/create-payment-intent', async (req, res) => {
   try {
     const { amount, email, promoCode } = req.body || {};
@@ -419,13 +418,18 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   if (event.type === 'payment_intent.succeeded') {
     const pi = event.data.object;
     console.log('✅ Payment succeeded:', pi.id, 'email:', pi.receipt_email, 'amount:', pi.amount / 100);
-    // Aquí podrías actualizar el plan del usuario en Supabase…
+    // TODO: actualizar plan del usuario en Supabase
   }
 
   res.json({ received: true });
 });
 
 // ============ Start ============
+app.listen(PORT, () => {
+  console.log(`🚀 HRKey Backend running on port ${PORT}`);
+  console.log(`   Health: http://localhost:${PORT}/health`);
+  console.log(`   APP_URL: ${APP_URL}`);
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 HRKey Backend running on port ${PORT}`);
