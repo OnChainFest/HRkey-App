@@ -24,18 +24,25 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
  * 4) VERCEL_URL (auto)  -> https://<deploy>.vercel.app
  * 5) fallback           -> https://hrkey.xyz
  */
+/**
+ * 🌐 Selección robusta del dominio del frontend, evitando localhost:
+ * 1) FRONTEND_URL (recomendado - configurar en producción) ✅ PRIORIDAD 1
+ * 2) PUBLIC_APP_URL (compatibilidad Vercel)
+ * 3) APP_URL (general)
+ * 4) VERCEL_URL (auto)  -> https://<deploy>.vercel.app
+ * 5) fallback           -> https://hrkey.xyz
+ */
 const PROD_URL = 'https://hrkey.xyz';
 function getBaseURL() {
   const envUrl =
-    process.env.APP_URL ||
+    process.env.FRONTEND_URL ||      // ✅ CAMBIO PRINCIPAL: ahora es prioridad 1
     process.env.PUBLIC_APP_URL ||
-    process.env.FRONTEND_URL;
+    process.env.APP_URL;
 
   if (envUrl && /^https?:\/\//i.test(envUrl)) return envUrl;
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return PROD_URL;
 }
-
 export const FRONTEND_URL = getBaseURL();
 
 if (!SUPABASE_SERVICE_KEY) {
