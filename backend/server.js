@@ -10,6 +10,7 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
 import Stripe from 'stripe';
+import { makeRefereeLink } from './utils/appUrl.js';
 
 dotenv.config();
 
