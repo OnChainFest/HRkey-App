@@ -15,7 +15,11 @@ dotenv.config();
 
 // ===== Config =====
 const PORT = process.env.PORT || 3001;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://h-rkey-app.vercel.app';
+
+// URL pública del frontend (producción por defecto)
+const APP_URL =
+  process.env.PUBLIC_APP_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://hrkey.xyz');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrervcydgdrlcndtjboy.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -138,7 +142,7 @@ class ReferenceService {
 
     if (error) throw error;
 
-    const verificationUrl = `${FRONTEND_URL}/referee-evaluation-page.html?token=${inviteToken}`;
+    const verificationUrl = `${APP_URL}/referee-evaluation-page.html?token=${encodeURIComponent(inviteToken)}`;
     await this.sendRefereeInviteEmail(email, name, applicantData, verificationUrl);
 
     return { success: true, reference_id: invite.id, token: inviteToken, verification_url: verificationUrl };
@@ -178,7 +182,8 @@ class ReferenceService {
 
     if (refErr) throw refErr;
 
-    await supabase.from('reference_invites')
+    await supabase
+      .from('reference_invites')
       .update({ status: 'completed', completed_at: new Date().toISOString() })
       .eq('id', invite.id);
 
@@ -237,15 +242,20 @@ class ReferenceService {
         to: email,
         subject: `Reference Request${applicantData?.applicantPosition ? ` - ${applicantData.applicantPosition}` : ''}`,
         html: `
-          <h2>You've been asked to provide a professional reference</h2>
-          <p>Hi ${name || ''},</p>
-          <p>Someone has requested a reference from you${applicantData?.applicantCompany ? ` for their role at ${applicantData.applicantCompany}` : ''}.</p>
-          <p><strong>Click here to complete the reference:</strong></p>
-          <a href="${verificationUrl}" style="background:#00C4C7;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block;">
-            Complete Reference
-          </a>
-          <p>This link will expire in 30 days.</p>
-          <p>Best regards,<br/>The HRKey Team</p>
+          <div style="font-family:Rubik,Arial,sans-serif;line-height:1.5;color:#0f172a">
+            <h2 style="margin:0 0 8px">You've been asked to provide a professional reference</h2>
+            <p>Hi ${name || ''},</p>
+            <p>Someone has requested a reference from you${applicantData?.applicantCompany ? ` for their role at ${applicantData.applicantCompany}` : ''}.</p>
+            <p><strong>Click here to complete the reference:</strong></p>
+            <p>
+              <a href="${verificationUrl}" style="background:#00C4C7;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block;">
+                Complete Reference
+              </a>
+            </p>
+            <p>This link will expire in 30 days.</p>
+            <p style="font-size:12px;color:#64748b">If the button doesn't work, copy and paste this link:<br>${verificationUrl}</p>
+            <p>Best regards,<br/>The HRKey Team</p>
+          </div>
         `
       })
     });
@@ -269,12 +279,16 @@ class ReferenceService {
         to: userEmail,
         subject: 'Your reference has been completed!',
         html: `
-          <h2>Great news! Your reference is ready</h2>
-          <p>${reference.referrer_name} has completed your professional reference.</p>
-          <p><strong>Overall Rating:</strong> ${reference.overall_rating}/5 ⭐</p>
-          <a href="${FRONTEND_URL}/app.html" style="background:#00C4C7;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block;">
-            View Reference
-          </a>
+          <div style="font-family:Rubik,Arial,sans-serif;line-height:1.5;color:#0f172a">
+            <h2 style="margin:0 0 8px">Great news! Your reference is ready</h2>
+            <p>${reference.referrer_name} has completed your professional reference.</p>
+            <p><strong>Overall Rating:</strong> ${reference.overall_rating}/5 ⭐</p>
+            <p>
+              <a href="${APP_URL}/app.html" style="background:#00C4C7;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block;">
+                View Reference
+              </a>
+            </p>
+          </div>
         `
       })
     });
@@ -300,11 +314,12 @@ app.get('/health', (req, res) => {
     service: 'HRKey Backend Service',
     timestamp: new Date().toISOString(),
     email: RESEND_API_KEY ? 'configured' : 'not configured',
-    frontend_url: FRONTEND_URL
+    app_url: APP_URL
   });
 });
 
 // ============ Wallet endpoints ============
+
 app.post('/api/wallet/create', async (req, res) => {
   try {
     const { userId, email } = req.body || {};
@@ -330,6 +345,7 @@ app.get('/api/wallet/:userId', async (req, res) => {
 });
 
 // ============ Reference endpoints ============
+
 app.post('/api/reference/request', async (req, res) => {
   try {
     const result = await ReferenceService.createReferenceRequest(req.body);
@@ -361,6 +377,7 @@ app.get('/api/reference/by-token/:token', async (req, res) => {
 });
 
 // ============ Stripe Payments ============
+
 app.post('/create-payment-intent', async (req, res) => {
   try {
     const { amount, email, promoCode } = req.body || {};
@@ -408,9 +425,8 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
 });
 
 // ============ Start ============
+
 app.listen(PORT, () => {
   console.log(`🚀 HRKey Backend running on port ${PORT}`);
   console.log(`   Health: http://localhost:${PORT}/health`);
-});
-
 });
