@@ -1,10 +1,6 @@
 {
+  "buildCommand": null,
+  "outputDirectory": "Web Dapp",
   "cleanUrls": true,
-  "trailingSlash": false,
-  "rewrites": [
-    {
-      "source": "/referee-evaluation-page.html",
-      "destination": "/Web Dapp/referee-evaluation-page.html"
-    }
-  ]
+  "trailingSlash": false
 }
