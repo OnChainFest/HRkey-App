@@ -1,6 +1,8 @@
 {
-  "buildCommand": null,
-  "outputDirectory": "Web Dapp",
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/", "destination": "/Web%20Dapp/index.html" },
+    { "source": "/(.*)", "destination": "/Web%20Dapp/$1" }
+  ]
 }
