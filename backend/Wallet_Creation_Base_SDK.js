@@ -32,16 +32,20 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
  * 4) VERCEL_URL (auto)  -> https://<deploy>.vercel.app
  * 5) fallback           -> https://hrkey.xyz
  */
+// ✅ Temporal - Forzar siempre producción
 const PROD_URL = 'https://hrkey.xyz';
 function getBaseURL() {
-  const envUrl =
-    process.env.FRONTEND_URL ||      // ✅ CAMBIO PRINCIPAL: ahora es prioridad 1
-    process.env.PUBLIC_APP_URL ||
-    process.env.APP_URL;
-
-  if (envUrl && /^https?:\/\//i.test(envUrl)) return envUrl;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  // HARDCODED para testing - cambiar después
   return PROD_URL;
+  
+  // Descomentar después de configurar las env vars:
+  // const envUrl =
+  //   process.env.FRONTEND_URL ||
+  //   process.env.PUBLIC_APP_URL ||
+  //   process.env.APP_URL;
+  // if (envUrl && /^https?:\/\//i.test(envUrl)) return envUrl;
+  // if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  // return PROD_URL;
 }
 export const FRONTEND_URL = getBaseURL();
 
