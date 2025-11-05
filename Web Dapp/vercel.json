@@ -1,13 +1,6 @@
-# Reemplaza el contenido del archivo con:
-cat > vercel.json << 'EOF'
 {
   "buildCommand": null,
   "outputDirectory": "Web Dapp",
   "cleanUrls": true,
   "trailingSlash": false
 }
-EOF
-
-git add vercel.json
-git commit -m "fix: set correct output directory for Vercel"
-git push origin main
