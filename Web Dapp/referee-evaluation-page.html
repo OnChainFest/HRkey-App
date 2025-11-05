@@ -4,39 +4,33 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Redirecting…</title>
-
   <script>
     (function () {
       const qs = new URLSearchParams(location.search);
       const raw = qs.get("ref") || qs.get("token") || "";
-
       // Validación básica (hex / uuid / base64url-ish). Si no cumple, lo dejamos vacío.
       const looksOk = /^[A-Za-z0-9_\-:.]{16,}$/.test(raw);
       const token = looksOk ? raw : "";
-
       // Si esta página se sirve en Vercel, usamos el dominio actual;
       // si está en localhost (tests), forzamos el dominio productivo.
       const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
-      const BASE_URL = isLocal ? "https://h-rkey-app.vercel.app" : location.origin;
-
+      const BASE_URL = isLocal ? "https://hrkey.xyz" : location.origin;
       const target = token
         ? `${BASE_URL}/ref/verify?token=${encodeURIComponent(token)}`
         : `${BASE_URL}/ref/verify`;
-
       // Redirección inmediata (no deja historial)
       location.replace(target);
     })();
   </script>
-
   <!-- Fallback meta refresh por si JS está bloqueado -->
   <noscript>
-    <meta http-equiv="refresh" content="0;url=https://h-rkey-app.vercel.app/ref/verify">
+    <meta http-equiv="refresh" content="0;url=https://hrkey.xyz/ref/verify">
   </noscript>
 </head>
 <body>
   <p>Redirecting to the secure verification page…</p>
   <noscript>
-    <p><a href="https://h-rkey-app.vercel.app/ref/verify">Continue</a></p>
+    <p><a href="https://hrkey.xyz/ref/verify">Continue</a></p>
   </noscript>
 </body>
 </html>
