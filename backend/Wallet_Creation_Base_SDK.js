@@ -17,12 +17,14 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 
 /**
- * FRONTEND_URL sin riesgo de localhost en prod:
- * 1) PUBLIC_APP_URL (recomendado en Vercel)
- * 2) VERCEL_URL (auto) → https://<deploy>.vercel.app
- * 3) fallback final → https://hrkey.xyz
+ * URL del front sin riesgo de localhost en prod:
+ * 1) APP_URL (general)
+ * 2) PUBLIC_APP_URL (Vercel recomendado)
+ * 3) VERCEL_URL (auto)  -> https://<deploy>.vercel.app
+ * 4) fallback           -> https://hrkey.xyz
  */
-const FRONTEND_URL =
+export const FRONTEND_URL =
+  process.env.APP_URL ||
   process.env.PUBLIC_APP_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://hrkey.xyz');
 
@@ -31,6 +33,12 @@ if (!SUPABASE_SERVICE_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+// Helper para construir el link del referee
+function makeRefereeLink(token) {
+  let base = FRONTEND_URL.endsWith('/') ? FRONTEND_URL.slice(0, -1) : FRONTEND_URL;
+  return `${base}/referee-evaluation-page.html?token=${encodeURIComponent(token)}`;
+}
 
 // ====================================================================
 // WALLET SERVICE
@@ -177,9 +185,7 @@ export class ReferenceService {
       if (error) throw error;
 
       // Link del correo (✅ sin localhost y con token seguro)
-      const verificationUrl = `${FRONTEND_URL}/referee-evaluation-page.html?token=${encodeURIComponent(
-        inviteToken
-      )}`;
+      const verificationUrl = makeRefereeLink(inviteToken);
 
       await this.sendRefereeInviteEmail(email, name, applicantData, verificationUrl);
 
@@ -381,3 +387,4 @@ export class ReferenceService {
     }
   }
 }
+
