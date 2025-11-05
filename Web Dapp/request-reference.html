@@ -230,11 +230,9 @@
 
         // ✅ Construir el link de verificación con detección automática de URL
         const getBaseURL = () => {
-          // Si estamos en localhost, usar producción
           if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             return 'https://hrkey.xyz';
           }
-          // Si estamos en producción, usar el dominio actual
           return window.location.origin;
         };
 
@@ -253,8 +251,8 @@
           company: ref.company,
           position: ref.position,
           message: ref.message || 'No additional message provided',
-          reference_id: ref.id,  // ID único
-          verification_link: verificationLink  // ✅ Link completo para el template
+          reference_id: ref.id,
+          verification_link: verificationLink
         };
         
         console.log('📤 Sending email with params:', params);
@@ -305,7 +303,6 @@
         requestedBy: user.email || ''
       };
 
-      // Agregar KPI 3 si está lleno
       const kpi3Title = document.getElementById('kpi3Title').value.trim();
       const kpi3Desc = document.getElementById('kpi3Description').value.trim();
       if (kpi3Title && kpi3Desc) {
@@ -318,10 +315,7 @@
       console.log('🚀 Submitting reference request:', ref);
 
       try {
-        // Enviar por EmailJS
         const mailOk = await sendEmailJS(ref, user);
-
-        // Guardar local siempre
         saveReferenceLocal(ref);
 
         if (mailOk) {
