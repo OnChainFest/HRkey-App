@@ -228,6 +228,22 @@
           return false;
         }
 
+        // ✅ Construir el link de verificación con detección automática de URL
+        const getBaseURL = () => {
+          // Si estamos en localhost, usar producción
+          if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            return 'https://hrkey.xyz';
+          }
+          // Si estamos en producción, usar el dominio actual
+          return window.location.origin;
+        };
+
+        const baseURL = getBaseURL();
+        const verificationLink = `${baseURL}/referee-evaluation-page.html?ref=${ref.id}`;
+        
+        console.log('🔗 Base URL:', baseURL);
+        console.log('🔗 Verification link generated:', verificationLink);
+
         const params = {
           to_name: ref.refereeName,
           to_email: ref.refereeEmail,
@@ -237,7 +253,8 @@
           company: ref.company,
           position: ref.position,
           message: ref.message || 'No additional message provided',
-          reference_id: ref.id  // ID único para el link
+          reference_id: ref.id,  // ID único
+          verification_link: verificationLink  // ✅ Link completo para el template
         };
         
         console.log('📤 Sending email with params:', params);
