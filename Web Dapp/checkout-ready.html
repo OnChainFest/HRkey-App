@@ -1,156 +1,80 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Checkout - HRKey PRO</title>
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://js.stripe.com/v3/"></script>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Rubik',Arial,sans-serif;background:linear-gradient(135deg,#000,#1a1a1a);min-height:100vh;padding:40px 20px}
-    .container{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1.5fr 1fr;gap:40px}
-    .checkout-section{background:#fff;border-radius:20px;padding:40px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-    .order-summary{background:rgba(255,255,255,.05);border-radius:20px;padding:40px;border:2px solid rgba(255,255,255,.1);color:#fff;height:fit-content;position:sticky;top:40px}
-    h1{font-size:32px;color:#1e293b;margin-bottom:10px}
-    .subtitle{color:#64748b;margin-bottom:30px}
-    .summary-title{font-size:24px;color:#00C4C7;margin-bottom:25px}
-    .beta-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);padding:20px;border-radius:12px;margin-bottom:30px;border-left:4px solid #fbbf24}
-    .beta-banner strong{color:#92400e;font-size:15px}
-    .beta-banner p{color:#78350f;font-size:13px;margin-top:8px;margin-bottom:0}
-    .form-group{margin-bottom:25px}
-    label{display:block;font-weight:600;color:#334155;margin-bottom:8px;font-size:14px}
-    input{width:100%;padding:14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Rubik',Arial,sans-serif;transition:border-color .3s}
-    input:focus{outline:none;border-color:#00C4C7}
-    .summary-item{display:flex;justify-content:space-between;padding:15px 0;border-bottom:1px solid rgba(255,255,255,.1);color:#cbd5e1}
-    .summary-item:last-child{border-bottom:none}
-    .summary-item.total{font-size:24px;font-weight:700;color:#fff;padding-top:20px;margin-top:10px;border-top:2px solid rgba(255,255,255,.2)}
-    .plan-details{background:rgba(0,196,199,.1);padding:20px;border-radius:12px;margin-bottom:25px;border-left:4px solid #00C4C7}
-    .plan-name{font-size:20px;font-weight:700;color:#00C4C7;margin-bottom:10px}
-    .plan-features{list-style:none;color:#cbd5e1;font-size:14px}
-    .plan-features li{padding:5px 0}
-    .plan-features li::before{content:'✓ ';color:#10b981;font-weight:700;margin-right:8px}
-    .btn-primary{width:100%;padding:18px;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;border:none;border-radius:12px;font-size:18px;font-weight:700;cursor:pointer;transition:.3s;box-shadow:0 8px 30px rgba(251,191,36,.4);margin-top:10px}
-    .btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 40px rgba(251,191,36,.6)}
-    .btn-primary:disabled{opacity:.6;cursor:not-allowed}
-    .stripe-badge{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:15px;color:#94a3b8;font-size:12px}
-    .promo-code{margin-top:20px;padding:20px;background:rgba(0,196,199,.05);border-radius:10px;border:1px dashed rgba(0,196,199,.3)}
-    .discount-applied{background:rgba(16,185,129,.1);color:#10b981;padding:12px;border-radius:8px;margin-top:15px;display:none}
-    .spinner{display:inline-block;width:16px;height:16px;border:2px solid #000;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;margin-right:8px}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    @media(max-width:768px){.container{grid-template-columns:1fr}.order-summary{position:static}}
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="checkout-section">
-      <h1>🛒 Complete Your Order</h1>
-      <p class="subtitle">Annual subscription • 1er año <strong>gratis</strong> con código JUNGLE</p>
+// /api/create-checkout-session.js
+import Stripe from 'stripe';
 
-      <div class="beta-banner">
-        <strong>🎉 Early Access</strong>
-        <p>Tu primer año es GRATIS con JUNGLE. Guardamos tu tarjeta para renovar al año 2 (podés cancelar en cualquier momento).</p>
-      </div>
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
 
-      <form id="payment-form">
-        <div class="form-group">
-          <label>Email Address</label>
-          <input type="email" id="email" placeholder="your.email@company.com" required>
-        </div>
-
-        <button type="submit" class="btn-primary" id="submit-button">
-          🚀 Continuar al Checkout Seguro
-        </button>
-
-        <div class="stripe-badge">
-          <svg width="32" height="14" viewBox="0 0 60 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M59.64 14.28h-8.06c.19 1.93 1.6 2.55 3.2 2.55 1.64 0 2.96-.37 4.05-.95v3.32a8.33 8.33 0 01-4.56 1.1c-4.01 0-6.83-2.5-6.83-7.48 0-4.19 2.39-7.52 6.3-7.52 3.92 0 5.96 3.28 5.96 7.5 0 .4-.04 1.26-.06 1.48zm-5.92-5.62c-1.03 0-2.17.73-2.17 2.58h4.25c0-1.85-1.07-2.58-2.08-2.58zM40.95 20.3c-1.44 0-2.32-.6-2.9-1.04l-.02 4.63-4.12.87V5.57h3.76l.08 1.02a4.7 4.7 0 013.23-1.29c2.9 0 5.62 2.6 5.62 7.4 0 5.23-2.7 7.6-5.65 7.6zM40 8.95c-.95 0-1.54.34-1.97.81l.02 6.12c.4.44.98.78 1.95.78 1.52 0 2.54-1.65 2.54-3.87 0-2.15-1.04-3.84-2.54-3.84zM28.24 5.57h4.13v14.44h-4.13V5.57zm0-4.7L32.37 0v3.36l-4.13.88V.88zm-4.32 9.35v9.79H19.8V5.57h3.7l.12 1.22c1-1.77 3.07-1.41 3.62-1.22v3.79c-.52-.17-2.29-.43-3.32.86zm-8.55 4.72c0 2.43 2.6 1.68 3.12 1.46v3.36c-.55.3-1.54.54-2.89.54a4.15 4.15 0 01-4.27-4.24l.01-13.17 4.02-.86v3.54h3.14V9.1h-3.13v5.85zm-4.91.7c0 2.97-2.31 4.66-5.73 4.66a11.2 11.2 0 01-4.46-.93v-3.93c1.38.75 3.1 1.31 4.46 1.31.92 0 1.53-.24 1.53-1C6.26 13.77 0 14.51 0 9.95 0 7.04 2.28 5.3 5.62 5.3c1.36 0 2.72.2 4.09.75v3.88a9.23 9.23 0 00-4.1-1.06c-.86 0-1.44.25-1.44.9 0 1.85 6.29.97 6.29 5.88z" fill="#635BFF"/></svg>
-          Powered by Stripe
-        </div>
-      </form>
-
-      <div class="back-link" style="margin-top:20px">
-        <a href="pricing.html" style="color:#64748b;text-decoration:none;font-weight:600">← Back to pricing</a>
-      </div>
-    </div>
-
-    <div class="order-summary">
-      <h2 class="summary-title">📋 Order Summary</h2>
-      <div class="plan-details">
-        <div class="plan-name">⚡ HRKey PRO - Annual</div>
-        <ul class="plan-features">
-          <li>Unlimited references</li>
-          <li>Export to PDF</li>
-          <li>Blockchain verification</li>
-          <li>Priority support</li>
-          <li>All updates included</li>
-        </ul>
-      </div>
-      <div class="summary-item"><span>PRO Plan (Annual)</span><span>$X.XX/year</span></div>
-      <div class="summary-item" id="discountRow" style="display:flex;color:#10b981">
-        <span>1er año GRATIS (JUNGLE)</span><span>-$X.XX</span>
-      </div>
-      <div class="summary-item total"><span>Total hoy</span><span>$0.00</span></div>
-      <div class="promo-code" style="margin-top:16px">
-        <div style="color:#cbd5e1;font-size:13px;margin-bottom:10px">Código aplicado automáticamente: <strong>JUNGLE</strong></div>
-        <div class="discount-applied" id="discountMessage" style="display:block">✅ 100% off por 12 meses (renueva automáticamente al año 2)</div>
-      </div>
-      <div class="security-badge" style="text-align:center;margin-top:25px;border-top:1px solid rgba(255,255,255,.1);padding-top:20px;color:#94a3b8;font-size:13px">
-        🔒 <span style="color:#10b981;font-weight:600">Secure Payment</span> • 256-bit SSL • Cancel anytime
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // Publishable Key (usa tu LIVE pk_xxx)
-    const stripe = Stripe('pk_live_51SMAIVGxb8jjp6WH0ZwPpjO6P1WbGSZa3bpzesCUSm6Pf1McX635PO7kuBdpfk7Wjqo4NocgGMdEGxqwC2YqprUE00XO1a7KDb');
-
-    const form = document.getElementById('payment-form');
-    const submitBtn = document.getElementById('submit-button');
-
-    // Lee ?code= url o aplica JUNGLE por defecto
-    function getPromoFromURL() {
-      const params = new URLSearchParams(location.search);
-      return (params.get('code') || 'JUNGLE').toUpperCase();
+  try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(500).json({ error: 'Missing STRIPE_SECRET_KEY' });
+    }
+    if (!process.env.STRIPE_PRICE_ID) {
+      return res.status(500).json({ error: 'Missing STRIPE_PRICE_ID' });
     }
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      submitBtn.disabled = true;
-      const original = submitBtn.innerHTML;
-      submitBtn.innerHTML = '<span class="spinner"></span>Creando sesión segura...';
-
-      try {
-        const email = document.getElementById('email').value.trim();
-        const promo = getPromoFromURL();
-
-        // Llama a tu backend (ver secciones B1/B2)
-        const res = await fetch('/api/create-checkout-session', {
-          method: 'POST',
-          headers: { 'Content-Type':'application/json' },
-          body: JSON.stringify({
-            promo, email,
-            success_url: 'https://hrkey.xyz/success?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url:  'https://hrkey.xyz/cancel'
-          })
-        });
-
-        if (!res.ok) throw new Error('No se pudo crear la sesión de Checkout');
-        const { url } = await res.json();
-        if (!url) throw new Error('Respuesta inválida del backend');
-
-        window.location.href = url; // redirige a Stripe Checkout
-      } catch (err) {
-        alert('Error: ' + err.message);
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = original;
-      }
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-06-20',
     });
 
-    // Rellenar email si existe
-    window.addEventListener('DOMContentLoaded', () => {
-      const user = JSON.parse(localStorage.getItem('hrkey_user_data') || '{}');
-      if (user.email) document.getElementById('email').value = user.email;
+    const {
+      promo = 'JUNGLE',
+      email,
+      success_url = 'https://hrkey.xyz/success?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url = 'https://hrkey.xyz/cancel',
+    } = req.body || {};
+
+    // (Opcional) Validaciones mínimas
+    if (email && typeof email !== 'string') {
+      return res.status(400).json({ error: 'Invalid email' });
+    }
+
+    // 1) Buscar promotion code activo (JUNGLE)
+    let promotion_code_id = null;
+    try {
+      const promos = await stripe.promotionCodes.list({
+        code: String(promo).toUpperCase(),
+        active: true,
+        limit: 1,
+      });
+      promotion_code_id = promos.data[0]?.id || null;
+    } catch (_) {
+      // si falla, seguimos sin promotion_code
+      promotion_code_id = null;
+    }
+
+    // 2) Crear la sesión de Checkout (suscripción anual)
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_collection: 'always', // forzá tarjeta aunque total hoy sea $0
+      customer_creation: 'always',
+      customer_email: email || undefined,
+
+      line_items: [
+        {
+          price: process.env.STRIPE_PRICE_ID, // tu price anual PRO
+          quantity: 1,
+        },
+      ],
+
+      // Aplica el Promotion Code (JUNGLE = 100% off por 12 meses)
+      discounts: promotion_code_id ? [{ promotion_code: promotion_code_id }] : [],
+      allow_promotion_codes: true,
+
+      // URLs de retorno
+      success_url,
+      cancel_url,
+
+      // (Opcional) metadata útil para tu sistema
+      metadata: {
+        source: 'hrkey_checkout_ready',
+        promo: String(promo || '').toUpperCase(),
+      },
     });
-  </script>
-</body>
-</html>
+
+    return res.status(200).json({ url: session.url });
+  } catch (err) {
+    console.error('[create-checkout-session] error:', err);
+    return res.status(500).json({ error: 'Failed to create checkout session' });
+  }
+}
+
