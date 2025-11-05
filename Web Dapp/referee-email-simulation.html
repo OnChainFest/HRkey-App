@@ -1,237 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reference Request - HRKey</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f8fafc;
-            padding: 20px;
-        }
-
-        .email-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-
-        .email-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .email-header img {
-            width: 240px;
-            height: 240px;
-            margin-bottom: 15px;
-        }
-
-        .email-content {
-            padding: 40px;
-        }
-
-        .email-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 20px;
-        }
-
-        .email-body {
-            color: #4b5563;
-            line-height: 1.6;
-            margin-bottom: 30px;
-        }
-
-        .request-details {
-            background: #f8fafc;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            border-left: 4px solid #667eea;
-        }
-
-        .detail-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-
-        .detail-label {
-            font-weight: 600;
-            color: #374151;
-        }
-
-        .detail-value {
-            color: #6b7280;
-        }
-
-        .cta-button {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 30px;
-            border-radius: 10px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            text-align: center;
-            width: 100%;
-            margin: 20px 0;
-        }
-
-        .cta-button:hover {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6b46c1 100%);
-            transform: translateY(-2px);
-            text-decoration: none;
-            color: white;
-        }
-
-        .security-note {
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #047857;
-        }
-
-        .footer {
-            text-align: center;
-            padding: 20px;
-            color: #9ca3af;
-            font-size: 14px;
-            border-top: 1px solid #e5e7eb;
-        }
-
-        .simulation-notice {
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-            color: #92400e;
-            font-weight: 600;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reference Request - HRKey</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f8fafc; padding:20px; }
+    .email-container { max-width:600px; margin:0 auto; background:#fff; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,.1); overflow:hidden; }
+    .email-header { background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff; padding:30px; text-align:center; }
+    .email-header img { width:240px; height:240px; margin-bottom:15px; }
+    .email-content { padding:40px; }
+    .email-title { font-size:24px; font-weight:600; color:#1f2937; margin-bottom:20px; }
+    .email-body { color:#4b5563; line-height:1.6; margin-bottom:30px; }
+    .request-details { background:#f8fafc; border-radius:10px; padding:20px; margin:20px 0; border-left:4px solid #667eea; }
+    .detail-item { display:flex; justify-content:space-between; margin-bottom:10px; }
+    .detail-label { font-weight:600; color:#374151; }
+    .detail-value { color:#6b7280; }
+    .cta-button { display:inline-block; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff; padding:15px 30px; border-radius:10px; text-decoration:none; font-weight:600; font-size:16px; transition:all .3s ease; text-align:center; width:100%; margin:20px 0; }
+    .cta-button:hover { background:linear-gradient(135deg,#5a6fd8 0%,#6b46c1 100%); transform:translateY(-2px); color:#fff; text-decoration:none; }
+    .security-note { background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:15px; margin-top:20px; font-size:14px; color:#047857; }
+    .footer { text-align:center; padding:20px; color:#9ca3af; font-size:14px; border-top:1px solid #e5e7eb; }
+    .simulation-notice { background:#fef3c7; border:1px solid #f59e0b; border-radius:8px; padding:15px; margin-bottom:20px; text-align:center; color:#92400e; font-weight:600; }
+  </style>
 </head>
 <body>
-    <div class="email-container">
-        <div class="simulation-notice">
-            🧪 SIMULATION MODE - This represents the email a referee would receive
-        </div>
-
-        <div class="email-header">
-            <img src="images/logo-white.png" alt="HRKey" onerror="this.style.display='none'">
-            <p>Professional Reference Request</p>
-        </div>
-
-        <div class="email-content">
-            <h1 class="email-title">You've been invited to provide a professional reference</h1>
-            
-            <div class="email-body">
-                <p>Hello <strong>Sarah Johnson</strong>,</p>
-                
-                <p>You have received a professional reference request through HRKey, the blockchain-verified reference platform.</p>
-
-                <p><strong>Michael Thompson</strong> has requested you provide a professional reference based on your working relationship.</p>
-            </div>
-
-            <div class="request-details">
-                <h4 style="margin-bottom: 15px; color: #374151;">Request Details:</h4>
-                <div class="detail-item">
-                    <span class="detail-label">Requester:</span>
-                    <span class="detail-value">Michael Thompson</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Reference Type:</span>
-                    <span class="detail-value">Proactive Reference</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Working Relationship:</span>
-                    <span class="detail-value">Direct Supervisor</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Project Duration:</span>
-                    <span class="detail-value">6-12 months</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Request Date:</span>
-                    <span class="detail-value" id="request-date"></span>
-                </div>
-            </div>
-
-            <a href="referee-evaluation-page.html" class="cta-button">
-                Complete Reference Evaluation
-            </a>
-
-            <div class="security-note">
-                <strong>🔒 Secure & Verified:</strong> This reference will be cryptographically signed and stored on the blockchain for permanent verification. Your evaluation will become an immutable record.
-            </div>
-
-            <div class="email-body" style="margin-top: 30px;">
-                <p><strong>What you'll be evaluating:</strong></p>
-                <ul style="margin: 10px 0 0 20px; color: #6b7280;">
-                    <li>Performance against predefined KPIs</li>
-                    <li>Professional skills and competencies</li>
-                    <li>Communication and collaboration abilities</li>
-                    <li>Overall recommendation</li>
-                </ul>
-                
-                <p style="margin-top: 20px;"><strong>Time needed:</strong> Approximately 5 min and you'll never have to do it again! :)</p>
-                
-                <p style="margin-top: 15px; font-size: 14px; color: #6b7280;">
-                    If you did not expect this request or believe it was sent in error, please ignore this email.
-                </p>
-            </div>
-        </div>
-
-        <div class="footer">
-            <p>This email was sent by HRKey on behalf of Michael Thompson</p>
-            <p>HRKey - Decentralized Professional References</p>
-            <p style="margin-top: 10px;">
-                <a href="#" style="color: #667eea;">Unsubscribe</a> | 
-                <a href="#" style="color: #667eea;">Privacy Policy</a> | 
-                <a href="#" style="color: #667eea;">Support</a>
-            </p>
-        </div>
+  <div class="email-container">
+    <div class="simulation-notice">
+      🧪 SIMULATION MODE — This represents the email a referee would receive
     </div>
 
-    <script>
-        // Set current date
-        document.getElementById('request-date').textContent = new Date().toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+    <div class="email-header">
+      <img src="images/logo-white.png" alt="HRKey logo" onerror="this.style.display='none'">
+      <p>Professional Reference Request</p>
+    </div>
 
-        // Track click for analytics
-        document.querySelector('.cta-button').addEventListener('click', function() {
-            console.log('Referee clicked to complete reference evaluation');
-            
-            // In a real app, this would track the referee's journey
-            localStorage.setItem('referee_session', JSON.stringify({
-                refereeEmail: 'sarah.johnson@example.com',
-                requestId: 'ref-' + Date.now(),
-                clickedAt: new Date().toISOString()
-            }));
-        });
-    </script>
+    <div class="email-content">
+      <h1 class="email-title">You've been invited to provide a professional reference</h1>
+
+      <div class="email-body">
+        <p>Hello <strong>Sarah Johnson</strong>,</p>
+        <p>You have received a professional reference request through HRKey, the blockchain-verified reference platform.</p>
+        <p><strong>Michael Thompson</strong> has requested you provide a professional reference based on your working relationship.</p>
+      </div>
+
+      <div class="request-details">
+        <h4 style="margin-bottom:15px;color:#374151;">Request Details:</h4>
+        <div class="detail-item"><span class="detail-label">Requester:</span><span class="detail-value">Michael Thompson</span></div>
+        <div class="detail-item"><span class="detail-label">Reference Type:</span><span class="detail-value">Proactive Reference</span></div>
+        <div class="detail-item"><span class="detail-label">Working Relationship:</span><span class="detail-value">Direct Supervisor</span></div>
+        <div class="detail-item"><span class="detail-label">Project Duration:</span><span class="detail-value">6–12 months</span></div>
+        <div class="detail-item"><span class="detail-label">Request Date:</span><span class="detail-value" id="request-date"></span></div>
+      </div>
+
+      <!-- CTA con URL absoluta a producción y token demo -->
+      <a id="cta-link" href="https://hrkey.xyz/referee-evaluation-page.html?token=demo_token_123"
+         class="cta-button" target="_blank" rel="noopener">
+        Complete Reference Evaluation
+      </a>
+
+      <div class="security-note">
+        <strong>🔒 Secure & Verified:</strong> This reference will be cryptographically signed and stored on the blockchain for permanent verification. Your evaluation will become an immutable record.
+      </div>
+
+      <div class="email-body" style="margin-top:30px;">
+        <p><strong>What you'll be evaluating:</strong></p>
+        <ul style="margin:10px 0 0 20px;color:#6b7280;">
+          <li>Performance against predefined KPIs</li>
+          <li>Professional skills and competencies</li>
+          <li>Communication and collaboration abilities</li>
+          <li>Overall recommendation</li>
+        </ul>
+        <p style="margin-top:20px;"><strong>Time needed:</strong> Approximately 5 min and you'll never have to do it again! :)</p>
+        <p style="margin-top:15px;font-size:14px;color:#6b7280;">
+          If you did not expect this request or believe it was sent in error, please ignore this email.
+        </p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>This email was sent by HRKey on behalf of Michael Thompson</p>
+      <p>HRKey — Decentralized Professional References</p>
+      <p style="margin-top:10px;">
+        <a href="#" style="color:#667eea;">Unsubscribe</a> |
+        <a href="#" style="color:#667eea;">Privacy Policy</a> |
+        <a href="#" style="color:#667eea;">Support</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Fecha legible
+    document.getElementById('request-date').textContent = new Date().toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    // Construye la URL de forma dinámica si querés reutilizar la simulación en otros entornos.
+    // Prioriza PUBLIC_APP_URL o __APP_BASE__, y cae en hrkey.xyz.
+    (function () {
+      var base =
+        (window.PUBLIC_APP_URL && typeof window.PUBLIC_APP_URL === 'string' && window.PUBLIC_APP_URL) ||
+        (window.__APP_BASE__ && typeof window.__APP_BASE__ === 'string' && window.__APP_BASE__) ||
+        'https://hrkey.xyz';
+
+      // Normaliza barra y arma token demo
+      if (base.endsWith('/')) base = base.slice(0, -1);
+      var url = base + '/referee-evaluation-page.html?token=' + encodeURIComponent('demo_token_123');
+
+      var a = document.getElementById('cta-link');
+      a.setAttribute('href', url);
+    })();
+
+    // Tracking de clic
+    document.querySelector('.cta-button').addEventListener('click', function () {
+      try {
+        localStorage.setItem('referee_session', JSON.stringify({
+          refereeEmail: 'sarah.johnson@example.com',
+          requestId: 'ref-' + Date.now(),
+          clickedAt: new Date().toISOString()
+        }));
+      } catch(_) {}
+      console.log('Referee clicked to complete reference evaluation');
+    });
+  </script>
+</body>
+</html>
+
+        <p style="margin-top:15px;font-size:14px;color:#6b7280;">
+          If you did not expect this request or believe it was sent in error, please ignore this email.
+        </p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>This email was sent by HRKey on behalf of Michael Thompson</p>
+      <p>HRKey — Decentralized Professional References</p>
+      <p style="margin-top:10px;">
+        <a href="#" style="color:#667eea;">Unsubscribe</a> |
+        <a href="#" style="color:#667eea;">Privacy Policy</a> |
+        <a href="#" style="color:#667eea;">Support</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Fecha legible
+    document.getElementById('request-date').textContent = new Date().toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    // Construye la URL de forma dinámica si querés reutilizar la simulación en otros entornos.
+    // Prioriza PUBLIC_APP_URL o __APP_BASE__, y cae en hrkey.xyz.
+    (function () {
+      var base =
+        (window.PUBLIC_APP_URL && typeof window.PUBLIC_APP_URL === 'string' && window.PUBLIC_APP_URL) ||
+        (window.__APP_BASE__ && typeof window.__APP_BASE__ === 'string' && window.__APP_BASE__) ||
+        'https://hrkey.xyz';
+
+      // Normaliza barra y arma token demo
+      if (base.endsWith('/')) base = base.slice(0, -1);
+      var url = base + '/referee-evaluation-page.html?token=' + encodeURIComponent('demo_token_123');
+
+      var a = document.getElementById('cta-link');
+      a.setAttribute('href', url);
+    })();
+
+    // Tracking de clic
+    document.querySelector('.cta-button').addEventListener('click', function () {
+      try {
+        localStorage.setItem('referee_session', JSON.stringify({
+          refereeEmail: 'sarah.johnson@example.com',
+          requestId: 'ref-' + Date.now(),
+          clickedAt: new Date().toISOString()
+        }));
+      } catch(_) {}
+      console.log('Referee clicked to complete reference evaluation');
+    });
+  </script>
 </body>
 </html>

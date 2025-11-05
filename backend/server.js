@@ -10,6 +10,7 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
 import Stripe from 'stripe';
+import { makeRefereeLink } from './utils/appUrl.js';
 
 dotenv.config();
 
@@ -142,7 +143,7 @@ class ReferenceService {
 
     if (error) throw error;
 
-    const verificationUrl = `${APP_URL}/referee-evaluation-page.html?token=${encodeURIComponent(inviteToken)}`;
+    const verificationUrl = makeRefereeLink(inviteToken);
     await this.sendRefereeInviteEmail(email, name, applicantData, verificationUrl);
 
     return { success: true, reference_id: invite.id, token: inviteToken, verification_url: verificationUrl };
