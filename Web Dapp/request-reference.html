@@ -14,57 +14,85 @@
   <link href="./css/responsive.css" rel="stylesheet">
 
   <style>
-    body { background:#0a0a0a; font-family:'Rubik',sans-serif; }
-    .page { max-width: 980px; margin: 40px auto; }
-    .card { background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,196,199,0.2); padding: 28px; border: 1px solid rgba(0,196,199,0.2); }
-    h1 { font-size: 28px; margin: 0 0 8px; color:#ffffff; }
-    p.lead { color:#888888; margin: 0 0 24px; }
-    .row { display:grid; grid-template-columns: 1fr 1fr; gap:18px; }
-    .row-1 { grid-template-columns: 1fr; }
-    label { display:block; font-weight:600; color:#00C4C7; margin: 10px 0 6px; }
+    :root {
+      --teal:#00C4C7;
+      --teal-2:#00d2cc;
+      --bg:#0a0a0a;
+      --text:#ffffff;
+      --muted:#888888;
+      --panel-1:#1a1a1a;
+      --panel-2:#2a2a2a;
+    }
+    * { box-sizing: border-box; }
+    body { background:var(--bg); font-family:'Rubik',sans-serif; margin:0; }
+    .page { max-width: 980px; margin: 40px auto; padding: 0 16px; }
+    .card {
+      background: linear-gradient(135deg, var(--panel-1) 0%, var(--panel-2) 100%);
+      border-radius: 16px; box-shadow: 0 10px 30px rgba(0,196,199,0.2);
+      padding: 28px; border: 1px solid rgba(0,196,199,0.2);
+    }
+    h1 { font-size: 28px; margin: 0 0 8px; color:var(--text); }
+    p.lead { color:var(--muted); margin: 0 0 24px; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:18px; }
+    .grid-1 { grid-template-columns: 1fr; }
+    @media (max-width: 768px){
+      .grid { grid-template-columns: 1fr; }
+    }
+    label { display:block; font-weight:600; color:var(--teal); margin: 10px 0 6px; }
     input, select, textarea {
       width: 100%; padding: 12px; border: 1px solid rgba(0,196,199,0.3); border-radius: 10px; font-size: 14px;
-      background: #1a1a1a; color: #ffffff;
+      background: var(--panel-1); color: var(--text);
     }
-    input:focus, select:focus, textarea:focus { outline:none; border-color:#00C4C7; box-shadow:0 0 0 3px rgba(0,196,199,.3); }
-    input:disabled { background: #0a0a0a; color: #666666; }
-    .actions { margin-top: 20px; display: flex; gap: 12px; align-items: center; }
+    input:focus, select:focus, textarea:focus { outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(0,196,199,.3); }
+    input[disabled] { background: #0f0f0f; color: #777; }
+    .help { font-size:12px; color:var(--muted); margin-top:6px; }
+
+    .actions { margin-top: 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     .btn-primary {
-      background: linear-gradient(135deg, #00C4C7 0%, #00d2cc 100%);
+      background: linear-gradient(135deg, var(--teal) 0%, var(--teal-2) 100%);
       border: none; padding: 12px 24px; border-radius: 12px; color: #000000; font-weight:600; cursor: pointer;
-      box-shadow: 0 4px 15px rgba(0,196,199,0.4);
+      box-shadow: 0 4px 15px rgba(0,196,199,0.4); transition: transform .15s ease, box-shadow .15s ease, opacity .2s ease;
     }
     .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,196,199,0.6); }
-    .btn-secondary { background:transparent; border:2px solid #00C4C7; color:#00C4C7; padding:10px 18px; border-radius:10px; font-weight:600; cursor: pointer; }
-    .btn-secondary:hover { background:#00C4C7; color:#000000; }
+    .btn-primary[disabled] { opacity:.65; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-secondary { background:transparent; border:2px solid var(--teal); color:var(--teal); padding:10px 18px; border-radius:10px; font-weight:600; cursor: pointer; }
+    .btn-secondary:hover { background:var(--teal); color:#000000; }
+
     .alert { margin-top:16px; padding: 14px 16px; border-radius: 10px; }
     .alert-success { background:rgba(16,185,129,0.1); color:#10b981; border-left:4px solid #10b981; }
     .alert-error { background:rgba(239,68,68,0.1); color:#ef4444; border-left:4px solid #ef4444; }
-    .muted { color:#888888; font-size: 12px; }
-    .back-link { color: #00C4C7; text-decoration: none; }
-    .back-link:hover { color: #00d2cc; }
+    .muted { color:var(--muted); font-size: 12px; }
+    .back-link { color: var(--teal); text-decoration: none; }
+    .back-link:hover { color: var(--teal-2); }
+
+    .kpi-box { background: rgba(0,196,199,0.05); padding: 20px; border-radius: 10px; border-left: 4px solid var(--teal); }
+    .kpi-box h3 { color: var(--teal); margin: 0 0 10px 0; font-size: 18px; }
+    .kpi-box p { color: var(--muted); font-size: 13px; margin: 0 0 20px 0; }
   </style>
 </head>
 <body>
   <div class="page">
     <div class="card">
-      <a href="./app.html" class="back-link muted">&larr; Back to Dashboard</a>
+      <a href="./app.html" class="back-link muted" aria-label="Back to Dashboard">&larr; Back to Dashboard</a>
       <h1>Request a New Reference</h1>
       <p class="lead">Send a request to your manager, colleague, or client.</p>
 
-      <form id="refForm">
-        <div class="row">
+      <form id="refForm" novalidate>
+        <div class="grid">
           <div>
-            <label for="refereeName">Referee Name *</label>
-            <input type="text" id="refereeName" required placeholder="e.g. Ana Manager">
+            <label for="refereeName">Referee Name <span aria-hidden="true">*</span></label>
+            <input type="text" id="refereeName" name="refereeName" required autocomplete="name" placeholder="e.g. Ana Manager">
           </div>
+
           <div>
-            <label for="refereeEmail">Referee Email *</label>
-            <input type="email" id="refereeEmail" required placeholder="e.g. ana@empresa.com">
+            <label for="refereeEmail">Referee Email <span aria-hidden="true">*</span></label>
+            <input type="email" id="refereeEmail" name="refereeEmail" required inputmode="email" autocomplete="email" placeholder="e.g. ana@empresa.com" pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$">
+            <div class="help">Use a corporate or professional email if possible.</div>
           </div>
+
           <div>
-            <label for="relationship">Relationship *</label>
-            <select id="relationship" required>
+            <label for="relationship">Relationship <span aria-hidden="true">*</span></label>
+            <select id="relationship" name="relationship" required>
               <option value="">Select relationship</option>
               <option value="Direct Manager">Direct Manager</option>
               <option value="Supervisor">Supervisor</option>
@@ -74,58 +102,61 @@
               <option value="Other">Other</option>
             </select>
           </div>
+
           <div>
-            <label for="company">Company *</label>
-            <input type="text" id="company" required placeholder="e.g. Empresa X">
+            <label for="company">Company <span aria-hidden="true">*</span></label>
+            <input type="text" id="company" name="company" required placeholder="e.g. Empresa X" autocomplete="organization">
           </div>
+
           <div>
-            <label for="position">Your Position *</label>
-            <input type="text" id="position" required placeholder="e.g. Frontend Developer">
+            <label for="position">Your Position <span aria-hidden="true">*</span></label>
+            <input type="text" id="position" name="position" required placeholder="e.g. Frontend Developer" autocomplete="organization-title">
           </div>
+
           <div>
             <label for="wallet">Your Wallet</label>
-            <input type="text" id="wallet" disabled placeholder="Wallet from your session">
+            <input type="text" id="wallet" name="wallet" disabled placeholder="Wallet from your session">
           </div>
         </div>
 
-        <div class="row row-1">
+        <div class="grid grid-1">
           <div>
             <label for="message">Personal message (optional)</label>
-            <textarea id="message" rows="4" placeholder="Add a short personal note to your referee..."></textarea>
+            <textarea id="message" name="message" rows="4" placeholder="Add a short personal note to your referee..."></textarea>
           </div>
         </div>
 
         <!-- KPIs Section -->
-        <div class="row row-1" style="margin-top: 30px;">
-          <div style="background: rgba(0,196,199,0.05); padding: 20px; border-radius: 10px; border-left: 4px solid #00C4C7;">
-            <h3 style="color: #00C4C7; margin: 0 0 10px 0; font-size: 18px;">📊 Define KPIs for Evaluation</h3>
-            <p style="color: #888888; font-size: 13px; margin: 0 0 20px 0;">Specify 2-3 key performance indicators that you'd like the referee to evaluate.</p>
-            
+        <div class="grid grid-1" style="margin-top: 30px;">
+          <div class="kpi-box">
+            <h3>📊 Define KPIs for Evaluation</h3>
+            <p>Specify 2–3 key performance indicators that you'd like the referee to evaluate.</p>
+
             <div style="margin-bottom: 15px;">
-              <label for="kpi1Title">KPI 1: Title *</label>
-              <input type="text" id="kpi1Title" required placeholder="e.g. Product Launch Success">
+              <label for="kpi1Title">KPI 1: Title <span aria-hidden="true">*</span></label>
+              <input type="text" id="kpi1Title" name="kpi1Title" required placeholder="e.g. Product Launch Success">
             </div>
             <div style="margin-bottom: 20px;">
-              <label for="kpi1Description">KPI 1: Description *</label>
-              <input type="text" id="kpi1Description" required placeholder="e.g. Successfully launch 2 major product features within Q4 timeline">
+              <label for="kpi1Description">KPI 1: Description <span aria-hidden="true">*</span></label>
+              <input type="text" id="kpi1Description" name="kpi1Description" required placeholder="e.g. Successfully launch 2 major product features within Q4 timeline">
             </div>
 
             <div style="margin-bottom: 15px;">
-              <label for="kpi2Title">KPI 2: Title *</label>
-              <input type="text" id="kpi2Title" required placeholder="e.g. Team Leadership">
+              <label for="kpi2Title">KPI 2: Title <span aria-hidden="true">*</span></label>
+              <input type="text" id="kpi2Title" name="kpi2Title" required placeholder="e.g. Team Leadership">
             </div>
             <div style="margin-bottom: 20px;">
-              <label for="kpi2Description">KPI 2: Description *</label>
-              <input type="text" id="kpi2Description" required placeholder="e.g. Lead cross-functional team of 8+ members effectively">
+              <label for="kpi2Description">KPI 2: Description <span aria-hidden="true">*</span></label>
+              <input type="text" id="kpi2Description" name="kpi2Description" required placeholder="e.g. Lead cross-functional team of 8+ members effectively">
             </div>
 
             <div style="margin-bottom: 15px;">
               <label for="kpi3Title">KPI 3: Title (optional)</label>
-              <input type="text" id="kpi3Title" placeholder="e.g. Client Satisfaction">
+              <input type="text" id="kpi3Title" name="kpi3Title" placeholder="e.g. Client Satisfaction">
             </div>
             <div>
               <label for="kpi3Description">KPI 3: Description (optional)</label>
-              <input type="text" id="kpi3Description" placeholder="e.g. Maintain 95%+ client satisfaction rating">
+              <input type="text" id="kpi3Description" name="kpi3Description" placeholder="e.g. Maintain 95%+ client satisfaction rating">
             </div>
           </div>
         </div>
@@ -133,36 +164,35 @@
         <div class="actions">
           <button type="submit" class="btn-primary" id="submitBtn">🚀 Send Request</button>
           <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
-          <span class="muted" id="statusText"></span>
+          <span class="muted" id="statusText" aria-live="polite"></span>
         </div>
       </form>
 
-      <div id="alertBox"></div>
+      <div id="alertBox" role="alert" aria-live="assertive"></div>
     </div>
   </div>
 
   <script>
-    // ✅ TUS CREDENCIALES DE EMAILJS
+    // ===== EmailJS Credentials (Frontend-safe public key) =====
     const EMAILJS_SERVICE_ID = "service_yvtzlvf";
     const EMAILJS_TEMPLATE_ID = "template_3zat2bq";
     const EMAILJS_PUBLIC_KEY  = "8kTeUTmDNbaWwqDWQ";
 
-    console.log('✅ EmailJS Config loaded:', {
-      SERVICE_ID: EMAILJS_SERVICE_ID,
-      TEMPLATE_ID: EMAILJS_TEMPLATE_ID,
-      PUBLIC_KEY: EMAILJS_PUBLIC_KEY.substring(0, 5) + '...'
-    });
-
-    // Helpers UI
+    // ===== Utility UI =====
     function showAlert(msg, type='success') {
       const box = document.getElementById('alertBox');
-      box.innerHTML = `<div class="alert ${type==='success'?'alert-success':'alert-error'}">${msg}</div>`;
+      const cls = type === 'success' ? 'alert-success' : 'alert-error';
+      box.innerHTML = `<div class="alert ${cls}">${msg}</div>`;
     }
     function setStatus(msg) {
       document.getElementById('statusText').textContent = msg || '';
     }
+    function disableSubmit(disabled) {
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = !!disabled;
+    }
 
-    // Cargar sesión y prellenar wallet
+    // ===== Session handling =====
     function loadSessionOrRedirect() {
       const raw = localStorage.getItem('hrkey_user_data');
       if (!raw) {
@@ -173,21 +203,24 @@
         const user = JSON.parse(raw);
         const w = document.getElementById('wallet');
         if (w && user?.wallet) w.value = user.wallet;
+        if (!user?.email) {
+          console.warn('Session found but missing email; continuing');
+        }
         return user;
-      } catch(e) {
+      } catch (e) {
         console.error('Invalid hrkey_user_data:', e);
         location.replace('./auth.html');
         return null;
       }
     }
 
-    // Guarda referencia en localStorage
+    // ===== Local storage of reference (for dashboard list / retry) =====
     function saveReferenceLocal(ref) {
       const list = JSON.parse(localStorage.getItem('hrkey_references') || '[]');
       list.push(ref);
       localStorage.setItem('hrkey_references', JSON.stringify(list));
 
-      // Actualiza uso del plan si existe
+      // Update plan usage if present
       const planRaw = localStorage.getItem('hrkey_user_plan');
       if (planRaw) {
         try {
@@ -199,117 +232,119 @@
       }
     }
 
-    // Carga EmailJS script on-demand e inicializa
-    async function ensureEmailJS() {
-      if (window.emailjs) return;
-      
+    // ===== Lazy-load EmailJS =====
+    let emailjsLoaded = false;
+    function ensureEmailJS() {
+      if (emailjsLoaded && window.emailjs) return Promise.resolve();
       return new Promise((resolve, reject) => {
         const s = document.createElement('script');
         s.src = "https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js";
         s.onload = () => {
-          console.log('✅ EmailJS library loaded');
-          emailjs.init(EMAILJS_PUBLIC_KEY);
-          console.log('✅ EmailJS initialized with Public Key');
-          resolve();
+          if (!window.emailjs) return reject(new Error('EmailJS not available'));
+          try {
+            window.emailjs.init(EMAILJS_PUBLIC_KEY);
+            emailjsLoaded = true;
+            resolve();
+          } catch (e) {
+            reject(e);
+          }
         };
-        s.onerror = () => reject(new Error('No se pudo cargar emailjs'));
+        s.onerror = () => reject(new Error('Failed to load EmailJS'));
         document.head.appendChild(s);
       });
     }
 
-    // Enviar por EmailJS
-    async function sendEmailJS(ref, user) {
-      try {
-        console.log('📧 Preparing to send email via EmailJS...');
-        await ensureEmailJS();
-        
-        if (!window.emailjs) {
-          console.error('❌ EmailJS library not loaded');
-          return false;
-        }
-
-        // ✅ Construir el link de verificación con detección automática de URL
-        const getBaseURL = () => {
-          if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            return 'https://hrkey.xyz';
-          }
-          return window.location.origin;
-        };
-
-        const baseURL = getBaseURL();
-        const verificationLink = `${baseURL}/referee-evaluation-page.html?ref=${ref.id}`;
-        
-        console.log('🔗 Base URL:', baseURL);
-        console.log('🔗 Verification link generated:', verificationLink);
-
-        const params = {
-          to_name: ref.refereeName,
-          to_email: ref.refereeEmail,
-          requester_name: user?.name || 'HRKey User',
-          requester_email: user?.email || 'noreply@hrkey.xyz',
-          relationship: ref.relationship,
-          company: ref.company,
-          position: ref.position,
-          message: ref.message || 'No additional message provided',
-          reference_id: ref.id,
-          verification_link: verificationLink
-        };
-        
-        console.log('📤 Sending email with params:', params);
-        
-        const response = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
-        
-        console.log('✅ EmailJS SUCCESS:', response);
-        console.log('📧 Email sent to:', ref.refereeEmail);
-        return true;
-      } catch (e) {
-        console.error('❌ EmailJS error:', e);
-        return false;
-      }
+    // ===== Compute base URL safely (avoid localhost in emails) =====
+    function computeBaseURL() {
+      const isLocal = ['localhost','127.0.0.1'].includes(window.location.hostname);
+      // Cambia este dominio si usas otro:
+      const PROD_BASE = 'https://hrkey.xyz';
+      if (isLocal) return PROD_BASE;
+      return window.location.origin;
     }
 
-    // Submit principal
+    // ===== Build sanitized string (very light) =====
+    function sanitize(s) {
+      if (!s) return '';
+      return s.replace(/[<>]/g, '');
+    }
+
+    // ===== EmailJS send =====
+    async function sendEmailJS(ref, user) {
+      await ensureEmailJS();
+
+      const baseURL = computeBaseURL();
+      const verificationLink = `${baseURL}/referee-evaluation-page.html?ref=${encodeURIComponent(ref.id)}`;
+
+      const params = {
+        to_name: ref.refereeName,
+        to_email: ref.refereeEmail,
+        requester_name: user?.name || 'HRKey User',
+        requester_email: user?.email || 'noreply@hrkey.xyz',
+        relationship: ref.relationship,
+        company: ref.company,
+        position: ref.position,
+        message: ref.message || 'No additional message provided',
+        reference_id: ref.id,
+        verification_link: verificationLink
+      };
+
+      console.log('🔗 verification_link:', verificationLink);
+      console.log('📤 EmailJS params:', params);
+
+      // Send
+      const res = await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
+      console.log('✅ EmailJS SUCCESS:', res);
+      return true;
+    }
+
+    // ===== Form submit handler =====
     async function submitReferenceRequest(e) {
       e.preventDefault();
       const user = loadSessionOrRedirect();
       if (!user) return;
 
+      // Basic client validation (HTML5 will also do its part)
+      const emailEl = document.getElementById('refereeEmail');
+      if (!emailEl.checkValidity()) {
+        emailEl.reportValidity();
+        return;
+      }
+
       const submitBtn = document.getElementById('submitBtn');
-      submitBtn.disabled = true;
       const original = submitBtn.textContent;
+
+      disableSubmit(true);
       submitBtn.textContent = '⏳ Sending...';
       setStatus('Sending request…');
 
       const ref = {
         id: 'ref_' + Date.now(),
-        refereeName: document.getElementById('refereeName').value.trim(),
-        refereeEmail: document.getElementById('refereeEmail').value.trim(),
-        relationship: document.getElementById('relationship').value,
-        company: document.getElementById('company').value.trim(),
-        position: document.getElementById('position').value.trim(),
-        message: document.getElementById('message').value.trim(),
+        refereeName: sanitize(document.getElementById('refereeName').value.trim()),
+        refereeEmail: sanitize(document.getElementById('refereeEmail').value.trim()),
+        relationship: sanitize(document.getElementById('relationship').value),
+        company: sanitize(document.getElementById('company').value.trim()),
+        position: sanitize(document.getElementById('position').value.trim()),
+        message: sanitize(document.getElementById('message').value.trim()),
         kpis: [
           {
-            title: document.getElementById('kpi1Title').value.trim(),
-            description: document.getElementById('kpi1Description').value.trim()
+            title: sanitize(document.getElementById('kpi1Title').value.trim()),
+            description: sanitize(document.getElementById('kpi1Description').value.trim())
           },
           {
-            title: document.getElementById('kpi2Title').value.trim(),
-            description: document.getElementById('kpi2Description').value.trim()
+            title: sanitize(document.getElementById('kpi2Title').value.trim()),
+            description: sanitize(document.getElementById('kpi2Description').value.trim())
           }
         ],
         status: 'pending',
         dateRequested: new Date().toISOString(),
-        requestedBy: user.email || ''
+        requestedBy: sanitize(user.email || '')
       };
 
-      const kpi3Title = document.getElementById('kpi3Title').value.trim();
-      const kpi3Desc = document.getElementById('kpi3Description').value.trim();
+      const kpi3Title = sanitize(document.getElementById('kpi3Title').value.trim());
+      const kpi3Desc  = sanitize(document.getElementById('kpi3Description').value.trim());
       if (kpi3Title && kpi3Desc) {
-        ref.kpis.push({
-          title: kpi3Title,
-          description: kpi3Desc
-        });
+        ref.kpis.push({ title: kpi3Title, description: kpi3Desc });
       }
 
       console.log('🚀 Submitting reference request:', ref);
@@ -320,33 +355,31 @@
 
         if (mailOk) {
           showAlert('✅ Reference request sent successfully! Email delivered.', 'success');
-          console.log('✅ Request completed successfully');
+          setStatus('');
+          setTimeout(() => location.replace('./app.html'), 1200);
         } else {
           showAlert('⚠️ Request saved locally. Email may not have been sent. Check console.', 'error');
+          setStatus('');
         }
-        
-        setStatus('');
-        setTimeout(()=> location.replace('./app.html'), 1500);
-
-      } catch(err) {
+      } catch (err) {
         console.error('❌ submitReferenceRequest error:', err);
-        showAlert('❌ Unexpected error. Please try again.', 'error');
+        showAlert('❌ Unexpected error while sending the email. Please try again or contact support.', 'error');
         setStatus('');
       } finally {
-        submitBtn.disabled = false;
         submitBtn.textContent = original;
+        disableSubmit(false);
       }
     }
 
-    // init
+    // ===== Init =====
     window.addEventListener('DOMContentLoaded', () => {
-      console.log('🎬 Page loaded');
+      console.log('🎬 Page loaded: Request Reference');
       const user = loadSessionOrRedirect();
       if (!user) return;
-      
+
       document.getElementById('refForm').addEventListener('submit', submitReferenceRequest);
       document.getElementById('cancelBtn').addEventListener('click', () => location.replace('./app.html'));
-      
+
       console.log('✅ Form initialized and ready');
     });
   </script>
