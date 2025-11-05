@@ -17,14 +17,14 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 
 /**
- * Fijamos un fallback productivo para evitar localhost en producción.
- * Aún así, si defines FRONTEND_URL en tu host, se usará tu valor.
+ * FRONTEND_URL sin riesgo de localhost en prod:
+ * 1) PUBLIC_APP_URL (recomendado en Vercel)
+ * 2) VERCEL_URL (auto) → https://<deploy>.vercel.app
+ * 3) fallback final → https://hrkey.xyz
  */
 const FRONTEND_URL =
-  process.env.FRONTEND_URL ||
-  (process.env.NODE_ENV === 'production'
-    ? 'https://h-rkey-app.vercel.app'
-    : 'http://localhost:3000');
+  process.env.PUBLIC_APP_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://hrkey.xyz');
 
 if (!SUPABASE_SERVICE_KEY) {
   console.warn('⚠️ SUPABASE_SERVICE_KEY no configurada. Operaciones de BD fallarán.');
@@ -176,9 +176,10 @@ export class ReferenceService {
 
       if (error) throw error;
 
-      // ⚠️ AQUÍ el link del correo (sin localhost)
-      const verificationUrl =
-        `${FRONTEND_URL}/referee-evaluation-page.html?token=${inviteToken}`;
+      // Link del correo (✅ sin localhost y con token seguro)
+      const verificationUrl = `${FRONTEND_URL}/referee-evaluation-page.html?token=${encodeURIComponent(
+        inviteToken
+      )}`;
 
       await this.sendRefereeInviteEmail(email, name, applicantData, verificationUrl);
 
