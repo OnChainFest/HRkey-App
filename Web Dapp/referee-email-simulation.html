@@ -31,7 +31,7 @@
     </div>
 
     <div class="email-header">
-      <img src="images/logo-white.png" alt="HRKey" onerror="this.style.display='none'">
+      <img src="images/logo-white.png" alt="HRKey logo" onerror="this.style.display='none'">
       <p>Professional Reference Request</p>
     </div>
 
@@ -72,6 +72,60 @@
           <li>Overall recommendation</li>
         </ul>
         <p style="margin-top:20px;"><strong>Time needed:</strong> Approximately 5 min and you'll never have to do it again! :)</p>
+        <p style="margin-top:15px;font-size:14px;color:#6b7280;">
+          If you did not expect this request or believe it was sent in error, please ignore this email.
+        </p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>This email was sent by HRKey on behalf of Michael Thompson</p>
+      <p>HRKey — Decentralized Professional References</p>
+      <p style="margin-top:10px;">
+        <a href="#" style="color:#667eea;">Unsubscribe</a> |
+        <a href="#" style="color:#667eea;">Privacy Policy</a> |
+        <a href="#" style="color:#667eea;">Support</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Fecha legible
+    document.getElementById('request-date').textContent = new Date().toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    // Construye la URL de forma dinámica si querés reutilizar la simulación en otros entornos.
+    // Prioriza PUBLIC_APP_URL o __APP_BASE__, y cae en hrkey.xyz.
+    (function () {
+      var base =
+        (window.PUBLIC_APP_URL && typeof window.PUBLIC_APP_URL === 'string' && window.PUBLIC_APP_URL) ||
+        (window.__APP_BASE__ && typeof window.__APP_BASE__ === 'string' && window.__APP_BASE__) ||
+        'https://hrkey.xyz';
+
+      // Normaliza barra y arma token demo
+      if (base.endsWith('/')) base = base.slice(0, -1);
+      var url = base + '/referee-evaluation-page.html?token=' + encodeURIComponent('demo_token_123');
+
+      var a = document.getElementById('cta-link');
+      a.setAttribute('href', url);
+    })();
+
+    // Tracking de clic
+    document.querySelector('.cta-button').addEventListener('click', function () {
+      try {
+        localStorage.setItem('referee_session', JSON.stringify({
+          refereeEmail: 'sarah.johnson@example.com',
+          requestId: 'ref-' + Date.now(),
+          clickedAt: new Date().toISOString()
+        }));
+      } catch(_) {}
+      console.log('Referee clicked to complete reference evaluation');
+    });
+  </script>
+</body>
+</html>
+
         <p style="margin-top:15px;font-size:14px;color:#6b7280;">
           If you did not expect this request or believe it was sent in error, please ignore this email.
         </p>
