@@ -17,16 +17,26 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 
 /**
- * URL del front sin riesgo de localhost en prod:
+ * 🌐 Selección robusta del dominio del frontend, evitando localhost:
  * 1) APP_URL (general)
- * 2) PUBLIC_APP_URL (Vercel recomendado)
- * 3) VERCEL_URL (auto)  -> https://<deploy>.vercel.app
- * 4) fallback           -> https://hrkey.xyz
+ * 2) PUBLIC_APP_URL (recomendado en Vercel)
+ * 3) FRONTEND_URL (compatibilidad)
+ * 4) VERCEL_URL (auto)  -> https://<deploy>.vercel.app
+ * 5) fallback           -> https://hrkey.xyz
  */
-export const FRONTEND_URL =
-  process.env.APP_URL ||
-  process.env.PUBLIC_APP_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://hrkey.xyz');
+const PROD_URL = 'https://hrkey.xyz';
+function getBaseURL() {
+  const envUrl =
+    process.env.APP_URL ||
+    process.env.PUBLIC_APP_URL ||
+    process.env.FRONTEND_URL;
+
+  if (envUrl && /^https?:\/\//i.test(envUrl)) return envUrl;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return PROD_URL;
+}
+
+export const FRONTEND_URL = getBaseURL();
 
 if (!SUPABASE_SERVICE_KEY) {
   console.warn('⚠️ SUPABASE_SERVICE_KEY no configurada. Operaciones de BD fallarán.');
@@ -34,9 +44,12 @@ if (!SUPABASE_SERVICE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
+// -----------------------------------------
 // Helper para construir el link del referee
+// -----------------------------------------
 function makeRefereeLink(token) {
-  let base = FRONTEND_URL.endsWith('/') ? FRONTEND_URL.slice(0, -1) : FRONTEND_URL;
+  let base = FRONTEND_URL;
+  if (base.endsWith('/')) base = base.slice(0, -1);
   return `${base}/referee-evaluation-page.html?token=${encodeURIComponent(token)}`;
 }
 
@@ -387,4 +400,3 @@ export class ReferenceService {
     }
   }
 }
-

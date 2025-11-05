@@ -10,19 +10,28 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
 import Stripe from 'stripe';
-import { makeRefereeLink } from './utils/appUrl.js';
+import { makeRefereeLink, APP_URL as UTIL_APP_URL } from './utils/appUrl.js';
 
 dotenv.config();
+
+// ===== Helpers de URL (defensa extra por si el util no exporta APP_URL) =====
+const PROD_URL = 'https://hrkey.xyz';
+function getBaseURL() {
+  const envUrl =
+    process.env.FRONTEND_URL ||
+    process.env.PUBLIC_APP_URL ||
+    process.env.APP_URL;
+
+  if (envUrl && envUrl.startsWith('http')) return envUrl;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return PROD_URL;
+}
 
 // ===== Config =====
 const PORT = process.env.PORT || 3001;
 
 // URL pública del frontend (UNIFICADA)
-const APP_URL =
-  process.env.APP_URL ||
-  process.env.PUBLIC_APP_URL ||
-  process.env.FRONTEND_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://hrkey.xyz');
+const APP_URL = UTIL_APP_URL || getBaseURL();
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrervcydgdrlcndtjboy.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -145,12 +154,11 @@ class ReferenceService {
 
     if (error) throw error;
 
-    // Siempre construimos con base pública (APP_URL) para evitar localhost
-    const verificationUrl = `${APP_URL}/referee-evaluation-page.html?token=${encodeURIComponent(inviteToken)}`;
-    console.log("🧩 EMAIL VERIFICATION LINK:", verificationUrl);
+    // Construye SIEMPRE con base pública (nunca localhost)
+    const verificationUrl = makeRefereeLink(inviteToken);
+    console.log('🧩 EMAIL VERIFICATION LINK:', verificationUrl);
 
     await this.sendRefereeInviteEmail(email, name, applicantData, verificationUrl);
-
 
     return { success: true, reference_id: invite.id, token: inviteToken, verification_url: verificationUrl };
   }
@@ -432,9 +440,4 @@ app.listen(PORT, () => {
   console.log(`🚀 HRKey Backend running on port ${PORT}`);
   console.log(`   Health: http://localhost:${PORT}/health`);
   console.log(`   APP_URL: ${APP_URL}`);
-});
-
-app.listen(PORT, () => {
-  console.log(`🚀 HRKey Backend running on port ${PORT}`);
-  console.log(`   Health: http://localhost:${PORT}/health`);
 });
