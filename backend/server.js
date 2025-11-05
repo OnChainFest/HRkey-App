@@ -146,8 +146,11 @@ class ReferenceService {
     if (error) throw error;
 
     // Siempre construimos con base pública (APP_URL) para evitar localhost
-    const verificationUrl = makeRefereeLink(inviteToken, APP_URL);
+    const verificationUrl = `${APP_URL}/referee-evaluation-page.html?token=${encodeURIComponent(inviteToken)}`;
+    console.log("🧩 EMAIL VERIFICATION LINK:", verificationUrl);
+
     await this.sendRefereeInviteEmail(email, name, applicantData, verificationUrl);
+
 
     return { success: true, reference_id: invite.id, token: inviteToken, verification_url: verificationUrl };
   }
