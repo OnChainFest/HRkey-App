@@ -1,0 +1,14 @@
+cat > vercel.json <<'JSON'
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/",        "destination": "/WebDapp/index.html" },
+    { "source": "/auth",    "destination": "/WebDapp/auth.html"  },
+    { "source": "/(.*)",    "destination": "/WebDapp/$1"         }
+  ]
+}
+JSON
+
+git add vercel.json
+git commit -m "chore(vercel): route all paths to WebDapp and add /auth shortcut"
+git push origin main
