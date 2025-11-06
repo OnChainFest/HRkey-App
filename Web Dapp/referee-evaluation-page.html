@@ -3,29 +3,69 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Redirecting…</title>
+  <title>HRKey – Reference Evaluation</title>
+
   <script>
     (function () {
+      // === Leer parámetros de URL ===
       const qs = new URLSearchParams(location.search);
       const raw = qs.get("ref") || qs.get("token") || "";
+      const payload = qs.get("p") || "";
       const looksOk = /^[A-Za-z0-9_\-:.]{16,}$/.test(raw);
       const token = looksOk ? raw : "";
-      const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
-      const BASE_URL = isLocal ? "https://hrkey.xyz" : location.origin;
-      const target = token
-        ? `${BASE_URL}/ref/verify?token=${encodeURIComponent(token)}`
-        : `${BASE_URL}/ref/verify`;
-      location.replace(target);
+
+      // === Base URL dinámica (local vs prod) ===
+      const isLocal =
+        location.hostname === "localhost" || location.hostname === "127.0.0.1";
+      const BASE_URL = isLocal
+        ? "https://hrkey.xyz"
+        : location.origin;
+
+      // === Si hay payload (p), decodificarlo ===
+      let decodedPayload = null;
+      if (payload) {
+        try {
+          const b64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+          const json = decodeURIComponent(escape(atob(b64)));
+          decodedPayload = JSON.parse(json);
+          if (token && !decodedPayload.id) decodedPayload.id = token;
+          console.log("✅ Decoded payload:", decodedPayload);
+        } catch (err) {
+          console.error("❌ Error decoding payload:", err);
+        }
+      }
+
+      // === Comportamiento final ===
+      if (decodedPayload) {
+        // Si el link contiene el payload (p), redirige directo a la página local de evaluación
+        const localEval = `${BASE_URL}/referee-evaluation-page.html?ref=${encodeURIComponent(
+          decodedPayload.id
+        )}&p=${encodeURIComponent(payload)}`;
+        console.log("🔗 Redirecting to full evaluation page with payload:", localEval);
+        location.replace(localEval);
+      } else if (token) {
+        // Fallback: solo token
+        const target = `${BASE_URL}/referee-evaluation-page.html?ref=${encodeURIComponent(
+          token
+        )}`;
+        console.log("🔗 Redirecting to token-only evaluation page:", target);
+        location.replace(target);
+      } else {
+        // Sin token ni payload → fallback a home o aviso
+        console.warn("⚠️ Missing token or payload; redirecting to homepage");
+        location.replace(`${BASE_URL}/index.html`);
+      }
     })();
   </script>
+
   <noscript>
-    <meta http-equiv="refresh" content="0;url=https://hrkey.xyz/ref/verify">
+    <meta http-equiv="refresh" content="0;url=https://hrkey.xyz/index.html">
   </noscript>
 </head>
 <body>
-  <p>Redirecting to the secure verification page…</p>
+  <p>Redirecting to the secure evaluation page…</p>
   <noscript>
-    <p><a href="https://hrkey.xyz/ref/verify">Continue</a></p>
+    <p><a href="https://hrkey.xyz/index.html">Continue</a></p>
   </noscript>
 </body>
 </html>
