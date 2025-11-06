@@ -1,8 +1,16 @@
+cd ~/OneDrive/Escritorio/OnChainFest/HRkey
+
+cat > vercel.json << 'JSON'
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/", "destination": "/WebDapp/index.html" },
-    { "source": "/auth", "destination": "/WebDapp/auth.html" },
-    { "source": "/(.*)", "destination": "/WebDapp/$1" }
+    { "source": "/",     "destination": "/index.html" },
+    { "source": "/auth", "destination": "/auth.html"  },
+    { "source": "/(.*)", "destination": "/$1"         }
   ]
 }
+JSON
+
+git add vercel.json
+git commit -m "chore(vercel): rewrites for WebDapp as root (no /WebDapp prefix)"
+git push origin main
