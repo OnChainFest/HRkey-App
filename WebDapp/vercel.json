@@ -1,9 +1,14 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "headers": [
+    { "source": "/(.*)", "headers": [{ "key": "X-Frame-Options", "value": "DENY" }] }
+  ],
   "rewrites": [
-    { "source": "/", "destination": "/WebDapp/index.html" },
-    { "source": "/ref/verify", "destination": "/WebDapp/referee-evaluation-page.html" },
-    { "source": "/(.*)", "destination": "/WebDapp/$1" }
+    { "source": "/referee-evaluation-page", "destination": "/referee-evaluation-page.html" }
+  ],
+  "redirects": [],
+  "routes": [
+    { "src": "/referee-evaluation-page", "dest": "/referee-evaluation-page.html" }
   ]
 }
