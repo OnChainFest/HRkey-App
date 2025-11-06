@@ -2,7 +2,17 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/", "destination": "/Web%20Dapp/index.html" },
-    { "source": "/(.*)", "destination": "/Web%20Dapp/$1" }
+    {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ref/verify",
+      "destination": "/referee-evaluation-page.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/$1"
+    }
   ]
 }
