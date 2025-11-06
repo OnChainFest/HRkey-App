@@ -45,6 +45,8 @@
         .content {
             padding: 40px;
         }
+
+        /* Referee banner (tu original) */
         .referee-banner {
             background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
             border-left: 4px solid #00C4C7;
@@ -57,6 +59,7 @@
             display: block;
             animation: slideIn 0.5s ease;
         }
+
         @keyframes slideIn {
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -71,9 +74,22 @@
             font-size: 14px;
             line-height: 1.6;
         }
-        .form-group {
+
+        /* Promo banner (nuevo) */
+        .promo-banner {
+            background: #f1f5f9;
+            border-left: 4px solid #00C4C7;
+            padding: 16px 18px;
+            border-radius: 10px;
             margin-bottom: 20px;
+            display: none;
         }
+        .promo-banner.active { display: block; animation: slideIn .5s ease; }
+        .promo-badge { display:inline-block; font-weight:700; color:#0f172a; background:#a7f3d0; border-radius:8px; padding:4px 8px; margin-right:8px; }
+        .promo-banner p { color:#1e293b; font-size:14px; line-height:1.6; }
+        .promo-tiny { font-size:12px; color:#64748b; margin-top:6px; }
+
+        .form-group { margin-bottom: 20px; }
         label {
             display: block;
             font-weight: 600;
@@ -146,6 +162,7 @@
         }
         .divider::before { left: 0; }
         .divider::after { right: 0; }
+
         .benefits {
             margin-top: 30px;
             padding-top: 25px;
@@ -179,10 +196,19 @@
         </div>
 
         <div class="content">
-            <!-- Banner especial para referees -->
+            <!-- Banner especial para referees (tu original) -->
             <div class="referee-banner" id="refereeBanner">
                 <h3>🎉 Thanks for providing a reference!</h3>
                 <p>You've seen how HRKey works. Now create your own profile and start building your decentralized professional reputation with blockchain-verified references.</p>
+            </div>
+
+            <!-- NUEVO: Banner de cupón aplicado -->
+            <div class="promo-banner" id="promoBanner">
+                <p>
+                    <span class="promo-badge" id="promoCodeBadge">BLKJUNGLE</span>
+                    <strong>Promo applied:</strong> PRO free for 1 year — <em>card required for renewal</em>.
+                </p>
+                <p class="promo-tiny">Your discount will be applied automatically at checkout.</p>
             </div>
 
             <form id="authForm">
@@ -234,19 +260,56 @@
     </div>
 
     <script>
-        // Detectar si el usuario viene de completar una referencia
+        // ========= CONFIG EVENTO (ajusta si cambia) =========
+        // Activo desde sábado hasta martes (UTC), para cubrir escaneos en casa.
+        const EVENT_START_UTC = Date.parse("2025-11-08T00:00:00Z");
+        const EVENT_END_UTC   = Date.parse("2025-11-12T05:59:00Z"); // cubre martes noche CR (UTC-6 aprox.)
+        const DEFAULT_COUPON  = "BLKJUNGLE";
+
+        function isWithinEventWindow() {
+            const now = Date.now();
+            return now >= EVENT_START_UTC && now <= EVENT_END_UTC;
+        }
+        function getQueryParam(name) {
+            const url = new URL(window.location.href);
+            return url.searchParams.get(name);
+        }
+        function addOrReplaceQueryParam(name, value) {
+            const url = new URL(window.location.href);
+            url.searchParams.set(name, value);
+            window.history.replaceState({}, "", url.toString());
+        }
+
+        // ========= CUPÓN EFECTIVO =========
+        // 1) Usa ?coupon si viene en la URL (QR impreso recomienda /auth?coupon=BLKJUNGLE)
+        // 2) Si no viene, auto-aplica solo dentro de la ventana del evento
+        let coupon = getQueryParam("coupon");
+        if (!coupon && isWithinEventWindow()) {
+            coupon = DEFAULT_COUPON;
+            addOrReplaceQueryParam("coupon", coupon); // Limpia/normaliza la URL
+        }
+
+        // Mostrar banner si hay cupón
+        const promoBanner = document.getElementById('promoBanner');
+        const promoCodeBadge = document.getElementById('promoCodeBadge');
+        if (coupon) {
+            promoCodeBadge.textContent = coupon;
+            promoBanner.classList.add('active');
+            localStorage.setItem('hrkey_coupon', coupon);
+        } else {
+            promoBanner.classList.remove('active');
+            localStorage.removeItem('hrkey_coupon');
+        }
+
+        // ========= REFEREE STATUS (tu original) =========
         function checkRefereeStatus() {
             const refereeInfo = localStorage.getItem('hrkey_referee_info');
-            if (refereeInfo) {
+            if (!refereeInfo) return;
+            try {
                 const data = JSON.parse(refereeInfo);
                 if (data.hasProvidedReference) {
-                    // Mostrar banner especial
                     document.getElementById('refereeBanner').classList.add('active');
                     document.getElementById('headerSubtitle').textContent = 'Now build your own verified profile!';
-                    
-                    console.log('✨ Referee detected - showing personalized onboarding');
-                    
-                    // Track conversion funnel
                     if (window.gtag) {
                         gtag('event', 'referee_reached_signup', {
                             'event_category': 'conversion',
@@ -254,60 +317,54 @@
                         });
                     }
                 }
-            }
+            } catch (e) {}
         }
 
-        // Demo login/signup
+        // ========= FLOW: SIGNUP / WALLET => UPGRADE =========
+        function goToUpgrade() {
+            const dest = coupon ? `upgrade.html?coupon=${encodeURIComponent(coupon)}` : 'upgrade.html';
+            window.location.href = dest;
+        }
+
+        // Demo login/signup (manteniendo tu simulación)
         document.getElementById('authForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
-            
+
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             submitBtn.textContent = '⏳ Creating account...';
-            
+
             setTimeout(() => {
-                // Crear cuenta
                 const userData = {
-                    name: name,
-                    email: email,
+                    name,
+                    email,
                     wallet: '0x' + Math.random().toString(16).substr(2, 40),
                     authenticated: true,
                     loginDate: new Date().toISOString(),
                     source: localStorage.getItem('hrkey_referee_info') ? 'referee_conversion' : 'direct_signup'
                 };
-                
                 localStorage.setItem('hrkey_user_data', JSON.stringify(userData));
-                
-                // Crear plan FREE
+
                 const plan = {
                     plan: 'free',
-                    features: {
-                        maxReferences: 1,
-                        canUseBlockchain: false,
-                        canExportPDF: false
-                    },
-                    usage: {
-                        referencesUsed: 0
-                    }
+                    features: { maxReferences: 1, canUseBlockchain: false, canExportPDF: false },
+                    usage: { referencesUsed: 0 }
                 };
                 localStorage.setItem('hrkey_user_plan', JSON.stringify(plan));
-                
-                // Track conversión
+
                 if (window.gtag && userData.source === 'referee_conversion') {
                     gtag('event', 'referee_converted', {
                         'event_category': 'conversion',
                         'event_label': 'signup_completed'
                     });
                 }
-                
                 console.log('✅ Account created:', userData);
-                
-                // Redirigir al dashboard
-                window.location.href = 'app.html';
-            }, 1500);
+
+                // NUEVO: ir al upgrade con cupón para Stripe
+                goToUpgrade();
+            }, 900);
         });
 
         // Conectar con MetaMask (demo)
@@ -315,8 +372,7 @@
             const walletBtn = document.getElementById('walletBtn');
             walletBtn.disabled = true;
             walletBtn.textContent = '⏳ Connecting...';
-            
-            // Simular conexión
+
             setTimeout(() => {
                 const userData = {
                     name: 'Web3 User',
@@ -326,25 +382,19 @@
                     loginDate: new Date().toISOString(),
                     source: localStorage.getItem('hrkey_referee_info') ? 'referee_conversion_wallet' : 'direct_signup_wallet'
                 };
-                
                 localStorage.setItem('hrkey_user_data', JSON.stringify(userData));
-                
+
                 const plan = {
                     plan: 'free',
-                    features: {
-                        maxReferences: 1,
-                        canUseBlockchain: false,
-                        canExportPDF: false
-                    },
-                    usage: {
-                        referencesUsed: 0
-                    }
+                    features: { maxReferences: 1, canUseBlockchain: false, canExportPDF: false },
+                    usage: { referencesUsed: 0 }
                 };
                 localStorage.setItem('hrkey_user_plan', JSON.stringify(plan));
-                
+
                 console.log('✅ Wallet connected:', userData);
-                window.location.href = 'app.html';
-            }, 2000);
+                // NUEVO: ir al upgrade con cupón para Stripe
+                goToUpgrade();
+            }, 1200);
         });
 
         // Check referee status on load
