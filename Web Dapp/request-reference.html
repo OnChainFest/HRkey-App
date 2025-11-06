@@ -270,34 +270,62 @@
     }
 
     // ===== EmailJS send =====
-    async function sendEmailJS(ref, user) {
-      await ensureEmailJS();
+async function sendEmailJS(ref, user) {
+  try {
+    await ensureEmailJS();
 
-      const baseURL = computeBaseURL();
-      const verificationLink = `${baseURL}/referee-evaluation-page.html?ref=${encodeURIComponent(ref.id)}`;
+    // 1) Base URL (usa helper si existe; si no, autodetecta y fuerza prod cuando es localhost)
+    const baseURL = (typeof computeBaseURL === 'function')
+      ? computeBaseURL()
+      : ((location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+          ? 'https://h-rkey-app.vercel.app'   // tu dominio en Vercel / prod
+          : location.origin);
 
-      const params = {
-        to_name: ref.refereeName,
-        to_email: ref.refereeEmail,
-        requester_name: user?.name || 'HRKey User',
-        requester_email: user?.email || 'noreply@hrkey.xyz',
-        relationship: ref.relationship,
-        company: ref.company,
-        position: ref.position,
-        message: ref.message || 'No additional message provided',
-        reference_id: ref.id,
-        verification_link: verificationLink
-      };
+    // 2) Payload mínimo que necesita el referee
+    const minimal = {
+      id: ref.id,
+      requestedBy: user?.name || 'HRKey User',
+      requesterEmail: user?.email || 'noreply@hrkey.xyz',
+      position: ref.position,
+      company: ref.company,
+      kpis: ref.kpis
+    };
 
-      console.log('🔗 verification_link:', verificationLink);
-      console.log('📤 EmailJS params:', params);
+    // 3) Codificar en base64url (sin + / =)
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(minimal))))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '');
 
-      // Send
-      const res = await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
-      console.log('✅ EmailJS SUCCESS:', res);
-      return true;
-    }
+    // 4) Link con token y payload
+    const verificationLink =
+      `${baseURL}/referee-evaluation-page.html?ref=${encodeURIComponent(ref.id)}&p=${b64}`;
 
+    const params = {
+      to_name: ref.refereeName,
+      to_email: ref.refereeEmail,
+      requester_name: user?.name || 'HRKey User',
+      requester_email: user?.email || 'noreply@hrkey.xyz',
+      relationship: ref.relationship,
+      company: ref.company,
+      position: ref.position,
+      message: ref.message || 'No additional message provided',
+      reference_id: ref.id,
+      verification_link: verificationLink
+    };
+
+    console.log('🔗 verification_link:', verificationLink);
+    console.log('📤 EmailJS params:', params);
+
+    // 5) Enviar
+    const res = await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
+    console.log('✅ EmailJS SUCCESS:', res);
+    return true;
+  } catch (err) {
+    console.error('❌ EmailJS error:', err);
+    return false;
+  }
+}
     // ===== Form submit handler =====
     async function submitReferenceRequest(e) {
       e.preventDefault();
