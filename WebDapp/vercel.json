@@ -1,29 +1,18 @@
 {
-  // Habilita URLs limpias (sin .html al final)
   "cleanUrls": true,
-
-  // Evita que Vercel agregue una barra final automáticamente (/ → /)
   "trailingSlash": false,
-
-  // 🔁 Reglas de reescritura (rewrites)
   "rewrites": [
     {
-      // Página principal
       "source": "/",
       "destination": "/index.html"
     },
     {
-      // Página de evaluación de referencia (link de los correos)
       "source": "/ref/verify",
       "destination": "/referee-evaluation-page.html"
     },
     {
-      // Cualquier otra ruta existente (archivos, imágenes, CSS, JS, etc.)
       "source": "/(.*)",
       "destination": "/$1"
     }
-  ],
-
-  // 📁 Directorio raíz de la app dentro del repo
-  "rootDirectory": "WebDapp"
+  ]
 }
