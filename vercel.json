@@ -1,0 +1,8 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "destination": "/WebDapp/index.html" },
+    { "source": "/auth", "destination": "/WebDapp/auth.html" },
+    { "source": "/(.*)", "destination": "/WebDapp/$1" }
+  ]
+}
