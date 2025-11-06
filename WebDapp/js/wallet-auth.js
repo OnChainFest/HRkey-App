@@ -98,7 +98,7 @@ async function signInWithEthereum() {
     }
 
     // Redirige a tu app (ajusta ruta si corresponde)
-    window.location.href = "/WebDapp/app.html";
+    window.location.href = "/WebDapp/auth.html";
 
   } catch (err) {
     console.error("SIWE login error:", err);
