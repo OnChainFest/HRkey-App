@@ -73,7 +73,7 @@
         <div class="container">
             <div class="header-content">
                 <div class="logo-section">
-                    <a href="index.html">
+                    <a href="/index.html">
                         <img src="images/LogoHRKEY-transparente.png" alt="HRKey Logo">
                     </a>
                 </div>
@@ -396,7 +396,7 @@
                     return;
                 }
                 
-                window.location.href = 'request-reference.html';
+                window.location.href = '/request-reference.html';
             }
 
             viewReference(id) {
@@ -406,7 +406,7 @@
 
             manageReference(id) {
                 console.log('Managing reference:', id);
-                window.location.href = `reference-management-page.html?id=${id}`;
+                window.location.href = `/reference-management-page.html?id=${id}`;
             }
 
             showAlert(message, type = 'info') {
@@ -426,7 +426,7 @@
 
             upgradeToPro() {
                 console.log('🚀 Redirecting to pricing page...');
-                window.location.href = 'pricing.html';
+                window.location.href = '/pricing.html';
             }
 
             logout() {
@@ -434,7 +434,7 @@
                     localStorage.removeItem('hrkey_user_data');
                     localStorage.removeItem('hrkey_references');
                     localStorage.removeItem('hrkey_user_plan');
-                    window.location.href = 'index.html';
+                    window.location.href = '/index.html';
                 }
             }
         }
