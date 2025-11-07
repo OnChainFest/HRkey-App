@@ -7,12 +7,11 @@
     { "source": "/app",                "destination": "/WebDapp/app.html"   },
     { "source": "/upgrade",            "destination": "/WebDapp/app.html"   },
 
-    // Flujos HRKey “bonitos” (sin .html)
     { "source": "/request-reference",          "destination": "/WebDapp/request-reference.html" },
     { "source": "/referee-evaluation-page",    "destination": "/WebDapp/referee-evaluation-page.html" },
     { "source": "/reference-management-page",  "destination": "/WebDapp/reference-management-page.html" },
 
-    // Mantén esta al final para pasar assets y otras rutas
+  
     { "source": "/(.*)", "destination": "/$1" }
   ],
   "headers": [
