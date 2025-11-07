@@ -1,38 +1,65 @@
-import { NextRequest, NextResponse } from "next/server";
+// src/app/api/invite/route.ts
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { randomUUID } from "crypto";
+import { makeRefereeLink } from "@/utils/appURL"; // 👈 importar desde el módulo seguro
+import crypto from "crypto";
 
-const supabaseAdmin = createClient(
+const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!, // server-only
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const { email, name, days = 7 } = await req.json();
+    const body = await request.json();
+    const { userId, email, name, applicantData } = body;
 
-    const token = randomUUID();
-    const reference_id = randomUUID(); // <- GENERAMOS EL reference_id AQUÍ
-    const expires_at = new Date(Date.now() + Number(days) * 24 * 60 * 60 * 1000).toISOString();
+    if (!userId || !email || !name) {
+      return NextResponse.json(
+        { success: false, error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
 
-    const { error } = await supabaseAdmin
+    // Generar token único
+    const token = crypto.randomBytes(32).toString("hex");
+
+    // Crear invitación en la base de datos
+    const { data: invite, error: inviteError } = await supabase
       .from("reference_invites")
-      .insert({
-        token,
-        reference_id,             // <- LO ENVIAMOS EN EL INSERT
-        referrer_email: email || null,
-        referrer_name: name || null,
-        invite_status: "pending",
-        expires_at,
-      });
+      .insert([
+        {
+          requester_id: userId,
+          referee_email: email,
+          referee_name: name,
+          invite_token: token,
+          status: "pending",
+          metadata: applicantData || {},
+          created_at: new Date().toISOString(),
+        },
+      ])
+      .select()
+      .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    if (inviteError) throw inviteError;
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const verifyUrl = `${baseUrl}/ref/verify?token=${token}`;
+    // ✅ Construcción segura del link sin localhost
+    const verifyUrl = makeRefereeLink(token);
 
-    return NextResponse.json({ token, reference_id, verifyUrl, expires_at });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message || "Bad request" }, { status: 400 });
+    // TODO: Aquí podrías enviar el correo real con Resend (si no lo haces en backend)
+    console.log(`📨 Reference invite created for ${email}`);
+    console.log(`🔗 Verification link: ${verifyUrl}`);
+
+    return NextResponse.json({
+      success: true,
+      inviteId: invite.id,
+      verifyUrl,
+    });
+  } catch (error: any) {
+    console.error("❌ Error creating invite:", error);
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
   }
 }
