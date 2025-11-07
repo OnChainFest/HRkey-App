@@ -1,19 +1,21 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+
+  "redirects": [
+    { "source": "/auth",    "destination": "/WebDapp/auth.html",  "permanent": false },
+    { "source": "/app",     "destination": "/WebDapp/app.html",   "permanent": false },
+    { "source": "/upgrade", "destination": "/WebDapp/app.html",   "permanent": false }
+  ],
+
   "rewrites": [
-    { "source": "/",                   "destination": "/WebDapp/index.html" },
-    { "source": "/auth",               "destination": "/WebDapp/auth.html"  },
-    { "source": "/app",                "destination": "/WebDapp/app.html"   },
-    { "source": "/upgrade",            "destination": "/WebDapp/app.html"   },
-
-    { "source": "/request-reference",          "destination": "/WebDapp/request-reference.html" },
-    { "source": "/referee-evaluation-page",    "destination": "/WebDapp/referee-evaluation-page.html" },
-    { "source": "/reference-management-page",  "destination": "/WebDapp/reference-management-page.html" },
-
-  
+    { "source": "/",                  "destination": "/WebDapp/index.html" },
+    { "source": "/request-reference",         "destination": "/WebDapp/request-reference.html" },
+    { "source": "/referee-evaluation-page",   "destination": "/WebDapp/referee-evaluation-page.html" },
+    { "source": "/reference-management-page", "destination": "/WebDapp/reference-management-page.html" },
     { "source": "/(.*)", "destination": "/$1" }
   ],
+
   "headers": [
     {
       "source": "/(.*)",
@@ -24,3 +26,4 @@
     }
   ]
 }
+
