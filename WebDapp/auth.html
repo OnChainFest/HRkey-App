@@ -305,5 +305,70 @@
       });
     }
   </script>
+  <script>
+/* ---------- HRKey: hard redirect to app ---------- */
+(function () {
+  function forceGoToApp() {
+    try {
+      // marca demo si no existe (tu UI lo usa)
+      const u = JSON.parse(localStorage.getItem('hrkey_user_data') || 'null') || {
+        name: document.getElementById('name')?.value?.trim() || 'New User',
+        email: document.getElementById('email')?.value?.trim() || 'user@example.com',
+        authenticated: true,
+        loginDate: new Date().toISOString()
+      };
+      if (!u.authenticated) u.authenticated = true;
+      localStorage.setItem('hrkey_user_data', JSON.stringify(u));
+
+      // preserva cupón si viene
+      const p = new URLSearchParams(location.search);
+      const coupon = p.get('coupon');
+      const qs = coupon ? `?coupon=${encodeURIComponent(coupon)}` : '';
+      // navegación “fuerte” que no puede ser bloqueada por otros listeners
+      location.assign('/app.html' + qs);
+    } catch (e) {
+      // fallback
+      location.assign('/app.html');
+    }
+  }
+
+  function attach() {
+    const form = document.getElementById('authForm');
+    const btn  = document.getElementById('submitBtn');
+    if (!form || !btn) return;
+
+    // Evita submit nativo y listeners previos (captura + stopImmediatePropagation)
+    form.setAttribute('novalidate', 'true');
+    form.setAttribute('action', '#');
+    form.setAttribute('method', 'get');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      // Algunos navegadores necesitan esto para cortar otros handlers
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+      forceGoToApp();
+      return false;
+    }, true); // <-- capture = true
+
+    // Asegura que el botón no dispare submit nativo
+    btn.setAttribute('type', 'button');
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+      forceGoToApp();
+      return false;
+    }, true);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attach);
+  } else {
+    attach();
+  }
+})();
+</script>
+
 </body>
 </html>
