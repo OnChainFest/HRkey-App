@@ -8,46 +8,16 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
 
-// ================================
-// CONFIG
-// ================================
+/* ================================
+   CONFIG
+   ================================ */
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrervcydgdrlcndtjboy.supabase.co';
+const SUPABASE_URL =
+  process.env.SUPABASE_URL ||
+  'https://wrervcydgdrlcndtjboy.supabase.co';
+
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
-
-/**
- * 🌐 Selección robusta del dominio del frontend, evitando localhost:
- * 1) APP_URL (general)
- * 2) PUBLIC_APP_URL (recomendado en Vercel)
- * 3) FRONTEND_URL (compatibilidad)
- * 4) VERCEL_URL (auto)  -> https://<deploy>.vercel.app
- * 5) fallback           -> https://hrkey.xyz
- */
-/**
- * 🌐 Selección robusta del dominio del frontend, evitando localhost:
- * 1) FRONTEND_URL (recomendado - configurar en producción) ✅ PRIORIDAD 1
- * 2) PUBLIC_APP_URL (compatibilidad Vercel)
- * 3) APP_URL (general)
- * 4) VERCEL_URL (auto)  -> https://<deploy>.vercel.app
- * 5) fallback           -> https://hrkey.xyz
- */
-// ✅ Temporal - Forzar siempre producción
-const PROD_URL = 'https://hrkey.xyz';
-function getBaseURL() {
-  // HARDCODED para testing - cambiar después
-  return PROD_URL;
-  
-  // Descomentar después de configurar las env vars:
-  // const envUrl =
-  //   process.env.FRONTEND_URL ||
-  //   process.env.PUBLIC_APP_URL ||
-  //   process.env.APP_URL;
-  // if (envUrl && /^https?:\/\//i.test(envUrl)) return envUrl;
-  // if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  // return PROD_URL;
-}
-export const FRONTEND_URL = getBaseURL();
 
 if (!SUPABASE_SERVICE_KEY) {
   console.warn('⚠️ SUPABASE_SERVICE_KEY no configurada. Operaciones de BD fallarán.');
@@ -55,22 +25,58 @@ if (!SUPABASE_SERVICE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-// -----------------------------------------
-// Helper para construir el link del referee
-// -----------------------------------------
-function makeRefereeLink(token) {
-  let base = FRONTEND_URL;
-  if (base.endsWith('/')) base = base.slice(0, -1);
-  return `${base}/referee-evaluation-page.html?token=${encodeURIComponent(token)}`;
+/* ================================
+   URL pública del frontend (robusta)
+   ================================ */
+
+const PROD_URL = 'https://hrkey.xyz';
+
+/**
+ * Prioridades (de mayor a menor):
+ * - PUBLIC_BASE_URL  (recomendado, unificado)
+ * - BASE_URL         (alias común)
+ * - FRONTEND_URL     (frecuente en Vercel)
+ * - PUBLIC_APP_URL   (variantes históricas)
+ * - APP_URL          (a veces se usó así)
+ * - VERCEL_URL       (auto, sin protocolo)
+ * - fallback         https://hrkey.xyz
+ */
+function resolveFrontendUrl() {
+  const fromEnv =
+    process.env.PUBLIC_BASE_URL ||
+    process.env.BASE_URL ||
+    process.env.FRONTEND_URL ||
+    process.env.PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    null;
+
+  if (fromEnv && /^https?:\/\//i.test(fromEnv)) return fromEnv;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return PROD_URL;
 }
 
-// ====================================================================
-// WALLET SERVICE
-// ====================================================================
+export const FRONTEND_URL = resolveFrontendUrl();
+
+/* -----------------------------------------
+   Helper para construir el link del referee
+   ----------------------------------------- */
+/** Siempre usa `ref` como nombre de parámetro (consistencia con el front). */
+function makeRefereeLink(token) {
+  const base = FRONTEND_URL.replace(/\/+$/, ''); // sin trailing slash
+  const url = new URL('/referee-evaluation-page.html', base);
+  url.searchParams.set('ref', token);
+  return url.toString();
+}
+
+/* ====================================================================
+   WALLET SERVICE
+   ==================================================================== */
 
 export class WalletCreationService {
   /**
    * Crea (o reutiliza) una wallet custodia para el usuario.
+   * @param {string} userId
+   * @param {string} email
    */
   static async createWalletForUser(userId, email) {
     try {
@@ -89,7 +95,7 @@ export class WalletCreationService {
         network: 'base-mainnet',
         wallet_type: 'custodial',
         is_active: true,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       const { data, error } = await supabase
@@ -106,7 +112,7 @@ export class WalletCreationService {
         address: wallet.address,
         network: 'base-mainnet',
         walletType: 'custodial',
-        createdAt: row.created_at
+        createdAt: row.created_at,
       };
     } catch (err) {
       console.error('❌ createWalletForUser error:', err);
@@ -148,10 +154,10 @@ export class WalletCreationService {
         canAddPeerValidations: false,
         canAddCustomerValidations: false,
         canProfitFromData: false,
-        canShareReferences: true
+        canShareReferences: true,
       },
       payment_tx_hash: null,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
 
     const { error } = await supabase.from('user_plans').insert([row]);
@@ -170,14 +176,14 @@ export class WalletCreationService {
   }
 }
 
-// ====================================================================
-// REFERENCE SERVICE
-// ====================================================================
+/* ====================================================================
+   REFERENCE SERVICE
+   ==================================================================== */
 
 export class ReferenceService {
   /**
    * Crea una solicitud de referencia y envía email al referee.
-   * requestData: { userId, email, name, applicantData }
+   * @param {{ userId: string, email: string, name?: string, applicantData?: any }} requestData
    */
   static async createReferenceRequest(requestData) {
     try {
@@ -197,7 +203,7 @@ export class ReferenceService {
         status: 'pending',
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 días
         created_at: new Date().toISOString(),
-        metadata: applicantData || null
+        metadata: applicantData || null,
       };
 
       const { data: invite, error } = await supabase
@@ -208,7 +214,7 @@ export class ReferenceService {
 
       if (error) throw error;
 
-      // Link del correo (✅ sin localhost y con token seguro)
+      // Link del correo (✅ sin localhost y con token seguro, usando parámetro `ref`)
       const verificationUrl = makeRefereeLink(inviteToken);
 
       await this.sendRefereeInviteEmail(email, name, applicantData, verificationUrl);
@@ -217,7 +223,7 @@ export class ReferenceService {
         success: true,
         reference_id: invite.id,
         token: inviteToken,
-        verification_url: verificationUrl
+        verification_url: verificationUrl,
       };
     } catch (err) {
       console.error('❌ createReferenceRequest error:', err);
@@ -227,7 +233,7 @@ export class ReferenceService {
 
   /**
    * Envía los datos de la referencia completada por el referee.
-   * submissionData: { token, refereeData, ratings, comments }
+   * @param {{ token: string, refereeData?: any, ratings?: Record<string,number>, comments?: any }} submissionData
    */
   static async submitReference(submissionData) {
     try {
@@ -256,7 +262,7 @@ export class ReferenceService {
         detailed_feedback: comments || {},
         status: 'active',
         created_at: new Date().toISOString(),
-        invite_id: invite.id
+        invite_id: invite.id,
       };
 
       const { data: reference, error: refErr } = await supabase
@@ -286,6 +292,7 @@ export class ReferenceService {
 
   /**
    * Obtiene info básica de la invitación a partir del token (para prellenar UI).
+   * @param {string} token
    */
   static async getReferenceByToken(token) {
     try {
@@ -310,8 +317,8 @@ export class ReferenceService {
           referee_name: invite.referee_name,
           referee_email: invite.referee_email,
           applicant_data: invite.metadata,
-          expires_at: invite.expires_at
-        }
+          expires_at: invite.expires_at,
+        },
       };
     } catch (err) {
       console.error('❌ getReferenceByToken error:', err);
@@ -348,7 +355,7 @@ export class ReferenceService {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${RESEND_API_KEY}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           from: 'HRKey <noreply@hrkey.com>',
@@ -364,8 +371,8 @@ export class ReferenceService {
             </a>
             <p>This link will expire in 30 days.</p>
             <p>Best regards,<br/>The HRKey Team</p>
-          `
-        })
+          `,
+        }),
       });
 
       if (!res.ok) console.error('❌ Resend error:', await res.text());
@@ -387,7 +394,7 @@ export class ReferenceService {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${RESEND_API_KEY}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           from: 'HRKey <noreply@hrkey.com>',
@@ -400,8 +407,8 @@ export class ReferenceService {
             <a href="${FRONTEND_URL}/app.html" style="background:#00C4C7;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block;">
               View Reference
             </a>
-          `
-        })
+          `,
+        }),
       });
 
       if (!res.ok) console.error('❌ Resend (completed) error:', await res.text());
