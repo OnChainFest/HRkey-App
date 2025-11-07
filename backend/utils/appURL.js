@@ -1,22 +1,45 @@
 // backend/utils/appURL.js
 // 🌐 Construcción universal del link de referencia sin riesgo de localhost
 
-const PROD_URL = 'https://hrkey.xyz';
+import dotenv from 'dotenv';
+dotenv.config();
 
-function getBaseURL() {
-  const envUrl =
+/**
+ * Retorna la URL base del frontend garantizando que nunca apunte a localhost.
+ * Prioriza las variables públicas definidas en el entorno.
+ */
+export const getFrontendBaseURL = () => {
+  const url =
+    process.env.NEXT_PUBLIC_BASE_URL ||
     process.env.FRONTEND_URL ||
-    process.env.PUBLIC_APP_URL ||
-    process.env.APP_URL;
+    process.env.BASE_URL ||
+    'https://hrkey.xyz';
 
-  if (envUrl && envUrl.startsWith('http')) return envUrl;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return PROD_URL; // fallback final y obligatorio
-}
+  if (url.includes('localhost')) {
+    console.warn('⚠️ FRONTEND URL apunta a localhost, usando dominio público por defecto');
+    return 'https://hrkey.xyz';
+  }
 
-export function makeRefereeLink(inviteToken) {
-  const base = getBaseURL();
-  return `${base}/referee-evaluation-page.html?token=${encodeURIComponent(inviteToken)}`;
-}
+  return url.replace(/\/$/, ''); // quita cualquier "/" al final
+};
 
-export const APP_URL = getBaseURL();
+/**
+ * Construye un link seguro para verificar referencias, evitando localhost.
+ * @param {string} token - Token único de referencia
+ * @returns {string} URL completa para el referee
+ */
+export const makeRefereeLink = (token) => {
+  const base = getFrontendBaseURL();
+  return `${base}/ref/verify?token=${encodeURIComponent(token)}`;
+};
+
+/**
+ * Construye un link seguro para el dashboard del usuario
+ * @returns {string} URL al dashboard
+ */
+export const makeDashboardLink = () => {
+  const base = getFrontendBaseURL();
+  return `${base}/app`;
+};
+
+export default { getFrontendBaseURL, makeRefereeLink, makeDashboardLink };
