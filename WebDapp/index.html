@@ -575,5 +575,29 @@
       }, { once: false });
     })();
   </script>
+  <script>
+(function () {
+  const q = new URLSearchParams(location.search);
+  const coupon = (q.get('coupon') || '').trim().toUpperCase();
+
+  if (coupon === 'BLKJUNGLE') {
+    // Marca premium local por 30 días
+    const until = new Date(Date.now() + 30*24*60*60*1000).toISOString();
+    localStorage.setItem('hrkey_premium_until', until);
+    localStorage.setItem('hrkey_coupon', coupon);
+
+    // Banner visual
+    const bar = document.createElement('div');
+    bar.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:9999;background:#00C4C7;color:#fff;padding:10px 14px;text-align:center;font-weight:600';
+    bar.textContent = '🎟️ Acceso Premium HRKey activado por 30 días (Blockchain Jungle)';
+    document.body.appendChild(bar);
+
+    // Limpia el querystring para evitar re-disparos al refrescar
+    const clean = location.pathname + location.hash;
+    history.replaceState({}, document.title, clean);
+  }
+})();
+</script>
+
 </body>
 </html>
