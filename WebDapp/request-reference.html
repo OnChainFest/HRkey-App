@@ -207,11 +207,36 @@
       });
     }
 
-    // ===== Compute base URL (avoid localhost in outgoing emails) =====
-    function computeBaseURL() {
-      const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-      return isLocal ? 'https://hrkey.xyz' : location.origin;
+ <script>
+  // ===== Compute base URL (avoid localhost in outgoing emails) =====
+  function computeBaseURL() {
+    try {
+      // 1️⃣ Usa variable global si está definida (inyectada desde backend o build)
+      if (window.HRKEY_PUBLIC_URL) {
+        return window.HRKEY_PUBLIC_URL.replace(/\/$/, '');
+      }
+
+      // 2️⃣ Usa variable de entorno si fue insertada por script build (Vercel / Next)
+      if (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_BASE_URL) {
+        return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, '');
+      }
+
+      // 3️⃣ Detección local (localhost o 127)
+      const hostname = location.hostname;
+      const isLocal = ['localhost', '127.0.0.1'].includes(hostname);
+
+      if (isLocal) {
+        return 'https://hrkey.xyz'; // fallback seguro
+      }
+
+      // 4️⃣ Default → mismo origen (útil para previews o custom domains)
+      return location.origin.replace(/\/$/, '');
+    } catch (e) {
+      console.warn('⚠️ Error computing base URL:', e);
+      return 'https://hrkey.xyz'; // fallback definitivo
     }
+  }
+</script>
 
     // ===== EmailJS send =====
     async function sendEmailJS(ref, user) {
