@@ -14,7 +14,6 @@ export default async (req) => {
     const { name, email, coupon, source } = parsed;
     if (!name || !email) return json({ error: 'Missing fields' }, 400);
 
-    // (Opcional) Supabase (solo si pones env vars)
     const supabaseUrl = process.env.SUPABASE_URL;
     const serviceRole = process.env.SUPABASE_SERVICE_ROLE;
     if (supabaseUrl && serviceRole) {
@@ -36,7 +35,6 @@ export default async (req) => {
       } catch (e) { console.warn('Supabase insert exception:', e); }
     }
 
-    // (Opcional) Resend (si pones env vars)
     const resendKey = process.env.RESEND_API_KEY;
     const adminTo   = process.env.ADMIN_EMAIL;
     if (resendKey && adminTo) {
