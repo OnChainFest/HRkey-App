@@ -101,13 +101,10 @@ async function signInWithEthereum() {
       localStorage.setItem("hrkey_session", JSON.stringify(out.session));
     }
 
-<<<<<<< HEAD
-    // ✅ Redirige SIEMPRE al dashboard
-    window.location.replace("/app.html");
-=======
-    // Redirige a tu app (ajusta ruta si corresponde)
-    window.location.href="/app.html";
->>>>>>> 8059818 (fix: redirigir siempre a /app.html y alias /app -> app.html)
+    // ✅ Redirige SIEMPRE al dashboard (tenemos rewrite /app -> /WebDapp/app.html)
+    try { history.replaceState({}, "", "/auth"); } catch (_) {}
+    window.location.assign("/app");
+    return;
 
   } catch (err) {
     console.error("SIWE login error:", err);
@@ -120,4 +117,3 @@ document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("wallet-login-btn");
   if (btn) btn.addEventListener("click", signInWithEthereum);
 });
-
