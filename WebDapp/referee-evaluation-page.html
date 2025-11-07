@@ -1,262 +1,203 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
+  <meta charset="utf-8"/>
   <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>HRKey – Reference Evaluation</title>
+  <title>HRKey – Provide Your Reference</title>
 
   <link rel="shortcut icon" href="./images/favicon.ico" type="image/x-icon">
   <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
-    :root{
-      --teal:#00C4C7; --teal2:#00d2cc; --bg:#0a0a0a; --text:#ffffff; --muted:#94a3b8;
-      --p1:#111315; --p2:#1b1d21;
+    :root { color-scheme: dark; }
+    body { margin:0; font-family:'Rubik',system-ui,sans-serif; background:#0a0a0a; color:#e5e7eb; }
+    .page { max-width: 840px; margin: 40px auto; padding: 0 16px; }
+    .card { background: linear-gradient(135deg, #13161f 0%, #1b1f2a 100%); border-radius: 16px; padding: 28px; box-shadow: 0 10px 30px rgba(0,0,0,.35); border:1px solid rgba(0,196,199,.18); }
+    h1 { font-size: 26px; margin: 0 0 8px; color:#fff; }
+    p.muted { color:#9ca3af; margin: 2px 0 18px; }
+    label { display:block; font-weight:600; color:#00C4C7; margin: 12px 0 6px; }
+    input, textarea, select {
+      width:100%; padding:12px; border-radius:10px; border:1px solid rgba(0,196,199,.25);
+      background:#0f172a; color:#fff; font-size:14px;
     }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);font-family:'Rubik',sans-serif;color:var(--text)}
-    .page{max-width:980px;margin:40px auto;padding:0 16px}
-    .card{background:linear-gradient(135deg,var(--p1),var(--p2));border:1px solid rgba(0,196,199,.2);
-          border-radius:16px;box-shadow:0 10px 30px rgba(0,196,199,.18);padding:28px}
-    h1{margin:0 0 8px;font-size:28px}
-    .lead{color:var(--muted);margin:0 0 24px}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-    @media (max-width:768px){.grid{grid-template-columns:1fr}}
-    label{display:block;font-weight:600;color:var(--teal);margin:10px 0 6px}
-    input,textarea,select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(0,196,199,.28);
-                          background:#121416;color:#fff;font-size:14px}
-    input:focus,textarea:focus,select:focus{outline:none;border-color:var(--teal);
-                          box-shadow:0 0 0 3px rgba(0,196,199,.28)}
-    .kpi{background:rgba(0,196,199,.05);border-left:4px solid var(--teal);border-radius:10px;padding:16px;margin:12px 0}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    @media (max-width:768px){.row{grid-template-columns:1fr}}
-    .actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:18px}
-    .btn{cursor:pointer;font-weight:600;border-radius:12px;padding:12px 22px;border:none}
-    .btn-primary{background:linear-gradient(135deg,var(--teal),var(--teal2));color:#000;
-                 box-shadow:0 4px 15px rgba(0,196,199,.4)}
-    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,196,199,.6)}
-    .btn-secondary{background:transparent;border:2px solid var(--teal);color:var(--teal)}
-    .btn-secondary:hover{background:var(--teal);color:#000}
-    .muted{color:var(--muted);font-size:12px}
-    .alert{margin-top:16px;padding:14px 16px;border-radius:10px}
-    .alert-success{background:rgba(16,185,129,.1);color:#10b981;border-left:4px solid #10b981}
-    .alert-error{background:rgba(239,68,68,.1);color:#ef4444;border-left:4px solid #ef4444}
-    .tag{display:inline-block;background:rgba(0,196,199,.12);color:var(--teal);padding:4px 10px;border-radius:999px;font-size:12px}
-    .divider{height:1px;background:rgba(148,163,184,.2);margin:18px 0}
+    textarea { resize: vertical; min-height: 110px; }
+    .stars { display:flex; gap:8px; margin:8px 0 4px; }
+    .star { cursor:pointer; font-size:28px; color:#374151; transition:transform .1s ease; }
+    .star.active { color:#f59e0b; }
+    .star:hover { transform: scale(1.05); }
+    .actions { margin-top: 18px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .btn {
+      padding: 12px 20px; border-radius: 12px; font-weight:600; cursor:pointer; border:none;
+      box-shadow: 0 6px 20px rgba(0,196,199,.25);
+    }
+    .btn-primary { background: linear-gradient(135deg, #00C4C7 0%, #00d2cc 100%); color:#000; }
+    .btn-secondary { background: transparent; border:2px solid #00C4C7; color:#00C4C7; }
+    .alert { margin-top:14px; padding:12px 14px; border-radius:10px; }
+    .alert-success { background:rgba(16,185,129,.1); color:#10b981; border-left:4px solid #10b981; }
+    .alert-error { background:rgba(239,68,68,.12); color:#ef4444; border-left:4px solid #ef4444; }
+    .tiny { color:#94a3b8; font-size:12px; margin-top:2px; }
+
+    /* Thanks view */
+    .center { text-align:center; }
+    .big { font-size: 20px; color:#fff; margin: 6px 0 10px; }
+    .sub { color:#9ca3af; margin: 0 0 18px; }
+    .cta { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+    .badge { display:inline-block; background:#00C4C7; color:#000; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; }
   </style>
 </head>
 <body>
   <div class="page">
     <div class="card">
-      <div class="tag">HRKey – Secure Reference Evaluation</div>
-      <h1>Evaluate Candidate</h1>
-      <p class="lead" id="introText">Loading reference details…</p>
+      <!-- EVALUATION VIEW -->
+      <div id="evalView">
+        <h1>Provide your reference</h1>
+        <p class="muted" id="refLine">Please rate and add a brief comment for this request.</p>
 
-      <div id="notFound" class="alert alert-error" style="display:none">
-        We couldn't find this reference token. Please verify your link or contact the requester.
+        <form id="evalForm" novalidate>
+          <label>Overall rating *</label>
+          <div class="stars" id="stars">
+            <span class="star" data-v="1">★</span>
+            <span class="star" data-v="2">★</span>
+            <span class="star" data-v="3">★</span>
+            <span class="star" data-v="4">★</span>
+            <span class="star" data-v="5">★</span>
+          </div>
+          <div class="tiny" id="ratingHint">Click a star (1–5)</div>
+          <input type="hidden" id="rating" value="0">
+
+          <label for="comment">Your feedback *</label>
+          <textarea id="comment" placeholder="What stood out about their performance? What would you highlight?"></textarea>
+
+          <label for="relationship">Your relationship</label>
+          <select id="relationship">
+            <option value="">Select</option>
+            <option value="Direct Manager">Direct Manager</option>
+            <option value="Supervisor">Supervisor</option>
+            <option value="Colleague">Colleague</option>
+            <option value="HR Manager">HR Manager</option>
+            <option value="Client">Client</option>
+          </select>
+
+          <label for="yourName">Your name (optional)</label>
+          <input id="yourName" type="text" placeholder="e.g. Ana Manager">
+
+          <div class="actions">
+            <button type="submit" class="btn btn-primary" id="submitBtn">✅ Confirm & Send</button>
+            <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+            <span class="tiny" id="statusText"></span>
+          </div>
+        </form>
+
+        <div id="alertBox"></div>
       </div>
 
-      <div id="alreadyDone" class="alert alert-success" style="display:none">
-        This reference has already been submitted. Thank you!
+      <!-- THANKS VIEW -->
+      <div id="thanksView" class="center" style="display:none">
+        <div style="font-size:48px; margin-top:4px;">🎉</div>
+        <div class="big">Thanks for providing your reference!</div>
+        <p class="sub">
+          You’ve helped verify someone’s professional profile.  
+          Want to build your own? Unlock HRKey <span class="badge">JUNGLE PASS</span>.
+        </p>
+        <div class="cta">
+          <a class="btn btn-primary" href="/auth.html?coupon=JUNGLE">🚀 Create Free Account</a>
+          <a class="btn btn-secondary" href="/index.html">Maybe later</a>
+        </div>
+        <div class="tiny" style="margin-top:10px;">You’ll be redirected shortly…</div>
       </div>
-
-      <form id="evalForm" style="display:none">
-        <div class="kpi">
-          <strong>Requester:</strong> <span id="rq_name">—</span>
-          <br/><strong>Position:</strong> <span id="rq_position">—</span>
-          <br/><strong>Company:</strong> <span id="rq_company">—</span>
-          <div class="divider"></div>
-          <div class="muted">Please evaluate the KPIs below. Use clear, concise comments.</div>
-        </div>
-
-        <div id="kpiContainer"></div>
-
-        <div class="divider"></div>
-
-        <label for="overall">Overall feedback (optional)</label>
-        <textarea id="overall" rows="4" placeholder="Summarize strengths, areas to improve, or context behind your ratings…"></textarea>
-
-        <div class="row">
-          <div>
-            <label for="recommend">Would you recommend this person for a similar role?</label>
-            <select id="recommend" required>
-              <option value="">Select…</option>
-              <option>Strongly recommend</option>
-              <option>Recommend</option>
-              <option>Neutral</option>
-              <option>Do not recommend</option>
-            </select>
-          </div>
-          <div>
-            <label for="relationship">Your relationship to the candidate</label>
-            <input id="relationship" placeholder="e.g., Direct Manager 2023–2024"/>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button class="btn btn-primary" id="submitBtn" type="submit">✅ Submit Evaluation</button>
-          <button class="btn btn-secondary" id="cancelBtn" type="button">Back to Home</button>
-          <span class="muted" id="statusText" aria-live="polite"></span>
-        </div>
-      </form>
-
-      <div id="alertBox" role="alert" aria-live="assertive"></div>
     </div>
   </div>
 
   <script>
-    // ---------- Helpers UI ----------
-    const $ = (id) => document.getElementById(id);
-    function showAlert(msg, type='success'){
-      $('alertBox').innerHTML = `<div class="alert ${type==='success'?'alert-success':'alert-error'}">${msg}</div>`;
-    }
-    function setStatus(msg){ $('statusText').textContent = msg || ''; }
+    // ===== Config destino con pase =====
+    const LANDING_WITH_COUPON = "/auth.html?coupon=JUNGLE";
 
-    // ---------- Token & storage ----------
-    const qs = new URLSearchParams(location.search);
-    const tokenRaw = qs.get('ref') || qs.get('token') || '';
-    const tokenOk = /^[A-Za-z0-9_\-:.]{16,}$/.test(tokenRaw);
-    const token = tokenOk ? tokenRaw : '';
+    // ===== Utilidad UI =====
+    function showAlert(msg, type='success') {
+      const box = document.getElementById('alertBox');
+      box.innerHTML = `<div class="alert ${type==='success'?'alert-success':'alert-error'}">${msg}</div>`;
+    }
+    function setStatus(msg) {
+      document.getElementById('statusText').textContent = msg || '';
+    }
 
-    function getLocalRefs(){
-      try { return JSON.parse(localStorage.getItem('hrkey_references') || '[]'); }
-      catch(_) { return []; }
+    // ===== Carga del ref de la URL (si existe) =====
+    const url = new URL(location.href);
+    const refId = url.searchParams.get('ref') || '';
+    if (refId) {
+      document.getElementById('refLine').textContent =
+        "Reference request ID: " + refId + ". Please complete the evaluation below.";
     }
-    function getLocalEvals(){
-      try { return JSON.parse(localStorage.getItem('hrkey_evaluations') || '[]'); }
-      catch(_) { return []; }
-    }
-    function saveLocalEvals(list){
-      localStorage.setItem('hrkey_evaluations', JSON.stringify(list));
-    }
-    function markRefCompleted(id){
-      const list = getLocalRefs();
-      const idx = list.findIndex(r => r.id === id);
-      if (idx >= 0){
-        list[idx].status = 'completed';
-        list[idx].dateCompleted = new Date().toISOString();
-        localStorage.setItem('hrkey_references', JSON.stringify(list));
+
+    // ===== Estrellas =====
+    (function setupStars(){
+      const stars = Array.from(document.querySelectorAll('.star'));
+      const ratingInput = document.getElementById('rating');
+      const hint = document.getElementById('ratingHint');
+
+      function paint(v) {
+        stars.forEach(s => s.classList.toggle('active', Number(s.dataset.v) <= v));
+        hint.textContent = v ? `Selected: ${v} / 5` : 'Click a star (1–5)';
       }
-    }
-
-    // ---------- Render KPIs ----------
-    function renderKPIs(kpis){
-      const container = $('kpiContainer');
-      container.innerHTML = '';
-      const safe = (s) => (s||'').toString();
-      (kpis || []).forEach((kpi, i) => {
-        const idx = i + 1;
-        const block = document.createElement('div');
-        block.className = 'kpi';
-        block.innerHTML = `
-          <div style="font-weight:600;margin-bottom:6px">KPI ${idx}: ${safe(kpi.title)}</div>
-          <div class="muted" style="margin-bottom:12px">${safe(kpi.description)}</div>
-          <div class="row">
-            <div>
-              <label for="kpi_${idx}_score">Score (1–5)</label>
-              <select id="kpi_${idx}_score" required>
-                <option value="">Select…</option>
-                <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-              </select>
-            </div>
-            <div>
-              <label for="kpi_${idx}_comment">Comment</label>
-              <input id="kpi_${idx}_comment" placeholder="Brief justification"/>
-            </div>
-          </div>
-        `;
-        container.appendChild(block);
+      stars.forEach(st => {
+        st.addEventListener('click', () => {
+          const v = Number(st.dataset.v);
+          ratingInput.value = v;
+          paint(v);
+        });
       });
-    }
+    })();
 
-    // ---------- Load page ----------
-    let currentRef = null;
+    // ===== Submit evaluación =====
+    async function submitEvaluation(e) {
+      e.preventDefault();
+      const rating = Number(document.getElementById('rating').value || '0');
+      const comment = (document.getElementById('comment').value || '').trim();
 
-    function loadRef(){
-      if (!token){
-        $('introText').textContent = 'Missing or invalid token.';
-        $('notFound').style.display = '';
+      if (!rating || rating < 1) {
+        showAlert('Please select a rating (at least 1 star).', 'error');
         return;
       }
-      const refs = getLocalRefs();
-      currentRef = refs.find(r => r.id === token) || null;
-
-      if (!currentRef){
-        $('introText').textContent = 'Reference not found.';
-        $('notFound').style.display = '';
-        return;
-      }
-      if (currentRef.status === 'completed'){
-        $('introText').textContent = 'Reference already submitted.';
-        $('alreadyDone').style.display = '';
-      }
-
-      // Fill header info
-      $('introText').textContent = `You are evaluating ${currentRef.requestedBy || 'the candidate'} – please review the KPIs.`;
-      $('rq_name').textContent = currentRef.requestedBy || '—';
-      $('rq_position').textContent = currentRef.position || '—';
-      $('rq_company').textContent = currentRef.company || '—';
-
-      renderKPIs(currentRef.kpis || []);
-      $('evalForm').style.display = '';
-    }
-
-    // ---------- Submit ----------
-    document.getElementById('evalForm')?.addEventListener('submit', (e) => e.preventDefault());
-
-    async function handleSubmit(){
-      if (!currentRef){ return; }
-      // Validate KPI scores
-      const kpis = (currentRef.kpis || []).map((k, i) => {
-        const idx = i + 1;
-        const score = document.getElementById(`kpi_${idx}_score`).value;
-        const comment = document.getElementById(`kpi_${idx}_comment`).value.trim();
-        return { title:k.title, description:k.description, score, comment };
-      });
-
-      if (kpis.some(k => !k.score)){
-        showAlert('Please provide a score for each KPI (1–5).', 'error');
+      if (!comment) {
+        showAlert('Please add a brief comment.', 'error');
         return;
       }
 
-      const evaluation = {
-        id: 'eval_' + Date.now(),
-        refId: currentRef.id,
-        overall: document.getElementById('overall').value.trim(),
-        recommend: document.getElementById('recommend').value,
-        relationship: document.getElementById('relationship').value.trim(),
-        kpis,
-        createdAt: new Date().toISOString()
-      };
+      const relation = document.getElementById('relationship').value || '';
+      const yourName = document.getElementById('yourName').value || '';
 
-      try{
-        document.getElementById('submitBtn').disabled = true;
-        setStatus('Submitting…');
+      try {
+        setStatus('Sending...');
+        await new Promise(r => setTimeout(r, 400)); // simula latencia
 
-        // Store locally (placeholder until backend wiring)
-        const list = getLocalEvals();
-        list.push(evaluation);
-        saveLocalEvals(list);
-        markRefCompleted(currentRef.id);
+        // Marca para el banner de “referee → signup”
+        const info = {
+          hasProvidedReference: true,
+          when: new Date().toISOString(),
+          refId,
+          rating, comment, relation, yourName
+        };
+        localStorage.setItem('hrkey_referee_info', JSON.stringify(info));
 
-        showAlert('✅ Thank you! Your evaluation has been recorded.', 'success');
+        // Cambia a la vista de "Thanks"
+        document.getElementById('evalView').style.display = 'none';
+        document.getElementById('thanksView').style.display = 'block';
+
+        // Auto-redirect opcional
+        setTimeout(() => location.assign(LANDING_WITH_COUPON), 7000);
+      } catch (err) {
+        console.error('referee submit error:', err);
+        showAlert('❌ Something went wrong. Please try again.', 'error');
         setStatus('');
-        setTimeout(() => { window.location.replace('./thanks.html'); }, 1200);
-      }catch(err){
-        console.error(err);
-        showAlert('❌ Unexpected error. Please try again.', 'error');
-        setStatus('');
-        document.getElementById('submitBtn').disabled = false;
       }
     }
 
-    // ---------- Init ----------
-    window.addEventListener('DOMContentLoaded', () => {
-      loadRef();
-      document.getElementById('submitBtn')?.addEventListener('click', handleSubmit);
-      document.getElementById('cancelBtn')?.addEventListener('click', () => location.replace('./index.html'));
+    // ===== Init =====
+    document.getElementById('evalForm').addEventListener('submit', submitEvaluation);
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      location.assign(LANDING_WITH_COUPON);
     });
   </script>
 </body>
