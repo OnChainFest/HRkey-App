@@ -322,7 +322,7 @@
 
         // ========= FLOW: SIGNUP / WALLET => UPGRADE =========
         function goToUpgrade() {
-            const dest = coupon ? `upgrade.html?coupon=${encodeURIComponent(coupon)}` : 'upgrade.html';
+            const dest = coupon ? `app.html?coupon=${encodeURIComponent(coupon)}` : 'app.html';
             window.location.href = dest;
         }
 
