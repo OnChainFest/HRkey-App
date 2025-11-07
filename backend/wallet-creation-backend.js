@@ -1,4 +1,4 @@
-/**
+/** 
  * HRKEY BACKEND - Complete Service
  * 
  * Servicios:
@@ -7,7 +7,7 @@
  * - Email Notifications
  * - User Stats & Analytics
  * 
- * Puerto: 3001
+ * Puerto por defecto: 3001
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -19,35 +19,69 @@ import crypto from 'crypto';
 
 dotenv.config();
 
-// ================================
-// CONFIGURACIÓN
-// ================================
+/* ================================
+   CONFIGURACIÓN
+   ================================ */
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrervcydgdrlcndtjboy.supabase.co';
+const SUPABASE_URL =
+  process.env.SUPABASE_URL ||
+  'https://wrervcydgdrlcndtjboy.supabase.co';
+
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXJ2Y3lkZ2RybGNuZHRqYm95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NzYxNTYsImV4cCI6MjA3MzU1MjE1Nn0.63M53sZW4LEYMOaxScvtLhQr_6VUj7rOaaGtlR745IM';
 const BASE_RPC_URL = process.env.BASE_RPC_URL || 'https://mainnet.base.org';
 const PORT = process.env.PORT || 3001;
 
-// URL base para el frontend (PROD/preview/local)
-const BASE_URL =
-  process.env.NEXT_PUBLIC_BASE_URL ||
-  process.env.FRONTEND_URL ||
-  'http://localhost:3000';
+/* ================================
+   URL pública del FRONTEND (robusta)
+   Prioridades:
+   - PUBLIC_BASE_URL (recomendado, unificado)
+   - BASE_URL        (alias común)
+   - FRONTEND_URL    (muy común en Vercel)
+   - PUBLIC_APP_URL  / APP_URL (variantes)
+   - VERCEL_URL      (auto, sin protocolo)
+   - Fallback        https://hrkey.xyz
+   ================================ */
+
+const PROD_URL = 'https://hrkey.xyz';
+
+function resolveFrontendUrl() {
+  const fromEnv =
+    process.env.PUBLIC_BASE_URL ||
+    process.env.BASE_URL ||
+    process.env.FRONTEND_URL ||
+    process.env.PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    null;
+
+  if (fromEnv && /^https?:\/\//i.test(fromEnv)) return fromEnv;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return PROD_URL;
+}
+
+// URL pública *unificada* para construir enlaces visibles por usuarios
+const FRONTEND_URL = resolveFrontendUrl();
+
+/** Helper consistente para armar link del referee (nunca localhost) */
+function makeRefereeLink(token) {
+  const url = new URL('/referee-evaluation-page.html', FRONTEND_URL);
+  url.searchParams.set('ref', token);
+  return url.toString();
+}
 
 // Email service (Resend)
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-// ================================
-// WALLET CREATION SERVICE
-// ================================
+/* ================================
+   WALLET CREATION SERVICE
+   ================================ */
 
 class WalletCreationService {
-  static async createWalletForUser(userId: string, email: string) {
+  static async createWalletForUser(userId, email) {
     try {
-      console.log(`🔧 Creating wallet for user ${userId} (${email})...`);
+      if (!userId) throw new Error('userId is required');
 
       const existingWallet = await this.checkExistingWallet(userId);
       if (existingWallet) {
@@ -86,25 +120,25 @@ class WalletCreationService {
         walletType: 'custodial',
         createdAt: walletData.created_at,
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Error creating wallet:', error);
       throw new Error(`Failed to create wallet: ${error.message}`);
     }
   }
 
-  static async checkExistingWallet(userId: string) {
+  static async checkExistingWallet(userId) {
     const { data, error } = await supabase
       .from('user_wallets')
       .select('*')
       .eq('user_id', userId)
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data || null;
   }
 
-  static async encryptPrivateKey(privateKey: string, userId: string) {
+  static async encryptPrivateKey(privateKey, userId) {
     const algorithm = 'aes-256-cbc';
     const key = crypto.scryptSync(userId, 'hrkey-salt-2025', 32);
     const iv = crypto.randomBytes(16);
@@ -116,7 +150,7 @@ class WalletCreationService {
     return iv.toString('hex') + ':' + encrypted;
   }
 
-  static async initializeUserPlan(userId: string, walletAddress: string) {
+  static async initializeUserPlan(userId, walletAddress) {
     const planData = {
       user_id: userId,
       address: walletAddress,
@@ -130,17 +164,17 @@ class WalletCreationService {
         canProfitFromData: false,
         canShareReferences: true,
       },
-      payment_tx_hash: null,
+    //  payment_tx_hash: null,  // si lo usas luego, reagrégalo
       created_at: new Date().toISOString(),
     };
 
     const { error } = await supabase.from('user_plans').insert([planData]);
-
     if (error) throw error;
+
     console.log('✅ FREE plan initialized for user');
   }
 
-  static async getUserWallet(userId: string) {
+  static async getUserWallet(userId) {
     const { data, error } = await supabase
       .from('user_wallets')
       .select('address, network, wallet_type, created_at')
@@ -153,33 +187,31 @@ class WalletCreationService {
   }
 }
 
-// ================================
-// REFERENCE MANAGEMENT SERVICE
-// ================================
+/* ================================
+   REFERENCE MANAGEMENT SERVICE
+   ================================ */
 
 class ReferenceService {
-  /**
-   * Crea una solicitud de referencia
-   */
-  static async createReferenceRequest(requestData: any) {
+  /** Crea una solicitud de referencia y envía correo al referee */
+  static async createReferenceRequest(requestData) {
     try {
-      console.log('📨 Creating reference request...');
+      const { userId, email, name, applicantData } = requestData || {};
+      if (!userId) throw new Error('userId is required');
+      if (!email) throw new Error('referee email is required');
 
-      const { userId, email, name, applicantData } = requestData;
-
-      // Generar token único para la invitación
+      // Token único para la invitación
       const inviteToken = crypto.randomBytes(32).toString('hex');
 
       // Crear registro en reference_invites
       const inviteData = {
         requester_id: userId,
         referee_email: email,
-        referee_name: name,
+        referee_name: name || null,
         invite_token: inviteToken,
         status: 'pending',
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 días
         created_at: new Date().toISOString(),
-        metadata: applicantData,
+        metadata: applicantData || null,
       };
 
       const { data: invite, error: inviteError } = await supabase
@@ -190,12 +222,11 @@ class ReferenceService {
 
       if (inviteError) throw inviteError;
 
-      // Actualizar contador de referencias solicitadas
+      // Actualizar contador de referencias solicitadas (si aplica)
       await this.updateUserStats(userId, 'references_requested');
 
-      // Construir URL de verificación (NUEVO flujo)
-      if (!BASE_URL) throw new Error('Missing NEXT_PUBLIC_BASE_URL/FRONTEND_URL');
-      const verificationUrl = `${BASE_URL}/ref/verify?token=${encodeURIComponent(inviteToken)}`;
+      // Construir URL de verificación (nunca localhost)
+      const verificationUrl = makeRefereeLink(inviteToken);
 
       // Enviar email al referee
       await this.sendRefereeInviteEmail(email, name, applicantData, verificationUrl);
@@ -214,16 +245,13 @@ class ReferenceService {
     }
   }
 
-  /**
-   * Completa una referencia (cuando el referee la envía)
-   */
-  static async submitReference(submissionData: any) {
+  /** Completa una referencia (cuando el referee la envía) */
+  static async submitReference(submissionData) {
     try {
-      console.log('📝 Submitting reference...');
+      const { token, refereeData, ratings, comments } = submissionData || {};
+      if (!token) throw new Error('token is required');
 
-      const { token, refereeData, ratings, comments } = submissionData;
-
-      // Verificar que el token sea válido
+      // Validar token
       const { data: invite, error: inviteError } = await supabase
         .from('reference_invites')
         .select('*')
@@ -233,12 +261,11 @@ class ReferenceService {
       if (inviteError || !invite) {
         throw new Error('Invalid or expired invitation token');
       }
-
       if (invite.status === 'completed') {
         throw new Error('This reference has already been submitted');
       }
 
-      // Guardar la referencia completada
+      // Guardar referencia completada
       const referenceData = {
         owner_id: invite.requester_id,
         referrer_name: invite.referee_name,
@@ -246,8 +273,8 @@ class ReferenceService {
         relationship: invite.metadata?.relationship || 'colleague',
         summary: comments?.recommendation || '',
         overall_rating: this.calculateOverallRating(ratings),
-        kpi_ratings: ratings,
-        detailed_feedback: comments,
+        kpi_ratings: ratings || {},
+        detailed_feedback: comments || {},
         status: 'active',
         created_at: new Date().toISOString(),
         invite_id: invite.id,
@@ -261,7 +288,7 @@ class ReferenceService {
 
       if (refError) throw refError;
 
-      // Actualizar el estado de la invitación
+      // Actualizar invitación
       await supabase
         .from('reference_invites')
         .update({
@@ -270,10 +297,8 @@ class ReferenceService {
         })
         .eq('id', invite.id);
 
-      // Actualizar stats del usuario
+      // Stats y plan
       await this.updateUserStats(invite.requester_id, 'references_completed');
-
-      // Incrementar contador de referencias usadas en el plan
       await this.incrementReferencesUsed(invite.requester_id);
 
       // Notificar al solicitante
@@ -281,20 +306,15 @@ class ReferenceService {
 
       console.log('✅ Reference submitted successfully:', reference.id);
 
-      return {
-        success: true,
-        reference_id: reference.id,
-      };
+      return { success: true, reference_id: reference.id };
     } catch (error) {
       console.error('❌ Error submitting reference:', error);
       throw error;
     }
   }
 
-  /**
-   * Obtiene una referencia por token (para mostrar al referee)
-   */
-  static async getReferenceByToken(token: string) {
+  /** Obtiene una referencia por token (para prellenar UI del referee) */
+  static async getReferenceByToken(token) {
     try {
       const { data: invite, error } = await supabase
         .from('reference_invites')
@@ -337,48 +357,27 @@ class ReferenceService {
     }
   }
 
-  /**
-   * Calcula el rating general basado en todos los KPIs
-   */
-  static calculateOverallRating(ratings: Record<string, number>) {
+  /** Calcula rating general redondeado a 1 decimal */
+  static calculateOverallRating(ratings) {
     const values = Object.values(ratings || {});
     if (values.length === 0) return 0;
-    const sum = values.reduce((acc, val) => acc + val, 0);
-    return Math.round((sum / values.length) * 10) / 10; // Redondear a 1 decimal
+    const sum = values.reduce((acc, val) => acc + Number(val || 0), 0);
+    return Math.round((sum / values.length) * 10) / 10;
   }
 
-  /**
-   * Actualiza las estadísticas del usuario
-   */
-  static async updateUserStats(userId: string, statType: string) {
-    // Aquí podrías tener una tabla de user_stats
-    // Por ahora solo log
+  // --- helpers de stats/plan (opcionales) ---
+  static async updateUserStats(userId, statType) {
     console.log(`📊 Updated ${statType} for user ${userId}`);
   }
 
-  /**
-   * Incrementa el contador de referencias usadas
-   */
-  static async incrementReferencesUsed(userId: string) {
+  static async incrementReferencesUsed(userId) {
     const { error } = await supabase.rpc('increment_reference_count', { p_user_id: userId });
-
-    if (error) {
-      console.error('❌ Error incrementing reference count:', error);
-    }
+    if (error) console.error('❌ Error incrementing reference count:', error);
   }
 
-  /**
-   * Envía email de invitación al referee
-   */
-  static async sendRefereeInviteEmail(
-    email: string,
-    name: string,
-    applicantData: any,
-    verificationUrl: string
-  ) {
+  // --- EMAILS (Resend) ---
+  static async sendRefereeInviteEmail(email, name, applicantData, verificationUrl) {
     try {
-      console.log(`📧 Sending invite email to ${email}...`);
-
       if (!RESEND_API_KEY) {
         console.warn('⚠️ RESEND_API_KEY not configured, skipping email');
         return;
@@ -393,13 +392,11 @@ class ReferenceService {
         body: JSON.stringify({
           from: 'HRKey <noreply@hrkey.com>',
           to: email,
-          subject: `Reference Request from ${applicantData?.applicantName || 'a professional'}`,
+          subject: `Reference Request${applicantData?.applicantPosition ? ` - ${applicantData.applicantPosition}` : ''}`,
           html: `
             <h2>You've been asked to provide a professional reference</h2>
-            <p>Hi ${name},</p>
-            <p>${applicantData?.applicantName || 'A professional'} has requested a reference from you${
-            applicantData?.applicantCompany ? ` for their role at ${applicantData.applicantCompany}` : ''
-          }.</p>
+            <p>Hi ${name || ''},</p>
+            <p>Someone has requested a reference from you${applicantData?.applicantCompany ? ` for their role at ${applicantData.applicantCompany}` : ''}.</p>
             <p><strong>Click here to complete the reference:</strong></p>
             <a href="${verificationUrl}" style="background:#0ea5e9;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block;">
               Complete Reference
@@ -410,33 +407,28 @@ class ReferenceService {
         }),
       });
 
-      if (response.ok) {
-        console.log('✅ Email sent successfully');
-      } else {
+      if (!response.ok) {
         console.error('❌ Failed to send email:', await response.text());
+      } else {
+        console.log('✅ Invite email sent to', email);
       }
     } catch (error) {
       console.error('❌ Error sending email:', error);
     }
   }
 
-  /**
-   * Notifica al solicitante que su referencia fue completada
-   */
-  static async sendReferenceCompletedEmail(userId: string, reference: any) {
+  static async sendReferenceCompletedEmail(userId, reference) {
     try {
-      console.log(`📧 Notifying user ${userId} about completed reference...`);
+      if (!RESEND_API_KEY) return;
 
-      // Obtener email del usuario
       const { data } = await supabase.auth.admin.getUserById(userId);
-      const user = (data as any)?.user;
-
-      if (!user?.email || !RESEND_API_KEY) {
-        console.warn('⚠️ User not found or email service not configured');
+      const userEmail = data?.user?.email || data?.email;
+      if (!userEmail) {
+        console.warn('⚠️ User email not found for completion notification');
         return;
       }
 
-      const dashboardUrl = `${BASE_URL}/app`; // ajusta la ruta si tu dashboard es distinto
+      const dashboardUrl = new URL('/app.html', FRONTEND_URL).toString();
 
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -446,7 +438,7 @@ class ReferenceService {
         },
         body: JSON.stringify({
           from: 'HRKey <noreply@hrkey.com>',
-          to: user.email,
+          to: userEmail,
           subject: 'Your reference has been completed!',
           html: `
             <h2>Great news! Your reference is ready</h2>
@@ -460,20 +452,20 @@ class ReferenceService {
         }),
       });
 
-      console.log('✅ Notification sent');
+      console.log('✅ Completion notification sent to', userEmail);
     } catch (error) {
       console.error('❌ Error sending notification:', error);
     }
   }
 }
 
-// ================================
-// EXPRESS API
-// ================================
+/* ================================
+   EXPRESS API
+   ================================ */
 
 const app = express();
 
-// Middleware
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
@@ -488,18 +480,18 @@ app.get('/health', (req, res) => {
       references: 'active',
       email: RESEND_API_KEY ? 'configured' : 'not configured',
     },
-    baseUrl: BASE_URL,
+    frontend_url: FRONTEND_URL,
+    base_rpc: BASE_RPC_URL,
   });
 });
 
-// ================================
-// WALLET ENDPOINTS
-// ================================
+/* ================================
+   WALLET ENDPOINTS
+   ================================ */
 
 app.post('/api/wallet/create', async (req, res) => {
   try {
-    const { userId, email } = req.body;
-
+    const { userId, email } = req.body || {};
     if (!userId || !email) {
       return res.status(400).json({ error: 'Missing userId or email' });
     }
@@ -514,7 +506,7 @@ app.post('/api/wallet/create', async (req, res) => {
         walletType: wallet.walletType,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in /api/wallet/create:', error);
     res.status(500).json({ error: error.message });
   }
@@ -522,7 +514,7 @@ app.post('/api/wallet/create', async (req, res) => {
 
 app.get('/api/wallet/:userId', async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId } = req.params || {};
     const wallet = await WalletCreationService.getUserWallet(userId);
 
     if (!wallet) {
@@ -530,131 +522,66 @@ app.get('/api/wallet/:userId', async (req, res) => {
     }
 
     res.json({ success: true, wallet });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in /api/wallet/:userId:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// ================================
-// REFERENCE ENDPOINTS
-// ================================
+/* ================================
+   REFERENCE ENDPOINTS
+   ================================ */
 
-/**
- * POST /api/reference/request
- * Crea una nueva solicitud de referencia
- */
+/** Crea una nueva solicitud de referencia */
 app.post('/api/reference/request', async (req, res) => {
   try {
     const result = await ReferenceService.createReferenceRequest(req.body);
     res.json(result);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in /api/reference/request:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-/**
- * POST /api/reference/submit
- * Completa una referencia (referee submission)
- */
+/** Completa una referencia (referee submission) */
 app.post('/api/reference/submit', async (req, res) => {
   try {
     const result = await ReferenceService.submitReference(req.body);
     res.json(result);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in /api/reference/submit:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-/**
- * GET /api/reference/:referenceId
- * Obtiene información de una referencia por ID
- */
-app.get('/api/reference/:referenceId', async (req, res) => {
+/** Obtiene detalles de invitación por token */
+app.get('/api/reference/by-token/:token', async (req, res) => {
   try {
-    const { referenceId } = req.params;
-
-    const { data: reference, error } = await supabase
-      .from('reference_invites')
-      .select('*')
-      .eq('id', referenceId)
-      .single();
-
-    if (error || !reference) {
-      return res.status(404).json({
-        success: false,
-        error: 'Reference not found',
-      });
-    }
-
-    res.json({
-      success: true,
-      reference: {
-        referee_name: reference.referee_name,
-        referee_email: reference.referee_email,
-        applicant_data: reference.metadata,
-        status: reference.status,
-      },
-    });
-  } catch (error: any) {
-    console.error('Error in /api/reference/:referenceId:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    const result = await ReferenceService.getReferenceByToken(req.params.token);
+    res.json(result);
+  } catch (error) {
+    console.error('Error in /api/reference/by-token/:token:', error);
+    res.status(400).json({ success: false, error: error.message });
   }
 });
 
-/**
- * GET /api/user/stats/:address
- * Obtiene estadísticas del usuario
- */
-app.get('/api/user/stats/:address', async (req, res) => {
-  try {
-    const { address } = req.params;
+/* ================================
+   START
+   ================================ */
 
-    const { data: references, error: refError } = await supabase
-      .from('references')
-      .select('*')
-      .eq('owner_id', address);
+const BACKEND_PUBLIC_URL =
+  process.env.BACKEND_PUBLIC_URL ||
+  process.env.API_BASE_URL ||
+  process.env.APP_BACKEND_URL ||
+  `http://localhost:${PORT}`;
 
-    if (refError) throw refError;
-
-    const stats = {
-      totalReferences: references?.length || 0,
-      verifiedOnChain: references?.filter((r: any) => r.status === 'active').length || 0,
-      pendingValidations: 0,
-      profileViews: 0,
-    };
-
-    res.json(stats);
-  } catch (error: any) {
-    console.error('Error in /api/user/stats:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Start server
 app.listen(PORT, () => {
   console.log(`
-    ╔══════════════════════════════════════════════════════╗
-    ║  🚀 HRKey Backend Service                            ║
-    ║  ✅ Running on http://localhost:${PORT}                ║
-    ║  📡 Connected to Supabase                            ║
-    ║  💼 Wallets: ACTIVE                                  ║
-    ║  📝 References: ACTIVE                               ║
-    ║  📧 Email: ${RESEND_API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'}                         ║
-    ║  🌐 BASE_URL: ${BASE_URL}                                 ║
-    ╚══════════════════════════════════════════════════════╝
-  `);
+╔══════════════════════════════════════════════════════════╗
+║  🚀 HRKey Backend Service                                ║
+║  ✅ Running on ${BACKEND_PUBLIC_URL}                      ║
+║  🌐 FRONTEND_URL: ${FRONTEND_URL}                         ║
+║  📡 Supabase URL: ${SUPABASE_URL}                         ║
+╚══════════════════════════════════════════════════════════╝
+`);
 });
-
-export { WalletCreationService, ReferenceService };
