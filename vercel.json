@@ -1,0 +1,10 @@
+{
+  "rewrites": [
+    { "source": "/auth", "destination": "/WebDapp/auth.html" },
+    { "source": "/app",  "destination": "/WebDapp/app.html" }
+  ],
+  "redirects": [
+    { "source": "/auth.html", "destination": "/auth", "permanent": false },
+    { "source": "/app.html",  "destination": "/app",  "permanent": false }
+  ]
+}
