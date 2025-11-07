@@ -407,6 +407,55 @@
     window.location.href = '/app.html';
   });
 </script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('authForm');      // ajusta si tu form tiene otro id
+    const submitBtn = document.getElementById('submitBtn'); // id del botón
+
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault(); // evita recarga de la misma página
+
+      // (opcional) lee campos
+      const name  = document.getElementById('fullName')?.value?.trim() || '';
+      const email = document.getElementById('email')?.value?.trim() || '';
+
+      // (opcional) validación mínima
+      if (!name || !email) {
+        alert('Please fill in your name and email.');
+        return;
+      }
+
+      submitBtn?.setAttribute('disabled', 'true');
+      const oldText = submitBtn?.textContent;
+      if (submitBtn) submitBtn.textContent = 'Creating account...';
+
+      try {
+        // TODO: aquí va tu signup real (Supabase/tu API).
+        // De momento simulamos una acción corta:
+        await new Promise(r => setTimeout(r, 300));
+
+        // Guarda algo mínimo si quieres
+        localStorage.setItem('hrkey_user_data', JSON.stringify({
+          name, email, authenticated: true, loginDate: new Date().toISOString()
+        }));
+
+        // ✅ al dashboard
+        window.location.replace('/app.html');
+      } catch (err) {
+        console.error('sign-up error:', err);
+        alert('Could not create account. Please try again.');
+      } finally {
+        submitBtn?.removeAttribute('disabled');
+        if (submitBtn && oldText) submitBtn.textContent = oldText;
+      }
+    });
+
+    // Cinturón y tirantes: corrige cualquier <a href="/upgrade"> que haya quedado
+    document.querySelectorAll('a[href="/upgrade"]').forEach(a => a.setAttribute('href', '/app.html'));
+  });
+</script>
 
 </body>
 </html>
