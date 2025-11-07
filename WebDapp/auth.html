@@ -456,6 +456,43 @@
     document.querySelectorAll('a[href="/upgrade"]').forEach(a => a.setAttribute('href', '/app.html'));
   });
 </script>
+<script>
+(function () {
+  function ready() {
+    const form = document.getElementById('authForm');
+    const btn  = document.getElementById('submitBtn');
+    if (!form) return;
+
+    // 1) Evita que el form recargue /auth
+    form.setAttribute('novalidate', 'true');
+    form.setAttribute('action', '/app.html'); // por si algún script lee action
+    form.setAttribute('method', 'get');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      window.location.replace('/app.html');
+    }, { capture: true });
+
+    // 2) Si el botón existe, vuelve el botón "no-submit" y fuerza redirect por click
+    if (btn) {
+      btn.setAttribute('type', 'button'); // evita submit nativo
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        window.location.replace('/app.html');
+      }, { capture: true });
+    }
+
+    // 3) Por si quedó algún enlace a /upgrade
+    document.querySelectorAll('a[href="/upgrade"]').forEach(a => a.setAttribute('href', '/app.html'));
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ready);
+  } else {
+    ready();
+  }
+})();
+</script>
 
 </body>
 </html>
