@@ -2,13 +2,18 @@
 <html lang="en">
 <head>
   <base href="/" />
-  const SUPABASE_URL = window.__SUPABASE_URL__;
-  const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__;
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HRKey - Sign Up / Login</title>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- 🔧 Variables de entorno (rellenar con tus valores reales) -->
+  <script>
+    // ⬇️ RELLENA con tu proyecto de Supabase (anon key es pública, NO uses service role)
+    window.__SUPABASE_URL__ = "https://<TU-PROYECTO>.supabase.co";
+    window.__SUPABASE_ANON_KEY__ = "<TU-ANON-KEY>";
+  </script>
+
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -158,16 +163,15 @@
     </div>
   </div>
 
-  <!-- (tu módulo actual) -->
+  <!-- Tu módulo actual -->
   <script type="module" src="/js/wallet-auth.js"></script>
 
   <script type="module">
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
     // ================== CONFIG ==================
-    // Sustituye por tus valores reales o lee de window.__ENV__
-    const SUPABASE_URL = "https://<TU-PROYECTO>.supabase.co";
-    const SUPABASE_ANON_KEY = "<TU-ANON-KEY>";
+    const SUPABASE_URL = window.__SUPABASE_URL__;
+    const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__;
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const DEFAULT_COUPON = "BLKJUNGLE";
@@ -252,7 +256,7 @@
         const old = submitBtn.textContent;
         submitBtn.textContent = "⏳ Creating account...";
 
-        // Simulación de alta local (mantiene tu lógica actual de demo)
+        // Simulación de alta local (demo)
         const name = document.getElementById("name")?.value?.trim() || "";
         const email = document.getElementById("email")?.value?.trim() || "";
         const userData = {
