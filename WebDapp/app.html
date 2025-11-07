@@ -146,6 +146,24 @@
             </div>
         </div>
     </div>
+    
+<script>
+  // ✅ “Demo session” si vienes de auth sin Supabase
+  (function () {
+    try {
+      const u = JSON.parse(localStorage.getItem('hrkey_user_data') || '{}');
+      const hasDemo = !!u.authenticated; // lo seteamos en auth.html
+      const url = new URL(location.href);
+      const hasCoupon = !!url.searchParams.get('coupon');
+
+      // Si no hay sesión Supabase (la verificará tu script más tarde),
+      // al menos NO regreses a /auth si tienes demo o cupón.
+      window.__HRKEY_DEMO_OK__ = hasDemo || hasCoupon;
+    } catch (e) {
+      window.__HRKEY_DEMO_OK__ = false;
+    }
+  })();
+</script>
 
     <script>
         // Dashboard Manager Class
@@ -448,5 +466,6 @@
             dashboard = new DashboardManager();
         });
     </script>
+    
 </body>
 </html>
