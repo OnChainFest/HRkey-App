@@ -1,29 +1,9 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
-
-  "redirects": [
-    { "source": "/auth",    "destination": "/auth.html",  "permanent": false },
-    { "source": "/app",     "destination": "/app.html",   "permanent": false },
-    { "source": "/upgrade", "destination": "/app.html",   "permanent": false }
-  ],
-
   "rewrites": [
-    { "source": "/",                          "destination": "/index.html" },
-    { "source": "/request-reference",         "destination": "/request-reference.html" },
-    { "source": "/referee-evaluation-page",   "destination": "/referee-evaluation-page.html" },
-    { "source": "/reference-management-page", "destination": "/reference-management-page.html" },
+    { "source": "/", "destination": "/index.html" },
     { "source": "/(.*)", "destination": "/$1" }
-  ],
-
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
-      ]
-    }
   ]
 }
 
