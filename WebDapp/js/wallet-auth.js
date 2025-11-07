@@ -101,8 +101,13 @@ async function signInWithEthereum() {
       localStorage.setItem("hrkey_session", JSON.stringify(out.session));
     }
 
+<<<<<<< HEAD
     // ✅ Redirige SIEMPRE al dashboard
     window.location.replace("/app.html");
+=======
+    // Redirige a tu app (ajusta ruta si corresponde)
+    window.location.href="/app.html";
+>>>>>>> 8059818 (fix: redirigir siempre a /app.html y alias /app -> app.html)
 
   } catch (err) {
     console.error("SIWE login error:", err);
