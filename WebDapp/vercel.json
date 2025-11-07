@@ -1,8 +1,9 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/auth", "destination": "/auth.html" },
-    { "source": "/(.*)", "destination": "/$1" }
+    { "source": "/",     "destination": "/index.html" },
+    { "source": "/auth", "destination": "/auth.html"  },
+    { "source": "/app",  "destination": "/app.html"   },
+    { "source": "/(.*)", "destination": "/$1"         }
   ]
 }
