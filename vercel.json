@@ -1,15 +1,16 @@
 {
+  "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
-    { "source": "/auth", "destination": "/WebDapp/auth.html" },
-    { "source": "/app",  "destination": "/WebDapp/app.html"  },
+    { "source": "/referee-evaluation-page.html", "destination": "/WebDapp/referee-evaluation-page.html" },
+    { "source": "/request-reference.html", "destination": "/WebDapp/request-reference.html" },
+    { "source": "/reference-management-page.html", "destination": "/WebDapp/reference-management-page.html" },
 
-    { "source": "/js/:path*",     "destination": "/WebDapp/js/:path*"     },
-    { "source": "/css/:path*",    "destination": "/WebDapp/css/:path*"    },
-    { "source": "/images/:path*", "destination": "/WebDapp/images/:path*" },
-    { "source": "/fonts/:path*",  "destination": "/WebDapp/fonts/:path*"  }
+    { "source": "/ref/verify", "destination": "/WebDapp/ref/verify.html" },
+    { "source": "/ref/fill", "destination": "/WebDapp/ref/fill.html" },
+    { "source": "/ref/:path*", "destination": "/WebDapp/ref/:path*" }
   ],
-  "redirects": [
-    { "source": "/auth.html", "destination": "/auth", "permanent": false },
-    { "source": "/app.html",  "destination": "/app",  "permanent": false }
+  "headers": [
+    { "source": "/(.*)", "headers": [ { "key": "X-Frame-Options", "value": "SAMEORIGIN" } ] }
   ]
 }

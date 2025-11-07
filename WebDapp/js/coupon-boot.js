@@ -23,7 +23,8 @@
     // Evita loops: redirige una sola vez por pestaña
     if (!sessionStorage.getItem('hrkey_redirected')) {
       sessionStorage.setItem('hrkey_redirected', '1');
-      window.location.assign("/app");
+      sessionStorage.setItem('hrkey_onboard_from_coupon','1');
+window.location.assign("/app");
     }
   };
 

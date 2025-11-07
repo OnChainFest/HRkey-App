@@ -1,0 +1,16 @@
+{
+  "projectId": "prj_RPbZMyUr2GkcnBwKiRAnAiYJfIFu",
+  "orgId": "team_SdZph29JfRT5FQzfENQWk37i",
+  "projectName": "hrkey-app",
+  "settings": {
+    "createdAt": 1762463038874,
+    "framework": null,
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": null,
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "22.x"
+  }
+}
