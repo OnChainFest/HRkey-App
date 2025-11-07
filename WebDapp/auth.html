@@ -514,6 +514,60 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 </script>
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+  // ⚠️ Usa tus variables reales (o lee de window.__ENV__/meta tags)
+  const SUPABASE_URL = "https://<TU-PROYECTO>.supabase.co";
+  const SUPABASE_ANON_KEY = "<TU-ANON-KEY>";
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // 1) Si viene de magic link: intercambia el code por sesión
+  const url = new URL(window.location.href);
+  const code = url.searchParams.get("code");
+  const errorDesc = url.searchParams.get("error_description");
+
+  if (errorDesc) {
+    console.error("Auth error:", errorDesc);
+    // Muestra un mensaje si querés…
+  }
+
+  if (code) {
+    try {
+      // Intercambio de código -> sesión
+      const { error } = await supabase.auth.exchangeCodeForSession({ code });
+      if (error) {
+        console.error("exchangeCodeForSession error:", error);
+      } else {
+        // Limpia la URL (quita ?code=...) y manda a /app
+        const next = url.searchParams.get("next") || "/app";
+        window.history.replaceState({}, document.title, "/auth");
+        window.location.replace(next);
+      }
+    } catch (e) {
+      console.error("Exchange failed:", e);
+    }
+  } else {
+    // 2) Si ya hay sesión, mandá a /app directamente
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      window.location.replace("/app");
+    }
+  }
+
+  // 3) Cupón (opcional)
+  const coupon = (url.searchParams.get("coupon") || "").toUpperCase();
+  if (coupon === "BLKJUNGLE") {
+    const until = new Date(Date.now() + 30*24*60*60*1000).toISOString();
+    localStorage.setItem("hrkey_premium_until", until);
+    localStorage.setItem("hrkey_coupon", coupon);
+    // Banner visible
+    const bar = document.createElement("div");
+    bar.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:9999;background:#00C4C7;color:#fff;padding:10px 14px;text-align:center;font-weight:600";
+    bar.textContent = "🎟️ Acceso Premium HRKey activado por 30 días (Blockchain Jungle)";
+    document.body.appendChild(bar);
+  }
+</script>
 
 </body>
 </html>
