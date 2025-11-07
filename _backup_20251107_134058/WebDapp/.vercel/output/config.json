@@ -1,0 +1,127 @@
+{
+  "version": 3,
+  "routes": [
+    {
+      "src": "^/(?:(.+)/)?index(?:\\.html)?/?$",
+      "headers": {
+        "Location": "/$1"
+      },
+      "status": 308
+    },
+    {
+      "src": "^/(.*)\\.html/?$",
+      "headers": {
+        "Location": "/$1"
+      },
+      "status": 308
+    },
+    {
+      "src": "^/(api(?:.+)?)/index(?:\\.(?:js))?/?$",
+      "headers": {
+        "Location": "/$1"
+      },
+      "status": 308
+    },
+    {
+      "src": "^/api/(.+)(?:\\.(?:js))/?$",
+      "headers": {
+        "Location": "/api/$1"
+      },
+      "status": 308
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "^/$",
+      "dest": "/index.html",
+      "check": true
+    },
+    {
+      "src": "^/auth$",
+      "dest": "/auth.html",
+      "check": true
+    },
+    {
+      "src": "^/app$",
+      "dest": "/app.html",
+      "check": true
+    },
+    {
+      "src": "^/upgrade$",
+      "dest": "/app.html",
+      "check": true
+    },
+    {
+      "src": "^(?:/(.*))$",
+      "dest": "/$1",
+      "check": true
+    },
+    {
+      "src": "^/api(/.*)?$",
+      "status": 404
+    },
+    {
+      "handle": "error"
+    },
+    {
+      "status": 404,
+      "src": "^(?!/api).*$",
+      "dest": "/404"
+    }
+  ],
+  "overrides": {
+    "app.html": {
+      "path": "app"
+    },
+    "auth.html": {
+      "path": "auth"
+    },
+    "biconomy-loader.html": {
+      "path": "biconomy-loader"
+    },
+    "checkout-ready.html": {
+      "path": "checkout-ready"
+    },
+    "index.html": {
+      "path": "index"
+    },
+    "indicators_clean.html": {
+      "path": "indicators_clean"
+    },
+    "plan-manager.html": {
+      "path": "plan-manager"
+    },
+    "pricing.html": {
+      "path": "pricing"
+    },
+    "referee-email-simulation.html": {
+      "path": "referee-email-simulation"
+    },
+    "referee-evaluation-page.html": {
+      "path": "referee-evaluation-page"
+    },
+    "reference-management-page.html": {
+      "path": "reference-management-page"
+    },
+    "request-reference-v1.html": {
+      "path": "request-reference-v1"
+    },
+    "request-reference.html": {
+      "path": "request-reference"
+    },
+    "reset-plan.html": {
+      "path": "reset-plan"
+    },
+    "temp1.html": {
+      "path": "temp1"
+    },
+    "temp2.html": {
+      "path": "temp2"
+    },
+    "thank-you.html": {
+      "path": "thank-you"
+    }
+  },
+  "crons": []
+}

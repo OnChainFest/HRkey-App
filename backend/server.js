@@ -61,7 +61,7 @@ const BACKEND_PUBLIC_URL =
   process.env.API_BASE_URL ||
   process.env.APP_BACKEND_URL ||
   process.env.APP_URL || // si reusas APP_URL para backend público
-  `http://localhost:${PORT}`;
+  getPublicBaseURL();
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrervcydgdrlcndtjboy.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
