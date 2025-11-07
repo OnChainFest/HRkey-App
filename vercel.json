@@ -1,7 +1,12 @@
 {
   "rewrites": [
     { "source": "/auth", "destination": "/WebDapp/auth.html" },
-    { "source": "/app",  "destination": "/WebDapp/app.html" }
+    { "source": "/app",  "destination": "/WebDapp/app.html"  },
+
+    { "source": "/js/:path*",     "destination": "/WebDapp/js/:path*"     },
+    { "source": "/css/:path*",    "destination": "/WebDapp/css/:path*"    },
+    { "source": "/images/:path*", "destination": "/WebDapp/images/:path*" },
+    { "source": "/fonts/:path*",  "destination": "/WebDapp/fonts/:path*"  }
   ],
   "redirects": [
     { "source": "/auth.html", "destination": "/auth", "permanent": false },
