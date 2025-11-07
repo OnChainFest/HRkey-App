@@ -14,7 +14,9 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [https://hrkey.xyz](https://hrkey.xyz) in your browser to see the live site.
+
+> 💡 For local development, you can still use `http://localhost:3000` if you run `npm run dev`.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
