@@ -13,20 +13,30 @@
   <style>
     :root { color-scheme: dark; }
     body { margin:0; font-family:'Rubik',system-ui,sans-serif; background:#0a0a0a; color:#e5e7eb; }
-    .page { max-width: 840px; margin: 40px auto; padding: 0 16px; }
+    .page { max-width: 980px; margin: 40px auto; padding: 0 16px; }
     .card { background: linear-gradient(135deg, #13161f 0%, #1b1f2a 100%); border-radius: 16px; padding: 28px; box-shadow: 0 10px 30px rgba(0,0,0,.35); border:1px solid rgba(0,196,199,.18); }
     h1 { font-size: 26px; margin: 0 0 8px; color:#fff; }
     p.muted { color:#9ca3af; margin: 2px 0 18px; }
     label { display:block; font-weight:600; color:#00C4C7; margin: 12px 0 6px; }
-    input, textarea, select {
+
+    .kpi { background: rgba(0,196,199,.06); border:1px solid rgba(0,196,199,.18); border-radius:12px; padding:16px; margin:14px 0; }
+    .kpi-title { font-weight:700; color:#00C4C7; }
+    .kpi-desc { color:#9ca3af; font-size:13px; margin-top:4px; }
+
+    .stars { display:flex; gap:8px; margin:10px 0; }
+    .star { cursor:pointer; font-size:26px; color:#374151; transition:transform .1s ease; }
+    .star.active { color:#f59e0b; }
+    .star:hover { transform: scale(1.05); }
+
+    textarea, input, select {
       width:100%; padding:12px; border-radius:10px; border:1px solid rgba(0,196,199,.25);
       background:#0f172a; color:#fff; font-size:14px;
     }
-    textarea { resize: vertical; min-height: 110px; }
-    .stars { display:flex; gap:8px; margin:8px 0 4px; }
-    .star { cursor:pointer; font-size:28px; color:#374151; transition:transform .1s ease; }
-    .star.active { color:#f59e0b; }
-    .star:hover { transform: scale(1.05); }
+    textarea { resize: vertical; min-height: 100px; }
+
+    .row { display:grid; gap:18px; grid-template-columns: 1fr 1fr; }
+    @media (max-width: 820px) { .row { grid-template-columns: 1fr; } }
+
     .actions { margin-top: 18px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
     .btn {
       padding: 12px 20px; border-radius: 12px; font-weight:600; cursor:pointer; border:none;
@@ -53,35 +63,35 @@
       <!-- EVALUATION VIEW -->
       <div id="evalView">
         <h1>Provide your reference</h1>
-        <p class="muted" id="refLine">Please rate and add a brief comment for this request.</p>
+        <p class="muted" id="refLine">Please review the KPIs below and submit your evaluation.</p>
 
         <form id="evalForm" novalidate>
-          <label>Overall rating *</label>
-          <div class="stars" id="stars">
-            <span class="star" data-v="1">★</span>
-            <span class="star" data-v="2">★</span>
-            <span class="star" data-v="3">★</span>
-            <span class="star" data-v="4">★</span>
-            <span class="star" data-v="5">★</span>
+          <div id="kpiContainer"></div>
+
+          <label for="overall">General feedback *</label>
+          <textarea id="overall" placeholder="What stood out about their performance? What would you highlight?"></textarea>
+
+          <div class="row">
+            <div>
+              <label for="relationship">Your relationship</label>
+              <select id="relationship">
+                <option value="">Select</option>
+                <option value="Direct Manager">Direct Manager</option>
+                <option value="Supervisor">Supervisor</option>
+                <option value="Colleague">Colleague</option>
+                <option value="HR Manager">HR Manager</option>
+                <option value="Client">Client</option>
+              </select>
+            </div>
+            <div>
+              <label for="yourName">Your name (optional)</label>
+              <input id="yourName" type="text" placeholder="e.g. Ana Manager">
+            </div>
           </div>
-          <div class="tiny" id="ratingHint">Click a star (1–5)</div>
-          <input type="hidden" id="rating" value="0">
 
-          <label for="comment">Your feedback *</label>
-          <textarea id="comment" placeholder="What stood out about their performance? What would you highlight?"></textarea>
-
-          <label for="relationship">Your relationship</label>
-          <select id="relationship">
-            <option value="">Select</option>
-            <option value="Direct Manager">Direct Manager</option>
-            <option value="Supervisor">Supervisor</option>
-            <option value="Colleague">Colleague</option>
-            <option value="HR Manager">HR Manager</option>
-            <option value="Client">Client</option>
-          </select>
-
-          <label for="yourName">Your name (optional)</label>
-          <input id="yourName" type="text" placeholder="e.g. Ana Manager">
+          <label style="display:flex;gap:8px;align-items:center;margin-top:10px;">
+            <input type="checkbox" id="recommend" style="width:auto;"> I recommend this person
+          </label>
 
           <div class="actions">
             <button type="submit" class="btn btn-primary" id="submitBtn">✅ Confirm & Send</button>
@@ -99,7 +109,7 @@
         <div class="big">Thanks for providing your reference!</div>
         <p class="sub">
           You’ve helped verify someone’s professional profile.  
-          Want to build your own? Unlock HRKey <span class="badge">JUNGLE PASS</span>.
+          Build your own with the <span class="badge">JUNGLE PASS</span>.
         </p>
         <div class="cta">
           <a class="btn btn-primary" href="/auth.html?coupon=JUNGLE">🚀 Create Free Account</a>
@@ -114,7 +124,7 @@
     // ===== Config destino con pase =====
     const LANDING_WITH_COUPON = "/auth.html?coupon=JUNGLE";
 
-    // ===== Utilidad UI =====
+    // ===== utilidades UI =====
     function showAlert(msg, type='success') {
       const box = document.getElementById('alertBox');
       box.innerHTML = `<div class="alert ${type==='success'?'alert-success':'alert-error'}">${msg}</div>`;
@@ -123,29 +133,81 @@
       document.getElementById('statusText').textContent = msg || '';
     }
 
-    // ===== Carga del ref de la URL (si existe) =====
+    // ===== lectura de URL =====
     const url = new URL(location.href);
     const refId = url.searchParams.get('ref') || '';
+    const k1 = url.searchParams.get('k1') || '';
+    const k2 = url.searchParams.get('k2') || '';
+    const k3 = url.searchParams.get('k3') || '';
+    const kd1 = url.searchParams.get('kd1') || '';
+    const kd2 = url.searchParams.get('kd2') || '';
+    const kd3 = url.searchParams.get('kd3') || '';
+
     if (refId) {
       document.getElementById('refLine').textContent =
         "Reference request ID: " + refId + ". Please complete the evaluation below.";
     }
 
-    // ===== Estrellas =====
-    (function setupStars(){
-      const stars = Array.from(document.querySelectorAll('.star'));
-      const ratingInput = document.getElementById('rating');
-      const hint = document.getElementById('ratingHint');
+    // ===== Render dinámico de KPIs (máx 3) =====
+    const KPIS = [
+      { title: k1 || "KPI #1", desc: kd1 || "Impact on main objectives and delivery quality." },
+      { title: k2 || "KPI #2", desc: kd2 || "Collaboration, communication and leadership." },
+      { title: k3 || "",    desc: kd3 || "" }
+    ].filter(k => k.title);
 
-      function paint(v) {
-        stars.forEach(s => s.classList.toggle('active', Number(s.dataset.v) <= v));
-        hint.textContent = v ? `Selected: ${v} / 5` : 'Click a star (1–5)';
+    function kpiItemTemplate(idx, title, desc) {
+      return `
+        <div class="kpi" data-idx="${idx}">
+          <div class="kpi-title">${title}</div>
+          ${desc ? `<div class="kpi-desc">${desc}</div>` : ``}
+          <div class="stars" data-stars="${idx}">
+            <span class="star" data-v="1">★</span>
+            <span class="star" data-v="2">★</span>
+            <span class="star" data-v="3">★</span>
+            <span class="star" data-v="4">★</span>
+            <span class="star" data-v="5">★</span>
+          </div>
+          <input type="hidden" id="kpiRating_${idx}" value="0">
+          <label for="kpiComment_${idx}">Comment (optional)</label>
+          <textarea id="kpiComment_${idx}" placeholder="Add context or examples…"></textarea>
+        </div>
+      `;
+    }
+
+    (function renderKPIs(){
+      const box = document.getElementById('kpiContainer');
+      if (!KPIS.length) {
+        box.innerHTML = `<div class="kpi"><div class="kpi-title">General performance</div>
+          <div class="kpi-desc">Overall contribution, collaboration and results.</div>
+          <div class="stars" data-stars="0">
+            <span class="star" data-v="1">★</span><span class="star" data-v="2">★</span>
+            <span class="star" data-v="3">★</span><span class="star" data-v="4">★</span>
+            <span class="star" data-v="5">★</span></div>
+          <input type="hidden" id="kpiRating_0" value="0">
+          <label for="kpiComment_0">Comment (optional)</label>
+          <textarea id="kpiComment_0" placeholder="Add context or examples…"></textarea>
+        </div>`;
+      } else {
+        box.innerHTML = KPIS.map((k, i) => kpiItemTemplate(i+1, k.title, k.desc)).join('');
       }
-      stars.forEach(st => {
-        st.addEventListener('click', () => {
-          const v = Number(st.dataset.v);
-          ratingInput.value = v;
-          paint(v);
+    })();
+
+    // ===== Estrellas por KPI =====
+    (function bindStars(){
+      function paint(container, v) {
+        container.querySelectorAll('.star').forEach(s => {
+          s.classList.toggle('active', Number(s.dataset.v) <= v);
+        });
+      }
+      document.querySelectorAll('.stars').forEach(stars => {
+        stars.addEventListener('click', e => {
+          const s = e.target.closest('.star'); if (!s) return;
+          const val = Number(s.dataset.v);
+          const idx = stars.getAttribute('data-stars');
+          const hidden = document.getElementById(`kpiRating_${idx}`);
+          if (!hidden) return;
+          hidden.value = String(val);
+          paint(stars, val);
         });
       });
     })();
@@ -153,39 +215,58 @@
     // ===== Submit evaluación =====
     async function submitEvaluation(e) {
       e.preventDefault();
-      const rating = Number(document.getElementById('rating').value || '0');
-      const comment = (document.getElementById('comment').value || '').trim();
 
-      if (!rating || rating < 1) {
-        showAlert('Please select a rating (at least 1 star).', 'error');
+      // Validación mínima: al menos 1 KPI con rating > 0 y feedback general
+      const ratings = [];
+      document.querySelectorAll('input[id^="kpiRating_"]').forEach(i => ratings.push(Number(i.value||'0')));
+      const hasAnyRating = ratings.some(r => r > 0);
+      const overall = (document.getElementById('overall').value || '').trim();
+
+      if (!hasAnyRating) {
+        showAlert('Please rate at least one KPI (1–5).', 'error');
         return;
       }
-      if (!comment) {
-        showAlert('Please add a brief comment.', 'error');
+      if (!overall) {
+        showAlert('Please add a brief general feedback.', 'error');
         return;
       }
 
       const relation = document.getElementById('relationship').value || '';
       const yourName = document.getElementById('yourName').value || '';
+      const recommend = !!document.getElementById('recommend').checked;
 
+      // (Opcional) Enviar a backend si lo deseas.
       try {
         setStatus('Sending...');
         await new Promise(r => setTimeout(r, 400)); // simula latencia
 
-        // Marca para el banner de “referee → signup”
+        // Compilamos respuesta para guardar “señal” del funnel
+        const kpiAnswers = [];
+        document.querySelectorAll('.kpi').forEach(k => {
+          const idx = k.getAttribute('data-idx') || '0';
+          const r = Number(document.getElementById(`kpiRating_${idx}`).value || '0');
+          const c = (document.getElementById(`kpiComment_${idx}`).value || '').trim();
+          const titleEl = k.querySelector('.kpi-title');
+          kpiAnswers.push({ idx, title: titleEl ? titleEl.textContent : `KPI ${idx}`, rating: r, comment: c });
+        });
+
         const info = {
           hasProvidedReference: true,
           when: new Date().toISOString(),
           refId,
-          rating, comment, relation, yourName
+          kpis: kpiAnswers,
+          overall,
+          relation,
+          yourName,
+          recommend
         };
         localStorage.setItem('hrkey_referee_info', JSON.stringify(info));
 
-        // Cambia a la vista de "Thanks"
+        // Thanks view
         document.getElementById('evalView').style.display = 'none';
         document.getElementById('thanksView').style.display = 'block';
 
-        // Auto-redirect opcional
+        // Auto-redirect
         setTimeout(() => location.assign(LANDING_WITH_COUPON), 7000);
       } catch (err) {
         console.error('referee submit error:', err);
@@ -197,8 +278,9 @@
     // ===== Init =====
     document.getElementById('evalForm').addEventListener('submit', submitEvaluation);
     document.getElementById('cancelBtn').addEventListener('click', () => {
-      location.assign(LANDING_WITH_COUPON);
+      location.assign("/index.html");
     });
   </script>
 </body>
 </html>
+
