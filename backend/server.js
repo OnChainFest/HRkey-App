@@ -10,28 +10,58 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
 import Stripe from 'stripe';
-import { makeRefereeLink, APP_URL as UTIL_APP_URL } from './utils/appUrl.js';
+import { makeRefereeLink as makeRefereeLinkUtil, APP_URL as UTIL_APP_URL } from './utils/appUrl.js';
 
 dotenv.config();
 
-// ===== Helpers de URL (defensa extra por si el util no exporta APP_URL) =====
+/* =========================
+   URL helpers (robustos)
+   ========================= */
 const PROD_URL = 'https://hrkey.xyz';
-function getBaseURL() {
-  const envUrl =
-    process.env.FRONTEND_URL ||
-    process.env.PUBLIC_APP_URL ||
-    process.env.APP_URL;
 
-  if (envUrl && envUrl.startsWith('http')) return envUrl;
+function getPublicBaseURL() {
+  const fromEnv =
+    process.env.PUBLIC_BASE_URL ||     // recomendado (unificado)
+    process.env.BASE_URL ||            // alias común
+    process.env.FRONTEND_URL ||        // a veces ya lo tienes así en Vercel
+    process.env.PUBLIC_APP_URL ||      // variantes históricas
+    process.env.APP_URL ||             // si lo usas para front
+    null;
+
+  if (fromEnv && /^https?:\/\//i.test(fromEnv)) return fromEnv;
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return PROD_URL;
 }
 
-// ===== Config =====
+// URL pública del frontend (UNIFICADA para construir links que verán usuarios)
+const APP_URL = UTIL_APP_URL || getPublicBaseURL();
+
+/** Wrapper seguro: si el util existe, úsalo; si no, construye aquí. */
+function makeRefereeLink(token) {
+  try {
+    if (typeof makeRefereeLinkUtil === 'function') {
+      const url = makeRefereeLinkUtil(token);
+      if (url && /^https?:\/\//i.test(url)) return url;
+    }
+  } catch (_) { /* fall back */ }
+
+  const url = new URL('/referee-evaluation-page.html', APP_URL);
+  url.searchParams.set('ref', token);
+  return url.toString();
+}
+
+/* =========================
+   Config
+   ========================= */
 const PORT = process.env.PORT || 3001;
 
-// URL pública del frontend (UNIFICADA)
-const APP_URL = UTIL_APP_URL || getBaseURL();
+// Backend público (si aplica: Render/Fly/etc.) — solo para log/health
+const BACKEND_PUBLIC_URL =
+  process.env.BACKEND_PUBLIC_URL ||
+  process.env.API_BASE_URL ||
+  process.env.APP_BACKEND_URL ||
+  process.env.APP_URL || // si reusas APP_URL para backend público
+  `http://localhost:${PORT}`;
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrervcydgdrlcndtjboy.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -43,8 +73,9 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_reempl
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-// ============ Services ============
-
+/* =========================
+   Services
+   ========================= */
 class WalletCreationService {
   static async createWalletForUser(userId, email) {
     const existing = await this.checkExistingWallet(userId);
@@ -310,8 +341,9 @@ class ReferenceService {
   }
 }
 
-// ============ App & Middleware ============
-
+/* =========================
+   App & Middleware
+   ========================= */
 const app = express();
 
 // Stripe webhook necesita body RAW; para el resto usamos JSON normal
@@ -328,11 +360,14 @@ app.get('/health', (req, res) => {
     service: 'HRKey Backend Service',
     timestamp: new Date().toISOString(),
     email: RESEND_API_KEY ? 'configured' : 'not configured',
-    app_url: APP_URL
+    app_url: APP_URL,
+    backend_url: BACKEND_PUBLIC_URL
   });
 });
 
-// ============ Wallet endpoints ============
+/* =========================
+   Wallet endpoints
+   ========================= */
 app.post('/api/wallet/create', async (req, res) => {
   try {
     const { userId, email } = req.body || {};
@@ -357,7 +392,9 @@ app.get('/api/wallet/:userId', async (req, res) => {
   }
 });
 
-// ============ Reference endpoints ============
+/* =========================
+   Reference endpoints
+   ========================= */
 app.post('/api/reference/request', async (req, res) => {
   try {
     const result = await ReferenceService.createReferenceRequest(req.body);
@@ -388,7 +425,9 @@ app.get('/api/reference/by-token/:token', async (req, res) => {
   }
 });
 
-// ============ Stripe Payments ============
+/* =========================
+   Stripe Payments
+   ========================= */
 app.post('/create-payment-intent', async (req, res) => {
   try {
     const { amount, email, promoCode } = req.body || {};
@@ -435,9 +474,12 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   res.json({ received: true });
 });
 
-// ============ Start ============
+/* =========================
+   Start
+   ========================= */
 app.listen(PORT, () => {
   console.log(`🚀 HRKey Backend running on port ${PORT}`);
-  console.log(`   Health: http://localhost:${PORT}/health`);
-  console.log(`   APP_URL: ${APP_URL}`);
+  console.log(`   Health (backend): ${new URL('/health', BACKEND_PUBLIC_URL).toString()}`);
+  console.log(`   APP_URL (frontend public): ${APP_URL}`);
+  console.log(`   STRIPE MODE: ${STRIPE_SECRET_KEY.startsWith('sk_live_') ? 'LIVE' : 'TEST'}`);
 });
