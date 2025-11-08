@@ -7,6 +7,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "redirects": [
+    { "source": "/:path*", "has": [ { "type": "host", "value": "www.hrkey.xyz" } ], "destination": "https://hrkey.xyz/:path*", "permanent": false },
     { "source": "/auth",      "destination": "/auth.html", "permanent": false },
     { "source": "/Auth.html", "destination": "/auth.html", "permanent": false },
     { "source": "/AUTH.html", "destination": "/auth.html", "permanent": false }
