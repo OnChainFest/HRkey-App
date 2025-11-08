@@ -89,7 +89,7 @@
         <div class="empty-icon">📋</div>
         <h2>No References Yet</h2>
         <p>You haven't received any references yet. Start by requesting references from your colleagues and supervisors.</p>
-        <a href="/WebDapp/request-reference.html" class="btn-primary">+ Request New Reference</a>
+        <a href="request-reference.html" class="btn-primary">+ Request New Reference</a>
       </div>
 
       <!-- References list -->
