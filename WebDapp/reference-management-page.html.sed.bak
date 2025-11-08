@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage References - HRKey</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Rubik', Arial, sans-serif; background: linear-gradient(135deg, #00C4C7 0%, #00d2cc 100%); min-height: 100vh; padding: 40px 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); padding: 40px; border-radius: 20px 20px 0 0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .header-left h1 { color: #00C4C7; font-size: 32px; margin-bottom: 8px; }
+    .header-left p { color: #888; font-size: 14px; }
+    .btn-back { background: transparent; border: 2px solid #00C4C7; color: #00C4C7; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-decoration: none; display: inline-block; }
+    .btn-back:hover { background: #00C4C7; color: #000; }
+    .content { background: white; padding: 40px; border-radius: 0 0 20px 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .empty-state { text-align: center; padding: 80px 20px; }
+    .empty-icon { font-size: 80px; margin-bottom: 20px; opacity: 0.5; }
+    .empty-state h2 { color: #64748b; font-size: 24px; margin-bottom: 12px; }
+    .empty-state p { color: #94a3b8; margin-bottom: 30px; }
+    .btn-primary { background: linear-gradient(135deg, #00C4C7 0%, #00d2cc 100%); color: #000; padding: 14px 32px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 16px; box-shadow: 0 4px 15px rgba(0,196,199,0.4); text-decoration: none; display: inline-block; }
+    .reference-card { background: #f8fafc; border-radius: 15px; padding: 30px; margin-bottom: 25px; border: 2px solid #e2e8f0; }
+    .reference-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
+    .reference-info h3 { color: #1e293b; font-size: 20px; margin-bottom: 8px; }
+    .reference-meta { display: flex; gap: 20px; font-size: 13px; color: #64748b; }
+    .status-badge { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .status-completed { background: rgba(16,185,129,0.1); color: #10b981; }
+    .kpi-section { background: white; border-radius: 12px; padding: 25px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
+    .kpi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .kpi-title { font-size: 18px; font-weight: 600; color: #1e293b; }
+    .kpi-rating { display: flex; align-items: center; gap: 8px; }
+    .rating-stars { color: #fbbf24; font-size: 20px; }
+    .rating-value { font-weight: 600; color: #00C4C7; }
+    .kpi-description { color: #64748b; font-size: 14px; margin-bottom: 15px; }
+    .kpi-comment { background: #fffbeb; padding: 15px; border-radius: 8px; border-left: 4px solid #fbbf24; margin-bottom: 15px; position: relative; }
+    .kpi-comment-label { font-size: 12px; font-weight: 600; color: #92400e; margin-bottom: 8px; }
+    .kpi-comment-text { color: #78350f; font-size: 14px; line-height: 1.6; user-select: text; cursor: text; }
+    .suppressed-text { background: #fee2e2; text-decoration: line-through; color: #991b1b; padding: 2px 4px; border-radius: 3px; }
+    .comment-actions { display: flex; gap: 10px; margin-top: 12px; }
+    .btn-small { padding: 6px 12px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+    .btn-suppress { background: #fef3c7; color: #92400e; }
+    .btn-suppress:hover { background: #fde68a; }
+    .btn-delete { background: #fee2e2; color: #991b1b; }
+    .btn-delete:hover { background: #fecaca; }
+    .btn-add { background: #dbeafe; color: #1e40af; }
+    .btn-add:hover { background: #bfdbfe; }
+    .btn-request { background: #e0e7ff; color: #4338ca; }
+    .btn-request:hover { background: #c7d2fe; }
+    .btn-request.locked { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; position: relative; }
+    .btn-request.locked::after { content: '🔒 PRO'; position: absolute; top: -8px; right: -8px; background: #fbbf24; color: #000; font-size: 9px; padding: 2px 6px; border-radius: 8px; font-weight: 700; }
+    .context-section { margin-top: 20px; padding: 20px; background: #f0fdfa; border-radius: 10px; border-left: 4px solid #00C4C7; }
+    .context-header { font-size: 14px; font-weight: 600; color: #00C4C7; margin-bottom: 10px; }
+    .context-text { color: #1e293b; font-size: 14px; line-height: 1.6; }
+    .add-context-form { margin-top: 15px; display: none; }
+    .add-context-form.active { display: block; }
+    .add-context-form textarea { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-family: 'Rubik', Arial, sans-serif; font-size: 14px; resize: vertical; min-height: 80px; }
+    .add-context-form textarea:focus { outline: none; border-color: #00C4C7; }
+    .form-actions { margin-top: 10px; display: flex; gap: 10px; }
+    .overall-comment { background: #f8fafc; padding: 20px; border-radius: 10px; border-left: 4px solid #00C4C7; margin-top: 25px; }
+    .overall-comment-header { font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 12px; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%; }
+    .modal-header { font-size: 20px; font-weight: 600; color: #1e293b; margin-bottom: 15px; }
+    .modal-text { color: #64748b; margin-bottom: 20px; line-height: 1.6; }
+    .modal-actions { display: flex; gap: 12px; }
+    .btn-cancel { flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-confirm { flex: 1; padding: 12px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .selection-tooltip { position: fixed; background: #1e293b; color: white; padding: 8px 12px; border-radius: 6px; font-size: 12px; z-index: 999; pointer-events: none; display: none; }
+    .notice { background:#ecfeff; border-left:4px solid #06b6d4; color:#0e7490; padding:14px 16px; border-radius:10px; margin-bottom:18px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-left">
+        <h1>Manage My References</h1>
+        <p>View, edit, and manage your professional references</p>
+      </div>
+      <a href="app.html" class="btn-back">← Back to Dashboard</a>
+    </div>
+
+    <div class="content" id="mainContent">
+      <div id="routeNotice" class="notice" style="display:none"></div>
+
+      <!-- Empty state -->
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">📋</div>
+        <h2>No References Yet</h2>
+        <p>You haven't received any references yet. Start by requesting references from your colleagues and supervisors.</p>
+        <a href="/WebDapp/request-reference.html" class="btn-primary">+ Request New Reference</a>
+      </div>
+
+      <!-- References list -->
+      <div id="referencesList"></div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" id="confirmModal">
+    <div class="modal-content">
+      <div class="modal-header" id="modalTitle">Confirm Action</div>
+      <p class="modal-text" id="modalText">Are you sure?</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-confirm" id="confirmBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Selection tooltip -->
+  <div class="selection-tooltip" id="selectionTooltip">Click to suppress this text</div>
+
+  <script>
+    let currentReference = null;
+    let currentKpiIndex = null;
+    let suppressedTexts = {};
+
+    // === NEW: read URL param and hydrate local references with evaluation if needed ===
+    function hydrateFromRefereeInfoById(refId) {
+      if (!refId) return false;
+
+      const infoRaw = localStorage.getItem('hrkey_referee_info');
+      if (!infoRaw) return false;
+
+      let info;
+      try { info = JSON.parse(infoRaw); } catch { return false; }
+      if (!info || info.refId !== refId) return false;
+
+      // Load references
+      const refs = JSON.parse(localStorage.getItem('hrkey_references') || '[]');
+      const idx = refs.findIndex(r => r.id === refId);
+      if (idx === -1) return false;
+
+      // Build evaluation object expected by this page
+      const evaluation = { ratings: {} };
+      if (Array.isArray(info.kpis) && info.kpis.length) {
+        info.kpis.forEach((k, i) => {
+          const key = `kpi${i+1}`;
+          const rating = Number(k.rating || 0);
+          if (rating > 0) evaluation.ratings[key] = rating;
+          if (k.comment) evaluation[`${key}_comment`] = k.comment;
+          // Map title/desc back to the stored kpis if missing
+          if (refs[idx].kpis && refs[idx].kpis[i]) {
+            // keep existing kpi title/desc
+          } else {
+            refs[idx].kpis = refs[idx].kpis || [];
+            refs[idx].kpis[i] = { title: k.title || `KPI ${i+1}`, description: '' };
+          }
+        });
+      }
+
+      evaluation.comments = info.overall || refs[idx]?.evaluation?.comments || '';
+      evaluation.workAgain = info.recommend ? 'yes' : 'maybe';
+
+      refs[idx].evaluation = evaluation;
+      refs[idx].status = 'completed'; // mark completed
+      localStorage.setItem('hrkey_references', JSON.stringify(refs));
+      return true;
+    }
+
+    function getQueryId() {
+      try {
+        const url = new URL(location.href);
+        return url.searchParams.get('id') || '';
+      } catch {
+        return '';
+      }
+    }
+
+    function showRouteNotice(text) {
+      const box = document.getElementById('routeNotice');
+      box.textContent = text;
+      box.style.display = 'block';
+    }
+
+    // Load and display references
+    function loadReferences() {
+      const all = JSON.parse(localStorage.getItem('hrkey_references') || '[]');
+      const queryId = getQueryId();
+
+      // If deep-link by id: show only that ref (even if it's the only one)
+      let toRender = all;
+      if (queryId) {
+        const byId = all.filter(r => r.id === queryId);
+        if (byId.length) {
+          toRender = byId;
+          showRouteNotice(`🔗 Direct link · Reference ID: ${queryId}`);
+        } else {
+          // not found by id — show helpful empty state
+          document.getElementById('emptyState').innerHTML = `
+            <div class="empty-icon">🔎</div>
+            <h2>Reference not found</h2>
+            <p>We couldn't find the reference <code>${queryId}</code> on this device. If you requested it elsewhere, try opening this link on the same browser or log in and sync.</p>
+            <a href="app.html" class="btn-primary">Back to Dashboard</a>
+          `;
+          document.getElementById('emptyState').style.display = 'block';
+          document.getElementById('referencesList').innerHTML = '';
+          return;
+        }
+      }
+
+      const completedRefs = toRender.filter(ref => ref.status === 'completed' && ref.evaluation);
+      if (completedRefs.length === 0) {
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('referencesList').innerHTML = '';
+        return;
+      }
+
+      document.getElementById('emptyState').style.display = 'none';
+      renderReferences(completedRefs);
+    }
+
+    function renderReferences(references) {
+      const container = document.getElementById('referencesList');
+      container.innerHTML = '';
+      references.forEach(ref => container.appendChild(createReferenceCard(ref)));
+    }
+
+    function createReferenceCard(ref) {
+      const card = document.createElement('div');
+      card.className = 'reference-card';
+
+      if (!suppressedTexts[ref.id]) {
+        suppressedTexts[ref.id] = { kpis: {}, overall: { suppressedRanges: [], totallySuppressed: false } };
+      }
+
+      const evaluation = ref.evaluation || {};
+      const ratings = evaluation.ratings || {};
+
+      let kpisHTML = '';
+      if (ref.kpis && ref.kpis.length > 0) {
+        ref.kpis.forEach((kpi, index) => {
+          const kpiId = `kpi${index + 1}`;
+          const rating = ratings[kpiId] || 0;
+          const stars = '⭐'.repeat(rating);
+          const kpiCommentKey = `${kpiId}_comment`;
+          const kpiComment = evaluation[kpiCommentKey] || '';
+
+          kpisHTML += `
+            <div class="kpi-section">
+              <div class="kpi-header">
+                <div class="kpi-title">${kpi.title}</div>
+                <div class="kpi-rating">
+                  <span class="rating-stars">${stars}</span>
+                  <span class="rating-value">${rating}/5</span>
+                </div>
+              </div>
+              <div class="kpi-description">${kpi.description || ''}</div>
+
+              ${kpiComment ? `
+                <div class="kpi-comment">
+                  <div class="kpi-comment-label">💬 Referee's Comment:</div>
+                  <div class="kpi-comment-text" id="${ref.id}_${kpiId}_comment" data-ref-id="${ref.id}" data-kpi="${kpiId}">
+                    ${kpiComment}
+                  </div>
+                  <div class="comment-actions">
+                    <button class="btn-small btn-suppress" onclick="enableSuppression('${ref.id}', '${kpiId}')">✂️ Suppress Text</button>
+                    <button class="btn-small btn-delete" onclick="deleteComment('${ref.id}', '${kpiId}', 'kpi')">🗑️ Delete Comment</button>
+                    <button class="btn-small btn-add" onclick="toggleAddContext('${ref.id}', '${kpiId}')">➕ Add Context</button>
+                    <button class="btn-small btn-request request-context-btn" data-ref-id="${ref.id}" data-kpi-id="${kpiId}">📨 Request More Context</button>
+                  </div>
+                </div>
+
+                <div class="add-context-form" id="${ref.id}_${kpiId}_contextForm">
+                  <textarea id="${ref.id}_${kpiId}_contextText" placeholder="Add your own context or clarification..."></textarea>
+                  <div class="form-actions">
+                    <button class="btn-small btn-add" onclick="saveContext('${ref.id}', '${kpiId}')">Save Context</button>
+                    <button class="btn-small btn-cancel" onclick="toggleAddContext('${ref.id}', '${kpiId}')">Cancel</button>
+                  </div>
+                </div>
+
+                <div id="${ref.id}_${kpiId}_contextDisplay"></div>
+              ` : `<p style="color: #94a3b8; font-style: italic;">No comment provided for this KPI</p>`}
+            </div>
+          `;
+        });
+      }
+
+      card.innerHTML = `
+        <div class="reference-header">
+          <div class="reference-info">
+            <h3>${ref.refereeName} - ${ref.relationship}</h3>
+            <div class="reference-meta">
+              <span>📍 ${ref.company}</span>
+              <span>💼 ${ref.position}</span>
+              <span>📅 ${new Date(ref.dateRequested).toLocaleDateString()}</span>
+            </div>
+          </div>
+          <span class="status-badge status-completed">✅ Completed</span>
+        </div>
+
+        ${kpisHTML}
+
+        <div class="overall-comment">
+          <div class="overall-comment-header">📝 Overall Comments</div>
+          <div class="kpi-comment-text" id="${ref.id}_overall_comment" data-ref-id="${ref.id}" data-kpi="overall">
+            ${evaluation.comments || 'No overall comments provided'}
+          </div>
+          <div class="comment-actions">
+            <button class="btn-small btn-suppress" onclick="enableSuppression('${ref.id}', 'overall')">✂️ Suppress Text</button>
+            <button class="btn-small btn-delete" onclick="deleteComment('${ref.id}', 'overall', 'overall')">🗑️ Delete Comment</button>
+            <button class="btn-small btn-add" onclick="toggleAddContext('${ref.id}', 'overall')">➕ Add Context</button>
+            <button class="btn-small btn-request request-context-btn" data-ref-id="${ref.id}" data-kpi-id="overall">📨 Request More Context</button>
+          </div>
+
+          <div class="add-context-form" id="${ref.id}_overall_contextForm">
+            <textarea id="${ref.id}_overall_contextText" placeholder="Add your own context or clarification..."></textarea>
+            <div class="form-actions">
+              <button class="btn-small btn-add" onclick="saveContext('${ref.id}', 'overall')">Save Context</button>
+              <button class="btn-small btn-cancel" onclick="toggleAddContext('${ref.id}', 'overall')">Cancel</button>
+            </div>
+          </div>
+
+          <div id="${ref.id}_overall_contextDisplay"></div>
+        </div>
+
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 13px;">
+          <strong>Would work again:</strong>
+          ${evaluation.workAgain === 'yes' ? '✅ Yes, definitely' : evaluation.workAgain === 'maybe' ? '⚠️ Maybe' : '❌ No'}
+        </div>
+      `;
+      return card;
+    }
+
+    // Text suppression functionality
+    function enableSuppression(refId, kpiId) {
+      const element = document.getElementById(`${refId}_${kpiId}_comment`);
+      if (!element) return;
+      element.style.userSelect = 'text';
+      element.style.cursor = 'text';
+
+      const newElement = element.cloneNode(true);
+      element.parentNode.replaceChild(newElement, element);
+
+      newElement.addEventListener('mouseup', function() {
+        handleTextSelection(refId, kpiId, newElement);
+      });
+
+      alert('📝 Text suppression enabled. Select any text you want to suppress and confirm.');
+    }
+
+    function handleTextSelection(refId, kpiId, element) {
+      const selection = window.getSelection();
+      const selectedText = selection.toString().trim();
+
+      if (selectedText.length > 0) {
+        const confirmed = confirm(`Suppress this text?\n\n"${selectedText}"`);
+        if (confirmed) {
+          const range = selection.getRangeAt(0);
+          const span = document.createElement('span');
+          span.className = 'suppressed-text';
+          span.textContent = selectedText;
+
+          try {
+            range.deleteContents();
+            range.insertNode(span);
+
+            if (!suppressedTexts[refId].kpis[kpiId]) {
+              suppressedTexts[refId].kpis[kpiId] = [];
+            }
+            suppressedTexts[refId].kpis[kpiId].push(selectedText);
+            saveSuppressions();
+          } catch (error) {
+            console.error('Error suppressing text:', error);
+          }
+        }
+        selection.removeAllRanges();
+      }
+    }
+
+    function deleteComment(refId, kpiId, type) {
+      currentReference = refId;
+      currentKpiIndex = kpiId;
+
+      document.getElementById('modalTitle').textContent = 'Delete Comment?';
+      document.getElementById('modalText').textContent = 'This will permanently remove this comment. You can request more context from other referees later.';
+      document.getElementById('confirmModal').classList.add('active');
+
+      document.getElementById('confirmBtn').onclick = () => {
+        const element = document.getElementById(`${refId}_${kpiId}_comment`);
+        if (element) element.innerHTML = '<em style="color: #94a3b8;">[Comment deleted by user]</em>';
+
+        if (!suppressedTexts[refId]) suppressedTexts[refId] = { kpis: {}, overall: {} };
+        if (type === 'kpi') {
+          if (!suppressedTexts[refId].kpis[kpiId]) suppressedTexts[refId].kpis[kpiId] = {};
+          suppressedTexts[refId].kpis[kpiId].totallyDeleted = true;
+        } else {
+          suppressedTexts[refId].overall = suppressedTexts[refId].overall || {};
+          suppressedTexts[refId].overall.totallyDeleted = true;
+        }
+
+        saveSuppressions();
+        closeModal();
+      };
+    }
+
+    function toggleAddContext(refId, kpiId) {
+      const form = document.getElementById(`${refId}_${kpiId}_contextForm`);
+      if (form) form.classList.toggle('active');
+    }
+
+    function saveContext(refId, kpiId) {
+      const textarea = document.getElementById(`${refId}_${kpiId}_contextText`);
+      const context = textarea ? textarea.value.trim() : '';
+      if (!context) { alert('Please enter some context'); return; }
+
+      const contextDisplay = document.getElementById(`${refId}_${kpiId}_contextDisplay`);
+      if (contextDisplay) {
+        contextDisplay.innerHTML = `
+          <div class="context-section">
+            <div class="context-header">📌 Your Added Context:</div>
+            <div class="context-text">${context}</div>
+          </div>
+        `;
+      }
+
+      if (!suppressedTexts[refId].kpis[kpiId]) suppressedTexts[refId].kpis[kpiId] = {};
+      suppressedTexts[refId].kpis[kpiId].addedContext = context;
+      saveSuppressions();
+
+      if (textarea) textarea.value = '';
+      toggleAddContext(refId, kpiId);
+    }
+
+    function requestMoreContext(refId, kpiId) {
+      const modal = document.getElementById('confirmModal');
+      document.getElementById('modalTitle').textContent = '📨 Request Additional Context';
+      document.getElementById('modalText').innerHTML = `
+        We'll send an email to the referee asking for more detailed feedback on this KPI.<br><br>
+        <strong>What happens next?</strong><br>
+        • Referee receives email notification<br>
+        • They can provide additional context<br>
+        • You'll be notified when they respond<br><br>
+        Do you want to proceed?
+      `;
+
+      const confirmBtn = document.getElementById('confirmBtn');
+      confirmBtn.textContent = 'Send Request';
+      confirmBtn.style.background = '#4338ca';
+      confirmBtn.style.color = 'white';
+      confirmBtn.onclick = () => {
+        // TODO: Implement actual email sending via API
+        alert('✅ Request sent! The referee will be notified via email.');
+        if (!suppressedTexts[refId]) suppressedTexts[refId] = { kpis: {}, overall: {} };
+        if (kpiId === 'overall') {
+          suppressedTexts[refId].overall.contextRequested = true;
+          suppressedTexts[refId].overall.contextRequestDate = new Date().toISOString();
+        } else {
+          if (!suppressedTexts[refId].kpis[kpiId]) suppressedTexts[refId].kpis[kpiId] = {};
+          suppressedTexts[refId].kpis[kpiId].contextRequested = true;
+          suppressedTexts[refId].kpis[kpiId].contextRequestDate = new Date().toISOString();
+        }
+        saveSuppressions();
+        closeModal();
+      };
+
+      modal.classList.add('active');
+    }
+
+    function saveSuppressions() {
+      localStorage.setItem('hrkey_suppressions', JSON.stringify(suppressedTexts));
+    }
+
+    function loadSuppressions() {
+      const saved = localStorage.getItem('hrkey_suppressions');
+      if (saved) { try { suppressedTexts = JSON.parse(saved); } catch {} }
+    }
+
+    function closeModal() {
+      document.getElementById('confirmModal').classList.remove('active');
+    }
+
+    // === Init ===
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSuppressions();
+
+      const id = getQueryId();
+      // Intenta hidratar desde hrkey_referee_info (si vinieron de email y aún no estaba en refs)
+      const hydrated = hydrateFromRefereeInfoById(id);
+
+      if (id && hydrated) {
+        // Mensaje útil arriba
+        showRouteNotice('✅ New reference imported from evaluator — data saved locally.');
+      }
+
+      loadReferences();
+      checkPlanAndSetupButtons();
+    });
+
+    function checkPlanAndSetupButtons() {
+      const plan = JSON.parse(localStorage.getItem('hrkey_user_plan') || '{}');
+      const isPro = plan.plan === 'pro';
+
+      const requestButtons = document.querySelectorAll('.request-context-btn');
+      requestButtons.forEach(button => {
+        if (!isPro) {
+          button.classList.add('locked');
+          button.onclick = () => { showUpgradeModal(); };
+        } else {
+          button.onclick = () => {
+            const refId = button.getAttribute('data-ref-id');
+            const kpiId = button.getAttribute('data-kpi-id');
+            requestMoreContext(refId, kpiId);
+          };
+        }
+      });
+    }
+
+    function showUpgradeModal() {
+      const modal = document.getElementById('confirmModal');
+      document.getElementById('modalTitle').textContent = '🔒 PRO Feature';
+      document.getElementById('modalText').innerHTML = `
+        <strong>Request More Context</strong> is a PRO feature.<br><br>
+        Upgrade to PRO to:<br>
+        • Request additional context from referees<br>
+        • Get unlimited references<br>
+        • Export to PDF<br>
+        • Store references on blockchain
+      `;
+
+      const confirmBtn = document.getElementById('confirmBtn');
+      confirmBtn.textContent = '⬆️ Upgrade to PRO';
+      confirmBtn.style.background = 'linear-gradient(135deg, #00C4C7 0%, #00d2cc 100%)';
+      confirmBtn.style.color = '#000';
+      confirmBtn.onclick = () => { window.location.href = 'pricing.html'; closeModal(); };
+
+      modal.classList.add('active');
+    }
+  </script>
+  <script src="/WebDapp/js/compat/qr_compat.js"></script>
+</body>
+</html>

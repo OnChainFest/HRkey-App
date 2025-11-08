@@ -1,10 +1,10 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/dashboard",              "destination": "/WebDapp/index.html" },
-    { "source": "/request-reference",      "destination": "/WebDapp/request-reference.html" },
-    { "source": "/reference-management",   "destination": "/WebDapp/reference-management-page.html" },
-    { "source": "/referee-evaluation",     "destination": "/WebDapp/referee-evaluation-page.html" },
-    { "source": "/thanks",                 "destination": "/WebDapp/thanks.html" }
+    { "source": "/dashboard",            "destination": "/WebDapp/index.html" },
+    { "source": "/request-reference",    "destination": "/WebDapp/request-reference.html" },
+    { "source": "/reference-management", "destination": "/WebDapp/reference-management-page.html" },
+    { "source": "/referee-evaluation",   "destination": "/WebDapp/referee-evaluation-page.html" },
+    { "source": "/thanks",               "destination": "/WebDapp/thanks.html" }
   ]
 }
