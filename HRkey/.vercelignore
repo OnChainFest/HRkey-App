@@ -1,0 +1,7 @@
+# Excluir cualquier middleware o funciones
+middleware
+middleware.*
+**/middleware.*
+api/
+api/**
+functions/
