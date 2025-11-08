@@ -10,3 +10,7 @@ Thumbs.db
 Desktop.ini
 .vscode/
 .idea/
+
+# ignore vercel build output
+.vercel
+**/.vercel
