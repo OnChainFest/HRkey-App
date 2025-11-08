@@ -241,7 +241,7 @@
     } else {
       // Si ya hay sesión, ir directo al dashboard
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) window.location.replace("/app");
+      if (session) window.location.replace("/app.html");
     }
 
     // ============== FORM HANDLERS =================
