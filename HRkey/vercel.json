@@ -4,15 +4,9 @@
   "installCommand": "true",
   "buildCommand": "true",
   "outputDirectory": "public",
-  "cleanUrls": false,
+  "cleanUrls": true,
   "trailingSlash": false,
-  "redirects": [
-    { "source": "/auth",       "destination": "/WebDapp/auth.html",  "permanent": false },
-    { "source": "/auth.html",  "destination": "/WebDapp/auth.html",  "permanent": false },
-    { "source": "/Auth.html",  "destination": "/WebDapp/auth.html",  "permanent": false },
-    { "source": "/AUTH.html",  "destination": "/WebDapp/auth.html",  "permanent": false },
-
-    { "source": "/app.html",   "destination": "/WebDapp/app.html",   "permanent": false },
-    { "source": "/index.html", "destination": "/WebDapp/index.html", "permanent": false }
+  "routes": [
+    { "src": "^/auth$", "dest": "/WebDapp/auth.html" }
   ]
 }

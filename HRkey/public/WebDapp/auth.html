@@ -115,6 +115,7 @@
   /* Evita clics en el fondo cuando el modal está abierto */
   body.hrk-gated #page, body.hrk-gated main, body.hrk-gated .container{filter:blur(0.5px);pointer-events:none;user-select:none;}
 </style>
+<style>body.modal-open{overflow:hidden}.modal-dialog{max-width:420px;margin:1.75rem auto}.modal-content{border-radius:16px}.modal-backdrop{opacity:.6!important}</style>
 </head>
 <body>
   <div class="container">
@@ -510,6 +511,22 @@
       const insideModal=t.closest("#earlyAccessModal,#thankYouModal");
       if(!insideModal){ ev.preventDefault(); ev.stopPropagation(); openEarly(); }
     }, true);
+  });
+})();</script>
+<script>(function(){
+  /* bloquear redirecciones del bundle viejo */
+  const stay=/\/auth(\?|$)/i;
+  const _assign=window.location.assign.bind(window.location);
+  const _replace=window.location.replace.bind(window.location);
+  window.location.assign=(u)=>{ try{ if(!u||String(u).match(stay)) return _assign(u); }catch(e){} return; };
+  window.location.replace=(u)=>{ try{ if(!u||String(u).match(stay)) return _replace(u); }catch(e){} return; };
+  const _open=window.open; window.open=(...a)=>{ try{ if(a[0] && !String(a[0]).match(stay)) return null; }catch(e){} return _open? _open(...a):null; };
+  /* asegurar backdrop y estilo del modal */
+  document.addEventListener("DOMContentLoaded",function(){
+    document.body.classList.add("modal-open");
+    if(!document.querySelector(".modal-backdrop")){const b=document.createElement("div");b.className="modal-backdrop fade show";document.body.appendChild(b);}
+    const m=document.getElementById("earlyAccessModal");
+    try{ if(window.bootstrap && window.bootstrap.Modal){ new bootstrap.Modal(m,{backdrop:"static",keyboard:false}).show(); } else { m.classList.add("show"); m.style.display="block"; } }catch(e){}
   });
 })();</script>
 </body>
