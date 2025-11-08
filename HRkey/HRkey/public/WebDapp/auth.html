@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HRKey - Sign Up / Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- 🔧 Variables de entorno (rellenar con tus valores reales) -->
+  <script>
+    // ⬇️ RELLENA con tu proyecto de Supabase (anon key es pública, NO uses service role)
+    window.__SUPABASE_URL__ = "https://<TU-PROYECTO>.supabase.co";
+    window.__SUPABASE_ANON_KEY__ = "<TU-ANON-KEY>";
+  </script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Rubik', Arial, sans-serif;
+      background: linear-gradient(135deg, #000000 0%, #00C4C7 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 500px;
+      width: 100%;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+      padding: 40px;
+      text-align: center;
+    }
+    .logo { font-size: 48px; margin-bottom: 15px; }
+    .header h1 { color: #00C4C7; font-size: 28px; margin-bottom: 10px; }
+    .header p { color: #888; font-size: 14px; }
+    .content { padding: 40px; }
+
+    /* Referee banner */
+    .referee-banner {
+      background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+      border-left: 4px solid #00C4C7;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      display: none;
+    }
+    .referee-banner.active { display: block; animation: slideIn 0.5s ease; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .referee-banner h3 { color: #00C4C7; font-size: 18px; margin-bottom: 10px; }
+    .referee-banner p { color: #1e293b; font-size: 14px; line-height: 1.6; }
+
+    /* Promo banner */
+    .promo-banner {
+      background: #f1f5f9;
+      border-left: 4px solid #00C4C7;
+      padding: 16px 18px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .promo-banner.active { display: block; animation: slideIn .5s ease; }
+    .promo-badge { display:inline-block; font-weight:700; color:#0f172a; background:#a7f3d0; border-radius:8px; padding:4px 8px; margin-right:8px; }
+    .promo-banner p { color:#1e293b; font-size:14px; line-height:1.6; }
+    .promo-tiny { font-size:12px; color:#64748b; margin-top:6px; }
+
+    .form-group { margin-bottom: 20px; }
+    label { display:block; font-weight:600; color:#334155; margin-bottom:8px; font-size:14px; }
+    input {
+      width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px;
+      font-family: 'Rubik', Arial, sans-serif; transition: border-color .3s;
+    }
+    input:focus { outline:none; border-color:#00C4C7; }
+
+    .btn-primary {
+      width:100%; padding:16px; background:linear-gradient(135deg,#00C4C7 0%,#00d2cc 100%); color:#000;
+      border:none; border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; transition:.3s;
+      box-shadow:0 4px 15px rgba(0,196,199,.4);
+    }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(0,196,199,.6); }
+
+    .btn-wallet {
+      width: 100%; padding: 16px; background: transparent; color:#00C4C7; border:2px solid #00C4C7;
+      border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; transition:.3s; margin-top:15px;
+    }
+    .btn-wallet:hover { background:#00C4C7; color:#000; }
+
+    .divider { text-align:center; margin:25px 0; color:#94a3b8; font-size:14px; position:relative; }
+    .divider::before, .divider::after {
+      content:''; position:absolute; top:50%; width:40%; height:1px; background:#e2e8f0;
+    }
+    .divider::before { left:0; } .divider::after { right:0; }
+
+    .benefits { margin-top:30px; padding-top:25px; border-top:1px solid #e2e8f0; }
+    .benefit-item { display:flex; align-items:center; margin-bottom:15px; font-size:14px; color:#64748b; }
+    .benefit-icon { font-size:20px; margin-right:12px; }
+    .footer-note { text-align:center; margin-top:25px; font-size:12px; color:#94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">🔐</div>
+      <h1>Welcome to HRKey</h1>
+      <p id="headerSubtitle">Build your verified professional profile</p>
+    </div>
+
+    <div class="content">
+      <!-- Referee banner -->
+      <div class="referee-banner" id="refereeBanner">
+        <h3>🎉 Thanks for providing a reference!</h3>
+        <p>You've seen how HRKey works. Now create your own profile and start building your decentralized professional reputation with blockchain-verified references.</p>
+      </div>
+
+      <!-- Coupon banner -->
+      <div class="promo-banner" id="promoBanner">
+        <p>
+          <span class="promo-badge" id="promoCodeBadge">BLKJUNGLE</span>
+          <strong>Promo applied:</strong> PRO free for 1 year — <em>card required for renewal</em>.
+        </p>
+        <p class="promo-tiny">Your discount will be applied automatically at checkout.</p>
+      </div>
+
+      <form id="authForm" novalidate>
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" placeholder="Enter your full name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" placeholder="your.email@company.com" required>
+        </div>
+
+        <button type="submit" class="btn-primary" id="submitBtn">🚀 Create Free Account</button>
+      </form>
+
+      <div class="divider">OR</div>
+
+      <button class="btn-wallet" id="walletBtn">🦊 Connect with MetaMask</button>
+
+      <div class="benefits">
+        <div class="benefit-item"><span class="benefit-icon">✅</span><span>1 free blockchain-verified reference</span></div>
+        <div class="benefit-item"><span class="benefit-icon">⚡</span><span>Setup in less than 2 minutes</span></div>
+        <div class="benefit-item"><span class="benefit-icon">🔐</span><span>Secure & decentralized profile</span></div>
+        <div class="benefit-item"><span class="benefit-icon">🌐</span><span>Share with employers worldwide</span></div>
+      </div>
+
+      <div class="footer-note">
+        <p>By signing up, you agree to our Terms of Service</p>
+        <p style="margin-top: 5px;">Already have an account? <a href="app.html" style="color: #00C4C7; text-decoration: none;">Sign in</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tu módulo actual -->
+  <script type="module" src="js/wallet-auth.js"></script>
+
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    // ================== CONFIG ==================
+    const SUPABASE_URL = window.__SUPABASE_URL__;
+    const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const DEFAULT_COUPON = "BLKJUNGLE";
+    const EVENT_START_UTC = Date.parse("2025-11-08T00:00:00Z");
+    const EVENT_END_UTC   = Date.parse("2025-11-12T05:59:00Z");
+
+    const url = new URL(window.location.href);
+
+    // ============== HELPERS =====================
+    const isWithinEventWindow = () => {
+      const now = Date.now();
+      return now >= EVENT_START_UTC && now <= EVENT_END_UTC;
+    };
+
+    const goToApp = (extraQuery = "") => {
+      const base = "/app.html";
+      const qs = extraQuery ? (extraQuery.startsWith("?") ? extraQuery : `?${extraQuery}`) : "";
+      window.location.replace(base + qs);
+    };
+
+    // ============== COUPON BANNER ===============
+    let coupon = (url.searchParams.get("coupon") || "").trim();
+    if (!coupon && isWithinEventWindow()) {
+      coupon = DEFAULT_COUPON;
+      url.searchParams.set("coupon", coupon);
+      history.replaceState({}, "", url.pathname + "?" + url.searchParams.toString());
+    }
+    const promoBanner = document.getElementById("promoBanner");
+    const promoCodeBadge = document.getElementById("promoCodeBadge");
+    if (coupon) {
+      promoCodeBadge.textContent = coupon.toUpperCase();
+      promoBanner.classList.add("active");
+      localStorage.setItem("hrkey_coupon", coupon.toUpperCase());
+    }
+
+    // ============== REFEREE BANNER ==============
+    const refereeInfo = localStorage.getItem("hrkey_referee_info");
+    if (refereeInfo) {
+      try {
+        const data = JSON.parse(refereeInfo);
+        if (data.hasProvidedReference) {
+          document.getElementById("refereeBanner").classList.add("active");
+          document.getElementById("headerSubtitle").textContent = "Now build your own verified profile!";
+        }
+      } catch {}
+    }
+
+    // ============== SUPABASE CALLBACK ============
+    const code = url.searchParams.get("code");
+    const errorDesc = url.searchParams.get("error_description");
+    if (errorDesc) console.error("Auth error:", errorDesc);
+
+    if (code) {
+      // Intercambia el code por sesión y manda al dashboard
+      try {
+        const { error } = await supabase.auth.exchangeCodeForSession({ code });
+        if (error) {
+          console.error("exchangeCodeForSession error:", error);
+        } else {
+          const next = url.searchParams.get("next") || "/app";
+          history.replaceState({}, document.title, "/auth"); // limpia ?code
+          window.location.replace(next);
+        }
+      } catch (e) {
+        console.error("Exchange failed:", e);
+      }
+    } else {
+      // Si ya hay sesión, ir directo al dashboard
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) window.location.replace("/app");
+    }
+
+    // ============== FORM HANDLERS =================
+    const form = document.getElementById("authForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const walletBtn = document.getElementById("walletBtn");
+
+    if (form && submitBtn) {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        const old = submitBtn.textContent;
+        submitBtn.textContent = "⏳ Creating account...";
+
+        // Simulación de alta local (demo)
+        const name = document.getElementById("name")?.value?.trim() || "";
+        const email = document.getElementById("email")?.value?.trim() || "";
+        const userData = {
+          name,
+          email,
+          wallet: "0x" + Math.random().toString(16).slice(2).padEnd(40, "0"),
+          authenticated: true,
+          loginDate: new Date().toISOString(),
+          source: refereeInfo ? "referee_conversion" : "direct_signup"
+        };
+        localStorage.setItem("hrkey_user_data", JSON.stringify(userData));
+        localStorage.setItem("hrkey_user_plan", JSON.stringify({
+          plan: "free",
+          features: { maxReferences: 1, canUseBlockchain: false, canExportPDF: false },
+          usage: { referencesUsed: 0 }
+        }));
+
+        // Ir al dashboard (manteniendo cupón si existe)
+        goToApp(coupon ? `coupon=${encodeURIComponent(coupon)}` : "");
+        submitBtn.textContent = old;
+      });
+    }
+
+    if (walletBtn) {
+      walletBtn.addEventListener("click", async () => {
+        walletBtn.disabled = true;
+        walletBtn.textContent = "⏳ Connecting...";
+        // Simulación (tu wallet-auth real puede sobreescribir esto)
+        setTimeout(() => {
+          const userData = {
+            name: "Web3 User",
+            email: "user@wallet.xyz",
+            wallet: "0x" + Math.random().toString(16).slice(2).padEnd(40, "0"),
+            authenticated: true,
+            loginDate: new Date().toISOString(),
+            source: refereeInfo ? "referee_conversion_wallet" : "direct_signup_wallet"
+          };
+          localStorage.setItem("hrkey_user_data", JSON.stringify(userData));
+          localStorage.setItem("hrkey_user_plan", JSON.stringify({
+            plan: "free",
+            features: { maxReferences: 1, canUseBlockchain: false, canExportPDF: false },
+            usage: { referencesUsed: 0 }
+          }));
+          goToApp(coupon ? `coupon=${encodeURIComponent(coupon)}` : "");
+        }, 800);
+      });
+    }
+  </script>
+  <script>
+/* ---------- HRKey: hard redirect to app ---------- */
+(function () {
+  function forceGoToApp() {
+    try {
+      // marca demo si no existe (tu UI lo usa)
+      const u = JSON.parse(localStorage.getItem('hrkey_user_data') || 'null') || {
+        name: document.getElementById('name')?.value?.trim() || 'New User',
+        email: document.getElementById('email')?.value?.trim() || 'user@example.com',
+        authenticated: true,
+        loginDate: new Date().toISOString()
+      };
+      if (!u.authenticated) u.authenticated = true;
+      localStorage.setItem('hrkey_user_data', JSON.stringify(u));
+
+      // preserva cupón si viene
+      const p = new URLSearchParams(location.search);
+      const coupon = p.get('coupon');
+      const qs = coupon ? `?coupon=${encodeURIComponent(coupon)}` : '';
+      // navegación “fuerte” que no puede ser bloqueada por otros listeners
+      location.assign('/app.html' + qs);
+    } catch (e) {
+      // fallback
+      location.assign('/app.html');
+    }
+  }
+
+  function attach() {
+    const form = document.getElementById('authForm');
+    const btn  = document.getElementById('submitBtn');
+    if (!form || !btn) return;
+
+    // Evita submit nativo y listeners previos (captura + stopImmediatePropagation)
+    form.setAttribute('novalidate', 'true');
+    form.setAttribute('action', '#');
+    form.setAttribute('method', 'get');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      // Algunos navegadores necesitan esto para cortar otros handlers
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+      forceGoToApp();
+      return false;
+    }, true); // <-- capture = true
+
+    // Asegura que el botón no dispare submit nativo
+    btn.setAttribute('type', 'button');
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+      forceGoToApp();
+      return false;
+    }, true);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attach);
+  } else {
+    attach();
+  }
+})();
+</script>
+
+  <script type="module" src="js/coupon-boot.js"></script>
+  <script>console.log('[HRKey]', 'auth-build-20251107_140116');</script>
+
+
+
+
+
+<!-- ===== EARLY ACCESS MODALS (BLOCKCHAINJUNGLE) ===== -->
+<div class="modal fade" id="earlyAccessModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;">
+      <div class="modal-header border-0">
+        <h5 class="modal-title">🎟️ Acceso anticipado a HRKey</h5>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Dejanos tus datos y te avisamos del lanzamiento.</p>
+        <form id="earlyAccessForm" novalidate>
+          <input type="text" id="userName" class="form-control mb-2" placeholder="Tu nombre" required>
+          <input type="email" id="userEmail" class="form-control mb-3" placeholder="Tu correo" required>
+          <button type="submit" class="btn w-100" style="background:#00C4C7;border:none;">Registrar interés</button>
+        </form>
+        <small class="text-muted d-block mt-2">Promo: <span id="promoTag">—</span></small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="thankYouModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center" style="border-radius:16px;">
+      <div class="modal-body p-4">
+        <h4>✨ ¡Gracias por registrarte!</h4>
+        <p class="mt-3">
+          Muy pronto te enviaremos un correo anunciando el lanzamiento de <b>HRKey</b>,
+          la herramienta que convierte tu trayectoria profesional en un <b>activo digital</b>
+          verificable para abrir nuevas oportunidades laborales.
+        </p>
+        <div class="text-start mt-3" style="font-size:0.95rem;">
+          <p class="mb-1"><b>Tu pase incluye 1 año gratis</b> de HRKey con:</p>
+          <ul class="mb-0">
+            <li>Referencias verificadas y fáciles de compartir.</li>
+            <li>Perfil con métricas y logros comprobables.</li>
+            <li>Link/QR único para aplicar en segundos.</li>
+            <li>Panel para gestionar invitaciones y validaciones.</li>
+          </ul>
+        </div>
+        <button class="btn btn-success mt-4 w-100" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function(){
+  function normalizePromo(p){if(!p)return"BLOCKCHAINJUNGLE";p=String(p).trim();if(p.toUpperCase()==="JUNGLE")return"BLOCKCHAINJUNGLE";return p;}
+  const url=new URL(window.location.href);
+  let promo=normalizePromo(url.searchParams.get("promo"));
+  if(!url.searchParams.get("promo")||!promo){url.searchParams.set("promo","BLOCKCHAINJUNGLE");window.history.replaceState({}, "", url.toString());promo="BLOCKCHAINJUNGLE";}
+  document.addEventListener('DOMContentLoaded',function(){
+    const promoEl=document.getElementById('promoTag');if(promoEl)promoEl.textContent=promo;
+    const early=new bootstrap.Modal(document.getElementById('earlyAccessModal'));early.show();
+    document.getElementById('earlyAccessForm').addEventListener('submit',function(e){
+      e.preventDefault();
+      const name=(document.getElementById('userName').value||"").trim();
+      const email=(document.getElementById('userEmail').value||"").trim();
+      const okEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      if(!name||!okEmail){alert("Ingresá un nombre y un correo válido.");return;}
+      try{const KEY="hrkey_early_access_leads";const list=JSON.parse(localStorage.getItem(KEY)||"[]");list.push({name,email,promo,ts:new Date().toISOString()});localStorage.setItem(KEY,JSON.stringify(list));}catch(_){}
+      early.hide();new bootstrap.Modal(document.getElementById('thankYouModal')).show();
+    });
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  function norm(p){ if(!p) return "BLOCKCHAINJUNGLE"; p=String(p).trim(); return p.toUpperCase()==="JUNGLE"?"BLOCKCHAINJUNGLE":p; }
+  const u=new URL(window.location.href);
+  const promo=norm(u.searchParams.get("promo"));
+  // si viene por promo de feria, marcamos flag para mostrar modal luego en el dashboard
+  if (promo==="BLOCKCHAINJUNGLE") {
+    try { localStorage.setItem("hrkey_force_early_modal","1"); } catch(_){}
+  }
+})();
+</script>
+
+</body>
+</html>
