@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upgrade to PRO - HRKey</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Rubik', Arial, sans-serif; 
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: white;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 60px; }
+        .header h1 {
+            font-size: 48px;
+            background: linear-gradient(135deg, #00C4C7 0%, #00d2cc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+        }
+        .header p { font-size: 20px; color: #888; }
+        .plans-container {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 40px;
+            max-width: 1000px; margin: 0 auto;
+        }
+        .plan-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px; padding: 40px;
+            border: 2px solid rgba(255,255,255,0.1);
+            transition: all 0.3s; position: relative;
+        }
+        .plan-card:hover {
+            transform: translateY(-5px);
+            border-color: #00C4C7;
+            box-shadow: 0 20px 60px rgba(0,196,199,0.3);
+        }
+        .plan-card.featured { border-color: #fbbf24; background: rgba(251,191,36,0.05); }
+        .popular-badge {
+            position: absolute; top: -15px; right: 30px;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #000; padding: 8px 20px; border-radius: 20px;
+            font-size: 12px; font-weight: 700; letter-spacing: 1px;
+        }
+        .plan-name { font-size: 28px; font-weight: 700; margin-bottom: 10px; }
+        .plan-price { font-size: 48px; font-weight: 700; margin-bottom: 5px; }
+        .plan-price span { font-size: 20px; color: #888; font-weight: 400; }
+        .plan-period { color: #888; font-size: 14px; margin-bottom: 30px; }
+        .plan-features { list-style: none; margin-bottom: 30px; }
+        .plan-features li {
+            padding: 12px 0; font-size: 15px; color: #e2e8f0; display: flex; align-items: center;
+        }
+        .plan-features li::before { content: '✓'; color: #10b981; font-weight: 700; margin-right: 12px; font-size: 18px; }
+        .plan-features li.disabled { opacity: 0.4; }
+        .plan-features li.disabled::before { content: '✗'; color: #ef4444; }
+        .btn-plan {
+            width: 100%; padding: 18px; border: none; border-radius: 12px;
+            font-weight: 700; font-size: 16px; cursor: pointer; transition: all 0.3s;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn-free { background: rgba(255,255,255,0.1); color: white; border: 2px solid rgba(255,255,255,0.2); }
+        .btn-free:hover { background: rgba(255,255,255,0.15); }
+        .btn-pro {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #000; box-shadow: 0 8px 30px rgba(251,191,36,0.4);
+        }
+        .btn-pro:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(251,191,36,0.6); }
+        .current-plan-badge {
+            background: rgba(0,196,199,0.2); color: #00C4C7;
+            padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+            display: inline-block; margin-left: 10px;
+        }
+        .comparison-section {
+            max-width: 900px; margin: 80px auto 0;
+            background: rgba(255,255,255,0.03); border-radius: 20px; padding: 50px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .comparison-title { font-size: 32px; text-align: center; margin-bottom: 40px; color: #00C4C7; }
+        .comparison-table { width: 100%; }
+        .comparison-table th {
+            padding: 15px; text-align: left; color: #888; font-size: 13px;
+            text-transform: uppercase; font-weight: 600; letter-spacing: 1px;
+        }
+        .comparison-table td { padding: 20px 15px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 15px; }
+        .comparison-table td:first-child { color: #e2e8f0; font-weight: 500; }
+        .check { color: #10b981; font-size: 20px; font-weight: 700; }
+        .cross { color: #ef4444; font-size: 20px; font-weight: 700; }
+        .back-link { text-align: center; margin-top: 40px; }
+        .back-link a { color: #00C4C7; text-decoration: none; font-weight: 600; transition: all 0.3s; }
+        .back-link a:hover { color: #00d2cc; }
+        .testimonials { max-width: 900px; margin: 60px auto 0; text-align: center; }
+        .testimonials h3 { font-size: 28px; margin-bottom: 30px; color: #00C4C7; }
+        .testimonial {
+            background: rgba(255,255,255,0.05); padding: 30px; border-radius: 15px;
+            margin-bottom: 20px; border-left: 4px solid #00C4C7;
+        }
+        .testimonial-text { font-size: 16px; color: #cbd5e1; line-height: 1.8; margin-bottom: 15px; font-style: italic; }
+        .testimonial-author { font-weight: 600; color: #00C4C7; }
+        .guarantee {
+            max-width: 600px; margin: 60px auto; text-align: center;
+            background: rgba(16,185,129,0.1); padding: 30px; border-radius: 15px;
+            border: 2px solid rgba(16,185,129,0.3);
+        }
+        .guarantee h3 { font-size: 24px; color: #10b981; margin-bottom: 15px; }
+        .guarantee p { color: #cbd5e1; line-height: 1.6; }
+
+        /* Inputs promo/email */
+        .field { margin-top: 12px; }
+        .field input {
+            width: 100%; padding: 14px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.06); color: #fff; outline: none; font-size: 14px;
+        }
+        .hint { color: #cbd5e1; font-size: 13px; margin-top: 10px; }
+        .note { color: #fbbf24; font-size: 13px; margin-top: 8px; }
+        .alert { margin-top: 12px; font-size: 14px; color: #ef4444; display: none; }
+        .success { margin-top: 12px; font-size: 14px; color: #10b981; display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⬆️ Upgrade to PRO</h1>
+            <p>Unlock unlimited references and advanced features</p>
+
+            <div style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); padding: 15px 30px; border-radius: 12px; margin-top: 20px; max-width: 700px; margin-left: auto; margin-right: auto; border: 2px solid #fbbf24;">
+                <strong style="color: #000; font-size: 16px;">🎉 LAUNCH SPECIAL</strong>
+                <span style="color: #000; font-size: 14px; display: block; margin-top: 5px;">
+                    Pay <b>$9.99</b> once → PRO forever. Use <b>HRKEY50</b> post-fair (50% OFF → $4.99).
+                    During the job fair, use <b>BLOCKCHAINJUNGLE</b> for free activation (48h).
+                </span>
+            </div>
+        </div>
+
+        <div class="plans-container">
+            <!-- FREE Plan -->
+            <div class="plan-card">
+                <div class="plan-name">
+                    🆓 FREE
+                    <span class="current-plan-badge" id="freeBadge" style="display: none;">Current Plan</span>
+                </div>
+                <div class="plan-price">
+                    $0<span>/forever</span>
+                </div>
+                <div class="plan-period">Perfect to get started</div>
+                
+                <ul class="plan-features">
+                    <li>1 blockchain-verified reference</li>
+                    <li>Basic profile management</li>
+                    <li>Text suppression & editing</li>
+                    <li>Add your own context</li>
+                    <li class="disabled">Request more context</li>
+                    <li class="disabled">Unlimited references</li>
+                    <li class="disabled">Export to PDF</li>
+                    <li class="disabled">Permanent blockchain storage</li>
+                    <li class="disabled">Priority support</li>
+                </ul>
+
+                <button class="btn-plan btn-free" onclick="selectPlan('free')">
+                    Current Plan
+                </button>
+            </div>
+
+            <!-- PRO Plan -->
+            <div class="plan-card featured">
+                <div class="popular-badge">🚀 LIFETIME ACCESS</div>
+                <div class="plan-name">
+                    ⚡ PRO
+                    <span class="current-plan-badge" id="proBadge" style="display: none;">Current Plan</span>
+                </div>
+                <div class="plan-price">
+                    $9.99<span>/forever</span>
+                </div>
+                <div class="plan-period">One-time payment • Lifetime access</div>
+                
+                <ul class="plan-features">
+                    <li>Unlimited blockchain-verified references</li>
+                    <li>Advanced profile management</li>
+                    <li>Text suppression & editing</li>
+                    <li>Add your own context</li>
+                    <li><strong>Request more context from referees</strong></li>
+                    <li><strong>Export to PDF</strong></li>
+                    <li><strong>Permanent blockchain storage</strong></li>
+                    <li><strong>AI-Enhanced references</strong></li>
+                    <li><strong>Advanced privacy controls</strong></li>
+                    <li><strong>Custom branding</strong></li>
+                    <li><strong>Priority support</strong></li>
+                    <li><strong>All future updates included</strong></li>
+                </ul>
+
+                <!-- New: email + promo -->
+                <div class="field">
+                    <input id="email" type="email" placeholder="Email (required for free activation)">
+                </div>
+                <div class="field">
+                    <input id="promo" type="text" placeholder="Promo code (optional: HRKEY50 / BLOCKCHAINJUNGLE)">
+                </div>
+                <div class="note">Use <b>BLOCKCHAINJUNGLE</b> during the fair (48h) for free activation. Post-fair use <b>HRKEY50</b> (50% OFF).</div>
+                <div id="msg-error" class="alert"></div>
+                <div id="msg-ok" class="success"></div>
+
+                <button class="btn-plan btn-pro" id="buy-btn">
+                    🚀 Upgrade Now
+                </button>
+            </div>
+        </div>
+
+        <!-- Comparison Table -->
+        <div class="comparison-section">
+            <h2 class="comparison-title">📊 Detailed Comparison</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th style="text-align: center;">FREE</th>
+                        <th style="text-align: center;">PRO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Number of references</td>
+                        <td style="text-align: center;">1</td>
+                        <td style="text-align: center;"><strong>Unlimited</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Profile management</td>
+                        <td style="text-align: center;"><span class="check">✓</span></td>
+                        <td style="text-align: center;"><span class="check">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>Text suppression</td>
+                        <td style="text-align: center;"><span class="check">✓</span></td>
+                        <td style="text-align: center;"><span class="check">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>Add context</td>
+                        <td style="text-align: center;"><span class="check">✓</span></td>
+                        <td style="text-align: center;"><span class="check">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>Request additional context</td>
+                        <td style="text-align: center;"><span class="cross">✗</span></td>
+                        <td style="text-align: center;"><span class="check">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>Export to PDF</td>
+                        <td style="text-align: center;"><span class="cross">✗</span></td>
+                        <td style="text-align: center;"><span class="check">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>Permanent blockchain storage</td>
+                        <td style="text-align: center;"><span class="cross">✗</span></td>
+                        <td style="text-align: center;"><span class="check">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>Custom branding</td>
+                        <td style="text-align: center;"><span class="cross">✗</span></td>
+                        <td style="text-align: center;"><span class="check">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>Priority support</td>
+                        <td style="text-align: center;"><span class="cross">✗</span></td>
+                        <td style="text-align: center;"><span class="check">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>Analytics dashboard</td>
+                        <td style="text-align: center;"><span class="cross">✗</span></td>
+                        <td style="text-align: center;"><span class="check">✓</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Testimonials -->
+        <div class="testimonials">
+            <h3>💬 What our PRO users say</h3>
+            <div class="testimonial">
+                <p class="testimonial-text">
+                    "Upgrading to PRO was the best decision. Being able to request additional context from my referees made my profile incredibly detailed and trustworthy."
+                </p>
+                <p class="testimonial-author">— Sarah J., Product Manager</p>
+            </div>
+            <div class="testimonial">
+                <p class="testimonial-text">
+                    "The blockchain verification gives me peace of mind. My references are permanent and tamper-proof. Totally worth the investment."
+                </p>
+                <p class="testimonial-author">— Michael R., Software Engineer</p>
+            </div>
+        </div>
+
+        <!-- Money-back Guarantee -->
+        <div class="guarantee">
+            <h3>💯 14-Day Money-Back Guarantee</h3>
+            <p>Try PRO risk-free for 14 days. If you're not satisfied, we'll refund 100% of your $9.99 payment. No questions asked. After that, enjoy lifetime access forever!</p>
+        </div>
+
+        <div class="back-link">
+            <a href="app.html">← Back to Dashboard</a>
+        </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div style="max-width: 900px; margin: 60px auto 40px; background: white; border-radius: 20px; padding: 50px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+        <h2 style="font-size: 32px; font-weight: 700; color: #1e293b; margin-bottom: 40px; text-align: center;">
+            ❓ Frequently Asked Questions
+        </h2>
+        <div style="display: grid; gap: 25px;">
+            <div style="padding-bottom: 25px; border-bottom: 2px solid #e2e8f0;">
+                <h3 style="color: #00C4C7; font-size: 18px; margin-bottom: 12px; font-weight: 600;">💳 What payment methods do you accept?</h3>
+                <p style="color: #64748b; line-height: 1.8; margin: 0;">We accept major credit/debit cards securely via Stripe Checkout.</p>
+            </div>
+            <div style="padding-bottom: 25px; border-bottom: 2px solid #e2e8f0;">
+                <h3 style="color: #00C4C7; font-size: 18px; margin-bottom: 12px; font-weight: 600;">♾️ Is this really lifetime access?</h3>
+                <p style="color: #64748b; line-height: 1.8; margin: 0;">Yes! It’s a one-time payment of $9.99 for lifetime access to all PRO features. No recurring charges.</p>
+            </div>
+            <div style="padding-bottom: 25px; border-bottom: 2px solid #e2e8f0;">
+                <h3 style="color: #00C4C7; font-size: 18px; margin-bottom: 12px; font-weight: 600;">🔒 What happens if I downgrade?</h3>
+                <p style="color: #64748b; line-height: 1.8; margin: 0;">Your existing references remain accessible. Free plan limits you to 1 reference and disables PRO features.</p>
+            </div>
+            <div style="padding-bottom: 25px; border-bottom: 2px solid #e2e8f0;">
+                <h3 style="color: #00C4C7; font-size: 18px; margin-bottom: 12px; font-weight: 600;">⛓️ What is blockchain verification?</h3>
+                <p style="color: #64748b; line-height: 1.8; margin: 0;">References are stored on Base Network, making them permanent, tamper-proof, and independently verifiable.</p>
+            </div>
+            <div>
+                <h3 style="color: #00C4C7; font-size: 18px; margin-bottom: 12px; font-weight: 600;">💰 What if I'm not satisfied?</h3>
+                <p style="color: #64748b; line-height: 1.8; margin: 0;">We offer a 14-day money-back guarantee. Email support@hrkey.xyz.</p>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin: 40px 0;">
+        <p style="color: white; margin-bottom: 15px;">Still have questions?</p>
+        <a href="mailto:support@hrkey.xyz" style="color: #00C4C7; text-decoration: none; font-weight: 600; font-size: 18px;">
+            Contact Support →
+        </a>
+    </div>
+
+    <div class="container">
+        <div class="back-link">
+            <a href="app.html">← Back to Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        function checkCurrentPlan() {
+            const plan = JSON.parse(localStorage.getItem('hrkey_user_plan') || '{}');
+            const currentPlan = plan.plan || 'free';
+            if (currentPlan === 'free') {
+                document.getElementById('freeBadge').style.display = 'inline-block';
+            } else {
+                document.getElementById('proBadge').style.display = 'inline-block';
+            }
+        }
+
+        function selectPlan(planType) {
+            if (planType === 'free') {
+                alert('You are already on the FREE plan!');
+            }
+        }
+
+        // New: call Serverless API
+        async function buyLifetime(){
+            const email = document.getElementById('email').value.trim();
+            const promo = document.getElementById('promo').value.trim();
+            const errorEl = document.getElementById('msg-error');
+            const okEl = document.getElementById('msg-ok');
+            errorEl.style.display = 'none';
+            okEl.style.display = 'none';
+
+            // For the free grant we require email on the client for UX
+            if (promo.toUpperCase() === 'BLOCKCHAINJUNGLE' && !email) {
+                errorEl.textContent = 'Email is required for free activation during the fair.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            try {
+                const r = await fetch("/api/checkout/session", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ plan: "lifetime", promo, email })
+                });
+                const data = await r.json();
+                if (!r.ok || data.error) {
+                    throw new Error(data.error || 'Checkout failed');
+                }
+                // data.url can be Stripe Checkout or the thank-you page for free grant
+                window.location.href = data.url;
+            } catch (e) {
+                errorEl.textContent = e.message || 'Something went wrong. Please try again.';
+                errorEl.style.display = 'block';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            checkCurrentPlan();
+            const btn = document.getElementById('buy-btn');
+            if (btn) btn.addEventListener('click', buyLifetime);
+        });
+    </script>
+</body>
+</html>
