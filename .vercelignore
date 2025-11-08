@@ -1,4 +1,5 @@
 # Ignora todo...
 *
-# ...excepto la app Next
+# ...excepto la app Next y la config de Vercel
 !HRkey/**
+!vercel.json
