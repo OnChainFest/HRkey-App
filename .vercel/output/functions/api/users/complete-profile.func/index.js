@@ -1,4 +1,4 @@
-// Edge function (Output v3) — /api/users/complete-profile
+// Edge function — /api/users/complete-profile
 function json(body, status = 200, extra = {}) {
   return new Response(JSON.stringify(body), {
     status,
@@ -9,6 +9,24 @@ function escapeHtml(s = "") {
   return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
                   .replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
+
+async function sendEmailJS({ serviceId, templateId, publicKey, accessToken, templateParams }) {
+  const payload = {
+    service_id: serviceId,
+    template_id: templateId,
+    user_id: publicKey,
+    template_params: templateParams
+  };
+  if (accessToken) payload.accessToken = accessToken;
+
+  const resp = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return resp;
+}
+
 export default async function handler(req) {
   try {
     if (req.method !== "POST") return json({ error: "Method Not Allowed" }, 405, { "Allow": "POST" });
@@ -17,7 +35,7 @@ export default async function handler(req) {
     const { name, email, coupon, source } = data || {};
     if (!name || !email) return json({ error: "Missing fields" }, 400);
 
-    // 1) Supabase opcional
+    // 1) (Opcional) Guardar en Supabase
     const supabaseUrl = process.env.SUPABASE_URL;
     const serviceRole = process.env.SUPABASE_SERVICE_ROLE;
     if (supabaseUrl && serviceRole) {
@@ -39,45 +57,57 @@ export default async function handler(req) {
       } catch (e) { console.warn("Supabase insert exception:", e); }
     }
 
-    // 2) EmailJS (consolidado)
-    const SERVICE_ID   = process.env.EMAILJS_SERVICE_ID;
-    const TEMPLATE_ID  = process.env.EMAILJS_TEMPLATE_ID;
-    const PUBLIC_KEY   = process.env.EMAILJS_PUBLIC_KEY;     // user_id
-    const ACCESS_TOKEN = process.env.EMAILJS_ACCESS_TOKEN;   // opcional
+    // 2) EmailJS — admin + usuario
+    const SERVICE_ID  = process.env.EMAILJS_SERVICE_ID;
+    const PUBLIC_KEY  = process.env.EMAILJS_PUBLIC_KEY;
+    const ACCESS      = process.env.EMAILJS_ACCESS_TOKEN || undefined;
 
-    if (SERVICE_ID && TEMPLATE_ID && PUBLIC_KEY) {
-      const payload = {
-        service_id: SERVICE_ID,
-        template_id: TEMPLATE_ID,
-        user_id: PUBLIC_KEY,
-        template_params: {
-          name, email,
-          coupon: coupon || "",
-          source: source || "qr",
-          created_at: new Date().toISOString(),
-          html_block: `<p><b>Nombre:</b> ${escapeHtml(name)}<br/>
-                       <b>Email:</b> ${escapeHtml(email)}<br/>
-                       <b>Cupón:</b> ${escapeHtml(coupon || "")}<br/>
-                       <b>Fuente:</b> ${escapeHtml(source || "qr")}</p>`
-        }
-      };
-      if (ACCESS_TOKEN) payload.accessToken = ACCESS_TOKEN;
+    const TEMPLATE_ADMIN = process.env.EMAILJS_TEMPLATE_ADMIN_ID;
+    const TEMPLATE_USER  = process.env.EMAILJS_TEMPLATE_USER_ID;
 
-      try {
-        const resp = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        if (!resp.ok) {
-          const txt = await resp.text().catch(() => "");
-          console.warn("EmailJS warn:", resp.status, txt);
-        }
-      } catch (e) {
-        console.warn("EmailJS exception:", e);
+    const baseParams = {
+      name,
+      email,
+      coupon: coupon || "",
+      source: source || "qr",
+      created_at: new Date().toISOString(),
+      html_block: `
+        <p><b>Nombre:</b> ${escapeHtml(name)}<br/>
+           <b>Email:</b> ${escapeHtml(email)}<br/>
+           <b>Cupón:</b> ${escapeHtml(coupon || "")}<br/>
+           <b>Fuente:</b> ${escapeHtml(source || "qr")}</p>`
+    };
+
+    if (SERVICE_ID && PUBLIC_KEY) {
+      // a) Admin (si hay template)
+      if (TEMPLATE_ADMIN) {
+        try {
+          const r1 = await sendEmailJS({
+            serviceId: SERVICE_ID,
+            templateId: TEMPLATE_ADMIN,
+            publicKey: PUBLIC_KEY,
+            accessToken: ACCESS,
+            templateParams: baseParams
+          });
+          if (!r1.ok) console.warn("EmailJS admin warn:", r1.status, await r1.text().catch(()=> ""));
+        } catch (e) { console.warn("EmailJS admin exception:", e); }
+      }
+
+      // b) Usuario (si hay template)
+      if (TEMPLATE_USER) {
+        try {
+          const r2 = await sendEmailJS({
+            serviceId: SERVICE_ID,
+            templateId: TEMPLATE_USER,
+            publicKey: PUBLIC_KEY,
+            accessToken: ACCESS,
+            templateParams: baseParams
+          });
+          if (!r2.ok) console.warn("EmailJS user warn:", r2.status, await r2.text().catch(()=> ""));
+        } catch (e) { console.warn("EmailJS user exception:", e); }
       }
     } else {
-      console.warn("EmailJS env vars missing: EMAILJS_SERVICE_ID / EMAILJS_TEMPLATE_ID / EMAILJS_PUBLIC_KEY");
+      console.warn("EmailJS env vars missing: EMAILJS_SERVICE_ID / EMAILJS_PUBLIC_KEY");
     }
 
     return json({ success: true });
