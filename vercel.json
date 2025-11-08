@@ -1,3 +1,10 @@
 {
-  "buildCommand": "cd HRkey && npm ci --legacy-peer-deps && npm run build"
+  "framework": "nextjs",
+  "buildCommand": "cd HRkey && npm ci --legacy-peer-deps && npm run build",
+  "rewrites": [
+    { "source": "/dashboard",            "destination": "/WebDapp/index.html" },
+    { "source": "/request-reference",    "destination": "/WebDapp/request-reference.html" },
+    { "source": "/reference-management", "destination": "/WebDapp/reference-management-page.html" },
+    { "source": "/referee-evaluation",   "destination": "/WebDapp/referee-evaluation-page.html" }
+  ]
 }
