@@ -1,0 +1,239 @@
+/* =========================
+   HRKey - Mobile Header + Menu
+   ========================= */
+
+:root { --hrk-teal: #00BFA6; }
+
+/* ---------- HAMBURGUESA (botón) ---------- */
+.hrk-hamburger {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  right: calc(12px + env(safe-area-inset-right));
+  width: 40px; height: 40px;
+  display: none;                     /* se muestra solo en mobile */
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  row-gap: 6px;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+  cursor: pointer;
+  z-index: 9999;
+  -webkit-tap-highlight-color: transparent;
+}
+.hrk-hamburger:focus { outline: 2px solid var(--hrk-teal); outline-offset: 2px; }
+.hrk-hamburger .hrk-hamburger-bar {
+  display: block;
+  width: 26px; height: 3px;
+  background: var(--hrk-teal);
+  border-radius: 2px;
+  transition: transform 200ms ease, opacity 200ms ease;
+}
+.hrk-hamburger[aria-expanded="true"] .hrk-hamburger-bar:nth-child(1){ transform: translateY(6px) rotate(45deg); }
+.hrk-hamburger[aria-expanded="true"] .hrk-hamburger-bar:nth-child(2){ opacity: 0; }
+.hrk-hamburger[aria-expanded="true"] .hrk-hamburger-bar:nth-child(3){ transform: translateY(-6px) rotate(-45deg); }
+
+/* Mostrar hamburguesa solo en mobile */
+@media (max-width: 991px) { .hrk-hamburger { display: flex; } }
+
+/* ---------- HEADER (mobile) ---------- */
+@media (max-width: 991px) {
+  /* Barra fija */
+  .header.hrkey-header,
+  .hrkey-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 80px;                              /* +alto para logo grande */
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(6px);
+    z-index: 9980;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  }
+  .hrkey-header .header-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;                        /* respira con logo grande */
+  }
+
+  /* Logo visible y más grande (~doble) - SOLO EN MOBILE */
+  .hrkey-header .logo,
+  .hrkey-header .logo img,
+  .hrkey-header .hrkey-logo,
+  .hrkey-header .hrkey-logo img {
+    display: inline-flex !important;
+    visibility: visible !important;
+    align-items: center;
+  }
+  
+  .hrkey-header .logo img,
+  .hrkey-header .hrkey-logo img {
+    height: 68px !important;                   /* antes ~34px */
+    max-height: 70px !important;
+    width: auto !important;
+    object-fit: contain;
+    position: relative;
+    top: -18px; /* ajuste fino vertical */
+  }
+
+  /* Ocultar navegación y CTA del header SOLO dentro del header */
+  .hrkey-header nav,
+  .hrkey-header .nav,
+  .hrkey-header .menu,
+  .hrkey-header .nav-menu,
+  .hrkey-header .hrkey-nav,
+  .hrkey-header ul,
+  .hrkey-header li,
+  .hrkey-header .hrkey-cta {                   /* evita ocultar botones fuera del header */
+    display: none !important;
+  }
+
+  /* Empuja el contenido por el header fijo más alto */
+  .hero, .hero-section, .main-content, #page { margin-top: 80px !important; }
+}
+
+/* ---------- DESKTOP: Asegurar que el logo tenga tamaño normal ---------- */
+@media (min-width: 992px) {
+  .header .logo img,
+  .hrkey-header .logo img,
+  .header .hrkey-logo img,
+  .hrkey-header .hrkey-logo img,
+  header .logo img,
+  header img {
+    height: 96px !important;  /* logo grande y visible en desktop */
+    max-height: 100px !important;
+    width: auto !important;
+    object-fit: contain;
+    position: static !important;
+    top: 0 !important;
+  }
+  
+  /* Reset específico para el header en desktop */
+  .header-wrapper,
+  .header-bar {
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
+  }
+}
+
+/* ---------- MENÚ MÓVIL (panel deslizante) ---------- */
+#hrk-mobile-menu {
+  position: fixed;
+  top: 80px;                                   /* alinea bajo header de 80px */
+  left: 12px; right: 12px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(0,0,0,0.12);
+  z-index: 9998;
+
+  /* estado cerrado */
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: max-height 260ms ease, opacity 200ms ease, transform 260ms ease;
+}
+
+/* estado abierto */
+#hrk-mobile-menu.is-open {
+  max-height: 80vh;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+#hrk-mobile-menu .hrk-menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#hrk-mobile-menu .hrk-menu-list a {
+  display: block;
+  padding: 12px 14px;
+  text-decoration: none;
+  font-weight: 700;
+  color: #111;
+  border-radius: 10px;
+  background: #fff;
+}
+#hrk-mobile-menu .hrk-menu-list a:active { background: #f5f7f8; }
+
+/* Ocultar elementos móviles en desktop por seguridad */
+@media (min-width: 992px) {
+  #hrk-hamburger, #hrk-mobile-menu { display: none !important; }
+}
+
+/* ---------- FEATURES: iconos (para tus 4 imágenes) ---------- */
+.feature-icon img {
+  width: 80px;
+  height: auto;
+  display: block;
+  margin: 0 auto 14px auto;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.12));
+  transition: transform 0.3s ease;
+}
+.feature-icon img:hover { transform: scale(1.1); }
+@media (max-width: 768px) {
+  .feature-icon img { width: 64px; margin-bottom: 10px; }
+}
+
+/* === HRKey: CENTRADO EN FEATURES (mobile y desktop) === */
+#features-1 .col-lg-3,
+#features-1 .col-md-6,
+#features-1 .col-12 {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+
+#features-1 .features-clean,
+#features-1 .features-clean h5,
+#features-1 .features-clean p {
+  text-align: center !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#features-1 .features-clean p {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  max-width: 34ch !important;
+}
+
+/* Mobile extra enforcement */
+@media (max-width: 991px) {
+  html body #features-1 .row > [class*="col-"] {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  html body #features-1 .row > [class*="col-"] .features-clean {
+    width: 100% !important;
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  html body #features-1 .row > [class*="col-"] .features-clean h5,
+  html body #features-1 .row > [class*="col-"] .features-clean p {
+    text-align: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  html body #features-1 .row > [class*="col-"] .features-clean p {
+    max-width: 34ch !important;
+  }
+}

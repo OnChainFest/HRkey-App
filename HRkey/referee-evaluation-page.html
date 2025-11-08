@@ -371,9 +371,18 @@ async function hrkeyAfterEvaluationSubmit({
     localStorage.setItem('hrkey_referee_info', JSON.stringify(info));
 
     // 2) Email al solicitante
+console.log('🔍 DEBUG - __req:', __req);
+console.log('🔍 DEBUG - TEMPLATE:', EMAILJS_TEMPLATE_ID_NOTIFY);
+console.log('🔍 DEBUG - params:', params);
+
+if (__req && EMAILJS_TEMPLATE_ID_NOTIFY) {
+  console.log('✅ Enviando email de notificación...');
+  await ensureEmailJS();
+  const result = await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_NOTIFY, params);
+  console.log('📧 EmailJS response:', result);
     if (__req && EMAILJS_TEMPLATE_ID_NOTIFY) {
       await ensureEmailJS();
-
+      await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_NOTIFY, params)
       // resumen corto para el correo
       const kpiSummary = kpiAnswers
         .filter(k => Number(k.rating || 0) > 0 || (k.comment || '').trim())

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head><title>Test EmailJS</title></head>
+<body>
+<button onclick="testEmail()">Send Test Email</button>
+<div id="result"></div>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script>
+emailjs.init('8kTeUTmDNbaWwqDWQ');
+async function testEmail() {
+  try {
+    const res = await emailjs.send('service_yvtzlvf', 'template_3zat2bq', {
+      to_name: 'Test',
+      to_email: 'vicvalch@gmail.com',
+      requester_name: 'Victor Test',
+      requester_email: 'test@hrkey.xyz',
+      relationship: 'Test',
+      company: 'HRKey',
+      position: 'Developer',
+      message: 'Test message',
+      reference_id: 'TEST123',
+      verification_link: 'https://hrkey.xyz/test'
+    });
+    document.getElementById('result').textContent = 'SUCCESS: ' + JSON.stringify(res);
+  } catch(e) {
+    document.getElementById('result').textContent = 'ERROR: ' + e.message;
+  }
+}
+</script>
+</body>
+</html>
