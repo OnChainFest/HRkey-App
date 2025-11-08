@@ -1,4 +1,10 @@
 {
-  "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "npm run build"
+  "routes": [
+    { "src": "/app.html", "dest": "/app.html" },
+    { "src": "/auth.html", "dest": "/auth.html" },
+    { "src": "/request-reference.html", "dest": "/request-reference.html" },
+    { "src": "/reference-management-page.html", "dest": "/reference-management-page.html" },
+    { "src": "/app", "dest": "/app.html" },
+    { "src": "/auth", "dest": "/auth.html" }
+  ]
 }
