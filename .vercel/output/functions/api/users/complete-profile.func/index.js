@@ -1,70 +1,112 @@
-function json(body, status = 200) {
+// Edge function (Output v3)
+// Ruta: /api/users/complete-profile
+function json(body, status = 200, extra = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      ...extra
+    }
   });
+}
+
+function escapeHtml(s = "") {
+  return String(s)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 export default async function handler(req) {
   try {
-    if (req.method !== 'POST') return json({ error: 'Method Not Allowed' }, 405);
+    if (req.method !== "POST") {
+      return json({ error: "Method Not Allowed" }, 405, {
+        "Allow": "POST"
+      });
+    }
+
     let data = {};
     try { data = await req.json(); } catch {}
     const { name, email, coupon, source } = data || {};
-    if (!name || !email) return json({ error: 'Missing fields' }, 400);
+    if (!name || !email) return json({ error: "Missing fields" }, 400);
 
+    // 1) Supabase (opcional)
     const supabaseUrl = process.env.SUPABASE_URL;
     const serviceRole = process.env.SUPABASE_SERVICE_ROLE;
     if (supabaseUrl && serviceRole) {
       try {
         const r = await fetch(`${supabaseUrl}/rest/v1/onboarding_leads`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'apikey': serviceRole,
-            'Authorization': `Bearer ${serviceRole}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
+            "apikey": serviceRole,
+            "Authorization": `Bearer ${serviceRole}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
           },
           body: JSON.stringify({
-            name, email, coupon: coupon || null, source: source || 'qr',
+            name, email, coupon: coupon || null, source: source || "qr",
             created_at: new Date().toISOString()
           })
         });
-        if (!r.ok) console.warn('Supabase insert warn:', await r.text());
-      } catch (e) { console.warn('Supabase insert exception:', e); }
+        if (!r.ok) console.warn("Supabase insert warn:", await r.text());
+      } catch (e) {
+        console.warn("Supabase insert exception:", e);
+      }
     }
 
-    const resendKey = process.env.RESEND_API_KEY;
-    const adminTo   = process.env.ADMIN_EMAIL;
-    if (resendKey && adminTo) {
+    // 2) EmailJS (consolidado)
+    const SERVICE_ID   = process.env.EMAILJS_SERVICE_ID;
+    const TEMPLATE_ID  = process.env.EMAILJS_TEMPLATE_ID;
+    const PUBLIC_KEY   = process.env.EMAILJS_PUBLIC_KEY; // user_id
+    const ACCESS_TOKEN = process.env.EMAILJS_ACCESS_TOKEN; // opcional
+
+    if (SERVICE_ID && TEMPLATE_ID && PUBLIC_KEY) {
+      const payload = {
+        service_id: SERVICE_ID,
+        template_id: TEMPLATE_ID,
+        user_id: PUBLIC_KEY,
+        template_params: {
+          // Ajusta claves a lo que tu plantilla espera
+          name,
+          email,
+          coupon: coupon || "",
+          source: source || "qr",
+          created_at: new Date().toISOString(),
+          // También puedes pasar un HTML listo si tu template lo usa
+          html_block: `
+            <p><b>Nombre:</b> ${escapeHtml(name)}<br/>
+               <b>Email:</b> ${escapeHtml(email)}<br/>
+               <b>Cupón:</b> ${escapeHtml(coupon || "")}<br/>
+               <b>Fuente:</b> ${escapeHtml(source || "qr")}</p>`
+        }
+      };
+      if (ACCESS_TOKEN) payload["accessToken"] = ACCESS_TOKEN;
+
       try {
-        const r = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: process.env.MAIL_FROM || 'HRKey <noreply@hrkey.xyz>',
-            to: adminTo,
-            subject: 'Nuevo onboarding via QR',
-            html: `<p><b>Nombre:</b> ${escapeHtml(name)}<br/>
-                   <b>Email:</b> ${escapeHtml(email)}<br/>
-                   <b>Coupon:</b> ${escapeHtml(coupon || '-') }<br/>
-                   <b>Source:</b> ${escapeHtml(source || '-') }</p>`
-          })
+        const resp = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
         });
-        if (!r.ok) console.warn('Resend warn:', await r.text());
-      } catch (e) { console.warn('Resend exception:', e); }
+
+        if (!resp.ok) {
+          const txt = await resp.text().catch(() => "");
+          console.warn("EmailJS warn:", resp.status, txt);
+          // No rompemos el flujo del usuario: solo registramos.
+        }
+      } catch (e) {
+        console.warn("EmailJS exception:", e);
+      }
+    } else {
+      console.warn("EmailJS env vars missing: EMAILJS_SERVICE_ID / EMAILJS_TEMPLATE_ID / EMAILJS_PUBLIC_KEY");
     }
 
     return json({ success: true });
-  } catch (e) {
-    console.error('complete-profile fatal:', e);
-    return json({ error: e?.message || 'Unknown error' }, 500);
+  } catch (err) {
+    console.error("complete-profile error:", err);
+    return json({ error: "Internal error" }, 500);
   }
-}
-
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
-    .replace(/'/g,'&#39;');
 }
