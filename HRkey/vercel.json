@@ -11,6 +11,7 @@
     { "source": "/Auth.html", "destination": "/auth.html", "permanent": false },
     { "source": "/AUTH.html", "destination": "/auth.html", "permanent": false },
     { "source": "/jungle", "destination": "/promo-register.html?promo=JUNGLE", "permanent": false }
+{ "source": "/auth", "destination": "/promo-register.html?promo=JUNGLE", "permanent": false, "has": [{ "type": "query", "key": "coupon", "value": "BLKJUNGLE" }] }
   ],
   "headers": [
     {
