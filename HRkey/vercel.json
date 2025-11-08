@@ -1,10 +1,16 @@
 {
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/dashboard",            "destination": "/WebDapp/index.html" },
-    { "source": "/request-reference",    "destination": "/WebDapp/request-reference.html" },
-    { "source": "/reference-management", "destination": "/WebDapp/reference-management-page.html" },
-    { "source": "/referee-evaluation",   "destination": "/WebDapp/referee-evaluation-page.html" },
-    { "source": "/thanks",               "destination": "/WebDapp/thanks.html" }
+  "version": 2,
+  "installCommand": "echo skip npm install",
+  "buildCommand": "echo no build",
+  "builds": [
+    { "src": "public/**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "/$1" }
+  ],
+  "redirects": [
+    { "source": "/auth",      "destination": "/auth.html", "permanent": false },
+    { "source": "/Auth.html", "destination": "/auth.html", "permanent": false },
+    { "source": "/AUTH.html", "destination": "/auth.html", "permanent": false }
   ]
 }
