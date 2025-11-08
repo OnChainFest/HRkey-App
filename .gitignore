@@ -10,3 +10,6 @@ Thumbs.db
 Desktop.ini
 .vscode/
 .idea/
+
+# never commit vercel artifacts
+.vercel/
