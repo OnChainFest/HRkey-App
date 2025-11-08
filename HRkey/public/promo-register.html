@@ -204,8 +204,8 @@
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm?v=1762630520?v=1762630501';
         
-        const SUPABASE_URL = 'https://zzaohwqcyznagpwbthvh.supabase.co';
-	const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6YW9od3FjeXpuYWdwd2J0aHZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzAxMDY0MTgsImV4cCI6MjA0NTY4MjQxOH0.pVCRfQxhRUh6oWvZEIZZb1eNFe2oPJl19wpUOzWVLb4';
+        const SUPABASE_URL = 'https://wrervcydgdrlcndtjboy.supabase.co';
+	const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXJ2Y3lkZ2RybGNuZHRqYm95Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Nzk3NjE1NiwiZXhwIjoyMDczNTUyMTU2fQ.ZmWmtPEL8fZnEpkC33vd9_DLTpZghBsuwVjOh3BnldM';
         
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const urlParams = new URLSearchParams(window.location.search);
@@ -296,6 +296,16 @@
             } catch (error) {
                 console.error('Error en registro:', error);
                 showMessage('Ocurrió un error al registrarte. Por favor intenta de nuevo.', 'error');
+				try {
+       // Tu código existente de signUp...
+   } catch (error) {
+       console.error('Error detallado:', error.message, error.code);
+       if (error.message.includes('Failed to fetch')) {
+           showMessage('Error de conexión. Verifica tu internet o intenta más tarde.', 'error');
+       } else {
+           showMessage('Ocurrió un error. Intenta de nuevo.', 'error');
+       }
+   }
             } finally {
                 setLoading(false);
             }
