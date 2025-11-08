@@ -10,3 +10,5 @@
     { "src": "^/auth$", "dest": "/WebDapp/auth.html" }
   ]
 }
+
+/* trigger */
