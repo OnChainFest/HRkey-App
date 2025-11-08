@@ -3,7 +3,6 @@
   const fromCoupon = sessionStorage.getItem('hrkey_onboard_from_coupon') === '1';
   const profile    = JSON.parse(localStorage.getItem('hrkey_profile') || 'null');
   if (!fromCoupon && profile && profile.name && profile.email) return;
-
   let modal = document.getElementById('hrkey-onboard-modal');
   if (!modal) {
     modal = document.createElement('div');
@@ -28,22 +27,17 @@
       </div>`;
     document.body.appendChild(modal);
   }
-
   if (profile?.name)  document.getElementById('hrkey_name').value  = profile.name;
   if (profile?.email) document.getElementById('hrkey_email').value = profile.email;
-
   document.getElementById('hrkey-onboard-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const name   = document.getElementById('hrkey_name').value.trim();
     const email  = document.getElementById('hrkey_email').value.trim();
     const coupon = localStorage.getItem('hrkey_coupon') || null;
-
     try {
-      
-
+      // Guardar perfil en localStorage (sin backend API)
       localStorage.setItem('hrkey_profile', JSON.stringify({ name, email, coupon, source: 'qr' }));
       sessionStorage.removeItem('hrkey_onboard_from_coupon');
-
       document.getElementById('hrkey-onboard-modal').remove();
       if (typeof window.reloadReferences === 'function') {
         await window.reloadReferences();
@@ -58,3 +52,4 @@
     }
   });
 })();
+
