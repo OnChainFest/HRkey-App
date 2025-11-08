@@ -157,45 +157,6 @@
       refs[idx].evaluation = evaluation;
       refs[idx].status = 'completed'; // mark completed
       localStorage.setItem('hrkey_references', JSON.stringify(refs));
-// ===== AGREGAR DESPUÉS DE LA LÍNEA 159 (después de localStorage.setItem) =====
-
-      // 🔥 ENVIAR EMAILS CUANDO SE COMPLETA
-      const EMAILJS_SERVICE_ID = "service_yvtzlvf";
-      const EMAILJS_READY_REVIEW = "template_qm8aurq"; // Crea este en EmailJS
-      const EMAILJS_ADMIN_NOTIFY = "template_ci15ssa"; // Crea este en EmailJS
-      const EMAILJS_PUBLIC_KEY = "8kTeUTmDNbaWwqDWQ";
-
-      // Cargar EmailJS si no está
-      if (!window.emailjs) {
-        const s = document.createElement('script');
-        s.src = "https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js";
-        s.onload = () => { 
-          emailjs.init(EMAILJS_PUBLIC_KEY);
-          sendCompletionEmails();
-        };
-        document.head.appendChild(s);
-      } else {
-        sendCompletionEmails();
-      }
-
-      function sendCompletionEmails() {
-        const requesterEmail = refs[idx].requesterEmail || '';
-        const refereeName = refs[idx].refereeName || '';
-        
-        // Email 1: READY_REVIEW al solicitante
-        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_READY_REVIEW, {
-          to_email: requesterEmail,
-          referee_name: refereeName,
-          reference_link: `https://hrkey.xyz/reference-management-page.html?id=${refs[idx].id}`
-        }).catch(e => console.error('Email READY_REVIEW falló:', e));
-
-        // Email 2: ADMIN notification
-        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_ADMIN_NOTIFY, {
-          to_email: 'admin@hrkey.xyz',
-          requester: requesterEmail,
-          referee: refereeName
-        }).catch(e => console.error('Email ADMIN falló:', e));
-      }
       return true;
     }
 
