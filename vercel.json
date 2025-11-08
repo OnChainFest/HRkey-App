@@ -1,45 +1,10 @@
 {
   "cleanUrls": true,
-  "trailingSlash": false,
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
-    {
-      "source": "/referee-evaluation-page.html",
-      "destination": "/WebDapp/referee-evaluation-page.html"
-    },
-    {
-      "source": "/request-reference.html",
-      "destination": "/WebDapp/request-reference.html"
-    },
-    {
-      "source": "/reference-management-page.html",
-      "destination": "/WebDapp/reference-management-page.html"
-    },
-    {
-      "source": "/ref/verify",
-      "destination": "/WebDapp/ref/verify.html"
-    },
-    {
-      "source": "/ref/fill",
-      "destination": "/WebDapp/ref/fill.html"
-    },
-    {
-      "source": "/ref/:path*",
-      "destination": "/WebDapp/ref/:path*"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Frame-Options",
-          "value": "SAMEORIGIN"
-        }
-      ]
-    }
+    { "source": "/dashboard",              "destination": "/WebDapp/index.html" },
+    { "source": "/request-reference",      "destination": "/WebDapp/request-reference.html" },
+    { "source": "/reference-management",   "destination": "/WebDapp/reference-management-page.html" },
+    { "source": "/referee-evaluation",     "destination": "/WebDapp/referee-evaluation-page.html" },
+    { "source": "/thanks",                 "destination": "/WebDapp/thanks.html" }
   ]
 }
