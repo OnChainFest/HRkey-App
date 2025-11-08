@@ -3,11 +3,10 @@
   "routes": [
     { "handle": "filesystem" },
 
-    { "src": "^/app$",  "dest": "functions/app.func" },
-    { "src": "^/auth$", "dest": "functions/auth.func" },
-
-    { "src": "^/app\\.html$",  "dest": "functions/app.html.func" },
-    { "src": "^/auth\\.html$", "dest": "functions/auth.html.func" },
+    { "src": "^/app$",         "dest": "static/app.html" },
+    { "src": "^/auth$",        "dest": "static/auth.html" },
+    { "src": "^/app\\.html$",  "dest": "static/app.html" },
+    { "src": "^/auth\\.html$", "dest": "static/auth.html" },
 
     { "src": "^/api/ping$", "dest": "functions/api/ping.func" },
     { "src": "^/api/users/complete-profile$", "dest": "functions/api/users/complete-profile.func" }
