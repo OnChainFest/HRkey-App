@@ -1,39 +1,23 @@
-// Edge function (Output v3)
-// Ruta: /api/users/complete-profile
+// Edge function (Output v3) — /api/users/complete-profile
 function json(body, status = 200, extra = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store",
-      ...extra
-    }
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...extra }
   });
 }
-
 function escapeHtml(s = "") {
-  return String(s)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+                  .replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
-
 export default async function handler(req) {
   try {
-    if (req.method !== "POST") {
-      return json({ error: "Method Not Allowed" }, 405, {
-        "Allow": "POST"
-      });
-    }
+    if (req.method !== "POST") return json({ error: "Method Not Allowed" }, 405, { "Allow": "POST" });
 
-    let data = {};
-    try { data = await req.json(); } catch {}
+    let data = {}; try { data = await req.json(); } catch {}
     const { name, email, coupon, source } = data || {};
     if (!name || !email) return json({ error: "Missing fields" }, 400);
 
-    // 1) Supabase (opcional)
+    // 1) Supabase opcional
     const supabaseUrl = process.env.SUPABASE_URL;
     const serviceRole = process.env.SUPABASE_SERVICE_ROLE;
     if (supabaseUrl && serviceRole) {
@@ -52,16 +36,14 @@ export default async function handler(req) {
           })
         });
         if (!r.ok) console.warn("Supabase insert warn:", await r.text());
-      } catch (e) {
-        console.warn("Supabase insert exception:", e);
-      }
+      } catch (e) { console.warn("Supabase insert exception:", e); }
     }
 
     // 2) EmailJS (consolidado)
     const SERVICE_ID   = process.env.EMAILJS_SERVICE_ID;
     const TEMPLATE_ID  = process.env.EMAILJS_TEMPLATE_ID;
-    const PUBLIC_KEY   = process.env.EMAILJS_PUBLIC_KEY; // user_id
-    const ACCESS_TOKEN = process.env.EMAILJS_ACCESS_TOKEN; // opcional
+    const PUBLIC_KEY   = process.env.EMAILJS_PUBLIC_KEY;     // user_id
+    const ACCESS_TOKEN = process.env.EMAILJS_ACCESS_TOKEN;   // opcional
 
     if (SERVICE_ID && TEMPLATE_ID && PUBLIC_KEY) {
       const payload = {
@@ -69,21 +51,17 @@ export default async function handler(req) {
         template_id: TEMPLATE_ID,
         user_id: PUBLIC_KEY,
         template_params: {
-          // Ajusta claves a lo que tu plantilla espera
-          name,
-          email,
+          name, email,
           coupon: coupon || "",
           source: source || "qr",
           created_at: new Date().toISOString(),
-          // También puedes pasar un HTML listo si tu template lo usa
-          html_block: `
-            <p><b>Nombre:</b> ${escapeHtml(name)}<br/>
-               <b>Email:</b> ${escapeHtml(email)}<br/>
-               <b>Cupón:</b> ${escapeHtml(coupon || "")}<br/>
-               <b>Fuente:</b> ${escapeHtml(source || "qr")}</p>`
+          html_block: `<p><b>Nombre:</b> ${escapeHtml(name)}<br/>
+                       <b>Email:</b> ${escapeHtml(email)}<br/>
+                       <b>Cupón:</b> ${escapeHtml(coupon || "")}<br/>
+                       <b>Fuente:</b> ${escapeHtml(source || "qr")}</p>`
         }
       };
-      if (ACCESS_TOKEN) payload["accessToken"] = ACCESS_TOKEN;
+      if (ACCESS_TOKEN) payload.accessToken = ACCESS_TOKEN;
 
       try {
         const resp = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
@@ -91,11 +69,9 @@ export default async function handler(req) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-
         if (!resp.ok) {
           const txt = await resp.text().catch(() => "");
           console.warn("EmailJS warn:", resp.status, txt);
-          // No rompemos el flujo del usuario: solo registramos.
         }
       } catch (e) {
         console.warn("EmailJS exception:", e);
