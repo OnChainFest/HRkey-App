@@ -1,26 +1,6 @@
 {
-  "name": "peerproof",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "hh": "hardhat",
-    "compile": "hardhat compile && node copy-abi.cjs",
-    "deploy:base-sepolia": "hardhat run scripts/deploy.js --network baseSepolia && node copy-abi.cjs",
-    "verify:base-sepolia": "hardhat verify --network baseSepolia"
-  },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "ethers": "^6.13.2",
-    "express": "^5.1.0",
-    "next": "14.2.5",
-    "pg": "^8.16.3",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
-  },
-  "devDependencies": {
-    "@openzeppelin/contracts": "^5.4.0",
-    "dotenv": "^16.6.1",
-    "hardhat": "^3.0.0"
+    "vercel-build": "cd HRkey && npm ci --legacy-peer-deps && npm run build"
   }
 }
