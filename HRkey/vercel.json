@@ -1,13 +1,12 @@
 {
   "version": 2,
-  "installCommand": "echo skip npm install",
-  "buildCommand": "echo no build",
-  "builds": [
-    { "src": "public/**", "use": "@vercel/static" }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "/$1" }
-  ],
+  "framework": null,
+  "installCommand": "true",
+  "buildCommand": "true",
+  "ignoreCommand": "true",
+  "outputDirectory": "public",
+  "cleanUrls": true,
+  "trailingSlash": false,
   "redirects": [
     { "source": "/auth",      "destination": "/auth.html", "permanent": false },
     { "source": "/Auth.html", "destination": "/auth.html", "permanent": false },
