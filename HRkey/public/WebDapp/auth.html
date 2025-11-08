@@ -445,5 +445,18 @@
 })();
 </script>
 
+
+<script>
+(function(){
+  function norm(p){ if(!p) return "BLOCKCHAINJUNGLE"; p=String(p).trim(); return p.toUpperCase()==="JUNGLE"?"BLOCKCHAINJUNGLE":p; }
+  const u=new URL(window.location.href);
+  const promo=norm(u.searchParams.get("promo"));
+  // si viene por promo de feria, marcamos flag para mostrar modal luego en el dashboard
+  if (promo==="BLOCKCHAINJUNGLE") {
+    try { localStorage.setItem("hrkey_force_early_modal","1"); } catch(_){}
+  }
+})();
+</script>
+
 </body>
 </html>

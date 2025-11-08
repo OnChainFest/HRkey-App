@@ -599,5 +599,61 @@
 })();
 </script>
 
+
+<!-- ===== HRKey Early-Access Modal (Dashboard) ===== -->
+<div class="modal fade" id="hrkEarlyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center" style="border-radius:16px;">
+      <div class="modal-body p-4">
+        <h4>✨ ¡Muy pronto!</h4>
+        <p class="mt-3">
+          Te avisaremos por correo cuando lancemos <b>HRKey</b>, la herramienta que convierte tu trayectoria profesional
+          en un <b>activo digital</b> verificable para abrir nuevas oportunidades laborales.
+        </p>
+        <div class="text-start mt-3" style="font-size:0.95rem;">
+          <p class="mb-1"><b>Tu pase incluye 1 año gratis</b> de HRKey con:</p>
+          <ul class="mb-0">
+            <li>Referencias verificadas y fáciles de compartir.</li>
+            <li>Perfil con métricas y logros comprobables.</li>
+            <li>Link/QR único para aplicar en segundos.</li>
+            <li>Panel para gestionar invitaciones y validaciones.</li>
+          </ul>
+        </div>
+        <button class="btn btn-success mt-4 w-100" data-bs-dismiss="modal">Entendido</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  function norm(p){ if(!p) return ""; p=String(p).trim(); return p.toUpperCase()==="JUNGLE"?"BLOCKCHAINJUNGLE":p; }
+  function shouldShow(){
+    try{
+      const flag = localStorage.getItem("hrkey_force_early_modal")==="1";
+      const promo = norm(new URL(window.location.href).searchParams.get("promo"));
+      return flag || promo==="BLOCKCHAINJUNGLE";
+    }catch(_){ return true; }
+  }
+  function markShown(){
+    try{
+      localStorage.removeItem("hrkey_force_early_modal"); // consumimos el flag
+      localStorage.setItem("hrkey_early_modal_shown","1"); // opcional
+    }catch(_){}
+  }
+  // Espera al DOM y a Bootstrap
+  document.addEventListener("DOMContentLoaded", function(){
+    if (!shouldShow()) return;
+    if (!window.bootstrap || !document.getElementById("hrkEarlyModal")) return;
+    // Pequeño delay para no chocar con otros inicios del dashboard
+    setTimeout(function(){
+      try{
+        new bootstrap.Modal(document.getElementById("hrkEarlyModal")).show();
+        markShown();
+      }catch(_){}
+    }, 600);
+  });
+})();
+</script>
+
 </body>
 </html>
