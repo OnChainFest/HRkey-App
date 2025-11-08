@@ -1,3 +1,15 @@
 {
-  "version": 3
+  "version": 3,
+  "routes": [
+    { "handle": "filesystem" },
+
+    { "src": "^/app$",  "dest": "functions/app.func" },
+    { "src": "^/auth$", "dest": "functions/auth.func" },
+
+    { "src": "^/app\\.html$",  "dest": "functions/app.html.func" },
+    { "src": "^/auth\\.html$", "dest": "functions/auth.html.func" },
+
+    { "src": "^/api/ping$", "dest": "functions/api/ping.func" },
+    { "src": "^/api/users/complete-profile$", "dest": "functions/api/users/complete-profile.func" }
+  ]
 }
