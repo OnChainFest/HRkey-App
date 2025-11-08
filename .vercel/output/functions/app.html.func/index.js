@@ -1,17 +1,17 @@
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+const { readFileSync } = require('fs');
+const { join } = require('path');
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   try {
-    const __dirname = dirname(fileURLToPath(import.meta.url));
     const htmlPath = join(__dirname, '..', '..', 'static', 'app.html');
     const html = readFileSync(htmlPath);
-    return new Response(html, {
-      status: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }
-    });
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    res.end(html);
   } catch (e) {
-    return new Response('Not Found', { status: 404 });
+    res.statusCode = 404;
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.end('Not Found');
   }
-}
+};
