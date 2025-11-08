@@ -3,7 +3,6 @@
   "framework": null,
   "installCommand": "true",
   "buildCommand": "true",
-  "ignoreCommand": "true",
   "outputDirectory": "public",
   "cleanUrls": true,
   "trailingSlash": false,
