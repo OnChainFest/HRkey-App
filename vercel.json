@@ -1,0 +1,3 @@
+{
+  "buildCommand": "cd HRkey && npm ci --legacy-peer-deps && npm run build"
+}
