@@ -7,22 +7,9 @@
   "cleanUrls": false,
   "trailingSlash": false,
   "redirects": [
-    {
-      "source": "/auth",
-      "has": [
-        {
-          "type": "query",
-          "key": "coupon",
-          "value": "BLKJUNGLE"
-        }
-      ],
-      "destination": "/promo-register.html?promo=JUNGLE",
-      "permanent": false
-    },
     { "source": "/auth", "destination": "/auth.html", "permanent": false },
     { "source": "/Auth.html", "destination": "/auth.html", "permanent": false },
-    { "source": "/AUTH.html", "destination": "/auth.html", "permanent": false },
-    { "source": "/jungle", "destination": "/promo-register.html?promo=JUNGLE", "permanent": false }
+    { "source": "/AUTH.html", "destination": "/auth.html", "permanent": false }
   ],
   "headers": [
     {
@@ -33,3 +20,4 @@
     }
   ]
 }
+
