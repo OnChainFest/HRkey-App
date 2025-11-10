@@ -198,9 +198,18 @@
 
     const goToApp = (extraQuery = "") => {
       const base = "/app.html";
-      const qs = extraQuery ? (extraQuery.startsWith("?") ? extraQuery : `?${extraQuery}`) : "";
-      globalThis.location.replace(base + qs);
-    };
+      let qs = "";
+      if (extraQuery) {
+      if (extraQuery.startsWith("?")) {
+      qs = extraQuery;
+    } else {
+      qs = `?${extraQuery}`;
+    }
+  }
+
+  globalThis.location.replace(base + qs);
+};
+
 
     // ============== COUPON BANNER ===============
     let coupon = (url.searchParams.get("coupon") || "").trim();
