@@ -6,27 +6,39 @@
  * Licensed under the MIT license (http://www.opensource.org/licenses/mit-license.php).
  * 2013/02/17
  **/
-$.scrollTo = $.fn.scrollTo = function(x, y, options){
-    if (!(this instanceof $)) return $.fn.scrollTo.apply($('html, body'), arguments);
+$.scrollTo = $.fn.scrollTo = function (x, y, options) {
+  if (!(this instanceof $)) return $.fn.scrollTo.apply($('html, body'), arguments);
 
-    options = $.extend({}, {
-        gap: {
-            x: 0,
-            y: 0
-        },
-        animation: {
-            easing: 'easeInSine',
-            duration: 'slow',
-            complete: $.noop,
-            step: $.noop
-        }
-    }, options);
+  const opts = $.extend(
+    {},
+    {
+      gap: { x: 0, y: 0 },
+      animation: {
+        easing: 'easeInSine',
+        duration: 'slow',
+        complete: $.noop,
+        step: $.noop,
+      },
+    },
+    options
+  );
 
-    return this.each(function(){
-        var elem = $(this);
-        elem.stop().animate({
-            scrollLeft: !isNaN(Number(x)) ? x : $(y).offset().left + options.gap.x,
-            scrollTop: !isNaN(Number(y)) ? y : $(y).offset().top + options.gap.y - 69 // *edited
-        }, options.animation);
-    });
+  return this.each(function () {
+    const $elem = $(this);
+
+    const isNumX = typeof x === 'number' && !Number.isNaN(x);
+    const isNumY = typeof y === 'number' && !Number.isNaN(y);
+
+    // Si alguno no es numérico, usamos el offset del objetivo y
+    const $target = (!isNumX || !isNumY) ? $(y) : null;
+    const off = $target ? $target.offset() : null;
+
+    const left = isNumX ? x : (off ? off.left + opts.gap.x : 0);
+    const top  = isNumY ? y : (off ? off.top + opts.gap.y - 69 : 0); // *edited
+
+    $elem.stop().animate(
+      { scrollLeft: left, scrollTop: top },
+      opts.animation
+    );
+  });
 };
