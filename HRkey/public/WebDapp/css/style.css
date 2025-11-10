@@ -7550,20 +7550,32 @@ p.forgot-password {
 }
 
 .btn-show-pass:hover {
-  color: #0195ff;
-  color: -webkit-linear-gradient(left, #21d4fd, #b721ff);
-  color: -o-linear-gradient(left, #21d4fd, #b721ff);
-  color: -moz-linear-gradient(left, #21d4fd, #b721ff);
-  color: linear-gradient(left, #21d4fd, #b721ff);
+  /* fallback sólido */
+  color: #0159ff;
+
+  /* gradiente estándar */
+  background: linear-gradient(to right, #21d4fd, #b721ff);
+
+  /* aplica el gradiente al texto */
+  -webkit-background-clip: text;
+  background-clip: text;
+
+  /* vuelve transparente el relleno del texto */
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 .btn-show-pass.active {
+  /* fallback sólido */
   color: #6a7dfe;
-  color: -webkit-linear-gradient(left, #21d4fd, #b721ff);
-  color: -o-linear-gradient(left, #21d4fd, #b721ff);
-  color: -moz-linear-gradient(left, #21d4fd, #b721ff);
-  color: linear-gradient(left, #21d4fd, #b721ff);
+
+  background: linear-gradient(to right, #21d4fd, #b721ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
+
 
 /*------------------------------------------*/
 /*  REGISTER PAGE IMAGE
