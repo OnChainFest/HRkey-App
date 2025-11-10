@@ -54,7 +54,6 @@
     .big { font-size: 20px; color:#fff; margin: 6px 0 10px; }
     .sub { color:#9ca3af; margin: 0 0 18px; }
     .cta { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
-    .badge { display:inline-block; background:#00C4C7; color:#000; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; }
   </style>
 </head>
 <body>
@@ -108,11 +107,11 @@
         <div style="font-size:48px; margin-top:4px;">🎉</div>
         <div class="big">Thanks for providing your reference!</div>
         <p class="sub">
-          You’ve helped verify someone’s professional profile.  
-          Build your own with the <span class="badge">JUNGLE PASS</span>.
+          You’ve helped verify someone’s professional profile.
+          Build your own and manage references in minutes.
         </p>
         <div class="cta">
-          <a class="btn btn-primary" href="auth.html?coupon=JUNGLE">🚀 Create Free Account</a>
+          <a class="btn btn-primary" href="auth.html">🚀 Create Free Account</a>
           <a class="btn btn-secondary" href="index.html">Maybe later</a>
         </div>
         <div class="tiny" style="margin-top:10px;">You’ll be redirected shortly…</div>
@@ -121,9 +120,6 @@
   </div>
 
   <script>
-    // ===== Config destino con pase =====
-    const LANDING_WITH_COUPON = "/auth.html?coupon=JUNGLE";
-
     // ===== utilidades UI =====
     function showAlert(msg, type='success') {
       const box = document.getElementById('alertBox');
@@ -266,8 +262,8 @@
         document.getElementById('evalView').style.display = 'none';
         document.getElementById('thanksView').style.display = 'block';
 
-        // Auto-redirect
-        setTimeout(() => location.assign(LANDING_WITH_COUPON), 7000);
+        // Auto-redirect (sin cupones)
+        setTimeout(() => location.assign("auth.html"), 7000);
       } catch (err) {
         console.error('referee submit error:', err);
         showAlert('❌ Something went wrong. Please try again.', 'error');
@@ -281,6 +277,7 @@
       location.assign("/index.html");
     });
   </script>
+
   <script>
 /** =======================
  *  EmailJS / Config
@@ -405,18 +402,18 @@ async function hrkeyAfterEvaluationSubmit({
       console.warn('No requester email or template id. Skipping requester notification.');
     }
 
-    // 3) Landing de “Thanks + CTA”
+    // 3) Landing de “Thanks + CTA” (sin cupones)
     showThanksAndInvite();
 
   } catch (err) {
     console.error('hrkeyAfterEvaluationSubmit error:', err);
-    // Incluso si falla el email, mostramos “thanks” (la evaluación se guardó localmente)
+    // Incluso si falla el email, mostramos “thanks”
     showThanksAndInvite();
   }
 }
 
 /** =======================================
- *  Render del “Thanks + CTA con pase JUNGLE”
+ *  Render del “Thanks + CTA” (sin cupones)
  *  ======================================= */
 function showThanksAndInvite() {
   const c = document.createElement('div');
@@ -430,16 +427,12 @@ function showThanksAndInvite() {
       <h1 style="margin:0 0 6px; color:#111827; font-size:28px">Thanks for completing the reference!</h1>
       <p style="margin:0 0 18px; color:#475569">Your evaluation was sent successfully.</p>
 
-      <div style="background:#ecfeff; border:1px solid #06b6d4; color:#0e7490; padding:12px 16px; border-radius:10px; display:inline-block; margin-bottom:16px;">
-        🎟️ As a thank-you, unlock <strong>HRKey PRO</strong> with the code <strong>JUNGLE</strong>
-      </div>
-
       <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap">
-        <a href="index.html?coupon=JUNGLE" style="background:#00C4C7; color:#000; padding:12px 18px; border-radius:10px; font-weight:700; text-decoration:none">
+        <a href="auth.html" style="background:#00C4C7; color:#000; padding:12px 18px; border-radius:10px; font-weight:700; text-decoration:none">
           Create your free account
         </a>
-        <a href="auth.html?coupon=JUNGLE" style="border:2px solid #00C4C7; color:#00C4C7; padding:10px 16px; border-radius:10px; font-weight:700; text-decoration:none">
-          I already have an account
+        <a href="index.html" style="border:2px solid #00C4C7; color:#00C4C7; padding:10px 16px; border-radius:10px; font-weight:700; text-decoration:none">
+          Maybe later
         </a>
       </div>
 
@@ -451,18 +444,9 @@ function showThanksAndInvite() {
 }
 
 /** ===========================================================
- *  Hook de envío: intenta engancharse a tu form o botón existentes
+ *  Hook de envío (opcional). Si tu UI ya llama a hrkeyAfterEvaluationSubmit,
+ *  puedes borrar este “auto-hook”.
  *  =========================================================== */
-/* 
-  Este bloque intenta “auto-engancharse” a tu UI actual:
-  - Si tienes un <form id="evaluationForm">, lo intercepta y arma kpiAnswers leyendo
-    ids comunes (rating-kpi1..3, comment-kpi1..3, overallComment, recommendYes/No/Mb).
-  - Si no existe el form, pero hay un botón #confirmEvaluation, engancha al click.
-  - Si ya tienes tu propio submit y te resulta más cómodo, simplemente LLAMA a:
-        hrkeyAfterEvaluationSubmit({ refId, kpiAnswers, overall, recommend });
-    y borra este “auto-hook”.
-*/
-
 (function attachAutoHook() {
   const form = document.getElementById('evaluationForm');
   if (form) {
@@ -521,8 +505,6 @@ function showThanksAndInvite() {
   }
 })();
 </script>
-
-  <script src="/WebDapp/js/compat/qr_compat.js"></script>
 </body>
 </html>
 
