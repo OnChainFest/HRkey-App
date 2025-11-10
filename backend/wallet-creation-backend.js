@@ -1,15 +1,14 @@
-const { getPublicBaseURL, buildVerifyLink } = require("./utils/appURL");
-/** 
- * HRKEY BACKEND - Complete Service
- * 
- * Servicios:
- * - Wallet Creation (custodial wallets para social login)
- * - Reference Management (solicitar y completar referencias)
- * - Email Notifications
- * - User Stats & Analytics
- * 
- * Puerto por defecto: 3001
- */
+// backend/wallet-creation-backend.js
+
+// ======================================================
+// HRKEY BACKEND - Complete Service (secure/ESM version)
+// ======================================================
+// Servicios:
+// - Wallet Creation (custodial wallets para social login)
+// - Reference Management (solicitar y completar referencias)
+// - Email Notifications
+// - User Stats & Analytics
+// Puerto por defecto: 3001
 
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
@@ -17,50 +16,62 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import { getPublicBaseURL } from './utils/appURL.js'; // ← ESM, no require
 
 dotenv.config();
 
 /* ================================
-   CONFIGURACIÓN
+   CONFIGURACIÓN (sin secretos hardcodeados)
    ================================ */
 
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ||
-  'https://wrervcydgdrlcndtjboy.supabase.co';
+const {
+  SUPABASE_URL,
+  SUPABASE_SERVICE_KEY,
+  BASE_RPC_URL = 'https://mainnet.base.org',
+  PORT = 3001,
+  PUBLIC_BASE_URL,
+  BASE_URL,
+  FRONTEND_URL: FRONTEND_URL_ENV,
+  PUBLIC_APP_URL,
+  APP_URL,
+  VERCEL_URL,
+  RESEND_API_KEY,
+  BACKEND_PUBLIC_URL,
+  API_BASE_URL,
+  APP_BACKEND_URL,
+} = process.env;
 
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXJ2Y3lkZ2RybGNuZHRqYm95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NzYxNTYsImV4cCI6MjA3MzU1MjE1Nn0.63M53sZW4LEYMOaxScvtLhQr_6VUj7rOaaGtlR745IM';
-const BASE_RPC_URL = process.env.BASE_RPC_URL || 'https://mainnet.base.org';
-const PORT = process.env.PORT || 3001;
+/** Validaciones duras para evitar arrancar sin credenciales */
+function requireEnv(name, value) {
+  if (!value) {
+    console.error(`❌ Missing required env var: ${name}`);
+    process.exit(1);
+  }
+}
+requireEnv('SUPABASE_URL', SUPABASE_URL);
+requireEnv('SUPABASE_SERVICE_KEY', SUPABASE_SERVICE_KEY);
 
 /* ================================
    URL pública del FRONTEND (robusta)
-   Prioridades:
-   - PUBLIC_BASE_URL (recomendado, unificado)
-   - BASE_URL        (alias común)
-   - FRONTEND_URL    (muy común en Vercel)
-   - PUBLIC_APP_URL  / APP_URL (variantes)
-   - VERCEL_URL      (auto, sin protocolo)
-   - Fallback        https://hrkey.xyz
    ================================ */
 
 const PROD_URL = 'https://hrkey.xyz';
 
 function resolveFrontendUrl() {
   const fromEnv =
-    process.env.PUBLIC_BASE_URL ||
-    process.env.BASE_URL ||
-    process.env.FRONTEND_URL ||
-    process.env.PUBLIC_APP_URL ||
-    process.env.APP_URL ||
+    FRONTEND_URL_ENV ||
+    PUBLIC_BASE_URL ||
+    BASE_URL ||
+    PUBLIC_APP_URL ||
+    APP_URL ||
     null;
 
   if (fromEnv && /^https?:\/\//i.test(fromEnv)) return fromEnv;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  if (VERCEL_URL) return `https://${VERCEL_URL}`;
   return PROD_URL;
 }
 
-// URL pública *unificada* para construir enlaces visibles por usuarios
+// URL pública unificada para construir enlaces visibles por usuarios
 const FRONTEND_URL = resolveFrontendUrl();
 
 /** Helper consistente para armar link del referee (nunca localhost) */
@@ -71,8 +82,9 @@ function makeRefereeLink(token) {
 }
 
 // Email service (Resend)
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const RESEND = { API_KEY: RESEND_API_KEY }; // opcional
 
+// Supabase (server: service key)
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 /* ================================
@@ -165,7 +177,6 @@ class WalletCreationService {
         canProfitFromData: false,
         canShareReferences: true,
       },
-    //  payment_tx_hash: null,  // si lo usas luego, reagrégalo
       created_at: new Date().toISOString(),
     };
 
@@ -379,7 +390,7 @@ class ReferenceService {
   // --- EMAILS (Resend) ---
   static async sendRefereeInviteEmail(email, name, applicantData, verificationUrl) {
     try {
-      if (!RESEND_API_KEY) {
+      if (!RESEND.API_KEY) {
         console.warn('⚠️ RESEND_API_KEY not configured, skipping email');
         return;
       }
@@ -387,7 +398,7 @@ class ReferenceService {
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${RESEND_API_KEY}`,
+          Authorization: `Bearer ${RESEND.API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -420,7 +431,7 @@ class ReferenceService {
 
   static async sendReferenceCompletedEmail(userId, reference) {
     try {
-      if (!RESEND_API_KEY) return;
+      if (!RESEND.API_KEY) return;
 
       const { data } = await supabase.auth.admin.getUserById(userId);
       const userEmail = data?.user?.email || data?.email;
@@ -434,7 +445,7 @@ class ReferenceService {
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${RESEND_API_KEY}`,
+          Authorization: `Bearer ${RESEND.API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -479,7 +490,7 @@ app.get('/health', (req, res) => {
     services: {
       wallets: 'active',
       references: 'active',
-      email: RESEND_API_KEY ? 'configured' : 'not configured',
+      email: RESEND.API_KEY ? 'configured' : 'not configured',
     },
     frontend_url: FRONTEND_URL,
     base_rpc: BASE_RPC_URL,
@@ -533,7 +544,6 @@ app.get('/api/wallet/:userId', async (req, res) => {
    REFERENCE ENDPOINTS
    ================================ */
 
-/** Crea una nueva solicitud de referencia */
 app.post('/api/reference/request', async (req, res) => {
   try {
     const result = await ReferenceService.createReferenceRequest(req.body);
@@ -544,7 +554,6 @@ app.post('/api/reference/request', async (req, res) => {
   }
 });
 
-/** Completa una referencia (referee submission) */
 app.post('/api/reference/submit', async (req, res) => {
   try {
     const result = await ReferenceService.submitReference(req.body);
@@ -555,7 +564,6 @@ app.post('/api/reference/submit', async (req, res) => {
   }
 });
 
-/** Obtiene detalles de invitación por token */
 app.get('/api/reference/by-token/:token', async (req, res) => {
   try {
     const result = await ReferenceService.getReferenceByToken(req.params.token);
@@ -570,17 +578,17 @@ app.get('/api/reference/by-token/:token', async (req, res) => {
    START
    ================================ */
 
-const BACKEND_PUBLIC_URL =
-  process.env.BACKEND_PUBLIC_URL ||
-  process.env.API_BASE_URL ||
-  process.env.APP_BACKEND_URL ||
+const PUBLIC_API_URL =
+  BACKEND_PUBLIC_URL ||
+  API_BASE_URL ||
+  APP_BACKEND_URL ||
   getPublicBaseURL();
 
-app.listen(PORT, () => {
+app.listen(Number(PORT), () => {
   console.log(`
 ╔══════════════════════════════════════════════════════════╗
 ║  🚀 HRKey Backend Service                                ║
-║  ✅ Running on ${BACKEND_PUBLIC_URL}                      ║
+║  ✅ Running on ${PUBLIC_API_URL}                          ║
 ║  🌐 FRONTEND_URL: ${FRONTEND_URL}                         ║
 ║  📡 Supabase URL: ${SUPABASE_URL}                         ║
 ╚══════════════════════════════════════════════════════════╝
