@@ -11,8 +11,8 @@
   <!-- 🔧 Variables de entorno (rellenar con tus valores reales) -->
   <script>
     // ⬇️ RELLENA con tu proyecto de Supabase (anon key es pública, NO uses service role)
-    window.__SUPABASE_URL__ = "https://<TU-PROYECTO>.supabase.co";
-    window.__SUPABASE_ANON_KEY__ = "<TU-ANON-KEY>";
+    globalThis.__SUPABASE_URL__ = "https://<TU-PROYECTO>.supabase.co";
+    globalThis.__SUPABASE_ANON_KEY__ = "<TU-ANON-KEY>";
   </script>
 
   <style>
@@ -180,15 +180,15 @@
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
     // ================== CONFIG ==================
-    const SUPABASE_URL = window.__SUPABASE_URL__;
-    const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__;
+    const SUPABASE_URL = globalThis.__SUPABASE_URL__;
+    const SUPABASE_ANON_KEY = globalThis.__SUPABASE_ANON_KEY__;
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const DEFAULT_COUPON = "BLKJUNGLE";
     const EVENT_START_UTC = Date.parse("2025-11-08T00:00:00Z");
     const EVENT_END_UTC   = Date.parse("2025-11-12T05:59:00Z");
 
-    const url = new URL(window.location.href);
+    const url = new URL(globalThis.location.href);
 
     // ============== HELPERS =====================
     const isWithinEventWindow = () => {
@@ -199,7 +199,7 @@
     const goToApp = (extraQuery = "") => {
       const base = "/app.html";
       const qs = extraQuery ? (extraQuery.startsWith("?") ? extraQuery : `?${extraQuery}`) : "";
-      window.location.replace(base + qs);
+      globalThis.location.replace(base + qs);
     };
 
     // ============== COUPON BANNER ===============
@@ -243,7 +243,7 @@
         } else {
           const next = url.searchParams.get("next") || "/app";
           history.replaceState({}, document.title, "/auth"); // limpia ?code
-          window.location.replace(next);
+          globalThis.location.replace(next);
         }
       } catch (e) {
         console.error("Exchange failed:", e);
@@ -251,7 +251,7 @@
     } else {
       // Si ya hay sesión, ir directo al dashboard
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) window.location.replace("/app");
+      if (session) globalThis.location.replace("/app");
     }
 
     // ============== FORM HANDLERS =================
@@ -436,9 +436,9 @@
 <script>
 (function(){
   function normalizePromo(p){if(!p)return"BLOCKCHAINJUNGLE";p=String(p).trim();if(p.toUpperCase()==="JUNGLE")return"BLOCKCHAINJUNGLE";return p;}
-  const url=new URL(window.location.href);
+  const url=new URL(globalThis.location.href);
   let promo=normalizePromo(url.searchParams.get("promo"));
-  if(!url.searchParams.get("promo")||!promo){url.searchParams.set("promo","BLOCKCHAINJUNGLE");window.history.replaceState({}, "", url.toString());promo="BLOCKCHAINJUNGLE";}
+  if(!url.searchParams.get("promo")||!promo){url.searchParams.set("promo","BLOCKCHAINJUNGLE");globalThis.history.replaceState({}, "", url.toString());promo="BLOCKCHAINJUNGLE";}
   document.addEventListener('DOMContentLoaded',function(){
     const promoEl=document.getElementById('promoTag');if(promoEl)promoEl.textContent=promo;
     const early=new bootstrap.Modal(document.getElementById('earlyAccessModal'));early.show();
@@ -459,7 +459,7 @@
 <script>
 (function(){
   function norm(p){ if(!p) return "BLOCKCHAINJUNGLE"; p=String(p).trim(); return p.toUpperCase()==="JUNGLE"?"BLOCKCHAINJUNGLE":p; }
-  const u=new URL(window.location.href);
+  const u=new URL(globalThis.location.href);
   const promo=norm(u.searchParams.get("promo"));
   // si viene por promo de feria, marcamos flag para mostrar modal luego en el dashboard
   if (promo==="BLOCKCHAINJUNGLE") {
@@ -470,7 +470,7 @@
 
 <script>(()=>{
   function normalizePromo(p){if(!p)return "BLOCKCHAINJUNGLE";p=String(p).trim();if(p.toUpperCase()==="JUNGLE")return "BLOCKCHAINJUNGLE";return p;}
-  const url=new URL(window.location.href);let promo=normalizePromo(url.searchParams.get("promo"));
+  const url=new URL(globalThis.location.href);let promo=normalizePromo(url.searchParams.get("promo"));
   if(!url.searchParams.get("promo")){url.searchParams.set("promo",promo);history.replaceState({}, "", url);}
   document.addEventListener("DOMContentLoaded",()=>{
     document.body.classList.add("hrk-gated");
@@ -481,11 +481,11 @@
       document.body.classList.add("modal-open");
       if(!document.querySelector(".modal-backdrop")){const b=document.createElement("div");b.className="modal-backdrop fade show";document.body.appendChild(b);} }
     function openEarly(){
-      if(window.bootstrap && window.bootstrap.Modal){ new bootstrap.Modal(earlyEl,{backdrop:"static",keyboard:false}).show(); }
+      if(globalThis.bootstrap && globalThis.bootstrap.Modal){ new bootstrap.Modal(earlyEl,{backdrop:"static",keyboard:false}).show(); }
       else{ forceShow(earlyEl); }
     }
     function openThanks(){
-      if(window.bootstrap && window.bootstrap.Modal){ new bootstrap.Modal(thanksEl,{backdrop:"static",keyboard:false}).show(); }
+      if(globalThis.bootstrap && globalThis.bootstrap.Modal){ new bootstrap.Modal(thanksEl,{backdrop:"static",keyboard:false}).show(); }
       else{ forceShow(thanksEl); }
     }
     /* Mostrar al cargar (con pequeño delay por si bootstrap llega tarde) */
@@ -516,17 +516,17 @@
 <script>(function(){
   /* bloquear redirecciones del bundle viejo */
   const stay=/\/auth(\?|$)/i;
-  const _assign=window.location.assign.bind(window.location);
-  const _replace=window.location.replace.bind(window.location);
-  window.location.assign=(u)=>{ try{ if(!u||String(u).match(stay)) return _assign(u); }catch(e){} return; };
-  window.location.replace=(u)=>{ try{ if(!u||String(u).match(stay)) return _replace(u); }catch(e){} return; };
-  const _open=window.open; window.open=(...a)=>{ try{ if(a[0] && !String(a[0]).match(stay)) return null; }catch(e){} return _open? _open(...a):null; };
+  const _assign=globalThis.location.assign.bind(globalThis.location);
+  const _replace=globalThis.location.replace.bind(globalThis.location);
+  globalThis.location.assign=(u)=>{ try{ if(!u||String(u).match(stay)) return _assign(u); }catch(e){} return; };
+  globalThis.location.replace=(u)=>{ try{ if(!u||String(u).match(stay)) return _replace(u); }catch(e){} return; };
+  const _open=globalThis.open; globalThis.open=(...a)=>{ try{ if(a[0] && !String(a[0]).match(stay)) return null; }catch(e){} return _open? _open(...a):null; };
   /* asegurar backdrop y estilo del modal */
   document.addEventListener("DOMContentLoaded",function(){
     document.body.classList.add("modal-open");
     if(!document.querySelector(".modal-backdrop")){const b=document.createElement("div");b.className="modal-backdrop fade show";document.body.appendChild(b);}
     const m=document.getElementById("earlyAccessModal");
-    try{ if(window.bootstrap && window.bootstrap.Modal){ new bootstrap.Modal(m,{backdrop:"static",keyboard:false}).show(); } else { m.classList.add("show"); m.style.display="block"; } }catch(e){}
+    try{ if(globalThis.bootstrap && globalThis.bootstrap.Modal){ new bootstrap.Modal(m,{backdrop:"static",keyboard:false}).show(); } else { m.classList.add("show"); m.style.display="block"; } }catch(e){}
   });
 })();</script>
 </body>
