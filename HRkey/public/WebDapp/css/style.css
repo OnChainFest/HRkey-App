@@ -7551,7 +7551,7 @@ p.forgot-password {
 
 .btn-show-pass:hover {
   /* fallback sólido */
-  color: #0159ff;
+  color: #0195ff;
 
   /* gradiente estándar */
   background: linear-gradient(to right, #21d4fd, #b721ff);
