@@ -43,7 +43,6 @@
     .header p { color: #888; font-size: 14px; }
     .content { padding: 40px; }
 
-    /* Referee banner (no promo) */
     .referee-banner {
       background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
       border-left: 4px solid #00C4C7;
@@ -140,20 +139,19 @@
     </div>
   </div>
 
-  <!-- Tu módulo actual (si maneja login con wallet real) -->
+  <!-- Wallet auth module (opcional, si tienes conexión real con Metamask) -->
   <script type="module" src="js/wallet-auth.js"></script>
 
   <script type="module">
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-    // ================== CONFIG ==================
     const SUPABASE_URL = globalThis.__SUPABASE_URL__;
     const SUPABASE_ANON_KEY = globalThis.__SUPABASE_ANON_KEY__;
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const url = new URL(globalThis.location.href);
 
-    // ============== REFEREE BANNER (opcional) ==============
+    // ===== REFEREE BANNER =====
     const refereeInfo = localStorage.getItem("hrkey_referee_info");
     if (refereeInfo) {
       try {
@@ -165,32 +163,30 @@
       } catch {}
     }
 
-    // ============== SUPABASE CALLBACK ============
+    // ===== SUPABASE CALLBACK =====
     const code = url.searchParams.get("code");
     const errorDesc = url.searchParams.get("error_description");
     if (errorDesc) console.error("Auth error:", errorDesc);
 
     if (code) {
-      // Intercambia el code por sesión y manda al dashboard
       try {
         const { error } = await supabase.auth.exchangeCodeForSession({ code });
         if (error) {
           console.error("exchangeCodeForSession error:", error);
         } else {
-          const next = url.searchParams.get("next") || "/app";
-          history.replaceState({}, document.title, "/auth"); // limpia ?code
+          const next = url.searchParams.get("next") || "app.html";
+          history.replaceState({}, document.title, "auth");
           globalThis.location.replace(next);
         }
       } catch (e) {
         console.error("Exchange failed:", e);
       }
     } else {
-      // Si ya hay sesión, ir directo al dashboard
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) globalThis.location.replace("/app");
+      if (session) globalThis.location.replace("app.html");
     }
 
-    // ============== FORM HANDLERS (sin cupones) =============
+    // ===== FORM HANDLER =====
     const form = document.getElementById("authForm");
     const submitBtn = document.getElementById("submitBtn");
     const walletBtn = document.getElementById("walletBtn");
@@ -202,7 +198,6 @@
         const old = submitBtn.textContent;
         submitBtn.textContent = "⏳ Creating account...";
 
-        // Simulación de alta local (demo). Sustituye por tu signup real.
         const name = document.getElementById("name")?.value?.trim() || "";
         const email = document.getElementById("email")?.value?.trim() || "";
         const userData = {
@@ -220,8 +215,7 @@
           usage: { referencesUsed: 0 }
         }));
 
-        // Ir al dashboard simple (sin query de cupones/promos)
-        globalThis.location.replace("/app.html");
+        globalThis.location.replace("app.html");
         submitBtn.textContent = old;
       });
     }
@@ -230,7 +224,6 @@
       walletBtn.addEventListener("click", async () => {
         walletBtn.disabled = true;
         walletBtn.textContent = "⏳ Connecting...";
-        // Simulación (tu wallet-auth real puede sobreescribir esto)
         setTimeout(() => {
           const userData = {
             name: "Web3 User",
@@ -246,7 +239,7 @@
             features: { maxReferences: 1, canUseBlockchain: false, canExportPDF: false },
             usage: { referencesUsed: 0 }
           }));
-          globalThis.location.replace("/app.html");
+          globalThis.location.replace("app.html");
         }, 800);
       });
     }
