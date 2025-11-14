@@ -53,7 +53,7 @@ export default function Dashboard() {
     const { data: u } = await supabase.auth.getUser()
     const user = u.user
     if (!user) {
-      router.push("/test")
+      router.push("/WebDapp/auth.html")
       return
     }
     setUserEmail(user.email || "")
