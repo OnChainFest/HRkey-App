@@ -12,6 +12,20 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
 
+  // Servir landing page HTML estática
+  async rewrites() {
+    return [
+      {
+        source: '/WebDapp',
+        destination: '/WebDapp/index.html',
+      },
+      {
+        source: '/WebDapp/',
+        destination: '/WebDapp/index.html',
+      },
+    ];
+  },
+
   // 👇 Evita que el Base Account SDK falle por COOP/COEP en dev
   async headers() {
     return [
