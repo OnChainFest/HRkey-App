@@ -80,7 +80,7 @@
     <div class="container">
       <div class="header-content">
         <div class="logo-section">
-          <a href="index.html">  <!-- Ruta relativa -->
+          <a href="#" onclick="return false;" style="cursor: default;">
             <img src="images/LogoHRKEY-transparente.png" alt="HRKey Logo">
           </a>
         </div>
@@ -173,8 +173,49 @@
     window.dashboard = {
       user: null,
       plan: 'free',
+      authInitialized: false,
 
       async init() {
+        // Importante: Primero verificar si hay un hash de OAuth en la URL
+        // Esto indica que estamos regresando de un OAuth callback
+        const hasAuthHash = window.location.hash &&
+          (window.location.hash.includes('access_token') || window.location.hash.includes('error'));
+
+        if (hasAuthHash) {
+          console.log('Processing OAuth callback...');
+          // Esperar a que Supabase procese el hash
+          await this.waitForAuthCallback();
+          return; // El listener de onAuthStateChange se encargará del resto
+        }
+
+        // Si no hay hash de OAuth, proceder normalmente
+        await this.checkAuthAndInit();
+      },
+
+      async waitForAuthCallback() {
+        // Supabase procesará el hash automáticamente
+        // Solo esperamos un momento para que complete
+        return new Promise((resolve) => {
+          const timeout = setTimeout(() => {
+            console.log('Auth callback timeout, checking session...');
+            this.checkAuthAndInit();
+            resolve();
+          }, 3000);
+
+          // Limpiar timeout si auth state cambia antes
+          const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+              clearTimeout(timeout);
+              console.log('Auth callback successful:', event);
+              authListener.subscription.unsubscribe();
+              this.handleAuthentication(session);
+              resolve();
+            }
+          });
+        });
+      },
+
+      async checkAuthAndInit() {
         // Verificar sesión de Supabase
         const { data: { session } } = await supabase.auth.getSession();
 
@@ -183,20 +224,88 @@
           const savedWallet = localStorage.getItem('hrkey_wallet');
           if (!savedWallet && !walletParam) {
             // Sin sesión y sin wallet, redirigir a auth
+            console.log('No session and no wallet, redirecting to auth...');
             window.location.href = '/WebDapp/auth.html?flow=signin';
             return;
           }
+          // Hay wallet pero no sesión de Supabase
+          console.log('No Supabase session but wallet found:', savedWallet || walletParam);
+          this.user = { email: walletParam || savedWallet };
+        } else {
+          // Hay sesión de Supabase
+          console.log('Supabase session found:', session.user.email);
+          this.handleAuthentication(session);
         }
 
-        // Hay sesión o wallet, inicializar dashboard
-        this.user = session?.user || { email: walletParam || localStorage.getItem('hrkey_wallet') };
+        this.initializeDashboard();
+      },
 
+      handleAuthentication(session) {
+        this.user = session.user;
+        this.authInitialized = true;
+
+        // Procesar contexto de autenticación guardado
+        const savedFlow = localStorage.getItem('hrkey_auth_flow');
+        const savedPlan = localStorage.getItem('hrkey_auth_plan');
+
+        if (savedFlow === 'signup' && savedPlan === 'pro') {
+          // Redirigir a Stripe checkout
+          console.log('Redirecting to Stripe for Pro plan...');
+          localStorage.removeItem('hrkey_auth_flow');
+          localStorage.removeItem('hrkey_auth_plan');
+          this.redirectToStripeCheckout(session.user.email);
+          return;
+        }
+
+        if (savedFlow === 'signup' && savedPlan === 'free') {
+          this.plan = 'free';
+          localStorage.setItem('hrkey_plan', 'free');
+          localStorage.removeItem('hrkey_auth_flow');
+          localStorage.removeItem('hrkey_auth_plan');
+        }
+
+        // Inicializar dashboard después de procesar autenticación
+        this.initializeDashboard();
+      },
+
+      async redirectToStripeCheckout(email) {
+        try {
+          const response = await fetch('/api/checkout/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              plan: 'lifetime',
+              email: email,
+              success_url: window.location.origin + '/WebDapp/app.html?payment=success',
+              cancel_url: window.location.origin + '/WebDapp/auth.html?flow=signup&plan=pro'
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.url) {
+              window.location.href = data.url;
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Stripe checkout error:', error);
+        }
+
+        // Si falla, mostrar dashboard con opción de upgrade
+        this.showAlert('error', 'Payment setup failed. Please try upgrading from your dashboard.');
+        this.initializeDashboard();
+      },
+
+      initializeDashboard() {
         // Determinar plan del usuario
         if (paymentSuccess) {
           this.plan = 'pro';
+          localStorage.setItem('hrkey_plan', 'pro');
           this.showAlert('success', '🎉 Welcome to HRKey Pro! Your lifetime membership is active.');
         } else if (planParam === 'free') {
           this.plan = 'free';
+          localStorage.setItem('hrkey_plan', 'free');
           this.showAlert('info', '🎯 Welcome to HRKey! You have 1 free reference to get started.');
         } else {
           // Cargar plan desde localStorage o base de datos

@@ -445,16 +445,22 @@
       }
     });
 
-    // Verificar si ya hay sesión
+    // Verificar si ya hay sesión al cargar la página
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
+        console.log('Existing session found in auth.html, user:', session.user.email);
+        console.log('Flow:', flow, 'Plan:', plan);
+
         // Procesar el contexto de autenticación si existe
         const handled = await processAuthContext(session);
         if (!handled) {
           // Si no hay contexto guardado, simplemente ir al dashboard
+          console.log('No saved context, redirecting to dashboard...');
           window.location.replace('/WebDapp/app.html');
         }
+      } else {
+        console.log('No existing session, waiting for user to login...');
       }
     })();
   </script>
