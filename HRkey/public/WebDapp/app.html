@@ -151,20 +151,145 @@
     </div>
   </div>
 
-  <!-- Script de guard híbrido optimizado -->
+  <!-- Script de guard y dashboard -->
   <script type="module">
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-    // Configura tus valores (igual que en index.html)
-    window.__SUPABASE_URL__ = "https://<TU-PROYECTO>.supabase.co";
-    window.__SUPABASE_ANON_KEY__ = "<TU-ANON-KEY>";
+    // Configuración de Supabase
+    window.__SUPABASE_URL__ = "https://wrervcydgdrlcndtjboy.supabase.co";
+    window.__SUPABASE_ANON_KEY__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXJ2Y3lkZ2RybGNuZHRqYm95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NzYxNTYsImV4cCI6MjA3MzU1MjE1Nn0.63M53sZW4LEYMOaxScvtLhQr_6VUj7rOaaGtlR745IM";
+
     const SUPABASE_URL = window.__SUPABASE_URL__;
     const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__;
-    const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Evalúa sesión demo o cupón
-    const userData = (() => {
-      try { return JSON.parse(localStorage.getItem('hrkey_user_data') || 'null'); }
-      catch { return null; }
-    })();
-    const url = new
+    // Leer parámetros URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentSuccess = urlParams.get('payment') === 'success';
+    const planParam = urlParams.get('plan');
+    const walletParam = urlParams.get('wallet');
+
+    // Dashboard object para manejar las acciones
+    window.dashboard = {
+      user: null,
+      plan: 'free',
+
+      async init() {
+        // Verificar sesión de Supabase
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session) {
+          // No hay sesión, verificar si hay wallet conectado
+          const savedWallet = localStorage.getItem('hrkey_wallet');
+          if (!savedWallet && !walletParam) {
+            // Sin sesión y sin wallet, redirigir a auth
+            window.location.href = '/WebDapp/auth.html?flow=signin';
+            return;
+          }
+        }
+
+        // Hay sesión o wallet, inicializar dashboard
+        this.user = session?.user || { email: walletParam || localStorage.getItem('hrkey_wallet') };
+
+        // Determinar plan del usuario
+        if (paymentSuccess) {
+          this.plan = 'pro';
+          this.showAlert('success', '🎉 Welcome to HRKey Pro! Your lifetime membership is active.');
+        } else if (planParam === 'free') {
+          this.plan = 'free';
+          this.showAlert('info', '🎯 Welcome to HRKey! You have 1 free reference to get started.');
+        } else {
+          // Cargar plan desde localStorage o base de datos
+          this.plan = localStorage.getItem('hrkey_plan') || 'free';
+        }
+
+        // Actualizar UI
+        this.updateUI();
+        this.loadReferences();
+      },
+
+      updateUI() {
+        // Actualizar nombre de usuario
+        const userNameEl = document.getElementById('userName');
+        if (this.user.email) {
+          const email = this.user.email;
+          const name = email.includes('@') ? email.split('@')[0] : email.substring(0, 12);
+          userNameEl.textContent = name;
+          if (this.plan === 'pro') {
+            userNameEl.innerHTML = name + ' <span class="plan-badge plan-pro">PRO</span>';
+          } else {
+            userNameEl.innerHTML = name + ' <span class="plan-badge plan-free">FREE</span>';
+          }
+        }
+
+        // Actualizar wallet display
+        const walletEl = document.getElementById('walletDisplay');
+        const wallet = localStorage.getItem('hrkey_wallet');
+        if (wallet) {
+          walletEl.textContent = wallet.substring(0, 6) + '...' + wallet.substring(wallet.length - 4);
+        } else {
+          walletEl.textContent = 'Not connected';
+        }
+      },
+
+      showAlert(type, message) {
+        const alertContainer = document.getElementById('alertContainer');
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.textContent = message;
+        alertContainer.appendChild(alert);
+
+        setTimeout(() => alert.remove(), 5000);
+      },
+
+      async loadReferences() {
+        const tableContainer = document.getElementById('tableContainer');
+
+        // Por ahora, mostrar estado vacío
+        tableContainer.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <h3 style="color: #ffffff; margin-bottom: 10px;">No references yet</h3>
+            <p>Request your first professional reference to get started!</p>
+          </div>
+        `;
+
+        // Actualizar stats
+        document.getElementById('statTotal').textContent = '0';
+        document.getElementById('statPending').textContent = '0';
+        document.getElementById('statCompleted').textContent = '0';
+        document.getElementById('statBlockchain').textContent = '0';
+      },
+
+      createNewReference() {
+        // TODO: Implementar lógica para crear nueva referencia
+        alert('Feature coming soon! You will be able to request references from colleagues and managers.');
+      },
+
+      upgradeToPro() {
+        window.location.href = '/WebDapp/get-started.html';
+      },
+
+      async logout() {
+        // Logout de Supabase
+        if (supabase) {
+          await supabase.auth.signOut();
+        }
+
+        // Limpiar localStorage
+        localStorage.removeItem('hrkey_wallet');
+        localStorage.removeItem('hrkey_plan');
+        localStorage.removeItem('hrkey_user_data');
+
+        // Redirigir a landing
+        window.location.href = '/WebDapp/index.html';
+      }
+    };
+
+    // Inicializar dashboard cuando carga la página
+    dashboard.init();
+  </script>
+</body>
+</html>
