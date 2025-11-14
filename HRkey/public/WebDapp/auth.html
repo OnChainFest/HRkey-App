@@ -359,7 +359,7 @@
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: window.location.origin + '/WebDapp/app.html'
+            redirectTo: window.location.origin
           }
         });
 
