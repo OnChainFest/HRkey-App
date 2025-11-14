@@ -153,6 +153,12 @@
 
   <!-- Script de guard y dashboard -->
   <script type="module">
+    // DEBUG: Log inicial
+    console.log('=== APP.HTML LOADED ===');
+    console.log('Current URL:', window.location.href);
+    console.log('URL Hash:', window.location.hash);
+    console.log('URL Search:', window.location.search);
+
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
     // Configuración de Supabase
@@ -163,11 +169,15 @@
     const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__;
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    console.log('Supabase client created');
+
     // Leer parámetros URL
     const urlParams = new URLSearchParams(window.location.search);
     const paymentSuccess = urlParams.get('payment') === 'success';
     const planParam = urlParams.get('plan');
     const walletParam = urlParams.get('wallet');
+
+    console.log('URL Params:', { paymentSuccess, planParam, walletParam });
 
     // Dashboard object para manejar las acciones
     window.dashboard = {
@@ -176,19 +186,25 @@
       authInitialized: false,
 
       async init() {
+        console.log('=== DASHBOARD INIT STARTED ===');
+
         // Importante: Primero verificar si hay un hash de OAuth en la URL
         // Esto indica que estamos regresando de un OAuth callback
         const hasAuthHash = window.location.hash &&
           (window.location.hash.includes('access_token') || window.location.hash.includes('error'));
 
+        console.log('Has auth hash?', hasAuthHash);
+        console.log('Current hash:', window.location.hash);
+
         if (hasAuthHash) {
-          console.log('Processing OAuth callback...');
+          console.log('✅ OAuth callback detected! Processing...');
           // Esperar a que Supabase procese el hash
           await this.waitForAuthCallback();
           return; // El listener de onAuthStateChange se encargará del resto
         }
 
         // Si no hay hash de OAuth, proceder normalmente
+        console.log('No OAuth hash, checking auth normally...');
         await this.checkAuthAndInit();
       },
 
@@ -216,24 +232,33 @@
       },
 
       async checkAuthAndInit() {
+        console.log('=== CHECKING AUTH ===');
+
         // Verificar sesión de Supabase
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('Session:', session ? '✅ Found' : '❌ Not found');
 
         if (!session) {
           // No hay sesión, verificar si hay wallet conectado
           const savedWallet = localStorage.getItem('hrkey_wallet');
+          console.log('Saved wallet:', savedWallet);
+          console.log('Wallet param:', walletParam);
+
           if (!savedWallet && !walletParam) {
             // Sin sesión y sin wallet, redirigir a auth
-            console.log('No session and no wallet, redirecting to auth...');
-            window.location.href = '/WebDapp/auth.html?flow=signin';
+            console.log('❌ No session and no wallet, redirecting to auth...');
+            console.log('⚠️ REDIRECT TO AUTH IN 2 SECONDS');
+            setTimeout(() => {
+              window.location.href = '/WebDapp/auth.html?flow=signin';
+            }, 2000);
             return;
           }
           // Hay wallet pero no sesión de Supabase
-          console.log('No Supabase session but wallet found:', savedWallet || walletParam);
+          console.log('✅ No Supabase session but wallet found:', savedWallet || walletParam);
           this.user = { email: walletParam || savedWallet };
         } else {
           // Hay sesión de Supabase
-          console.log('Supabase session found:', session.user.email);
+          console.log('✅ Supabase session found:', session.user.email);
           this.handleAuthentication(session);
         }
 
@@ -241,6 +266,9 @@
       },
 
       handleAuthentication(session) {
+        console.log('=== HANDLE AUTHENTICATION ===');
+        console.log('User email:', session.user.email);
+
         this.user = session.user;
         this.authInitialized = true;
 
@@ -248,9 +276,12 @@
         const savedFlow = localStorage.getItem('hrkey_auth_flow');
         const savedPlan = localStorage.getItem('hrkey_auth_plan');
 
+        console.log('Saved flow:', savedFlow);
+        console.log('Saved plan:', savedPlan);
+
         if (savedFlow === 'signup' && savedPlan === 'pro') {
           // Redirigir a Stripe checkout
-          console.log('Redirecting to Stripe for Pro plan...');
+          console.log('🎯 Redirecting to Stripe for Pro plan...');
           localStorage.removeItem('hrkey_auth_flow');
           localStorage.removeItem('hrkey_auth_plan');
           this.redirectToStripeCheckout(session.user.email);
@@ -258,6 +289,7 @@
         }
 
         if (savedFlow === 'signup' && savedPlan === 'free') {
+          console.log('✅ Setting up Free plan...');
           this.plan = 'free';
           localStorage.setItem('hrkey_plan', 'free');
           localStorage.removeItem('hrkey_auth_flow');
@@ -265,6 +297,7 @@
         }
 
         // Inicializar dashboard después de procesar autenticación
+        console.log('📊 Initializing dashboard...');
         this.initializeDashboard();
       },
 
@@ -298,23 +331,36 @@
       },
 
       initializeDashboard() {
+        console.log('=== INITIALIZE DASHBOARD ===');
+        console.log('Payment success:', paymentSuccess);
+        console.log('Plan param:', planParam);
+
         // Determinar plan del usuario
         if (paymentSuccess) {
+          console.log('✅ Pro plan from payment');
           this.plan = 'pro';
           localStorage.setItem('hrkey_plan', 'pro');
           this.showAlert('success', '🎉 Welcome to HRKey Pro! Your lifetime membership is active.');
         } else if (planParam === 'free') {
+          console.log('✅ Free plan from param');
           this.plan = 'free';
           localStorage.setItem('hrkey_plan', 'free');
           this.showAlert('info', '🎯 Welcome to HRKey! You have 1 free reference to get started.');
         } else {
           // Cargar plan desde localStorage o base de datos
           this.plan = localStorage.getItem('hrkey_plan') || 'free';
+          console.log('✅ Plan from localStorage:', this.plan);
         }
 
+        console.log('Current user:', this.user);
+        console.log('Current plan:', this.plan);
+
         // Actualizar UI
+        console.log('🎨 Updating UI...');
         this.updateUI();
         this.loadReferences();
+
+        console.log('=== DASHBOARD READY ===');
       },
 
       updateUI() {
