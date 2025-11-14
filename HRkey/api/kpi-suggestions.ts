@@ -1,4 +1,5 @@
 // api/kpi-suggestions.ts
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -6,7 +7,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY! // service role para inserts desde backend
 );
 
-export default async function handler(req, res) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ ok:false, error: 'Method not allowed' });
   }
@@ -38,8 +39,9 @@ export default async function handler(req, res) {
     if (error) throw error;
 
     return res.status(200).json({ ok:true, count: rows.length });
-  } catch (e:any) {
+  } catch (e: unknown) {
     console.error('kpi-suggestions error:', e);
-    return res.status(500).json({ ok:false, error: e.message });
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return res.status(500).json({ ok:false, error: errorMessage });
   }
 }

@@ -14,7 +14,7 @@ type InviteRow = {
 
 export default function VerifyReferencePage() {
   const params = useSearchParams()
-  const token = params.get("token") || ""
+  const token = params?.get("token") || ""
 
   const [loading, setLoading] = useState(true)
   const [invite, setInvite] = useState<InviteRow | null>(null)
@@ -35,10 +35,11 @@ export default function VerifyReferencePage() {
       const row = Array.isArray(res.data) ? res.data[0] : res.data
       if (!row) { setMsg("Invitación no encontrada."); setLoading(false); return }
 
-      setInvite(row as InviteRow)
+      const inviteData = row as InviteRow;
+      setInvite(inviteData)
 
-      if ((row as any).invite_status !== "pending") {
-        setMsg(`Esta invitación ya no está activa (estado: ${(row as any).invite_status}).`)
+      if (inviteData.invite_status !== "pending") {
+        setMsg(`Esta invitación ya no está activa (estado: ${inviteData.invite_status}).`)
       }
       setLoading(false)
     }

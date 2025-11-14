@@ -1,9 +1,4 @@
-cd ~/HRKey-App
-cp hardhat.config.js hardhat.config.js.bak.$(date +%Y%m%d-%H%M%S)
-
-# Sobrescribe con un config correcto para Hardhat v3 (ESM)
-cat > hardhat.config.js <<'EOF'
-import '@nomicfoundation/hardhat-verify';
+// import '@nomicfoundation/hardhat-verify';
 import 'dotenv/config';
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -12,13 +7,13 @@ const config = {
   networks: {
     baseSepolia: {
       type: 'http',                                 // requerido por HH3
-      url: process.env.BASE_SEPOLIA_RPC,            // p.ej. https://sepolia.base.org
+      url: process.env.BASE_SEPOLIA_RPC || 'https://sepolia.base.org',
       chainId: 84532,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : []
     },
     base: {
       type: 'http',                                 // requerido por HH3
-      url: process.env.BASE_MAINNET_RPC,            // p.ej. https://mainnet.base.org
+      url: process.env.BASE_MAINNET_RPC || 'https://mainnet.base.org',
       chainId: 8453,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : []
     }
@@ -50,4 +45,3 @@ const config = {
 };
 
 export default config;
-EOF

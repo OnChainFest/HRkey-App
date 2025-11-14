@@ -1,4 +1,5 @@
 // api/kpi-digest.ts
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
@@ -15,7 +16,10 @@ function todayRangeLocalTZ(tz: string) {
   // Construye el rango [inicio,hoy_fin) en tz local (Costa Rica en tu caso)
   const now = new Date();
   const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' });
-  const parts = fmt.formatToParts(now).reduce((a, p) => (a[p.type]=p.value, a), {} as any);
+  const parts = fmt.formatToParts(now).reduce((a, p) => {
+    a[p.type] = p.value;
+    return a;
+  }, {} as Record<string, string>);
   const y = parts.year, m = parts.month, d = parts.day;
   const start = new Date(`${y}-${m}-${d}T00:00:00-06:00`); // CR -06:00
   const end   = new Date(`${y}-${m}-${d}T23:59:59-06:00`);
@@ -23,10 +27,19 @@ function todayRangeLocalTZ(tz: string) {
 }
 
 function escapeHtml(s:string) {
-  return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'} as any)[m]);
+  const map: Record<string, string> = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+  return String(s).replace(/[&<>"']/g, (m) => map[m] || m);
 }
 
-function buildHtml(items:any[]) {
+interface KPIItem {
+  title: string;
+  description: string;
+  position_hint?: string;
+  user_email?: string;
+  created_at: string;
+}
+
+function buildHtml(items: KPIItem[]) {
   const rows = items.map((it, i) => `
     <tr>
       <td style="padding:8px;border-bottom:1px solid #eee;">${i+1}</td>
@@ -59,7 +72,7 @@ function buildHtml(items:any[]) {
   </div>`;
 }
 
-export default async function handler(req, res) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Opcional: proteger con una secret si quieres (x-cron-secret)
   try {
     const { y, m, d, start, end } = todayRangeLocalTZ('America/Costa_Rica');
@@ -91,8 +104,9 @@ export default async function handler(req, res) {
     if (sendErr) throw sendErr;
 
     return res.status(200).json({ ok:true, count: data?.length || 0 });
-  } catch (e:any) {
+  } catch (e: unknown) {
     console.error('kpi-digest error:', e);
-    return res.status(500).json({ ok:false, error: e.message });
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return res.status(500).json({ ok:false, error: errorMessage });
   }
 }

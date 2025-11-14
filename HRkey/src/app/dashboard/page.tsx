@@ -4,11 +4,20 @@ import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabaseClient";
 
-type Row = Record<string, any>
+interface Row {
+  id: string;
+  status: string | null;
+  created_at: string;
+  summary: string | null;
+  overall_rating: number | null;
+  referrer_name: string | null;
+  referrer_email: string | null;
+  owner_id?: string;
+  person_id?: string;
+}
 
 export default function Dashboard() {
   const router = useRouter()
-  const [userId, setUserId] = useState("")
   const [userEmail, setUserEmail] = useState("")
   const [personId, setPersonId] = useState("")
   const [rows, setRows] = useState<Row[]>([])
@@ -47,7 +56,6 @@ export default function Dashboard() {
       router.push("/test")
       return
     }
-    setUserId(user.id)
     setUserEmail(user.email || "")
 
     // obtener/crear people.id
@@ -55,8 +63,9 @@ export default function Dashboard() {
     try {
       if (!pid) pid = await ensurePerson(user.id)
       setPersonId(pid)
-    } catch (e: any) {
-      setMsg(`No se pudo obtener/crear persona: ${e?.message ?? e}`)
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      setMsg(`No se pudo obtener/crear persona: ${errorMessage}`)
       setLoading(false)
       return
     }
@@ -94,8 +103,9 @@ export default function Dashboard() {
     try {
       if (!pid) pid = await ensurePerson(uid)
       setPersonId(pid)
-    } catch (e: any) {
-      setMsg(`No se pudo obtener/crear persona: ${e?.message ?? e}`)
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      setMsg(`No se pudo obtener/crear persona: ${errorMessage}`)
       return
     }
 
@@ -214,10 +224,10 @@ export default function Dashboard() {
 
   const signOut = async () => { await supabase.auth.signOut(); router.push("/test") }
 
-  const fmt = (v: any) => {
+  const fmt = (v: unknown) => {
     try {
       if (!v) return "—"
-      const d = new Date(v)
+      const d = new Date(v as string | number | Date)
       return isNaN(d.getTime()) ? String(v) : d.toLocaleString()
     } catch {
       return String(v)
@@ -301,7 +311,7 @@ export default function Dashboard() {
                       <button onClick={() => sendInvite(r)}>Enviar a verificación</button>
                     )}
                     {r.status === "submitted" && (
-                      <button onClick={() => showInviteLink(r.id, r.referrer_email, r.referrer_name)}>
+                      <button onClick={() => showInviteLink(r.id, r.referrer_email ?? undefined, r.referrer_name ?? undefined)}>
                         Ver link de invitación
                       </button>
                     )}
