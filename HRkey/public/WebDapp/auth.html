@@ -471,7 +471,7 @@
 <script>(()=>{
   function normalizePromo(p){if(!p)return "";p=String(p).trim();return p;}
   const url=new URL(window.location.href);let promo=normalizePromo(url.searchParams.get("promo"));
-  if(!url.searchParams.get("promo")){url.searchParams.set("promo",promo);history.replaceState({}, "", url);}
+  // Promo param removed
   document.addEventListener("DOMContentLoaded",()=>{
     document.body.classList.add("hrk-gated");
     const earlyEl=document.getElementById("earlyAccessModal");
