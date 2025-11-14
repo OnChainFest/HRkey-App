@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@coinbase/onchainkit": "^1.0.2",
+    "@emailjs/browser": "^4.4.1",
     "@supabase/supabase-js": "^2.57.4",
     "@tanstack/react-query": "^5.89.0",
     "autoprefixer": "^10.4.21",
@@ -18,7 +19,6 @@
     "postcss": "^8.5.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "resend": "^6.4.2",
     "viem": "^2.37.6",
     "wagmi": "^2.17.0"
   },

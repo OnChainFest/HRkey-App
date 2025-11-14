@@ -1,16 +1,16 @@
 // api/kpi-digest.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from "@supabase/supabase-js";
-import { Resend } from "resend";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-const resend = new Resend(process.env.RESEND_API_KEY!);
 
 const TO_EMAIL = process.env.DIGEST_TO_EMAIL || 'vicvalch@hrkey.xyz';
-const FROM_EMAIL = process.env.DIGEST_FROM_EMAIL || 'HRKey <no-reply@hrkey.xyz>';
+const EMAILJS_SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_DIGEST = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_DIGEST;
+const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
 
 function todayRangeLocalTZ(tz: string) {
   // Construye el rango [inicio,hoy_fin) en tz local (Costa Rica en tu caso)
@@ -89,19 +89,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const html = buildHtml(data || []);
     const subject = `HRKey KPI Digest — ${y}-${m}-${d} (CR) — ${data?.length || 0} item(s)`;
 
-    if (!process.env.RESEND_API_KEY) {
-      console.warn('RESEND_API_KEY missing — skipping email send');
+    if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_DIGEST || !EMAILJS_PUBLIC_KEY) {
+      console.warn('EmailJS not configured — skipping email send');
       return res.status(200).json({ ok:true, count: data?.length || 0, emailSkipped:true });
     }
 
-    const { error: sendErr } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: TO_EMAIL,
-      subject,
-      html
+    // Send via EmailJS REST API
+    const emailResponse = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_id: EMAILJS_SERVICE_ID,
+        template_id: EMAILJS_TEMPLATE_DIGEST,
+        user_id: EMAILJS_PUBLIC_KEY,
+        template_params: {
+          to_email: TO_EMAIL,
+          subject,
+          html_content: html,
+          date: `${y}-${m}-${d}`,
+          count: data?.length || 0,
+        },
+      }),
     });
 
-    if (sendErr) throw sendErr;
+    if (!emailResponse.ok) {
+      const error = await emailResponse.text();
+      throw new Error(`EmailJS error: ${error}`);
+    }
 
     return res.status(200).json({ ok:true, count: data?.length || 0 });
   } catch (e: unknown) {
