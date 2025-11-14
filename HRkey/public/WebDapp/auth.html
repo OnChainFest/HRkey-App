@@ -435,13 +435,13 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 (function(){
-  function normalizePromo(p){if(!p)return"BLOCKCHAINJUNGLE";p=String(p).trim();if(p.toUpperCase()==="JUNGLE")return"BLOCKCHAINJUNGLE";return p;}
+  function normalizePromo(p){if(!p)return "";p=String(p).trim();return p;}
   const url=new URL(window.location.href);
   let promo=normalizePromo(url.searchParams.get("promo"));
-  if(!url.searchParams.get("promo")||!promo){url.searchParams.set("promo","BLOCKCHAINJUNGLE");window.history.replaceState({}, "", url.toString());promo="BLOCKCHAINJUNGLE";}
+  // Promo code removed
   document.addEventListener('DOMContentLoaded',function(){
     const promoEl=document.getElementById('promoTag');if(promoEl)promoEl.textContent=promo;
-    const early=new bootstrap.Modal(document.getElementById('earlyAccessModal'));early.show();
+    // Early access modal disabled
     document.getElementById('earlyAccessForm').addEventListener('submit',function(e){
       e.preventDefault();
       const name=(document.getElementById('userName').value||"").trim();
@@ -458,18 +458,18 @@
 
 <script>
 (function(){
-  function norm(p){ if(!p) return "BLOCKCHAINJUNGLE"; p=String(p).trim(); return p.toUpperCase()==="JUNGLE"?"BLOCKCHAINJUNGLE":p; }
+  function norm(p){ if(!p) return ""; p=String(p).trim(); return p; }
   const u=new URL(window.location.href);
   const promo=norm(u.searchParams.get("promo"));
   // si viene por promo de feria, marcamos flag para mostrar modal luego en el dashboard
-  if (promo==="BLOCKCHAINJUNGLE") {
+  if (false) { // BLOCKCHAINJUNGLE promo disabled
     try { localStorage.setItem("hrkey_force_early_modal","1"); } catch(_){}
   }
 })();
 </script>
 
 <script>(()=>{
-  function normalizePromo(p){if(!p)return "BLOCKCHAINJUNGLE";p=String(p).trim();if(p.toUpperCase()==="JUNGLE")return "BLOCKCHAINJUNGLE";return p;}
+  function normalizePromo(p){if(!p)return "";p=String(p).trim();return p;}
   const url=new URL(window.location.href);let promo=normalizePromo(url.searchParams.get("promo"));
   if(!url.searchParams.get("promo")){url.searchParams.set("promo",promo);history.replaceState({}, "", url);}
   document.addEventListener("DOMContentLoaded",()=>{
