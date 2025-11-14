@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { supabase } from "../../../lib/supabaseClient";
 
@@ -12,7 +12,7 @@ type InviteRow = {
   invite_status: string | null
 }
 
-export default function VerifyReferencePage() {
+function VerifyReferenceContent() {
   const params = useSearchParams()
   const token = params?.get("token") || ""
 
@@ -107,5 +107,13 @@ export default function VerifyReferencePage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function VerifyReferencePage() {
+  return (
+    <Suspense fallback={<div style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>Cargando…</div>}>
+      <VerifyReferenceContent />
+    </Suspense>
   )
 }
