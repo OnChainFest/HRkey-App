@@ -4,6 +4,9 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "build": "cd HRkey && npm install && npm run build",
+    "dev": "cd HRkey && npm run dev",
+    "start": "cd HRkey && npm start",
     "hh": "hardhat",
     "compile": "hardhat compile && node copy-abi.cjs",
     "deploy:base-sepolia": "hardhat run scripts/deploy.js --network baseSepolia && node copy-abi.cjs",
