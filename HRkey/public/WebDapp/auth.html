@@ -179,8 +179,8 @@
   <div class="container">
     <div class="header">
       <div class="logo">🔐</div>
-      <h1>Welcome to HRKey</h1>
-      <p>Sign in to access your professional profile</p>
+      <h1 id="pageTitle">Welcome to HRKey</h1>
+      <p id="pageSubtitle">Sign in to access your professional profile</p>
     </div>
 
     <div class="content">
@@ -234,6 +234,31 @@
     const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__;
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // Leer parámetros de URL
+    const params = new URLSearchParams(window.location.search);
+    const flow = params.get('flow'); // 'signup' o 'signin'
+    const plan = params.get('plan'); // 'free' o 'pro' (solo si signup)
+
+    // Actualizar título y subtítulo según el flujo
+    const pageTitle = document.getElementById('pageTitle');
+    const pageSubtitle = document.getElementById('pageSubtitle');
+
+    if (flow === 'signup') {
+      if (plan === 'pro') {
+        pageTitle.textContent = '🚀 Go Pro Today';
+        pageSubtitle.textContent = 'Unlock lifetime access for just $9.99';
+      } else if (plan === 'free') {
+        pageTitle.textContent = 'Get Started for Free';
+        pageSubtitle.textContent = 'Create your account and start building your professional profile';
+      } else {
+        pageTitle.textContent = 'Create Your Account';
+        pageSubtitle.textContent = 'Join HRKey and take control of your professional references';
+      }
+    } else if (flow === 'signin') {
+      pageTitle.textContent = 'Welcome Back';
+      pageSubtitle.textContent = 'Sign in to access your professional profile';
+    }
+
     // Helper para deshabilitar botones durante carga
     const setLoading = (btn, loading) => {
       if (loading) {
@@ -248,10 +273,87 @@
       }
     };
 
+    // Guardar flow y plan en localStorage para usar después del OAuth callback
+    const saveAuthContext = () => {
+      if (flow) localStorage.setItem('hrkey_auth_flow', flow);
+      if (plan) localStorage.setItem('hrkey_auth_plan', plan);
+    };
+
+    // Crear sesión de checkout de Stripe para el plan Pro
+    const createStripeCheckout = async (email) => {
+      try {
+        const response = await fetch('/api/checkout/session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            plan: 'lifetime',
+            email: email,
+            success_url: window.location.origin + '/WebDapp/app.html?payment=success',
+            cancel_url: window.location.origin + '/WebDapp/auth.html?flow=signup&plan=pro'
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create checkout session');
+        }
+
+        const data = await response.json();
+        if (data.url) {
+          // Redirigir a Stripe Checkout
+          window.location.href = data.url;
+        } else {
+          throw new Error('No checkout URL returned');
+        }
+      } catch (error) {
+        console.error('Stripe checkout error:', error);
+        alert('Error creating payment session. Redirecting to dashboard...');
+        window.location.replace('/WebDapp/app.html?upgrade_error=true');
+      }
+    };
+
+    // Verificar si hay un contexto de autenticación pendiente y procesarlo
+    const processAuthContext = async (session) => {
+      const savedFlow = localStorage.getItem('hrkey_auth_flow');
+      const savedPlan = localStorage.getItem('hrkey_auth_plan');
+
+      // Limpiar localStorage
+      localStorage.removeItem('hrkey_auth_flow');
+      localStorage.removeItem('hrkey_auth_plan');
+
+      // Si es signup con plan pro, redirigir a Stripe
+      if (savedFlow === 'signup' && savedPlan === 'pro') {
+        console.log('Processing Pro plan signup - redirecting to Stripe...');
+        const userEmail = session.user?.email || '';
+        await createStripeCheckout(userEmail);
+        return true;
+      }
+
+      // Si es signup con plan free, guardar el plan en el perfil del usuario
+      if (savedFlow === 'signup' && savedPlan === 'free') {
+        console.log('Processing Free plan signup...');
+        // TODO: Guardar plan en la base de datos
+        window.location.replace('/WebDapp/app.html?plan=free');
+        return true;
+      }
+
+      // Para signin normal, simplemente ir al dashboard
+      if (savedFlow === 'signin') {
+        window.location.replace('/WebDapp/app.html');
+        return true;
+      }
+
+      return false;
+    };
+
     // Google OAuth
     document.getElementById('googleBtn').addEventListener('click', async () => {
       const btn = document.getElementById('googleBtn');
       setLoading(btn, true);
+
+      // Guardar contexto antes del OAuth
+      saveAuthContext();
 
       try {
         const { data, error } = await supabase.auth.signInWithOAuth({
@@ -286,10 +388,23 @@
         });
 
         if (accounts && accounts[0]) {
-          // Aquí puedes implementar tu lógica de autenticación con MetaMask
-          // Por ahora, redirigir al dashboard
           console.log('Connected with MetaMask:', accounts[0]);
-          window.location.href = '/WebDapp/app.html';
+          const walletAddress = accounts[0];
+
+          // Guardar wallet address
+          localStorage.setItem('hrkey_wallet', walletAddress);
+
+          // Manejar flujos según el plan
+          if (flow === 'signup' && plan === 'pro') {
+            // Para Pro, crear sesión de Stripe inmediatamente
+            await createStripeCheckout(walletAddress);
+          } else if (flow === 'signup' && plan === 'free') {
+            // Para Free, ir al dashboard
+            window.location.href = '/WebDapp/app.html?plan=free&wallet=' + walletAddress;
+          } else {
+            // Sign in normal
+            window.location.href = '/WebDapp/app.html?wallet=' + walletAddress;
+          }
         }
       } catch (error) {
         console.error('MetaMask error:', error);
@@ -334,7 +449,12 @@
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        window.location.replace('/WebDapp/app.html');
+        // Procesar el contexto de autenticación si existe
+        const handled = await processAuthContext(session);
+        if (!handled) {
+          // Si no hay contexto guardado, simplemente ir al dashboard
+          window.location.replace('/WebDapp/app.html');
+        }
       }
     })();
   </script>
