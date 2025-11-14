@@ -257,7 +257,7 @@
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: window.location.origin + '/dashboard'
+            redirectTo: window.location.origin + '/WebDapp/app.html'
           }
         });
 
@@ -289,7 +289,7 @@
           // Aquí puedes implementar tu lógica de autenticación con MetaMask
           // Por ahora, redirigir al dashboard
           console.log('Connected with MetaMask:', accounts[0]);
-          window.location.href = '/dashboard';
+          window.location.href = '/WebDapp/app.html';
         }
       } catch (error) {
         console.error('MetaMask error:', error);
@@ -334,7 +334,7 @@
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        window.location.replace('/dashboard');
+        window.location.replace('/WebDapp/app.html');
       }
     })();
   </script>
