@@ -1,23 +1,12 @@
 {
-  "version": 2,
-  "framework": null,
-  "installCommand": "true",
-  "buildCommand": "true",
-  "outputDirectory": "public",
-  "cleanUrls": false,
+  "buildCommand": "cd HRkey && npm run build",
+  "devCommand": "cd HRkey && npm run dev",
+  "installCommand": "cd HRkey && npm install",
+  "framework": "nextjs",
+  "outputDirectory": "HRkey/.next",
+  "cleanUrls": true,
   "trailingSlash": false,
-  "redirects": [
-    { "source": "/auth", "destination": "/auth.html", "permanent": false },
-    { "source": "/Auth.html", "destination": "/auth.html", "permanent": false },
-    { "source": "/AUTH.html", "destination": "/auth.html", "permanent": false }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=60" }
-      ]
-    }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/HRkey/$1" }
   ]
 }
-
