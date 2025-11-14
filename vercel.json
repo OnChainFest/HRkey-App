@@ -1,4 +1,8 @@
 {
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "rootDirectory": "HRkey",
   "redirects": [
     { "source": "/auth",          "destination": "/WebDapp/auth.html", "permanent": false },
     { "source": "/auth/",         "destination": "/WebDapp/auth.html", "permanent": false },
