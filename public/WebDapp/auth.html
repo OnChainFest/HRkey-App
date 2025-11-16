@@ -10,8 +10,8 @@
   <!-- 🔧 Variables de entorno (rellenar con tus valores reales) -->
   <script>
     // ⬇️ RELLENA con tu proyecto de Supabase (anon key es pública, NO uses service role)
-    window.__SUPABASE_URL__ = "https://<TU-PROYECTO>.supabase.co";
-    window.__SUPABASE_ANON_KEY__ = "<TU-ANON-KEY>";
+    window.__SUPABASE_URL__ = "https://wrervcydgdrlcndtjboy.supabase.co";
+    window.__SUPABASE_ANON_KEY__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXJ2Y3lkZ2RybGNuZHRqYm95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NzYxNTYsImV4cCI6MjA3MzU1MjE1Nn0.63M53sZW4LEYMOaxScvtLhQr_6VUj7rOaaGtlR745IM";
   </script>
 
   <style>
@@ -89,6 +89,13 @@
     }
     .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(0,196,199,.6); }
 
+    .btn-google {
+      width: 100%; padding: 16px; background: #fff; color:#000; border:2px solid #e2e8f0;
+      border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; transition:.3s; margin-top:15px;
+      box-shadow:0 2px 8px rgba(0,0,0,.1);
+    }
+    .btn-google:hover { background:#f8f9fa; box-shadow:0 4px 12px rgba(0,0,0,.15); transform:translateY(-1px); }
+
     .btn-wallet {
       width: 100%; padding: 16px; background: transparent; color:#00C4C7; border:2px solid #00C4C7;
       border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; transition:.3s; margin-top:15px;
@@ -147,6 +154,8 @@
 
       <div class="divider">OR</div>
 
+      <button class="btn-google" id="googleBtn">🔐 Continue with Google</button>
+
       <button class="btn-wallet" id="walletBtn">🦊 Connect with MetaMask</button>
 
       <div class="benefits">
@@ -158,7 +167,7 @@
 
       <div class="footer-note">
         <p>By signing up, you agree to our Terms of Service</p>
-        <p style="margin-top: 5px;">Already have an account? <a href="app.html" style="color: #00C4C7; text-decoration: none;">Sign in</a></p>
+        <p style="margin-top: 5px;">Already have an account? <a href="/dashboard" style="color: #00C4C7; text-decoration: none;">Sign in</a></p>
       </div>
     </div>
   </div>
@@ -187,7 +196,7 @@
     };
 
     const goToApp = (extraQuery = "") => {
-      const base = "/app.html";
+      const base = "/dashboard";
       const qs = extraQuery ? (extraQuery.startsWith("?") ? extraQuery : `?${extraQuery}`) : "";
       window.location.replace(base + qs);
     };
@@ -231,7 +240,7 @@
         if (error) {
           console.error("exchangeCodeForSession error:", error);
         } else {
-          const next = url.searchParams.get("next") || "/app";
+          const next = url.searchParams.get("next") || "/dashboard";
           history.replaceState({}, document.title, "/auth"); // limpia ?code
           window.location.replace(next);
         }
@@ -241,7 +250,7 @@
     } else {
       // Si ya hay sesión, ir directo al dashboard
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) window.location.replace("/app");
+      if (session) window.location.replace("/dashboard");
     }
 
     // ============== FORM HANDLERS =================
@@ -277,6 +286,44 @@
         // Ir al dashboard (manteniendo cupón si existe)
         goToApp(coupon ? `coupon=${encodeURIComponent(coupon)}` : "");
         submitBtn.textContent = old;
+      });
+    }
+
+    // Google OAuth handler
+    const googleBtn = document.getElementById("googleBtn");
+    if (googleBtn) {
+      googleBtn.addEventListener("click", async () => {
+        googleBtn.disabled = true;
+        googleBtn.textContent = "⏳ Connecting to Google...";
+
+        try {
+          // Construir redirect URL con cupón si existe
+          const redirectTo = `${window.location.origin}/auth.html`;
+          const params = new URLSearchParams();
+          if (coupon) params.set("coupon", coupon);
+          params.set("next", "/dashboard");
+          const finalRedirect = params.toString() ? `${redirectTo}?${params.toString()}` : redirectTo;
+
+          const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: finalRedirect
+            }
+          });
+
+          if (error) {
+            console.error("Google OAuth error:", error);
+            alert("Error connecting with Google: " + error.message);
+            googleBtn.textContent = "🔐 Continue with Google";
+            googleBtn.disabled = false;
+          }
+          // Si todo va bien, Supabase redirige automáticamente
+        } catch (e) {
+          console.error("Google OAuth failed:", e);
+          alert("Failed to connect with Google");
+          googleBtn.textContent = "🔐 Continue with Google";
+          googleBtn.disabled = false;
+        }
       });
     }
 
@@ -324,11 +371,11 @@
       const p = new URLSearchParams(location.search);
       const coupon = p.get('coupon');
       const qs = coupon ? `?coupon=${encodeURIComponent(coupon)}` : '';
-      // navegación “fuerte” que no puede ser bloqueada por otros listeners
-      location.assign('/app.html' + qs);
+      // navegación "fuerte" que no puede ser bloqueada por otros listeners
+      location.assign('/dashboard' + qs);
     } catch (e) {
       // fallback
-      location.assign('/app.html');
+      location.assign('/dashboard');
     }
   }
 
