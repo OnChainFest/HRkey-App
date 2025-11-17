@@ -22,15 +22,6 @@ const nextConfig: NextConfig = {
   // Skip trailing slash redirects to allow .html file access
   skipTrailingSlashRedirect: true,
 
-  // Explicitly tell Next.js to treat public files as static assets
-  async rewrites() {
-    return {
-      beforeFiles: [],
-      afterFiles: [],
-      fallback: [],
-    };
-  },
-
   // 👇 Evita que el Base Account SDK falle por COOP/COEP en dev
   async headers() {
     return [
