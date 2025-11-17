@@ -129,7 +129,11 @@
 
       <button class="btn-google" id="googleBtn">🔐 Continue with Google</button>
 
-      <button class="btn-wallet" id="walletBtn">🦊 Connect with MetaMask</button>
+      <button class="btn-wallet" id="metamaskBtn">🦊 Connect with MetaMask</button>
+
+      <button class="btn-wallet" id="coinbaseBtn">🔵 Connect with Coinbase Wallet</button>
+
+      <button class="btn-wallet" id="walletconnectBtn">🔗 Connect with WalletConnect</button>
 
       <div class="benefits">
         <div class="benefit-item"><span class="benefit-icon">✅</span><span>1 free blockchain-verified reference</span></div>
@@ -259,31 +263,64 @@
       });
     }
 
-    // ===== WALLET BUTTON =====
-    const walletBtn = document.getElementById("walletBtn");
-    if (walletBtn) {
-      walletBtn.addEventListener("click", async () => {
-        walletBtn.disabled = true;
-        walletBtn.textContent = "⏳ Connecting...";
-        setTimeout(() => {
-          const userData = {
-            name: "Web3 User",
-            email: "user@wallet.xyz",
-            wallet: "0x" + Math.random().toString(16).slice(2).padEnd(40, "0"),
-            authenticated: true,
-            loginDate: new Date().toISOString(),
-            source: refereeInfo ? "referee_conversion_wallet" : "direct_signup_wallet"
-          };
-          localStorage.setItem("hrkey_user_data", JSON.stringify(userData));
-          localStorage.setItem("hrkey_user_plan", JSON.stringify({
-            plan: "free",
-            features: { maxReferences: 1, canUseBlockchain: false, canExportPDF: false },
-            usage: { referencesUsed: 0 }
-          }));
-          window.location.replace("/WebDapp/app.html");
-        }, 800);
-      });
-    }
+    // ===== WALLET AUTHENTICATION =====
+    // Import wallet authentication dynamically
+    import("./js/wallet-connector.js").then(module => {
+      const { connectMetaMask, connectCoinbaseWallet, connectWalletConnect } = module;
+
+      // MetaMask button
+      const metamaskBtn = document.getElementById("metamaskBtn");
+      if (metamaskBtn) {
+        metamaskBtn.addEventListener("click", async () => {
+          metamaskBtn.disabled = true;
+          metamaskBtn.textContent = "⏳ Connecting to MetaMask...";
+          try {
+            await connectMetaMask(refereeInfo);
+          } catch (err) {
+            console.error("MetaMask connection error:", err);
+            alert("Failed to connect with MetaMask: " + (err?.message || "Unknown error"));
+            metamaskBtn.disabled = false;
+            metamaskBtn.textContent = "🦊 Connect with MetaMask";
+          }
+        });
+      }
+
+      // Coinbase Wallet button
+      const coinbaseBtn = document.getElementById("coinbaseBtn");
+      if (coinbaseBtn) {
+        coinbaseBtn.addEventListener("click", async () => {
+          coinbaseBtn.disabled = true;
+          coinbaseBtn.textContent = "⏳ Connecting to Coinbase Wallet...";
+          try {
+            await connectCoinbaseWallet(refereeInfo);
+          } catch (err) {
+            console.error("Coinbase Wallet connection error:", err);
+            alert("Failed to connect with Coinbase Wallet: " + (err?.message || "Unknown error"));
+            coinbaseBtn.disabled = false;
+            coinbaseBtn.textContent = "🔵 Connect with Coinbase Wallet";
+          }
+        });
+      }
+
+      // WalletConnect button
+      const walletconnectBtn = document.getElementById("walletconnectBtn");
+      if (walletconnectBtn) {
+        walletconnectBtn.addEventListener("click", async () => {
+          walletconnectBtn.disabled = true;
+          walletconnectBtn.textContent = "⏳ Connecting to WalletConnect...";
+          try {
+            await connectWalletConnect(refereeInfo);
+          } catch (err) {
+            console.error("WalletConnect connection error:", err);
+            alert("Failed to connect with WalletConnect: " + (err?.message || "Unknown error"));
+            walletconnectBtn.disabled = false;
+            walletconnectBtn.textContent = "🔗 Connect with WalletConnect";
+          }
+        });
+      }
+    }).catch(err => {
+      console.error("Failed to load wallet connector:", err);
+    });
   </script>
 </body>
 </html>
