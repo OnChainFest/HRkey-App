@@ -101,9 +101,9 @@ async function signInWithEthereum() {
       localStorage.setItem("hrkey_session", JSON.stringify(out.session));
     }
 
-    // ✅ Redirige SIEMPRE al dashboard (tenemos rewrite /app -> /WebDapp/app.html)
+    // ✅ Redirige SIEMPRE al dashboard
     try { history.replaceState({}, "", "/auth"); } catch (_) {}
-    window.location.assign("/app");
+    window.location.assign("/WebDapp/app.html");
     return;
 
   } catch (err) {
