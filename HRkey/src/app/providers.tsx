@@ -7,7 +7,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <OnchainKitProvider
       apiKey={process.env.NEXT_PUBLIC_CDP_API_KEY!}
       chain={baseSepolia}
-      appearance={{ name: "HRKey" }}
     >
       {children}
     </OnchainKitProvider>

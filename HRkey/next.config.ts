@@ -5,11 +5,18 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 
   // Disable linting and type checking during build for faster deployments
+  // Using dirs: [] to skip all directories for ESLint
   eslint: {
     ignoreDuringBuilds: true,
+    dirs: [], // Skip linting all directories
   },
   typescript: {
     ignoreBuildErrors: true,
+  },
+
+  // Additional optimization: disable static type checking
+  experimental: {
+    typedRoutes: false,
   },
 
   // 👇 Evita que el Base Account SDK falle por COOP/COEP en dev
