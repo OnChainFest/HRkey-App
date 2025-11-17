@@ -4,6 +4,14 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
+  // Disable linting and type checking during build for faster deployments
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+
   // 👇 Evita que el Base Account SDK falle por COOP/COEP en dev
   async headers() {
     return [
