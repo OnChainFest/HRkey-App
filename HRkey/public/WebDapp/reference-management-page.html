@@ -49,6 +49,16 @@
     .btn-request:hover { background: #c7d2fe; }
     .btn-request.locked { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; position: relative; }
     .btn-request.locked::after { content: '🔒 PRO'; position: absolute; top: -8px; right: -8px; background: #fbbf24; color: #000; font-size: 9px; padding: 2px 6px; border-radius: 8px; font-weight: 700; }
+    .action-buttons-top { display: flex; gap: 12px; margin-top: 20px; padding-top: 20px; border-top: 2px solid #e2e8f0; flex-wrap: wrap; }
+    .btn-save-changes { background: linear-gradient(135deg, #00C4C7 0%, #00d2cc 100%); color: #000; padding: 12px 24px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 14px; box-shadow: 0 4px 15px rgba(0,196,199,0.4); transition: all 0.3s; }
+    .btn-save-changes:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,196,199,0.6); }
+    .btn-blockchain { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: white; padding: 12px 24px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 14px; box-shadow: 0 4px 15px rgba(79,70,229,0.4); transition: all 0.3s; position: relative; }
+    .btn-blockchain:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(79,70,229,0.6); }
+    .btn-blockchain.locked { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-blockchain.locked::after { content: '🔒 PRO ONLY'; position: absolute; top: -8px; right: -8px; background: #fbbf24; color: #000; font-size: 9px; padding: 3px 8px; border-radius: 10px; font-weight: 700; }
+    .btn-blockchain.published { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .changes-indicator { display: inline-block; padding: 4px 10px; background: #fef3c7; color: #92400e; border-radius: 15px; font-size: 11px; font-weight: 600; margin-left: 10px; }
+    .suppression-mode { background: #fef3c7; border: 2px dashed #f59e0b; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 13px; color: #92400e; font-weight: 600; }
     .context-section { margin-top: 20px; padding: 20px; background: #f0fdfa; border-radius: 10px; border-left: 4px solid #00C4C7; }
     .context-header { font-size: 14px; font-weight: 600; color: #00C4C7; margin-bottom: 10px; }
     .context-text { color: #1e293b; font-size: 14px; line-height: 1.6; }
@@ -78,7 +88,7 @@
         <h1>Manage My References</h1>
         <p>View, edit, and manage your professional references</p>
       </div>
-      <a href="app.html" class="btn-back">← Back to Dashboard</a>
+      <a href="/WebDapp/app.html" class="btn-back">← Back to Dashboard</a>
     </div>
 
     <div class="content" id="mainContent">
@@ -320,6 +330,16 @@
           <strong>Would work again:</strong>
           ${evaluation.workAgain === 'yes' ? '✅ Yes, definitely' : evaluation.workAgain === 'maybe' ? '⚠️ Maybe' : '❌ No'}
         </div>
+
+        <div class="action-buttons-top">
+          <button class="btn-save-changes" onclick="saveReferenceChanges('${ref.id}')">
+            💾 Save Changes
+            <span class="changes-indicator" id="${ref.id}_changes_indicator" style="display:none;">Unsaved changes</span>
+          </button>
+          <button class="btn-blockchain" id="${ref.id}_blockchain_btn" onclick="publishToBlockchain('${ref.id}')">
+            ⛓️ Publish to Blockchain
+          </button>
+        </div>
       `;
       return card;
     }
@@ -328,25 +348,34 @@
     function enableSuppression(refId, kpiId) {
       const element = document.getElementById(`${refId}_${kpiId}_comment`);
       if (!element) return;
+
+      // Add visual indicator that suppression mode is active
+      const suppressionModeDiv = document.createElement('div');
+      suppressionModeDiv.className = 'suppression-mode';
+      suppressionModeDiv.id = `${refId}_${kpiId}_suppression_mode`;
+      suppressionModeDiv.innerHTML = '✂️ <strong>SUPPRESSION MODE ACTIVE:</strong> Select text you want to hide/suppress, then click outside to apply.';
+      element.parentNode.insertBefore(suppressionModeDiv, element);
+
       element.style.userSelect = 'text';
       element.style.cursor = 'text';
+      element.style.background = '#fef3c7';
+      element.style.padding = '10px';
+      element.style.borderRadius = '8px';
 
       const newElement = element.cloneNode(true);
       element.parentNode.replaceChild(newElement, element);
 
       newElement.addEventListener('mouseup', function() {
-        handleTextSelection(refId, kpiId, newElement);
+        handleTextSelection(refId, kpiId, newElement, suppressionModeDiv);
       });
-
-      alert('📝 Text suppression enabled. Select any text you want to suppress and confirm.');
     }
 
-    function handleTextSelection(refId, kpiId, element) {
+    function handleTextSelection(refId, kpiId, element, suppressionModeDiv) {
       const selection = window.getSelection();
       const selectedText = selection.toString().trim();
 
       if (selectedText.length > 0) {
-        const confirmed = confirm(`Suppress this text?\n\n"${selectedText}"`);
+        const confirmed = confirm(`Suppress this text?\n\n"${selectedText}"\n\nThis text will be crossed out but still visible. Click "Save Changes" to permanently save this modification.`);
         if (confirmed) {
           const range = selection.getRangeAt(0);
           const span = document.createElement('span');
@@ -361,12 +390,98 @@
               suppressedTexts[refId].kpis[kpiId] = [];
             }
             suppressedTexts[refId].kpis[kpiId].push(selectedText);
-            saveSuppressions();
+
+            // Mark as having unsaved changes
+            markAsChanged(refId);
+
+            // Remove suppression mode indicator after first suppression
+            if (suppressionModeDiv && suppressionModeDiv.parentNode) {
+              suppressionModeDiv.parentNode.removeChild(suppressionModeDiv);
+            }
           } catch (error) {
             console.error('Error suppressing text:', error);
           }
         }
         selection.removeAllRanges();
+      }
+    }
+
+    function markAsChanged(refId) {
+      const indicator = document.getElementById(`${refId}_changes_indicator`);
+      if (indicator) {
+        indicator.style.display = 'inline-block';
+      }
+    }
+
+    function saveReferenceChanges(refId) {
+      // Save all suppressions and modifications to localStorage
+      saveSuppressions();
+
+      // Update the reference in localStorage to mark it as modified
+      const refs = JSON.parse(localStorage.getItem('hrkey_references') || '[]');
+      const refIndex = refs.findIndex(r => r.id === refId);
+
+      if (refIndex !== -1) {
+        refs[refIndex].lastModified = new Date().toISOString();
+        refs[refIndex].suppressions = suppressedTexts[refId] || {};
+        localStorage.setItem('hrkey_references', JSON.stringify(refs));
+      }
+
+      // Hide the "unsaved changes" indicator
+      const indicator = document.getElementById(`${refId}_changes_indicator`);
+      if (indicator) {
+        indicator.style.display = 'none';
+      }
+
+      alert('✅ Changes saved successfully!\n\nYour modifications have been saved locally.');
+    }
+
+    function publishToBlockchain(refId) {
+      const plan = JSON.parse(localStorage.getItem('hrkey_user_plan') || '{}');
+      const isPro = plan.plan === 'pro';
+
+      if (!isPro) {
+        showUpgradeModal();
+        return;
+      }
+
+      // Check if there are unsaved changes
+      const indicator = document.getElementById(`${refId}_changes_indicator`);
+      if (indicator && indicator.style.display !== 'none') {
+        alert('⚠️ Please save your changes first before publishing to blockchain.');
+        return;
+      }
+
+      const confirmed = confirm('⛓️ Publish to Blockchain\n\nThis will permanently store this reference on the blockchain, making it immutable and publicly verifiable.\n\n⚠️ Once published, it cannot be modified or deleted.\n\nDo you want to proceed?');
+
+      if (confirmed) {
+        const btn = document.getElementById(`${refId}_blockchain_btn`);
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = '⏳ Publishing...';
+        }
+
+        // Simulate blockchain publication (replace with actual blockchain call)
+        setTimeout(() => {
+          // Update reference status
+          const refs = JSON.parse(localStorage.getItem('hrkey_references') || '[]');
+          const refIndex = refs.findIndex(r => r.id === refId);
+
+          if (refIndex !== -1) {
+            refs[refIndex].status = 'blockchain';
+            refs[refIndex].blockchainTxHash = 'tx_' + Math.random().toString(36).substring(7); // Simulated hash
+            refs[refIndex].blockchainPublishedAt = new Date().toISOString();
+            localStorage.setItem('hrkey_references', JSON.stringify(refs));
+          }
+
+          if (btn) {
+            btn.classList.add('published');
+            btn.textContent = '✅ Published on Blockchain';
+            btn.disabled = false;
+          }
+
+          alert('✅ Reference published to blockchain!\n\nTransaction Hash: ' + refs[refIndex].blockchainTxHash + '\n\nYour reference is now immutable and publicly verifiable.');
+        }, 2000);
       }
     }
 
@@ -391,7 +506,9 @@
           suppressedTexts[refId].overall.totallyDeleted = true;
         }
 
-        saveSuppressions();
+        // Mark as having unsaved changes
+        markAsChanged(refId);
+
         closeModal();
       };
     }
@@ -418,7 +535,9 @@
 
       if (!suppressedTexts[refId].kpis[kpiId]) suppressedTexts[refId].kpis[kpiId] = {};
       suppressedTexts[refId].kpis[kpiId].addedContext = context;
-      saveSuppressions();
+
+      // Mark as having unsaved changes
+      markAsChanged(refId);
 
       if (textarea) textarea.value = '';
       toggleAddContext(refId, kpiId);
@@ -492,7 +611,9 @@
     function checkPlanAndSetupButtons() {
       const plan = JSON.parse(localStorage.getItem('hrkey_user_plan') || '{}');
       const isPro = plan.plan === 'pro';
+      const refs = JSON.parse(localStorage.getItem('hrkey_references') || '[]');
 
+      // Setup "Request More Context" buttons
       const requestButtons = document.querySelectorAll('.request-context-btn');
       requestButtons.forEach(button => {
         if (!isPro) {
@@ -504,6 +625,23 @@
             const kpiId = button.getAttribute('data-kpi-id');
             requestMoreContext(refId, kpiId);
           };
+        }
+      });
+
+      // Setup "Publish to Blockchain" buttons
+      const blockchainButtons = document.querySelectorAll('.btn-blockchain');
+      blockchainButtons.forEach(button => {
+        const refId = button.id.replace('_blockchain_btn', '');
+        const ref = refs.find(r => r.id === refId);
+
+        if (!isPro) {
+          button.classList.add('locked');
+          button.textContent = '⛓️ Publish to Blockchain';
+          button.onclick = () => { showUpgradeModal(); };
+        } else if (ref && ref.status === 'blockchain') {
+          button.classList.add('published');
+          button.textContent = '✅ Published on Blockchain';
+          button.disabled = true;
         }
       });
     }
