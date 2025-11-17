@@ -298,7 +298,7 @@
 
         try {
           // Construir redirect URL con cupón si existe
-          const redirectTo = `${window.location.origin}/auth.html`;
+          const redirectTo = `${window.location.origin}/WebDapp/auth.html`;
           const params = new URLSearchParams();
           if (coupon) params.set("coupon", coupon);
           params.set("next", "/dashboard");
