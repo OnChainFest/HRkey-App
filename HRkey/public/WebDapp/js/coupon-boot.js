@@ -24,7 +24,7 @@
     if (!sessionStorage.getItem('hrkey_redirected')) {
       sessionStorage.setItem('hrkey_redirected', '1');
       sessionStorage.setItem('hrkey_onboard_from_coupon','1');
-window.location.assign("/app");
+      window.location.assign("/WebDapp/app.html");
     }
   };
 
