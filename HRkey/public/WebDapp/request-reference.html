@@ -51,7 +51,7 @@
 <body>
   <div class="page">
     <div class="card">
-      <a href="./app.html" class="back-link muted">&larr; Back to Dashboard</a>
+      <a href="/WebDapp/app.html" class="back-link muted">&larr; Back to Dashboard</a>
       <h1>Request a New Reference</h1>
       <p class="lead">Send a request to your manager, colleague, or client.</p>
 
@@ -163,7 +163,7 @@
     function loadSessionOrRedirect() {
       const raw = localStorage.getItem('hrkey_user_data');
       if (!raw) {
-        location.replace('./auth.html');
+        location.replace('/WebDapp/auth.html');
         return null;
       }
       try {
@@ -173,7 +173,7 @@
         return user;
       } catch(e) {
         console.error('Invalid hrkey_user_data:', e);
-        location.replace('./auth.html');
+        location.replace('/WebDapp/auth.html');
         return null;
       }
     }
@@ -238,7 +238,7 @@
         k3: ref?.kpis?.[2]?.title || '',
         kd3: ref?.kpis?.[2]?.description || ''
       });
-      const verificationLink = `${baseURL}/referee-evaluation-page.html?${q.toString()}`;
+      const verificationLink = `${baseURL}/WebDapp/referee-evaluation-page.html?${q.toString()}`;
 
       const params = {
         to_name: ref.refereeName,
@@ -339,7 +339,7 @@
         }
 
         setStatus('');
-        setTimeout(()=> location.replace('./app.html'), 1500);
+        setTimeout(()=> location.replace('/WebDapp/app.html'), 1500);
 
       } catch(err) {
         console.error('❌ submitReferenceRequest error:', err);
@@ -357,7 +357,7 @@
       if (!user) return;
 
       document.getElementById('refForm').addEventListener('submit', submitReferenceRequest);
-      document.getElementById('cancelBtn').addEventListener('click', () => location.replace('./app.html'));
+      document.getElementById('cancelBtn').addEventListener('click', () => location.replace('/WebDapp/app.html'));
     });
   </script>
 

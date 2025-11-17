@@ -111,8 +111,8 @@
           Build your own and manage references in minutes.
         </p>
         <div class="cta">
-          <a class="btn btn-primary" href="auth.html">🚀 Create Free Account</a>
-          <a class="btn btn-secondary" href="index.html">Maybe later</a>
+          <a class="btn btn-primary" href="/WebDapp/auth.html">🚀 Create Free Account</a>
+          <a class="btn btn-secondary" href="/index.html">Maybe later</a>
         </div>
         <div class="tiny" style="margin-top:10px;">You’ll be redirected shortly…</div>
       </div>
@@ -263,7 +263,7 @@
         document.getElementById('thanksView').style.display = 'block';
 
         // Auto-redirect (sin cupones)
-        setTimeout(() => location.assign("auth.html"), 7000);
+        setTimeout(() => location.assign("/WebDapp/auth.html"), 7000);
       } catch (err) {
         console.error('referee submit error:', err);
         showAlert('❌ Something went wrong. Please try again.', 'error');
@@ -384,7 +384,7 @@ async function hrkeyAfterEvaluationSubmit({
 
       const base = computeBaseURL();
       // link para que el solicitante revise/gestione
-      const reviewLink = `${base}/reference-management-page.html?id=${encodeURIComponent(refId)}`;
+      const reviewLink = `${base}/WebDapp/reference-management-page.html?id=${encodeURIComponent(refId)}`;
 
       const params = {
         to_email: __req,
@@ -428,10 +428,10 @@ function showThanksAndInvite() {
       <p style="margin:0 0 18px; color:#475569">Your evaluation was sent successfully.</p>
 
       <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap">
-        <a href="auth.html" style="background:#00C4C7; color:#000; padding:12px 18px; border-radius:10px; font-weight:700; text-decoration:none">
+        <a href="/WebDapp/auth.html" style="background:#00C4C7; color:#000; padding:12px 18px; border-radius:10px; font-weight:700; text-decoration:none">
           Create your free account
         </a>
-        <a href="index.html" style="border:2px solid #00C4C7; color:#00C4C7; padding:10px 16px; border-radius:10px; font-weight:700; text-decoration:none">
+        <a href="/index.html" style="border:2px solid #00C4C7; color:#00C4C7; padding:10px 16px; border-radius:10px; font-weight:700; text-decoration:none">
           Maybe later
         </a>
       </div>

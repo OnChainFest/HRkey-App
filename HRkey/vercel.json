@@ -7,7 +7,9 @@
     { "source": "/auth/", "destination": "/WebDapp/auth.html", "permanent": false },
     { "source": "/auth.html", "destination": "/WebDapp/auth.html", "permanent": false },
     { "source": "/Auth.html", "destination": "/WebDapp/auth.html", "permanent": false },
-    { "source": "/AUTH.html", "destination": "/WebDapp/auth.html", "permanent": false }
+    { "source": "/AUTH.html", "destination": "/WebDapp/auth.html", "permanent": false },
+    { "source": "/app", "destination": "/WebDapp/app.html", "permanent": false },
+    { "source": "/app/", "destination": "/WebDapp/app.html", "permanent": false }
   ],
   "headers": [
     {
