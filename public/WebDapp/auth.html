@@ -196,7 +196,7 @@
     };
 
     const goToApp = (extraQuery = "") => {
-      const base = "/dashboard";
+      const base = "/WebDapp/app.html";
       const qs = extraQuery ? (extraQuery.startsWith("?") ? extraQuery : `?${extraQuery}`) : "";
       window.location.replace(base + qs);
     };
@@ -234,13 +234,13 @@
     if (errorDesc) console.error("Auth error:", errorDesc);
 
     if (code) {
-      // Intercambia el code por sesión y manda al dashboard
+      // Intercambia el code por sesión y manda a app.html
       try {
         const { error } = await supabase.auth.exchangeCodeForSession({ code });
         if (error) {
           console.error("exchangeCodeForSession error:", error);
         } else {
-          const next = url.searchParams.get("next") || "/dashboard";
+          const next = url.searchParams.get("next") || "/WebDapp/app.html";
           history.replaceState({}, document.title, "/auth"); // limpia ?code
           window.location.replace(next);
         }
@@ -248,9 +248,9 @@
         console.error("Exchange failed:", e);
       }
     } else {
-      // Si ya hay sesión, ir directo al dashboard
+      // Si ya hay sesión, ir directo a app.html
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) window.location.replace("/dashboard");
+      if (session) window.location.replace("/WebDapp/app.html");
     }
 
     // ============== FORM HANDLERS =================
@@ -301,7 +301,7 @@
           const redirectTo = `${window.location.origin}/WebDapp/auth.html`;
           const params = new URLSearchParams();
           if (coupon) params.set("coupon", coupon);
-          params.set("next", "/dashboard");
+          params.set("next", "/WebDapp/app.html");
           const finalRedirect = params.toString() ? `${redirectTo}?${params.toString()}` : redirectTo;
 
           const { data, error } = await supabase.auth.signInWithOAuth({
@@ -372,10 +372,10 @@
       const coupon = p.get('coupon');
       const qs = coupon ? `?coupon=${encodeURIComponent(coupon)}` : '';
       // navegación "fuerte" que no puede ser bloqueada por otros listeners
-      location.assign('/dashboard' + qs);
+      location.assign('/WebDapp/app.html' + qs);
     } catch (e) {
       // fallback
-      location.assign('/dashboard');
+      location.assign('/WebDapp/app.html');
     }
   }
 
