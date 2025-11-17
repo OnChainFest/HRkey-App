@@ -19,6 +19,9 @@ const nextConfig: NextConfig = {
     typedRoutes: false,
   },
 
+  // Skip trailing slash redirects to allow .html file access
+  skipTrailingSlashRedirect: true,
+
   // 👇 Evita que el Base Account SDK falle por COOP/COEP en dev
   async headers() {
     return [
