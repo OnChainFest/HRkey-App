@@ -480,27 +480,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-(function(){
-  function normalizePromo(p){if(!p)return"BLOCKCHAINJUNGLE";p=String(p).trim();if(p.toUpperCase()==="JUNGLE")return"BLOCKCHAINJUNGLE";return p;}
-  const url=new URL(window.location.href);
-  let promo=normalizePromo(url.searchParams.get("promo"));
-  if(!url.searchParams.get("promo")||!promo){url.searchParams.set("promo","BLOCKCHAINJUNGLE");window.history.replaceState({}, "", url.toString());promo="BLOCKCHAINJUNGLE";}
-  document.addEventListener('DOMContentLoaded',function(){
-    const promoEl=document.getElementById('promoTag');if(promoEl)promoEl.textContent=promo;
-    const early=new bootstrap.Modal(document.getElementById('earlyAccessModal'));early.show();
-    document.getElementById('earlyAccessForm').addEventListener('submit',function(e){
-      e.preventDefault();
-      const name=(document.getElementById('userName').value||"").trim();
-      const email=(document.getElementById('userEmail').value||"").trim();
-      const okEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-      if(!name||!okEmail){alert("Ingresá un nombre y un correo válido.");return;}
-      try{const KEY="hrkey_early_access_leads";const list=JSON.parse(localStorage.getItem(KEY)||"[]");list.push({name,email,promo,ts:new Date().toISOString()});localStorage.setItem(KEY,JSON.stringify(list));}catch(_){}
-      early.hide();new bootstrap.Modal(document.getElementById('thankYouModal')).show();
-    });
-  });
-})();
-</script>
+<!-- Script de early access modal consolidado más abajo -->
 
 
 <script>
@@ -516,27 +496,37 @@
 </script>
 
 <script>(()=>{
+  // Solo mostrar modal de early access si viene explícitamente el parámetro promo
+  const url=new URL(window.location.href);
+  const hasPromo = url.searchParams.has("promo");
+
+  if (!hasPromo) {
+    // No hay promo, no mostrar modal de early access
+    return;
+  }
+
   function normalizePromo(p){if(!p)return "BLOCKCHAINJUNGLE";p=String(p).trim();if(p.toUpperCase()==="JUNGLE")return "BLOCKCHAINJUNGLE";return p;}
-  const url=new URL(window.location.href);let promo=normalizePromo(url.searchParams.get("promo"));
-  if(!url.searchParams.get("promo")){url.searchParams.set("promo",promo);history.replaceState({}, "", url);}
+  let promo=normalizePromo(url.searchParams.get("promo"));
+
   document.addEventListener("DOMContentLoaded",()=>{
-    document.body.classList.add("hrk-gated");
     const earlyEl=document.getElementById("earlyAccessModal");
     const thanksEl=document.getElementById("thankYouModal");
     const promoEl=document.getElementById("promoTag"); if(promoEl) promoEl.textContent = promo;
-    function forceShow(el){ if(!el) return; el.classList.add("show"); el.style.display="block";
-      document.body.classList.add("modal-open");
-      if(!document.querySelector(".modal-backdrop")){const b=document.createElement("div");b.className="modal-backdrop fade show";document.body.appendChild(b);} }
+
     function openEarly(){
-      if(window.bootstrap && window.bootstrap.Modal){ new bootstrap.Modal(earlyEl,{backdrop:"static",keyboard:false}).show(); }
-      else{ forceShow(earlyEl); }
+      if(window.bootstrap && window.bootstrap.Modal){
+        new bootstrap.Modal(earlyEl,{backdrop:true,keyboard:true}).show();
+      }
     }
     function openThanks(){
-      if(window.bootstrap && window.bootstrap.Modal){ new bootstrap.Modal(thanksEl,{backdrop:"static",keyboard:false}).show(); }
-      else{ forceShow(thanksEl); }
+      if(window.bootstrap && window.bootstrap.Modal){
+        new bootstrap.Modal(thanksEl,{backdrop:true,keyboard:true}).show();
+      }
     }
-    /* Mostrar al cargar (con pequeño delay por si bootstrap llega tarde) */
+
+    /* Mostrar al cargar solo si hay promo */
     setTimeout(openEarly, 250);
+
     /* Capturar submit y guardar localmente (lead simple) */
     const form=document.getElementById("earlyAccessForm");
     if(form){
@@ -548,33 +538,13 @@
         const list=JSON.parse(localStorage.getItem("hrkEarlyLeads")||"[]");
         list.push({name,email,promo,ts:new Date().toISOString()});
         localStorage.setItem("hrkEarlyLeads", JSON.stringify(list));
-        /* mostrar gracias */
-        openThanks();
+        /* mostrar gracias y permitir que cierre */
+        earlyEl.querySelector('[data-bs-dismiss="modal"]')?.click();
+        setTimeout(openThanks, 300);
       });
     }
-    /* Evita que el usuario dispare el flujo original: cualquier link/botón fuera del modal vuelve a abrirlo */
-    document.addEventListener("click",(ev)=>{
-      const t=ev.target; if(!t) return;
-      const insideModal=t.closest("#earlyAccessModal,#thankYouModal");
-      if(!insideModal){ ev.preventDefault(); ev.stopPropagation(); openEarly(); }
-    }, true);
   });
 })();</script>
-<script>(function(){
-  /* bloquear redirecciones del bundle viejo */
-  const stay=/\/auth(\?|$)/i;
-  const _assign=window.location.assign.bind(window.location);
-  const _replace=window.location.replace.bind(window.location);
-  window.location.assign=(u)=>{ try{ if(!u||String(u).match(stay)) return _assign(u); }catch(e){} return; };
-  window.location.replace=(u)=>{ try{ if(!u||String(u).match(stay)) return _replace(u); }catch(e){} return; };
-  const _open=window.open; window.open=(...a)=>{ try{ if(a[0] && !String(a[0]).match(stay)) return null; }catch(e){} return _open? _open(...a):null; };
-  /* asegurar backdrop y estilo del modal */
-  document.addEventListener("DOMContentLoaded",function(){
-    document.body.classList.add("modal-open");
-    if(!document.querySelector(".modal-backdrop")){const b=document.createElement("div");b.className="modal-backdrop fade show";document.body.appendChild(b);}
-    const m=document.getElementById("earlyAccessModal");
-    try{ if(window.bootstrap && window.bootstrap.Modal){ new bootstrap.Modal(m,{backdrop:"static",keyboard:false}).show(); } else { m.classList.add("show"); m.style.display="block"; } }catch(e){}
-  });
-})();</script>
+<!-- Script bloqueando redirecciones removido para permitir flujo normal de signup -->
 </body>
 </html>
