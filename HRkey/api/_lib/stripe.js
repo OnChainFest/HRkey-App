@@ -8,13 +8,21 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 // Dominios permitidos para CORS en funciones serverless
 export const ALLOWED_ORIGINS = new Set([
   "https://hrkey.xyz",
-  "https://www.hrkey.xyz"
+  "https://www.hrkey.xyz",
+  "http://localhost:3000",
+  "http://localhost:8080"
 ]);
+
+// Helper to check if origin matches Vercel preview pattern
+function isVercelPreview(origin) {
+  if (!origin) return false;
+  return origin.includes('.vercel.app') || origin.includes('hrkey');
+}
 
 // Aplica CORS (simple) a las respuestas
 export function allowOrigin(req, res) {
   const origin = req.headers.origin;
-  if (ALLOWED_ORIGINS.has(origin)) {
+  if (ALLOWED_ORIGINS.has(origin) || isVercelPreview(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
   }
@@ -31,8 +39,3 @@ export function handleOptions(req, res) {
   }
   return false;
 }
-export const ALLOWED_ORIGINS = new Set([
-  "https://hrkey.xyz",
-  "https://www.hrkey.xyz",
-  "https://<tu-deploy>.vercel.app" // añade tu dominio de preview
-]);

@@ -647,43 +647,42 @@
       });
     }
 
-    // ===== STRIPE CONFIGURATION =====
-    // TODO: Replace with your actual Stripe publishable key
-    const STRIPE_PUBLISHABLE_KEY = 'pk_test_51QYourPublishableKeyHere'; // Replace with your key
-    const STRIPE_PRICE_ID = 'price_1QYourPriceIDHere'; // $0.50 price ID created in Stripe Dashboard
-
-    const stripe = window.Stripe ? window.Stripe(STRIPE_PUBLISHABLE_KEY) : null;
-
+    // ===== STRIPE CHECKOUT (using serverless API) =====
     async function initiateStripeCheckout() {
-      if (!stripe) {
-        alert('Payment system is not available. Please refresh the page and try again.');
-        return;
-      }
-
       const userData = JSON.parse(localStorage.getItem('hrkey_user_data') || '{}');
       const userEmail = userData.email || '';
 
       try {
-        // Redirect to Stripe Checkout
-        const { error } = await stripe.redirectToCheckout({
-          lineItems: [{
-            price: STRIPE_PRICE_ID,
-            quantity: 1
-          }],
-          mode: 'payment',
-          successUrl: `${window.location.origin}/WebDapp/payment-success.html?session_id={CHECKOUT_SESSION_ID}`,
-          cancelUrl: `${window.location.origin}/WebDapp/reference-management-page.html`,
-          customerEmail: userEmail,
-          clientReferenceId: userData.wallet || userData.email || 'unknown'
+        // Call the serverless API to create checkout session
+        const response = await fetch('/api/checkout/session.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            plan: 'pro', // $0.50 one-time payment
+            email: userEmail,
+            success_url: `${window.location.origin}/WebDapp/payment-success.html?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${window.location.origin}/WebDapp/reference-management-page.html`
+          })
         });
 
-        if (error) {
-          console.error('Stripe checkout error:', error);
-          alert('Failed to open payment page: ' + error.message);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create checkout session');
+        }
+
+        const data = await response.json();
+
+        if (data.url) {
+          // Redirect to Stripe Checkout
+          window.location.href = data.url;
+        } else {
+          throw new Error('No checkout URL received');
         }
       } catch (err) {
         console.error('Stripe checkout failed:', err);
-        alert('Failed to process payment. Please try again later.');
+        alert('Failed to process payment: ' + err.message + '\n\nPlease make sure Stripe is configured in your Vercel environment variables.');
       }
     }
 
