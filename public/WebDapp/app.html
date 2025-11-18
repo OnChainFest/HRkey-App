@@ -167,4 +167,254 @@
       try { return JSON.parse(localStorage.getItem('hrkey_user_data') || 'null'); }
       catch { return null; }
     })();
-    const url = new
+
+    // Check authentication
+    async function checkAuth() {
+      let isAuthenticated = false;
+      let user = null;
+
+      // Check Supabase session first
+      if (supabase) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            isAuthenticated = true;
+            user = {
+              name: session.user.user_metadata?.full_name || session.user.email || 'User',
+              email: session.user.email,
+              wallet: userData?.wallet || 'Not connected',
+              authenticated: true
+            };
+          }
+        } catch (e) {
+          console.error('Supabase session check failed:', e);
+        }
+      }
+
+      // Fallback to localStorage
+      if (!isAuthenticated && userData?.authenticated) {
+        isAuthenticated = true;
+        user = userData;
+      }
+
+      // Redirect if not authenticated
+      if (!isAuthenticated) {
+        window.location.replace('/WebDapp/auth.html');
+        return null;
+      }
+
+      return user;
+    }
+
+    // Dashboard functionality
+    window.dashboard = {
+      user: null,
+      plan: null,
+      references: [],
+
+      async init() {
+        // Check authentication
+        this.user = await checkAuth();
+        if (!this.user) return;
+
+        // Load plan
+        try {
+          this.plan = JSON.parse(localStorage.getItem('hrkey_user_plan') || '{"plan":"free","features":{"maxReferences":1},"usage":{"referencesUsed":0}}');
+        } catch {
+          this.plan = { plan: 'free', features: { maxReferences: 1 }, usage: { referencesUsed: 0 } };
+        }
+
+        // Update UI
+        this.updateUserInfo();
+        this.loadReferences();
+        this.updateStats();
+        this.checkUpgradeBanner();
+      },
+
+      updateUserInfo() {
+        document.getElementById('userName').textContent = this.user.name || 'User';
+        document.getElementById('walletDisplay').textContent =
+          this.user.wallet && this.user.wallet !== 'Not connected'
+            ? `${this.user.wallet.slice(0, 6)}...${this.user.wallet.slice(-4)}`
+            : 'Not connected';
+      },
+
+      loadReferences() {
+        // Load references from localStorage
+        try {
+          this.references = JSON.parse(localStorage.getItem('hrkey_references') || '[]');
+        } catch {
+          this.references = [];
+        }
+
+        this.renderTable();
+      },
+
+      renderTable() {
+        const container = document.getElementById('tableContainer');
+
+        if (this.references.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3>No references yet</h3>
+              <p>Start building your professional profile by requesting your first reference</p>
+            </div>
+          `;
+          return;
+        }
+
+        const tableHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Referee Name</th>
+                <th>Company</th>
+                <th>Date Requested</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${this.references.map(ref => `
+                <tr>
+                  <td>${ref.refereeName || 'N/A'}</td>
+                  <td>${ref.company || 'N/A'}</td>
+                  <td>${ref.dateRequested ? new Date(ref.dateRequested).toLocaleDateString() : 'N/A'}</td>
+                  <td>
+                    <span class="status-badge ${
+                      ref.status === 'blockchain' ? 'status-blockchain' :
+                      ref.status === 'completed' ? 'status-completed' :
+                      'status-pending'
+                    }">
+                      ${ref.status === 'blockchain' ? '⛓️ On Chain' :
+                        ref.status === 'completed' ? '✅ Completed' :
+                        '⏳ Pending'}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <button class="btn-secondary" onclick="dashboard.viewReference('${ref.id}')">View</button>
+                      ${ref.status === 'completed' && this.plan.plan === 'pro' ?
+                        `<button class="btn-secondary" onclick="dashboard.verifyOnChain('${ref.id}')">Verify</button>` :
+                        ''}
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        container.innerHTML = tableHTML;
+      },
+
+      updateStats() {
+        const total = this.references.length;
+        const pending = this.references.filter(r => r.status === 'pending').length;
+        const completed = this.references.filter(r => r.status === 'completed').length;
+        const blockchain = this.references.filter(r => r.status === 'blockchain').length;
+
+        document.getElementById('statTotal').textContent = total;
+        document.getElementById('statPending').textContent = pending;
+        document.getElementById('statCompleted').textContent = completed;
+        document.getElementById('statBlockchain').textContent = blockchain;
+      },
+
+      checkUpgradeBanner() {
+        const banner = document.getElementById('upgradeBanner');
+        if (this.plan.plan === 'free' && this.plan.usage.referencesUsed >= this.plan.features.maxReferences) {
+          banner.style.display = 'flex';
+        } else {
+          banner.style.display = 'none';
+        }
+      },
+
+      createNewReference() {
+        // Check if user has reached their limit
+        if (this.plan.plan === 'free' && this.references.length >= this.plan.features.maxReferences) {
+          this.showAlert('You have reached your free plan limit. Upgrade to PRO for unlimited references!', 'error');
+          document.getElementById('upgradeBanner').style.display = 'flex';
+          return;
+        }
+
+        // Redirect to reference request page (you'll need to create this)
+        window.location.href = '/WebDapp/request-reference.html';
+      },
+
+      viewReference(id) {
+        // Redirect to reference management page
+        window.location.href = `/WebDapp/reference-management-page.html?id=${id}`;
+      },
+
+      verifyOnChain(id) {
+        this.showAlert('Blockchain verification coming soon!', 'info');
+      },
+
+      async upgradeToPro() {
+        try {
+          this.showAlert('Redirecting to checkout...', 'info');
+
+          const response = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: this.user.email })
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.url) {
+            // Redirect to Stripe Checkout
+            window.location.href = data.url;
+          } else {
+            this.showAlert(data.message || 'Failed to start checkout. Please try again.', 'error');
+          }
+        } catch (error) {
+          console.error('Upgrade error:', error);
+          this.showAlert('An error occurred. Please try again later.', 'error');
+        }
+      },
+
+      logout() {
+        if (confirm('Are you sure you want to logout?')) {
+          // Clear localStorage
+          localStorage.removeItem('hrkey_user_data');
+          localStorage.removeItem('hrkey_user_plan');
+          localStorage.removeItem('hrkey_references');
+          localStorage.removeItem('hrkey_session');
+
+          // Sign out from Supabase
+          if (supabase) {
+            supabase.auth.signOut().catch(e => console.error('Supabase signout error:', e));
+          }
+
+          // Redirect to home
+          window.location.replace('/WebDapp/auth.html');
+        }
+      },
+
+      showAlert(message, type = 'info') {
+        const container = document.getElementById('alertContainer');
+        const alertHTML = `
+          <div class="alert alert-${type}">
+            ${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'} ${message}
+          </div>
+        `;
+        container.innerHTML = alertHTML;
+
+        setTimeout(() => {
+          container.innerHTML = '';
+        }, 5000);
+      }
+    };
+
+    // Initialize dashboard when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => dashboard.init());
+    } else {
+      dashboard.init();
+    }
+  </script>
+</body>
+</html>
