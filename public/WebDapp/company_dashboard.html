@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Dashboard | HRKey</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Rubik', sans-serif; }
+        body { background: #f5f5f5; padding: 20px 0; }
+        .header-gradient {
+            background: linear-gradient(135deg, #000000 0%, #00C4C7 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px 12px 0 0;
+        }
+        .card { border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 24px; }
+        .badge-verified { background: #28a745; }
+        .badge-pending { background: #ffc107; }
+        .btn-primary {
+            background: linear-gradient(135deg, #000000 0%, #00C4C7 100%);
+            border: none;
+        }
+        .table-hover tbody tr:hover { background-color: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/WebDapp/app.html" class="btn btn-link mb-3"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+
+        <!-- Company Info -->
+        <div class="card">
+            <div class="header-gradient">
+                <h1><i class="bi bi-building"></i> Company Dashboard</h1>
+                <p id="company-name-header">Loading...</p>
+            </div>
+            <div class="card-body">
+                <div id="company-info">
+                    <p class="text-muted">Loading company information...</p>
+                </div>
+                <div id="superadmin-actions" style="display: none;">
+                    <hr>
+                    <h5>Superadmin Actions</h5>
+                    <button class="btn btn-success" id="verify-company-btn"><i class="bi bi-check-circle"></i> Verify Company</button>
+                    <button class="btn btn-warning" id="unverify-company-btn"><i class="bi bi-x-circle"></i> Unverify Company</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Authorized Signers -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="bi bi-people"></i> Authorized Signers</h4>
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addSignerModal">
+                    <i class="bi bi-plus"></i> Add Signer
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Invited</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="signers-tbody">
+                            <tr><td colspan="5" class="text-center">Loading signers...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="bi bi-clock-history"></i> Recent Activity</h4>
+            </div>
+            <div class="card-body">
+                <ul id="audit-list" class="list-unstyled">
+                    <li class="text-muted">Loading activity...</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Signer Modal -->
+    <div class="modal fade" id="addSignerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Authorized Signer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-signer-form">
+                        <div class="mb-3">
+                            <label class="form-label">Email (corporate)</label>
+                            <input type="email" class="form-control" id="signer-email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <select class="form-control" id="signer-role">
+                                <option>HR Manager</option>
+                                <option>Recruiter</option>
+                                <option>Talent Lead</option>
+                                <option>Department Manager</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="submit-signer">Send Invitation</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./js/env.js"></script>
+    <script src="./js/company-service.js"></script>
+    <script>
+        const supabaseClient = supabase.createClient(ENV.supabaseUrl, ENV.supabaseAnonKey);
+        let currentCompanyId = null;
+        let currentUser = null;
+
+        async function init() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                window.location.href = '/WebDapp/auth.html';
+                return;
+            }
+
+            currentUser = session.user;
+
+            // Get URL param for company ID or load first company
+            const params = new URLSearchParams(window.location.search);
+            currentCompanyId = params.get('companyId');
+
+            if (!currentCompanyId) {
+                // Load user's companies and redirect to first one
+                const companies = await companyService.getMyCompanies();
+                if (companies.length === 0) {
+                    alert('You are not a signer of any company');
+                    window.location.href = '/WebDapp/app.html';
+                    return;
+                }
+                currentCompanyId = companies[0].id;
+                window.location.href = `/WebDapp/company_dashboard.html?companyId=${currentCompanyId}`;
+                return;
+            }
+
+            await loadCompanyInfo();
+            await loadSigners();
+            await loadAuditTrail();
+        }
+
+        async function loadCompanyInfo() {
+            try {
+                const result = await companyService.getCompany(currentCompanyId);
+                const company = result.company;
+
+                document.getElementById('company-name-header').textContent = company.name;
+
+                const verifiedBadge = company.verified
+                    ? '<span class="badge badge-verified">✓ Verified</span>'
+                    : '<span class="badge badge-pending">Pending Verification</span>';
+
+                document.getElementById('company-info').innerHTML = `
+                    <h4>${company.name} ${verifiedBadge}</h4>
+                    <p><strong>Tax ID:</strong> ${company.taxId || 'Not provided'}</p>
+                    <p><strong>Domain:</strong> ${company.domainEmail || 'Not provided'}</p>
+                    <p><strong>Total Signers:</strong> ${result.stats.totalSigners}</p>
+                    <p><strong>Active Signers:</strong> ${result.stats.activeSigners}</p>
+                `;
+
+                // Check if current user is superadmin
+                const { data: userData } = await supabaseClient.from('users').select('role').eq('id', currentUser.id).single();
+                if (userData?.role === 'superadmin') {
+                    document.getElementById('superadmin-actions').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading company:', error);
+                alert('Error loading company information');
+            }
+        }
+
+        async function loadSigners() {
+            try {
+                const signers = await companyService.getSigners(currentCompanyId);
+                const tbody = document.getElementById('signers-tbody');
+
+                if (signers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">No signers yet</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = signers.map(s => `
+                    <tr>
+                        <td>${s.email}</td>
+                        <td>${s.role}</td>
+                        <td>${s.hasAccepted ? '<span class="badge bg-success">Accepted</span>' : '<span class="badge bg-warning">Pending</span>'}</td>
+                        <td>${new Date(s.invitedAt).toLocaleDateString()}</td>
+                        <td>
+                            ${s.isActive
+                                ? `<button class="btn btn-sm btn-danger" onclick="deactivateSigner('${s.id}')">Deactivate</button>`
+                                : `<button class="btn btn-sm btn-success" onclick="reactivateSigner('${s.id}')">Reactivate</button>`
+                            }
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading signers:', error);
+            }
+        }
+
+        async function loadAuditTrail() {
+            try {
+                const logs = await companyService.getAuditLogs(currentCompanyId, 10);
+                const list = document.getElementById('audit-list');
+
+                if (logs.length === 0) {
+                    list.innerHTML = '<li class="text-muted">No recent activity</li>';
+                    return;
+                }
+
+                list.innerHTML = logs.map(log => `
+                    <li class="mb-2">
+                        <i class="bi bi-dot"></i>
+                        <strong>${log.action_type}</strong>
+                        <small class="text-muted">${new Date(log.created_at).toLocaleString()}</small>
+                    </li>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading audit trail:', error);
+            }
+        }
+
+        document.getElementById('submit-signer').addEventListener('click', async () => {
+            const email = document.getElementById('signer-email').value;
+            const role = document.getElementById('signer-role').value;
+
+            try {
+                await companyService.inviteSigner(currentCompanyId, { email, role });
+                alert('Invitation sent successfully!');
+                bootstrap.Modal.getInstance(document.getElementById('addSignerModal')).hide();
+                document.getElementById('add-signer-form').reset();
+                await loadSigners();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        document.getElementById('verify-company-btn')?.addEventListener('click', async () => {
+            if (confirm('Verify this company?')) {
+                try {
+                    await companyService.verifyCompany(currentCompanyId, true);
+                    alert('Company verified successfully!');
+                    await loadCompanyInfo();
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                }
+            }
+        });
+
+        async function deactivateSigner(signerId) {
+            if (confirm('Deactivate this signer?')) {
+                try {
+                    await companyService.deactivateSigner(currentCompanyId, signerId);
+                    await loadSigners();
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                }
+            }
+        }
+
+        init();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
