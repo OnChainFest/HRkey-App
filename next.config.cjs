@@ -15,9 +15,6 @@ const nextConfig = {
 
   // No generar .next en build (solo APIs)
   distDir: '.next',
-
-  // Output standalone para Vercel
-  output: 'standalone',
 };
 
 module.exports = nextConfig;
