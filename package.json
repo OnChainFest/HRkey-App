@@ -4,23 +4,34 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "hh": "hardhat",
     "compile": "hardhat compile && node copy-abi.cjs",
     "deploy:base-sepolia": "hardhat run scripts/deploy.js --network baseSepolia && node copy-abi.cjs",
     "verify:base-sepolia": "hardhat verify --network baseSepolia"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
     "cors": "^2.8.5",
     "ethers": "^6.13.2",
     "express": "^5.1.0",
+    "micro": "^10.0.1",
     "next": "14.2.5",
     "pg": "^8.16.3",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "stripe": "^14.10.0"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^5.4.0",
+    "@types/micro": "^7.3.7",
+    "@types/node": "20.5.1",
+    "@types/react": "18.2.21",
+    "@types/react-dom": "18.2.7",
     "dotenv": "^16.6.1",
-    "hardhat": "^3.0.0"
+    "hardhat": "^3.0.0",
+    "typescript": "5.2.2"
   }
 }
