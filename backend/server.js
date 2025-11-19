@@ -12,6 +12,19 @@ import { ethers } from 'ethers';
 import Stripe from 'stripe';
 import { makeRefereeLink as makeRefereeLinkUtil, APP_URL as UTIL_APP_URL } from './utils/appUrl.js';
 
+// Import new controllers
+import identityController from './controllers/identityController.js';
+import companyController from './controllers/companyController.js';
+import signersController from './controllers/signersController.js';
+import auditController from './controllers/auditController.js';
+
+// Import middleware
+import {
+  requireAuth,
+  requireSuperadmin,
+  requireCompanySigner
+} from './middleware/auth.js';
+
 dotenv.config();
 
 /* =========================
@@ -72,6 +85,44 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_reempl
 
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+/* =========================
+   Superadmin Auto-Assignment
+   ========================= */
+async function ensureSuperadmin() {
+  const superadminEmail = process.env.HRKEY_SUPERADMIN_EMAIL;
+
+  if (!superadminEmail) {
+    console.warn('⚠️  HRKEY_SUPERADMIN_EMAIL not set. No superadmin will be assigned.');
+    return;
+  }
+
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, email, role')
+      .eq('email', superadminEmail)
+      .single();
+
+    if (error || !user) {
+      console.warn(`⚠️  Superadmin email ${superadminEmail} not found in users table.`);
+      return;
+    }
+
+    if (user.role !== 'superadmin') {
+      await supabase
+        .from('users')
+        .update({ role: 'superadmin' })
+        .eq('id', user.id);
+
+      console.log(`✅ User ${superadminEmail} assigned role: superadmin`);
+    } else {
+      console.log(`✅ Superadmin ${superadminEmail} already configured`);
+    }
+  } catch (err) {
+    console.error('❌ Error ensuring superadmin:', err.message);
+  }
+}
 
 /* =========================
    Services
@@ -475,11 +526,42 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
 });
 
 /* =========================
+   IDENTITY & PERMISSIONS ENDPOINTS (New)
+   ========================= */
+
+// ===== IDENTITY ENDPOINTS =====
+app.post('/api/identity/verify', requireAuth, identityController.verifyIdentity);
+app.get('/api/identity/status/:userId', requireAuth, identityController.getIdentityStatus);
+
+// ===== COMPANY ENDPOINTS =====
+app.post('/api/company/create', requireAuth, companyController.createCompany);
+app.get('/api/companies/my', requireAuth, companyController.getMyCompanies);
+app.get('/api/company/:companyId', requireAuth, requireCompanySigner, companyController.getCompany);
+app.patch('/api/company/:companyId', requireAuth, requireCompanySigner, companyController.updateCompany);
+app.post('/api/company/:companyId/verify', requireAuth, requireSuperadmin, companyController.verifyCompany);
+
+// ===== COMPANY SIGNERS ENDPOINTS =====
+app.post('/api/company/:companyId/signers', requireAuth, requireCompanySigner, signersController.inviteSigner);
+app.get('/api/company/:companyId/signers', requireAuth, requireCompanySigner, signersController.getSigners);
+app.patch('/api/company/:companyId/signers/:signerId', requireAuth, requireCompanySigner, signersController.updateSigner);
+
+// Signer invitation endpoints (special handling)
+app.get('/api/signers/invite/:token', signersController.getInvitationByToken); // Public - no auth
+app.post('/api/signers/accept/:token', requireAuth, signersController.acceptSignerInvitation);
+
+// ===== AUDIT LOG ENDPOINTS =====
+app.get('/api/audit/logs', requireAuth, auditController.getAuditLogs);
+app.get('/api/audit/recent', requireAuth, auditController.getRecentActivity);
+
+/* =========================
    Start
    ========================= */
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 HRKey Backend running on port ${PORT}`);
   console.log(`   Health (backend): ${new URL('/health', BACKEND_PUBLIC_URL).toString()}`);
   console.log(`   APP_URL (frontend public): ${APP_URL}`);
   console.log(`   STRIPE MODE: ${STRIPE_SECRET_KEY.startsWith('sk_live_') ? 'LIVE' : 'TEST'}`);
+
+  // Ensure superadmin is configured
+  await ensureSuperadmin();
 });
