@@ -6,11 +6,16 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 if (!process.env.STRIPE_SECRET_KEY) {
   console.error('STRIPE_SECRET_KEY is not configured');
 }
-if (!process.env.PRICE_ID_ANNUAL) {
-  console.error('PRICE_ID_ANNUAL is not configured');
+
+// Support both PRICE_ID_ANNUAL and PRICE_ID_LIFETIME
+const PRICE_ID = process.env.PRICE_ID_ANNUAL || process.env.PRICE_ID_LIFETIME;
+if (!PRICE_ID) {
+  console.error('PRICE_ID_ANNUAL or PRICE_ID_LIFETIME is not configured');
 }
+
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
   console.error('Supabase environment variables are not configured');
+  console.error('Required: SUPABASE_URL and SUPABASE_SERVICE_ROLE (not SUPABASE_ANON_KEY)');
 }
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2023-10-16' });
@@ -23,14 +28,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!process.env.STRIPE_SECRET_KEY) {
       return res.status(500).json({
         error: 'configuration_error',
-        message: 'Stripe is not configured. Please contact support.'
+        message: 'Stripe secret key is not configured. Please contact support.'
       });
     }
 
-    if (!process.env.PRICE_ID_ANNUAL) {
+    if (!PRICE_ID) {
       return res.status(500).json({
         error: 'configuration_error',
-        message: 'Price ID is not configured. Please contact support.'
+        message: 'Stripe price ID is not configured. Please contact support.'
+      });
+    }
+
+    if (!process.env.SUPABASE_SERVICE_ROLE) {
+      return res.status(500).json({
+        error: 'configuration_error',
+        message: 'Supabase service role key is not configured. Please contact support.'
       });
     }
 
@@ -69,7 +81,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const params: Stripe.Checkout.SessionCreateParams = {
       mode: 'subscription',
       customer: customerId!,
-      line_items: [{ price: process.env.PRICE_ID_ANNUAL!, quantity: 1 }],
+      line_items: [{ price: PRICE_ID!, quantity: 1 }],
       allow_promotion_codes: true,
       success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin}/account`,
