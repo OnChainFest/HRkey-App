@@ -125,14 +125,6 @@
         <div class="header">
             <h1>⬆️ Upgrade to PRO</h1>
             <p>Unlock unlimited references and advanced features</p>
-
-            <div style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); padding: 15px 30px; border-radius: 12px; margin-top: 20px; max-width: 700px; margin-left: auto; margin-right: auto; border: 2px solid #fbbf24;">
-                <strong style="color: #000; font-size: 16px;">🎉 LAUNCH SPECIAL</strong>
-                <span style="color: #000; font-size: 14px; display: block; margin-top: 5px;">
-                    Pay <b>$9.99</b> once → PRO forever. Use <b>HRKEY50</b> post-fair (50% OFF → $4.99).
-                    During the job fair, use <b>BLOCKCHAINJUNGLE</b> for free activation (48h).
-                </span>
-            </div>
         </div>
 
         <div class="plans-container">
@@ -191,14 +183,13 @@
                     <li><strong>All future updates included</strong></li>
                 </ul>
 
-                <!-- New: email + promo -->
+                <!-- Email for checkout -->
                 <div class="field">
-                    <input id="email" type="email" placeholder="Email (required for free activation)">
+                    <input id="email" type="email" placeholder="Email (required)">
                 </div>
                 <div class="field">
-                    <input id="promo" type="text" placeholder="Promo code (optional: HRKEY50 / BLOCKCHAINJUNGLE)">
+                    <input id="promo" type="text" placeholder="Promo code (optional)">
                 </div>
-                <div class="note">Use <b>BLOCKCHAINJUNGLE</b> during the fair (48h) for free activation. Post-fair use <b>HRKEY50</b> (50% OFF).</div>
                 <div id="msg-error" class="alert"></div>
                 <div id="msg-ok" class="success"></div>
 
@@ -370,9 +361,9 @@
             errorEl.style.display = 'none';
             okEl.style.display = 'none';
 
-            // For the free grant we require email on the client for UX
-            if (promo.toUpperCase() === 'BLOCKCHAINJUNGLE' && !email) {
-                errorEl.textContent = 'Email is required for free activation during the fair.';
+            // Email required for all checkouts
+            if (!email) {
+                errorEl.textContent = 'Email is required.';
                 errorEl.style.display = 'block';
                 return;
             }
