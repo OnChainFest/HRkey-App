@@ -80,7 +80,7 @@ async function createStripeSession({ plan, priceId, email, urls, idemKey, promoK
     );
   }
 
-  // plan === "lifetime"
+  // plan === "lifetime" or "pro" (one-time payment)
   return stripe.checkout.sessions.create(
     {
       ...base,

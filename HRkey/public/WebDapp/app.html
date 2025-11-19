@@ -16,6 +16,7 @@
   <!-- Fuentes y Bootstrap desde CDN (para evitar errores si archivos locales no existen) -->
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://js.stripe.com/v3/"></script>
 
   <!-- Archivos locales (descomenta si los tienes) -->
   <!-- <link href="css/bootstrap.min.css" rel="stylesheet"> -->
@@ -206,6 +207,45 @@
       return user;
     }
 
+    // ===== STRIPE CHECKOUT (using serverless API) =====
+    async function initiateStripeCheckout() {
+      const userData = JSON.parse(localStorage.getItem('hrkey_user_data') || '{}');
+      const userEmail = userData.email || '';
+
+      try {
+        // Call the serverless API to create checkout session
+        const response = await fetch('/api/checkout/session.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            plan: 'pro', // $0.50 one-time payment
+            email: userEmail,
+            success_url: `${window.location.origin}/WebDapp/payment-success.html?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${window.location.origin}/WebDapp/app.html`
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create checkout session');
+        }
+
+        const data = await response.json();
+
+        if (data.url) {
+          // Redirect to Stripe Checkout
+          window.location.href = data.url;
+        } else {
+          throw new Error('No checkout URL received');
+        }
+      } catch (err) {
+        console.error('Stripe checkout failed:', err);
+        alert('Failed to process payment: ' + err.message + '\n\nPlease make sure Stripe is configured in your Vercel environment variables.');
+      }
+    }
+
     // Dashboard functionality
     window.dashboard = {
       user: null,
@@ -344,8 +384,8 @@
       },
 
       viewReference(id) {
-        // Redirect to reference view page
-        window.location.href = `/WebDapp/view-reference.html?id=${id}`;
+        // Redirect to reference management page
+        window.location.href = `/WebDapp/reference-management-page.html?id=${id}`;
       },
 
       verifyOnChain(id) {
@@ -353,7 +393,7 @@
       },
 
       upgradeToPro() {
-        this.showAlert('Upgrade to PRO coming soon!', 'info');
+        initiateStripeCheckout();
       },
 
       logout() {
