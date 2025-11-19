@@ -39,6 +39,14 @@ export const AuditActionTypes = {
   REJECT_REFERENCE: 'reject_reference',
   VIEW_SENSITIVE_DATA: 'view_sensitive_data',
 
+  // Data Access actions
+  CREATE_DATA_ACCESS_REQUEST: 'create_data_access_request',
+  APPROVE_DATA_ACCESS_REQUEST: 'approve_data_access_request',
+  REJECT_DATA_ACCESS_REQUEST: 'reject_data_access_request',
+  ACCESS_DATA: 'access_data',
+  PROCESS_REVENUE_SHARE: 'process_revenue_share',
+  REQUEST_PAYOUT: 'request_payout',
+
   // Admin actions
   ASSIGN_ROLE: 'assign_role',
   REVOKE_ROLE: 'revoke_role'
@@ -53,7 +61,9 @@ export const ResourceTypes = {
   COMPANY: 'company',
   SIGNER: 'signer',
   REFERENCE: 'reference',
-  IDENTITY: 'identity'
+  IDENTITY: 'identity',
+  DATA_ACCESS_REQUEST: 'data_access_request',
+  REVENUE_SHARE: 'revenue_share'
 };
 
 // ============================================================================
@@ -221,6 +231,21 @@ export async function logSignerStatusChange(userId, companyId, signerId, isActiv
     actionType: isActive ? AuditActionTypes.REACTIVATE_SIGNER : AuditActionTypes.DEACTIVATE_SIGNER,
     resourceType: ResourceTypes.SIGNER,
     resourceId: signerId,
+    details,
+    req
+  });
+}
+
+/**
+ * Log data access actions (generic)
+ */
+export async function logDataAccessAction(userId, companyId, actionType, details = {}, req = null) {
+  return logAudit({
+    userId,
+    companyId,
+    actionType,
+    resourceType: ResourceTypes.DATA_ACCESS_REQUEST,
+    resourceId: details.requestId || null,
     details,
     req
   });
