@@ -13,9 +13,11 @@ if (!PRICE_ID) {
   console.error('PRICE_ID_ANNUAL or PRICE_ID_LIFETIME is not configured');
 }
 
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
+// Support both SUPABASE_SERVICE_ROLE and SUPABASE_SERVICE_ROLE_KEY
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!process.env.SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error('Supabase environment variables are not configured');
-  console.error('Required: SUPABASE_URL and SUPABASE_SERVICE_ROLE (not SUPABASE_ANON_KEY)');
+  console.error('Required: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (not SUPABASE_ANON_KEY)');
 }
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2023-10-16' });
@@ -39,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    if (!process.env.SUPABASE_SERVICE_ROLE) {
+    if (!SERVICE_ROLE_KEY) {
       return res.status(500).json({
         error: 'configuration_error',
         message: 'Supabase service role key is not configured. Please contact support.'
