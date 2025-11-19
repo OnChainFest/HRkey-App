@@ -17,6 +17,8 @@ import identityController from './controllers/identityController.js';
 import companyController from './controllers/companyController.js';
 import signersController from './controllers/signersController.js';
 import auditController from './controllers/auditController.js';
+import dataAccessController from './controllers/dataAccessController.js';
+import revenueController from './controllers/revenueController.js';
 
 // Import middleware
 import {
@@ -552,6 +554,20 @@ app.post('/api/signers/accept/:token', requireAuth, signersController.acceptSign
 // ===== AUDIT LOG ENDPOINTS =====
 app.get('/api/audit/logs', requireAuth, auditController.getAuditLogs);
 app.get('/api/audit/recent', requireAuth, auditController.getRecentActivity);
+
+// ===== DATA ACCESS ENDPOINTS (Pay-per-query) =====
+app.post('/api/data-access/request', requireAuth, dataAccessController.createDataAccessRequest);
+app.get('/api/data-access/pending', requireAuth, dataAccessController.getPendingRequests);
+app.post('/api/data-access/:requestId/approve', requireAuth, dataAccessController.approveDataAccessRequest);
+app.post('/api/data-access/:requestId/reject', requireAuth, dataAccessController.rejectDataAccessRequest);
+app.get('/api/data-access/:requestId/data', requireAuth, dataAccessController.getDataByRequestId);
+
+// ===== REVENUE SHARING ENDPOINTS =====
+app.get('/api/revenue/balance', requireAuth, revenueController.getUserBalance);
+app.get('/api/revenue/shares', requireAuth, revenueController.getRevenueShares);
+app.get('/api/revenue/transactions', requireAuth, revenueController.getTransactionHistory);
+app.get('/api/revenue/summary', requireAuth, revenueController.getEarningsSummary);
+app.post('/api/revenue/payout/request', requireAuth, revenueController.requestPayout);
 
 /* =========================
    Start

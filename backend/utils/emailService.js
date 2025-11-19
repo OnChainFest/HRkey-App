@@ -260,6 +260,119 @@ export async function sendCompanyVerificationNotification({
   }
 }
 
+/**
+ * Send data access request notification to user
+ * (notify user when a company requests access to their data)
+ *
+ * @param {Object} params
+ * @param {string} params.recipientEmail
+ * @param {string} params.companyName
+ * @param {string} params.dataType
+ * @param {number} params.priceAmount
+ * @param {string} params.currency
+ * @param {string} params.requestId
+ * @returns {Promise<Object>}
+ */
+export async function sendDataAccessRequestNotification({
+  recipientEmail,
+  companyName,
+  dataType,
+  priceAmount,
+  currency,
+  requestId
+}) {
+  try {
+    const dataTypeLabel = {
+      'reference': 'a reference',
+      'profile': 'your profile',
+      'full_data': 'your complete data'
+    }[dataType] || 'your data';
+
+    const approveUrl = `${FRONTEND_URL}/WebDapp/app.html?tab=data-requests`;
+
+    const { data, error } = await resend.emails.send({
+      from: SENDER_EMAIL,
+      to: recipientEmail,
+      subject: `${companyName} wants to access your data`,
+      html: `
+        <h2>Data Access Request</h2>
+        <p>Hi there,</p>
+        <p><strong>${companyName}</strong> has requested permission to access ${dataTypeLabel}.</p>
+        <p><strong>Payment:</strong> They will pay $${priceAmount} ${currency} for this access, which will be shared with you.</p>
+        <p>You can approve or reject this request from your dashboard:</p>
+        <p><a href="${approveUrl}" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #000000 0%, #00C4C7 100%); color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
+          Review Request
+        </a></p>
+        <p style="color: #666; font-size: 14px; margin-top: 20px;">
+          This request will expire in 7 days if not approved.
+        </p>
+      `,
+      text: `${companyName} has requested access to ${dataTypeLabel}. They will pay $${priceAmount} ${currency}. Review: ${approveUrl}`
+    });
+
+    if (error) {
+      throw new Error(`Failed to send data access request notification: ${error.message}`);
+    }
+
+    console.log(`✅ Data access request notification sent to ${recipientEmail}`);
+    return data;
+  } catch (error) {
+    console.error('Error sending data access request notification:', error);
+    throw error;
+  }
+}
+
+/**
+ * Send data access approved notification to company
+ * (notify company when user approves their data access request)
+ *
+ * @param {Object} params
+ * @param {string} params.recipientEmail
+ * @param {string} params.companyName
+ * @param {string} params.requestId
+ * @param {string} params.dataType
+ * @returns {Promise<Object>}
+ */
+export async function sendDataAccessApprovedNotification({
+  recipientEmail,
+  companyName,
+  requestId,
+  dataType
+}) {
+  try {
+    const dataUrl = `${FRONTEND_URL}/WebDapp/company_dashboard.html?requestId=${requestId}`;
+
+    const { data, error } = await resend.emails.send({
+      from: SENDER_EMAIL,
+      to: recipientEmail,
+      subject: `Data access request approved - ${companyName}`,
+      html: `
+        <h2>Access Approved ✓</h2>
+        <p>Great news!</p>
+        <p>The user has approved your data access request.</p>
+        <p>You can now access the requested data from your company dashboard:</p>
+        <p><a href="${dataUrl}" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #000000 0%, #00C4C7 100%); color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
+          View Data
+        </a></p>
+        <p style="color: #666; font-size: 14px; margin-top: 20px;">
+          Data type: ${dataType}
+        </p>
+      `,
+      text: `Your data access request has been approved. View the data at: ${dataUrl}`
+    });
+
+    if (error) {
+      throw new Error(`Failed to send access approved notification: ${error.message}`);
+    }
+
+    console.log(`✅ Data access approved notification sent to ${recipientEmail}`);
+    return data;
+  } catch (error) {
+    console.error('Error sending data access approved notification:', error);
+    throw error;
+  }
+}
+
 // ============================================================================
 // EXPORT
 // ============================================================================
@@ -267,5 +380,7 @@ export async function sendCompanyVerificationNotification({
 export default {
   sendSignerInvitation,
   sendIdentityVerificationConfirmation,
-  sendCompanyVerificationNotification
+  sendCompanyVerificationNotification,
+  sendDataAccessRequestNotification,
+  sendDataAccessApprovedNotification
 };
