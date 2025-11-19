@@ -137,6 +137,18 @@
           <div class="number" id="statBlockchain">0</div>
           <div class="label">Verified</div>
         </div>
+        <!-- NEW: Data Access Requests -->
+        <div class="stat-card" onclick="window.location='/WebDapp/data-access-requests.html'" style="cursor: pointer;">
+          <h3>Data Requests</h3>
+          <div class="number" id="statDataRequests">0</div>
+          <div class="label">Pending approval</div>
+        </div>
+        <!-- NEW: Total Earnings -->
+        <div class="stat-card" onclick="window.location='/WebDapp/earnings-dashboard.html'" style="cursor: pointer;">
+          <h3>Earnings</h3>
+          <div class="number" id="statEarnings">$0</div>
+          <div class="label">Available balance</div>
+        </div>
       </div>
 
       <!-- Alert Messages -->
@@ -336,6 +348,57 @@
         document.getElementById('statPending').textContent = pending;
         document.getElementById('statCompleted').textContent = completed;
         document.getElementById('statBlockchain').textContent = blockchain;
+
+        // Load new stats: Data Access Requests & Earnings
+        this.loadDataAccessStats();
+        this.loadEarningsStats();
+      },
+
+      async loadDataAccessStats() {
+        try {
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (!session) return;
+
+          const response = await fetch('http://localhost:3001/api/data-access/pending', {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            document.getElementById('statDataRequests').textContent = data.total || 0;
+            // Show notification badge if there are pending requests
+            if (data.total > 0) {
+              document.getElementById('statDataRequests').style.color = '#fbbf24';
+            }
+          }
+        } catch (error) {
+          console.error('Error loading data access stats:', error);
+          document.getElementById('statDataRequests').textContent = '0';
+        }
+      },
+
+      async loadEarningsStats() {
+        try {
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (!session) return;
+
+          const response = await fetch('http://localhost:3001/api/revenue/balance', {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            const balance = data.balance.currentBalance || 0;
+            document.getElementById('statEarnings').textContent = `$${balance.toFixed(0)}`;
+            // Highlight if there's money available
+            if (balance >= 50) {
+              document.getElementById('statEarnings').style.color = '#10b981';
+            }
+          }
+        } catch (error) {
+          console.error('Error loading earnings stats:', error);
+          document.getElementById('statEarnings').textContent = '$0';
+        }
       },
 
       checkUpgradeBanner() {
