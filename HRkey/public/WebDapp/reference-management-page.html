@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Manage References - HRKey</title>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://js.stripe.com/v3/"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Rubik', Arial, sans-serif; background: linear-gradient(135deg, #00C4C7 0%, #00d2cc 100%); min-height: 100vh; padding: 40px 20px; }
@@ -36,7 +37,7 @@
     .kpi-comment { background: #fffbeb; padding: 15px; border-radius: 8px; border-left: 4px solid #fbbf24; margin-bottom: 15px; position: relative; }
     .kpi-comment-label { font-size: 12px; font-weight: 600; color: #92400e; margin-bottom: 8px; }
     .kpi-comment-text { color: #78350f; font-size: 14px; line-height: 1.6; user-select: text; cursor: text; }
-    .suppressed-text { background: #fee2e2; text-decoration: line-through; color: #991b1b; padding: 2px 4px; border-radius: 3px; }
+    .suppressed-text { background: #000; color: transparent; padding: 2px 4px; border-radius: 3px; user-select: none; cursor: default; position: relative; }
     .comment-actions { display: flex; gap: 10px; margin-top: 12px; }
     .btn-small { padding: 6px 12px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: all 0.3s; }
     .btn-suppress { background: #fef3c7; color: #92400e; }
@@ -646,12 +647,51 @@
       });
     }
 
+    // ===== STRIPE CHECKOUT (using serverless API) =====
+    async function initiateStripeCheckout() {
+      const userData = JSON.parse(localStorage.getItem('hrkey_user_data') || '{}');
+      const userEmail = userData.email || '';
+
+      try {
+        // Call the serverless API to create checkout session
+        const response = await fetch('/api/checkout/session.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            plan: 'pro', // $0.50 one-time payment
+            email: userEmail,
+            success_url: `${window.location.origin}/WebDapp/payment-success.html?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${window.location.origin}/WebDapp/reference-management-page.html`
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create checkout session');
+        }
+
+        const data = await response.json();
+
+        if (data.url) {
+          // Redirect to Stripe Checkout
+          window.location.href = data.url;
+        } else {
+          throw new Error('No checkout URL received');
+        }
+      } catch (err) {
+        console.error('Stripe checkout failed:', err);
+        alert('Failed to process payment: ' + err.message + '\n\nPlease make sure Stripe is configured in your Vercel environment variables.');
+      }
+    }
+
     function showUpgradeModal() {
       const modal = document.getElementById('confirmModal');
       document.getElementById('modalTitle').textContent = '🔒 PRO Feature';
       document.getElementById('modalText').innerHTML = `
         <strong>Request More Context</strong> is a PRO feature.<br><br>
-        Upgrade to PRO to:<br>
+        Upgrade to PRO for just <strong>$0.50</strong> to unlock:<br>
         • Request additional context from referees<br>
         • Get unlimited references<br>
         • Export to PDF<br>
@@ -659,10 +699,10 @@
       `;
 
       const confirmBtn = document.getElementById('confirmBtn');
-      confirmBtn.textContent = '⬆️ Upgrade to PRO';
+      confirmBtn.textContent = '💳 Pay $0.50 - Upgrade to PRO';
       confirmBtn.style.background = 'linear-gradient(135deg, #00C4C7 0%, #00d2cc 100%)';
       confirmBtn.style.color = '#000';
-      confirmBtn.onclick = () => { window.location.href = 'pricing.html'; closeModal(); };
+      confirmBtn.onclick = () => { closeModal(); initiateStripeCheckout(); };
 
       modal.classList.add('active');
     }
