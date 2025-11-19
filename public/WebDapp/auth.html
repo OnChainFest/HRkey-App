@@ -114,15 +114,6 @@
     .benefit-icon { font-size:20px; margin-right:12px; }
     .footer-note { text-align:center; margin-top:25px; font-size:12px; color:#94a3b8; }
   </style>
-<style id="early-access-hotfix">
-  body.modal-open{overflow:hidden;}
-  #earlyAccessModal .modal-dialog{max-width:420px;margin:1.75rem auto;}
-  #earlyAccessModal .modal-content{border-radius:16px;}
-  .modal-backdrop{opacity:.6 !important;}
-  /* Evita clics en el fondo cuando el modal está abierto */
-  body.hrk-gated #page, body.hrk-gated main, body.hrk-gated .container{filter:blur(0.5px);pointer-events:none;user-select:none;}
-</style>
-<style>body.modal-open{overflow:hidden}.modal-dialog{max-width:420px;margin:1.75rem auto}.modal-content{border-radius:16px}.modal-backdrop{opacity:.6!important}</style>
 </head>
 <body>
   <div class="container">
@@ -193,17 +184,7 @@
     const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__;
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const DEFAULT_COUPON = "BLKJUNGLE";
-    const EVENT_START_UTC = Date.parse("2025-11-08T00:00:00Z");
-    const EVENT_END_UTC   = Date.parse("2025-11-12T05:59:00Z");
-
     const url = new URL(window.location.href);
-
-    // ============== HELPERS =====================
-    const isWithinEventWindow = () => {
-      const now = Date.now();
-      return now >= EVENT_START_UTC && now <= EVENT_END_UTC;
-    };
 
     const goToApp = (extraQuery = "") => {
       const base = "/WebDapp/app.html";
@@ -213,11 +194,6 @@
 
     // ============== COUPON BANNER ===============
     let coupon = (url.searchParams.get("coupon") || "").trim();
-    if (!coupon && isWithinEventWindow()) {
-      coupon = DEFAULT_COUPON;
-      url.searchParams.set("coupon", coupon);
-      history.replaceState({}, "", url.pathname + "?" + url.searchParams.toString());
-    }
     const promoBanner = document.getElementById("promoBanner");
     const promoCodeBadge = document.getElementById("promoCodeBadge");
     if (coupon) {
@@ -431,150 +407,5 @@
   <script>console.log('[HRKey]', 'auth-build-20251107_140116');</script>
 
 
-
-
-
-<!-- ===== EARLY ACCESS MODALS (BLOCKCHAINJUNGLE) ===== -->
-<div class="modal fade" id="earlyAccessModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="border-radius:16px;">
-      <div class="modal-header border-0">
-        <h5 class="modal-title">🎟️ Acceso anticipado a HRKey</h5>
-      </div>
-      <div class="modal-body">
-        <p class="mb-3">Dejanos tus datos y te avisamos del lanzamiento.</p>
-        <form id="earlyAccessForm" novalidate>
-          <input type="text" id="userName" class="form-control mb-2" placeholder="Tu nombre" required>
-          <input type="email" id="userEmail" class="form-control mb-3" placeholder="Tu correo" required>
-          <button type="submit" class="btn w-100" style="background:#00C4C7;border:none;">Registrar interés</button>
-        </form>
-        <small class="text-muted d-block mt-2">Promo: <span id="promoTag">—</span></small>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal fade" id="thankYouModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content text-center" style="border-radius:16px;">
-      <div class="modal-body p-4">
-        <h4>✨ ¡Gracias por registrarte!</h4>
-        <p class="mt-3">
-          Muy pronto te enviaremos un correo anunciando el lanzamiento de <b>HRKey</b>,
-          la herramienta que convierte tu trayectoria profesional en un <b>activo digital</b>
-          verificable para abrir nuevas oportunidades laborales.
-        </p>
-        <div class="text-start mt-3" style="font-size:0.95rem;">
-          <p class="mb-1"><b>Tu pase incluye 1 año gratis</b> de HRKey con:</p>
-          <ul class="mb-0">
-            <li>Referencias verificadas y fáciles de compartir.</li>
-            <li>Perfil con métricas y logros comprobables.</li>
-            <li>Link/QR único para aplicar en segundos.</li>
-            <li>Panel para gestionar invitaciones y validaciones.</li>
-          </ul>
-        </div>
-        <button class="btn btn-success mt-4 w-100" data-bs-dismiss="modal">Cerrar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-(function(){
-  function normalizePromo(p){if(!p)return"BLOCKCHAINJUNGLE";p=String(p).trim();if(p.toUpperCase()==="JUNGLE")return"BLOCKCHAINJUNGLE";return p;}
-  const url=new URL(window.location.href);
-  let promo=normalizePromo(url.searchParams.get("promo"));
-  if(!url.searchParams.get("promo")||!promo){url.searchParams.set("promo","BLOCKCHAINJUNGLE");window.history.replaceState({}, "", url.toString());promo="BLOCKCHAINJUNGLE";}
-  document.addEventListener('DOMContentLoaded',function(){
-    const promoEl=document.getElementById('promoTag');if(promoEl)promoEl.textContent=promo;
-    const early=new bootstrap.Modal(document.getElementById('earlyAccessModal'));early.show();
-    document.getElementById('earlyAccessForm').addEventListener('submit',function(e){
-      e.preventDefault();
-      const name=(document.getElementById('userName').value||"").trim();
-      const email=(document.getElementById('userEmail').value||"").trim();
-      const okEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-      if(!name||!okEmail){alert("Ingresá un nombre y un correo válido.");return;}
-      try{const KEY="hrkey_early_access_leads";const list=JSON.parse(localStorage.getItem(KEY)||"[]");list.push({name,email,promo,ts:new Date().toISOString()});localStorage.setItem(KEY,JSON.stringify(list));}catch(_){}
-      early.hide();new bootstrap.Modal(document.getElementById('thankYouModal')).show();
-    });
-  });
-})();
-</script>
-
-
-<script>
-(function(){
-  function norm(p){ if(!p) return "BLOCKCHAINJUNGLE"; p=String(p).trim(); return p.toUpperCase()==="JUNGLE"?"BLOCKCHAINJUNGLE":p; }
-  const u=new URL(window.location.href);
-  const promo=norm(u.searchParams.get("promo"));
-  // si viene por promo de feria, marcamos flag para mostrar modal luego en el dashboard
-  if (promo==="BLOCKCHAINJUNGLE") {
-    try { localStorage.setItem("hrkey_force_early_modal","1"); } catch(_){}
-  }
-})();
-</script>
-
-<script>(()=>{
-  function normalizePromo(p){if(!p)return "BLOCKCHAINJUNGLE";p=String(p).trim();if(p.toUpperCase()==="JUNGLE")return "BLOCKCHAINJUNGLE";return p;}
-  const url=new URL(window.location.href);let promo=normalizePromo(url.searchParams.get("promo"));
-  if(!url.searchParams.get("promo")){url.searchParams.set("promo",promo);history.replaceState({}, "", url);}
-  document.addEventListener("DOMContentLoaded",()=>{
-    document.body.classList.add("hrk-gated");
-    const earlyEl=document.getElementById("earlyAccessModal");
-    const thanksEl=document.getElementById("thankYouModal");
-    const promoEl=document.getElementById("promoTag"); if(promoEl) promoEl.textContent = promo;
-    function forceShow(el){ if(!el) return; el.classList.add("show"); el.style.display="block";
-      document.body.classList.add("modal-open");
-      if(!document.querySelector(".modal-backdrop")){const b=document.createElement("div");b.className="modal-backdrop fade show";document.body.appendChild(b);} }
-    function openEarly(){
-      if(window.bootstrap && window.bootstrap.Modal){ new bootstrap.Modal(earlyEl,{backdrop:"static",keyboard:false}).show(); }
-      else{ forceShow(earlyEl); }
-    }
-    function openThanks(){
-      if(window.bootstrap && window.bootstrap.Modal){ new bootstrap.Modal(thanksEl,{backdrop:"static",keyboard:false}).show(); }
-      else{ forceShow(thanksEl); }
-    }
-    /* Mostrar al cargar (con pequeño delay por si bootstrap llega tarde) */
-    setTimeout(openEarly, 250);
-    /* Capturar submit y guardar localmente (lead simple) */
-    const form=document.getElementById("earlyAccessForm");
-    if(form){
-      form.addEventListener("submit", (e)=>{
-        e.preventDefault();
-        const name=(document.getElementById("userName")||{}).value||"";
-        const email=(document.getElementById("userEmail")||{}).value||"";
-        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ alert("Ingresá un correo válido"); return; }
-        const list=JSON.parse(localStorage.getItem("hrkEarlyLeads")||"[]");
-        list.push({name,email,promo,ts:new Date().toISOString()});
-        localStorage.setItem("hrkEarlyLeads", JSON.stringify(list));
-        /* mostrar gracias */
-        openThanks();
-      });
-    }
-    /* Evita que el usuario dispare el flujo original: cualquier link/botón fuera del modal vuelve a abrirlo */
-    document.addEventListener("click",(ev)=>{
-      const t=ev.target; if(!t) return;
-      const insideModal=t.closest("#earlyAccessModal,#thankYouModal");
-      if(!insideModal){ ev.preventDefault(); ev.stopPropagation(); openEarly(); }
-    }, true);
-  });
-})();</script>
-<script>(function(){
-  /* bloquear redirecciones del bundle viejo */
-  const stay=/\/auth(\?|$)/i;
-  const _assign=window.location.assign.bind(window.location);
-  const _replace=window.location.replace.bind(window.location);
-  window.location.assign=(u)=>{ try{ if(!u||String(u).match(stay)) return _assign(u); }catch(e){} return; };
-  window.location.replace=(u)=>{ try{ if(!u||String(u).match(stay)) return _replace(u); }catch(e){} return; };
-  const _open=window.open; window.open=(...a)=>{ try{ if(a[0] && !String(a[0]).match(stay)) return null; }catch(e){} return _open? _open(...a):null; };
-  /* asegurar backdrop y estilo del modal */
-  document.addEventListener("DOMContentLoaded",function(){
-    document.body.classList.add("modal-open");
-    if(!document.querySelector(".modal-backdrop")){const b=document.createElement("div");b.className="modal-backdrop fade show";document.body.appendChild(b);}
-    const m=document.getElementById("earlyAccessModal");
-    try{ if(window.bootstrap && window.bootstrap.Modal){ new bootstrap.Modal(m,{backdrop:"static",keyboard:false}).show(); } else { m.classList.add("show"); m.style.display="block"; } }catch(e){}
-  });
-})();</script>
 </body>
 </html>
