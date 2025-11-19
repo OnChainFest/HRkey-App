@@ -2,12 +2,38 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2023-10-16' });
+// Validate environment variables
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.error('STRIPE_SECRET_KEY is not configured');
+}
+if (!process.env.PRICE_ID_ANNUAL) {
+  console.error('PRICE_ID_ANNUAL is not configured');
+}
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
+  console.error('Supabase environment variables are not configured');
+}
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2023-10-16' });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') return res.status(405).end('Method not allowed');
+  if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed', message: 'Method not allowed' });
 
   try {
+    // Check if required env vars are present
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(500).json({
+        error: 'configuration_error',
+        message: 'Stripe is not configured. Please contact support.'
+      });
+    }
+
+    if (!process.env.PRICE_ID_ANNUAL) {
+      return res.status(500).json({
+        error: 'configuration_error',
+        message: 'Price ID is not configured. Please contact support.'
+      });
+    }
+
     const { email } = req.body as { email?: string };
     if (!email) return res.status(400).json({ error: 'email required' });
 
