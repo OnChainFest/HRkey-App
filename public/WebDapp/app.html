@@ -234,6 +234,16 @@
       return user;
     }
 
+    // Get backend URL based on environment
+    function getBackendUrl() {
+      if (typeof API_BASE_URL !== 'undefined') {
+        return API_BASE_URL;
+      }
+      return window.location.hostname === 'localhost'
+        ? 'http://localhost:3001'
+        : 'https://hrkey.xyz';
+    }
+
     // Dashboard functionality
     window.dashboard = {
       user: null,
@@ -359,7 +369,8 @@
           const { data: { session } } = await supabaseClient.auth.getSession();
           if (!session) return;
 
-          const response = await fetch('http://localhost:3001/api/data-access/pending', {
+          const backendUrl = getBackendUrl();
+          const response = await fetch(`${backendUrl}/api/data-access/pending`, {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
           });
 
@@ -382,7 +393,8 @@
           const { data: { session } } = await supabaseClient.auth.getSession();
           if (!session) return;
 
-          const response = await fetch('http://localhost:3001/api/revenue/balance', {
+          const backendUrl = getBackendUrl();
+          const response = await fetch(`${backendUrl}/api/revenue/balance`, {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
           });
 

@@ -248,7 +248,18 @@
         // Supabase config
         const SUPABASE_URL = 'https://wrervcydgdrlcndtjboy.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXJ2Y3lkZ2RybGNuZHRqYm95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA2MzQ3MzIsImV4cCI6MjA0NjIxMDczMn0.MiQw5lMykMpTh-nNrF5m6OdqCkFcQcC-SBw9yHBT_8E';
-        const BACKEND_URL = 'http://localhost:3001';
+
+        // Get backend URL based on environment
+        function getBackendUrl() {
+            if (typeof API_BASE_URL !== 'undefined') {
+                return API_BASE_URL;
+            }
+            return window.location.hostname === 'localhost'
+                ? 'http://localhost:3001'
+                : 'https://hrkey.xyz';
+        }
+
+        const BACKEND_URL = getBackendUrl();
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
