@@ -1,0 +1,268 @@
+{
+  "Tech": {
+    "Software Engineering": [
+      {
+        "role": "Backend Developer",
+        "kpis": "Lead time, Deployment frequency, MTTR, Error rate, Code coverage, API response time"
+      },
+      {
+        "role": "Frontend Developer",
+        "kpis": "Page load time, Time to interactive, Lighthouse score, Component reusability, Cross-browser compatibility"
+      },
+      {
+        "role": "Full Stack Developer",
+        "kpis": "Feature delivery time, Code quality, Technical debt ratio, System uptime, User satisfaction score"
+      },
+      {
+        "role": "Mobile Developer",
+        "kpis": "App crash rate, App store rating, User retention, Battery usage, Download speed"
+      }
+    ],
+    "Cloud & DevOps": [
+      {
+        "role": "DevOps Engineer",
+        "kpis": "Deployment frequency, Lead time for changes, MTTR, Change failure rate, Infrastructure cost"
+      },
+      {
+        "role": "Site Reliability Engineer",
+        "kpis": "System uptime, MTTR, MTBF, Error budget, Incident response time"
+      },
+      {
+        "role": "Cloud Architect",
+        "kpis": "Cloud cost optimization, System scalability, Security compliance, Migration success rate"
+      }
+    ],
+    "Data & Analytics": [
+      {
+        "role": "Data Engineer",
+        "kpis": "Data pipeline uptime, Data quality score, ETL processing time, Data freshness, Cost per query"
+      },
+      {
+        "role": "Data Scientist",
+        "kpis": "Model accuracy, Model deployment time, Business impact, Feature importance, Prediction latency"
+      },
+      {
+        "role": "Data Analyst",
+        "kpis": "Report accuracy, Insights delivered, Stakeholder satisfaction, Query efficiency, Dashboard adoption"
+      }
+    ],
+    "Product & Design": [
+      {
+        "role": "Product Manager",
+        "kpis": "Feature adoption rate, Time to market, User satisfaction, Revenue growth, Roadmap execution"
+      },
+      {
+        "role": "UX Designer",
+        "kpis": "User satisfaction score, Task completion rate, Design iteration time, Usability testing score"
+      },
+      {
+        "role": "UI Designer",
+        "kpis": "Design consistency, Component library usage, Design delivery time, Stakeholder approval rate"
+      }
+    ],
+    "QA & Testing": [
+      {
+        "role": "QA Engineer",
+        "kpis": "Bug detection rate, Test coverage, Regression test time, Bug escape rate, Test automation percentage"
+      },
+      {
+        "role": "Automation Engineer",
+        "kpis": "Test automation coverage, Test execution time, False positive rate, CI/CD integration success"
+      }
+    ]
+  },
+  "Legal": {
+    "Corporate Law": [
+      {
+        "role": "Corporate Attorney",
+        "kpis": "Contract turnaround time, Legal risk mitigation, Compliance rate, Client satisfaction, Cost per matter"
+      },
+      {
+        "role": "Legal Counsel",
+        "kpis": "Matter resolution time, Legal cost management, Risk assessment accuracy, Regulatory compliance"
+      }
+    ],
+    "Intellectual Property": [
+      {
+        "role": "IP Attorney",
+        "kpis": "Patent application success rate, Trademark registration time, IP portfolio value, Filing accuracy"
+      },
+      {
+        "role": "Patent Agent",
+        "kpis": "Patent prosecution time, Office action response time, Patent grant rate, Client communication"
+      }
+    ],
+    "Litigation": [
+      {
+        "role": "Litigation Attorney",
+        "kpis": "Case win rate, Settlement value, Case resolution time, Client satisfaction, Cost efficiency"
+      }
+    ]
+  },
+  "Finance": {
+    "Accounting": [
+      {
+        "role": "Accountant",
+        "kpis": "Reporting accuracy, Month-end close time, Audit findings, Compliance rate, Process efficiency"
+      },
+      {
+        "role": "Financial Analyst",
+        "kpis": "Forecast accuracy, Report quality, Analysis turnaround time, Stakeholder satisfaction"
+      },
+      {
+        "role": "Controller",
+        "kpis": "Financial close time, Audit results, Team productivity, Process improvements, Compliance rate"
+      }
+    ],
+    "Investment Banking": [
+      {
+        "role": "Investment Banker",
+        "kpis": "Deal volume, Revenue generated, Client acquisition, Transaction success rate, Client retention"
+      },
+      {
+        "role": "Financial Advisor",
+        "kpis": "Assets under management, Client satisfaction, Portfolio performance, Client retention, Revenue growth"
+      }
+    ],
+    "Risk Management": [
+      {
+        "role": "Risk Analyst",
+        "kpis": "Risk identification rate, Risk assessment accuracy, Mitigation effectiveness, Compliance rate"
+      }
+    ]
+  },
+  "Marketing": {
+    "Digital Marketing": [
+      {
+        "role": "Digital Marketing Manager",
+        "kpis": "Campaign ROI, Lead generation, Conversion rate, Cost per acquisition, Customer lifetime value"
+      },
+      {
+        "role": "SEO Specialist",
+        "kpis": "Organic traffic growth, Keyword rankings, Backlink quality, Domain authority, Conversion rate"
+      },
+      {
+        "role": "Social Media Manager",
+        "kpis": "Engagement rate, Follower growth, Reach, Content performance, Community sentiment"
+      },
+      {
+        "role": "Content Marketing Manager",
+        "kpis": "Content engagement, Lead generation, SEO performance, Content production rate, Brand awareness"
+      }
+    ],
+    "Brand & Communications": [
+      {
+        "role": "Brand Manager",
+        "kpis": "Brand awareness, Brand sentiment, Market share, Campaign effectiveness, Customer loyalty"
+      },
+      {
+        "role": "PR Manager",
+        "kpis": "Media coverage, Press release pickup, Brand mentions, Crisis management, Stakeholder relations"
+      }
+    ],
+    "Growth Marketing": [
+      {
+        "role": "Growth Marketing Manager",
+        "kpis": "User acquisition cost, Customer lifetime value, Activation rate, Retention rate, Referral rate"
+      }
+    ]
+  },
+  "Sales": {
+    "Enterprise Sales": [
+      {
+        "role": "Account Executive",
+        "kpis": "Quota attainment, Revenue generated, Deal size, Sales cycle length, Win rate"
+      },
+      {
+        "role": "Sales Development Representative",
+        "kpis": "Qualified leads, Meeting conversion rate, Outreach volume, Response rate, Pipeline contribution"
+      },
+      {
+        "role": "Sales Manager",
+        "kpis": "Team quota attainment, Revenue growth, Pipeline quality, Team productivity, Win rate"
+      }
+    ],
+    "Customer Success": [
+      {
+        "role": "Customer Success Manager",
+        "kpis": "Customer retention, Net revenue retention, Customer satisfaction, Account expansion, Time to value"
+      },
+      {
+        "role": "Account Manager",
+        "kpis": "Account growth, Customer satisfaction, Renewal rate, Upsell revenue, Relationship strength"
+      }
+    ]
+  },
+  "Healthcare": {
+    "Clinical": [
+      {
+        "role": "Nurse Practitioner",
+        "kpis": "Patient satisfaction, Treatment outcomes, Patient volume, Clinical quality metrics, Compliance rate"
+      },
+      {
+        "role": "Physician",
+        "kpis": "Patient outcomes, Patient satisfaction, Treatment effectiveness, Clinical efficiency, Research contributions"
+      }
+    ],
+    "Healthcare Administration": [
+      {
+        "role": "Healthcare Administrator",
+        "kpis": "Operational efficiency, Cost reduction, Patient satisfaction, Staff retention, Compliance rate"
+      },
+      {
+        "role": "Medical Billing Specialist",
+        "kpis": "Claim acceptance rate, Days in AR, Collection rate, Billing accuracy, Process efficiency"
+      }
+    ]
+  },
+  "Operations": {
+    "Supply Chain": [
+      {
+        "role": "Supply Chain Manager",
+        "kpis": "On-time delivery, Inventory turnover, Supply chain cost, Supplier performance, Order accuracy"
+      },
+      {
+        "role": "Logistics Coordinator",
+        "kpis": "Delivery accuracy, Transportation cost, On-time delivery, Inventory accuracy, Process efficiency"
+      }
+    ],
+    "Operations Management": [
+      {
+        "role": "Operations Manager",
+        "kpis": "Operational efficiency, Cost reduction, Process improvement, Team productivity, Quality metrics"
+      },
+      {
+        "role": "Project Manager",
+        "kpis": "Project completion rate, Budget adherence, Timeline adherence, Stakeholder satisfaction, Team performance"
+      }
+    ]
+  },
+  "Human Resources": {
+    "Talent Acquisition": [
+      {
+        "role": "Recruiter",
+        "kpis": "Time to hire, Cost per hire, Offer acceptance rate, Quality of hire, Candidate satisfaction"
+      },
+      {
+        "role": "Talent Acquisition Manager",
+        "kpis": "Hiring goal achievement, Recruitment cost, Time to fill, Quality of hire, Team productivity"
+      }
+    ],
+    "HR Operations": [
+      {
+        "role": "HR Manager",
+        "kpis": "Employee satisfaction, Retention rate, Time to hire, HR cost per employee, Compliance rate"
+      },
+      {
+        "role": "HR Business Partner",
+        "kpis": "Employee engagement, Talent development, Organizational effectiveness, Stakeholder satisfaction"
+      }
+    ],
+    "Learning & Development": [
+      {
+        "role": "Training Manager",
+        "kpis": "Training completion rate, Employee skill improvement, Training ROI, Program satisfaction, Knowledge retention"
+      }
+    ]
+  }
+}
