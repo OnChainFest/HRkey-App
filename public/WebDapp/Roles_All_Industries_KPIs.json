@@ -44,6 +44,119 @@
       {
         "role": "Data Analyst",
         "kpis": "Report accuracy, Insights delivered, Stakeholder satisfaction, Query efficiency, Dashboard adoption"
+  "Tech_150": {
+    "Software Engineering": [
+      {
+        "role": "Backend Engineer",
+        "kpis": "Latency, Throughput, Error Rate, Code Coverage, Endpoint SLO"
+      },
+      {
+        "role": "Frontend Engineer",
+        "kpis": "Page Load Time, Core Web Vitals, UI Bug Rate, Component Reuse"
+      },
+      {
+        "role": "Full-Stack Engineer",
+        "kpis": "End-to-End Delivery, Integration Quality, Lead Time"
+      },
+      {
+        "role": "Mobile Engineer (iOS)",
+        "kpis": "Crash-Free Sessions, App Rating, Release Time"
+      },
+      {
+        "role": "Mobile Engineer (Android)",
+        "kpis": "ANR Rate, Crash Rate, Device Coverage"
+      },
+      {
+        "role": "Platform Engineer",
+        "kpis": "Infra Reliability, Build Time Reduction, Tooling Adoption"
+      },
+      {
+        "role": "Cloud Engineer",
+        "kpis": "Infra Cost Optimization, MTTR, Auto-Scaling Efficiency"
+      },
+      {
+        "role": "API Engineer",
+        "kpis": "API Latency, Error Rate, API Version Adoption"
+      },
+      {
+        "role": "Microservices Engineer",
+        "kpis": "Service Latency, Inter-Service Errors, Observability"
+      },
+      {
+        "role": "Distributed Systems Engineer",
+        "kpis": "Throughput, Consistency SLA, Partition Tolerance"
+      },
+      {
+        "role": "Integration Engineer",
+        "kpis": "Integration Success Rate, Mapping Error Rate, TTI"
+      },
+      {
+        "role": "Embedded Engineer",
+        "kpis": "Firmware Stability, Power Efficiency, Memory Footprint"
+      },
+      {
+        "role": "Game Developer",
+        "kpis": "FPS Stability, Crash Rate, GPU Usage"
+      },
+      {
+        "role": "Graphics/Render Engineer",
+        "kpis": "Render Time, Shader Performance, Memory Footprint"
+      },
+      {
+        "role": "Blockchain Engineer (Solidity)",
+        "kpis": "Gas Efficiency, Audit Findings, Contract Security"
+      },
+      {
+        "role": "Web3 Frontend Developer",
+        "kpis": "Wallet Connection Success, Tx Success Rate, dApp Load Time"
+      },
+      {
+        "role": "Smart Contract Auditor",
+        "kpis": "Vulnerabilities Found, False Positives, Audit Lead Time"
+      },
+      {
+        "role": "QA Automation Engineer",
+        "kpis": "Automation Coverage, Execution Time, Flakiness Rate"
+      },
+      {
+        "role": "Manual QA Engineer",
+        "kpis": "Test Case Coverage, Bugs Found, Regression Rate"
+      },
+      {
+        "role": "Test Architect",
+        "kpis": "Framework Stability, Suite Performance, Automation Strategy"
+      },
+      {
+        "role": "Security Software Engineer",
+        "kpis": "Secure Coding Compliance, Vulnerability Fix Time"
+      },
+      {
+        "role": "Software Architect",
+        "kpis": "Tech Debt Reduction, Architecture Conformance, Scalability"
+      },
+      {
+        "role": "Firmware Engineer",
+        "kpis": "Boot Time, Memory Leaks, Stability"
+      },
+      {
+        "role": "IoT Software Engineer",
+        "kpis": "Device Uptime, Connectivity Errors, Packet Loss"
+      },
+      {
+        "role": "VR/AR Developer",
+        "kpis": "FPS Stability, Tracking Latency, Device Compatibility"
+      },
+      {
+        "role": "NLP Engineer",
+        "kpis": "Model Accuracy, Token Efficiency, Query Latency"
+      },
+      {
+        "role": "LLM Engineer",
+        "kpis": "Hallucination Rate, Prompt Efficiency, RAG Accuracy"
+      },
+      {
+        "role": "SDET",
+        "kpis": "Automated Coverage, Release Stability, Quality Gates"
       }
     ],
     "Product & Design": [
@@ -262,6 +375,3801 @@
       {
         "role": "Training Manager",
         "kpis": "Training completion rate, Employee skill improvement, Training ROI, Program satisfaction, Knowledge retention"
+      }
+    ]
+  }
+}
+        "kpis": "Feature Adoption, Time-to-Value, Roadmap Predictability"
+      },
+      {
+        "role": "Product Owner",
+        "kpis": "Backlog Health, Sprint Goal Completion, Grooming Quality"
+      },
+      {
+        "role": "Growth PM",
+        "kpis": "Activation Rate, MAU Growth, Experiment Velocity"
+      },
+      {
+        "role": "Technical PM",
+        "kpis": "API Delivery, System Uptime Impact, Technical Scoping"
+      },
+      {
+        "role": "UX Designer",
+        "kpis": "Task Success, Usability Score, UI Error Rate"
+      },
+      {
+        "role": "UI Designer",
+        "kpis": "Design System Compliance, Pixel QA Score"
+      },
+      {
+        "role": "UX Researcher",
+        "kpis": "Insight Quality, Research Throughput, Feature Conversion"
+      },
+      {
+        "role": "Design System Lead",
+        "kpis": "Component Adoption Rate, Governance Compliance"
+      },
+      {
+        "role": "Content Designer",
+        "kpis": "Clarity Score, Conversion Impact"
+      },
+      {
+        "role": "Interaction Designer",
+        "kpis": "Navigation Friction, Interaction Latency"
+      },
+      {
+        "role": "Creative Technologist",
+        "kpis": "Prototype Conversion, Innovation Rate"
+      },
+      {
+        "role": "Product Analyst",
+        "kpis": "Insight Accuracy, Impact per Insight"
+      },
+      {
+        "role": "Information Architect",
+        "kpis": "Navigation Success, IA Clarity Score"
+      },
+      {
+        "role": "Product Operations Manager",
+        "kpis": "PM Enablement, Roadmap Predictability"
+      },
+      {
+        "role": "UX Writer",
+        "kpis": "Content Comprehension, Error Reduction"
+      }
+    ],
+    "Data & AI": [
+      {
+        "role": "Data Analyst",
+        "kpis": "Report Accuracy, Time-to-Insight, Dashboard Adoption"
+      },
+      {
+        "role": "Data Scientist",
+        "kpis": "Model Accuracy, Deployment Success, F1/ROC/AUC"
+      },
+      {
+        "role": "Machine Learning Engineer",
+        "kpis": "Latency, Model Uptime, Retraining Efficiency"
+      },
+      {
+        "role": "Data Engineer",
+        "kpis": "Pipeline Uptime, Freshness, Data Quality"
+      },
+      {
+        "role": "BI Developer",
+        "kpis": "Dashboard Adoption, Query Performance, Insight Quality"
+      },
+      {
+        "role": "Analytics Engineer",
+        "kpis": "dbt Model Quality, Transformation Cost"
+      },
+      {
+        "role": "Statistician",
+        "kpis": "Validity Score, Confidence Metrics"
+      },
+      {
+        "role": "Data Architect",
+        "kpis": "Schema Scalability, Data Model Quality"
+      },
+      {
+        "role": "ML Researcher",
+        "kpis": "Model Innovation, Research Output"
+      },
+      {
+        "role": "Deep Learning Engineer",
+        "kpis": "GPU Efficiency, Accuracy, Training Cost"
+      },
+      {
+        "role": "Computer Vision Engineer",
+        "kpis": "Detection Accuracy, FPS Rate, False Positives"
+      },
+      {
+        "role": "NLP Scientist",
+        "kpis": "BLEU/ROUGE Scores, Language Accuracy"
+      },
+      {
+        "role": "AI Product Lead",
+        "kpis": "AI Feature Adoption, Impact Metrics"
+      },
+      {
+        "role": "MLOps Engineer",
+        "kpis": "Pipeline Reliability, Drift Detection, CI/CD AI"
+      },
+      {
+        "role": "Data Governance Lead",
+        "kpis": "Compliance Score, Data Lineage Quality"
+      },
+      {
+        "role": "Data Steward",
+        "kpis": "Data Completeness, Accuracy, Documentation Coverage"
+      },
+      {
+        "role": "Quant Analyst",
+        "kpis": "Model Profitability, Risk Accuracy"
+      },
+      {
+        "role": "RAG Architect",
+        "kpis": "Retrieval Accuracy, Latency, Recall"
+      }
+    ],
+    "DevOps & Cloud": [
+      {
+        "role": "DevOps Engineer",
+        "kpis": "CI/CD Success, Deployment Frequency, MTTR"
+      },
+      {
+        "role": "SRE",
+        "kpis": "SLO Compliance, MTTR, Error Budget"
+      },
+      {
+        "role": "Cloud Architect",
+        "kpis": "Cost Optimization, Scalability, Uptime"
+      },
+      {
+        "role": "Cloud Engineer",
+        "kpis": "Auto-Scaling Efficiency, Resource Utilization"
+      },
+      {
+        "role": "Network Engineer",
+        "kpis": "Uptime, Packet Loss, Network Latency"
+      },
+      {
+        "role": "Systems Administrator",
+        "kpis": "Patch Compliance, System Uptime"
+      },
+      {
+        "role": "DBA",
+        "kpis": "Query Latency, Backup Reliability, Replication Lag"
+      },
+      {
+        "role": "Kubernetes Engineer",
+        "kpis": "Cluster Uptime, Pod Reliability"
+      },
+      {
+        "role": "Infra Engineer",
+        "kpis": "Provisioning Speed, Stability"
+      },
+      {
+        "role": "Build Engineer",
+        "kpis": "Build Stability, Build Time"
+      },
+      {
+        "role": "Reliability Architect",
+        "kpis": "MTTR Reduction, Resilience Metrics"
+      },
+      {
+        "role": "Platform Reliability Engineer",
+        "kpis": "Alert Fatigue Reduction, Reliability"
+      },
+      {
+        "role": "Observability Engineer",
+        "kpis": "Dashboard Adoption, Alert Accuracy"
+      },
+      {
+        "role": "Cloud FinOps Analyst",
+        "kpis": "Cost Savings, Efficiency Metrics"
+      }
+    ],
+    "Security": [
+      {
+        "role": "Security Analyst",
+        "kpis": "Vulnerability Detection, TTD, TTR"
+      },
+      {
+        "role": "SOC Analyst",
+        "kpis": "Incident Detection, Response Time"
+      },
+      {
+        "role": "Incident Responder",
+        "kpis": "Containment Time, Recovery Time"
+      },
+      {
+        "role": "Pentester",
+        "kpis": "Findings per Engagement, Severity Index"
+      },
+      {
+        "role": "AppSec Engineer",
+        "kpis": "Secure Code Compliance, Vuln Reduction"
+      },
+      {
+        "role": "Cloud Security Engineer",
+        "kpis": "Cloud Misconfigurations, TTR"
+      },
+      {
+        "role": "Security Architect",
+        "kpis": "Security Posture, Framework Compliance"
+      },
+      {
+        "role": "IAM Engineer",
+        "kpis": "Access Accuracy, Failed Auth Reduction"
+      },
+      {
+        "role": "GRC Analyst",
+        "kpis": "Compliance Score, Control Maturity"
+      },
+      {
+        "role": "Privacy Engineer",
+        "kpis": "PII Incident Rate, Compliance"
+      },
+      {
+        "role": "Threat Hunter",
+        "kpis": "Threat Detection Rate, False Positives"
+      },
+      {
+        "role": "Forensics Analyst",
+        "kpis": "Chain-of-Custody Accuracy, Investigation Time"
+      },
+      {
+        "role": "Red Team Engineer",
+        "kpis": "Exploit Success, Detection Avoidance"
+      },
+      {
+        "role": "Blue Team Engineer",
+        "kpis": "Defense Success Rate, Incident Reduction"
+      }
+    ],
+    "Customer Success": [
+      {
+        "role": "Customer Success Manager",
+        "kpis": "CSAT, NPS, Retention"
+      },
+      {
+        "role": "Technical CSM",
+        "kpis": "Resolution Time, Escalation Rate"
+      },
+      {
+        "role": "Support Engineer",
+        "kpis": "AHT, First Response Time"
+      },
+      {
+        "role": "Implementation Specialist",
+        "kpis": "Time-to-Go-Live, Adoption"
+      },
+      {
+        "role": "Solutions Architect",
+        "kpis": "Solution Fit Score, Win Rate"
+      },
+      {
+        "role": "Technical Account Manager",
+        "kpis": "Account Health, Retention"
+      },
+      {
+        "role": "Escalation Manager",
+        "kpis": "Resolution Time, Severity Mgmt"
+      },
+      {
+        "role": "Training Specialist",
+        "kpis": "Completion Rate, Training Impact"
+      },
+      {
+        "role": "Onboarding Specialist",
+        "kpis": "Activation Rate, Time-to-Value"
+      },
+      {
+        "role": "Knowledge Base Manager",
+        "kpis": "Article Quality, Self-Serve Rate"
+      }
+    ],
+    "Sales": [
+      {
+        "role": "BDR",
+        "kpis": "Meetings Booked, Conversion Rate"
+      },
+      {
+        "role": "SDR",
+        "kpis": "Lead Conversion, Email Response Rate"
+      },
+      {
+        "role": "Sales Engineer",
+        "kpis": "Demo Success, Win Influence"
+      },
+      {
+        "role": "Account Executive",
+        "kpis": "Quota Attainment, Win Rate"
+      },
+      {
+        "role": "Enterprise AE",
+        "kpis": "Pipeline Value, Deal Size"
+      },
+      {
+        "role": "Sales Ops",
+        "kpis": "CRM Hygiene, Forecast Accuracy"
+      },
+      {
+        "role": "RevOps",
+        "kpis": "Revenue Efficiency, CAC Reduction"
+      }
+    ],
+    "Marketing": [
+      {
+        "role": "Growth Marketer",
+        "kpis": "Activation, CAC, ROI"
+      },
+      {
+        "role": "Performance Marketer",
+        "kpis": "CTR, CPA, ROAS"
+      },
+      {
+        "role": "CRM Specialist",
+        "kpis": "Campaign Performance, Data Quality"
+      },
+      {
+        "role": "Marketing Ops",
+        "kpis": "Automation Success, Attribution Accuracy"
+      },
+      {
+        "role": "Affiliate Manager",
+        "kpis": "Affiliate ROI, Partner Growth"
+      }
+    ],
+    "PMO": [
+      {
+        "role": "Project Manager",
+        "kpis": "CPI, SPI, Delivery on Time"
+      },
+      {
+        "role": "Program Manager",
+        "kpis": "Cross-Project Delivery, Strategic Alignment"
+      },
+      {
+        "role": "PMO Analyst",
+        "kpis": "Governance Compliance, Reporting Accuracy"
+      },
+      {
+        "role": "Scrum Master",
+        "kpis": "Velocity, Blocker Removal Rate"
+      },
+      {
+        "role": "Agile Coach",
+        "kpis": "Agile Maturity, Team Adoption"
+      },
+      {
+        "role": "Delivery Manager",
+        "kpis": "Delivery Rate, SLA Compliance"
+      },
+      {
+        "role": "Implementation PM",
+        "kpis": "Go-Live Success, Scope Stability"
+      },
+      {
+        "role": "Technical PM",
+        "kpis": "Tech Delivery KPIs, Risk Mgmt"
+      },
+      {
+        "role": "Portfolio Manager",
+        "kpis": "Portfolio Alignment, ROI"
+      },
+      {
+        "role": "Risk Manager",
+        "kpis": "Risk Reduction, Mitigation Success"
+      }
+    ],
+    "Hardware": [
+      {
+        "role": "Hardware Engineer",
+        "kpis": "Failure Rate, Power Efficiency"
+      },
+      {
+        "role": "Electrical Engineer",
+        "kpis": "Circuit Stability, Load Accuracy"
+      },
+      {
+        "role": "Mechatronics Engineer",
+        "kpis": "Robot Accuracy, System Reliability"
+      },
+      {
+        "role": "Robotics Engineer",
+        "kpis": "Precision, Error Rate"
+      },
+      {
+        "role": "Firmware Lead",
+        "kpis": "Stability, Memory Footprint"
+      },
+      {
+        "role": "Sensor Engineer",
+        "kpis": "Signal Accuracy, Noise Ratio"
+      },
+      {
+        "role": "IoT Architect",
+        "kpis": "Device Scale, Uptime"
+      },
+      {
+        "role": "FPGA Engineer",
+        "kpis": "Latency, Stability"
+      },
+      {
+        "role": "Chip Designer",
+        "kpis": "Power Efficiency, Thermal Performance"
+      }
+    ],
+    "Web3": [
+      {
+        "role": "Web3 PM",
+        "kpis": "dApp Adoption, Tx Success Rate"
+      },
+      {
+        "role": "Tokenomics Designer",
+        "kpis": "Model Sustainability, Liquidity Metrics"
+      },
+      {
+        "role": "Smart Contract Engineer",
+        "kpis": "Gas Efficiency, Security"
+      },
+      {
+        "role": "Web3 Product Analyst",
+        "kpis": "Chain Insights, Usage Metrics"
+      },
+      {
+        "role": "Crypto Compliance Analyst",
+        "kpis": "KYC Accuracy, Risk Metrics"
+      },
+      {
+        "role": "Web3 Security Engineer",
+        "kpis": "Vulnerabilities Found"
+      },
+      {
+        "role": "NFT Engineer",
+        "kpis": "Mint Success, Marketplace Sales"
+      },
+      {
+        "role": "DeFi Engineer",
+        "kpis": "APY Stability, Smart Contract Safety"
+      },
+      {
+        "role": "Blockchain Researcher",
+        "kpis": "Research Output, Innovation Index"
+      },
+      {
+        "role": "Crypto Payments Engineer",
+        "kpis": "Tx Reliability, Fee Optimization"
+      }
+    ],
+    "AI": [
+      {
+        "role": "Prompt Engineer",
+        "kpis": "Prompt Efficiency, Hallucination Reduction"
+      },
+      {
+        "role": "LLMOps Engineer",
+        "kpis": "Model Deployment Success, Drift Detection"
+      },
+      {
+        "role": "AI Evaluator",
+        "kpis": "Model Accuracy, Bias Detection"
+      },
+      {
+        "role": "AI Trainer",
+        "kpis": "Dataset Quality, Training Iterations"
+      },
+      {
+        "role": "AI Safety Specialist",
+        "kpis": "Risk Reduction, Alignment Score"
+      },
+      {
+        "role": "Synthetic Data Engineer",
+        "kpis": "Data Quality, Privacy Metrics"
+      },
+      {
+        "role": "RAG Engineer",
+        "kpis": "Retrieval Accuracy, Latency"
+      },
+      {
+        "role": "AI Workflow Architect",
+        "kpis": "Pipeline Efficiency, Model ROI"
+      },
+      {
+        "role": "Autonomous Agent Engineer",
+        "kpis": "Task Completion Rate, Reliability"
+      },
+      {
+        "role": "AI Product Architect",
+        "kpis": "AI Feature Adoption, Strategic Impact"
+      }
+    ]
+  },
+  "Medicos_150": {
+    "Medicina Clínica": [
+      {
+        "role": "Médico General",
+        "kpis": "Tiempo por paciente, exactitud diagnóstica, reconsultas, adherencia"
+      },
+      {
+        "role": "Médico Internista",
+        "kpis": "Control crónicos, adherencia terapéutica, precisión diagnóstica"
+      },
+      {
+        "role": "Pediatra",
+        "kpis": "Cobertura vacunas, satisfacción familiar, seguimiento"
+      },
+      {
+        "role": "Ginecólogo/Obstetra",
+        "kpis": "Complicaciones, control prenatal, satisfacción"
+      },
+      {
+        "role": "Cirujano General",
+        "kpis": "Tiempo quirúrgico, infecciones, reintervenciones"
+      },
+      {
+        "role": "Cardiólogo",
+        "kpis": "Control riesgo, tiempos ECG, adherencia"
+      },
+      {
+        "role": "Neumólogo",
+        "kpis": "Adherencia EPOC, control asma, hospitalizaciones"
+      },
+      {
+        "role": "Dermatólogo",
+        "kpis": "Resolución primera consulta, exactitud diagnóstica"
+      },
+      {
+        "role": "Endocrinólogo",
+        "kpis": "Control HbA1c, adherencia, reducción complicaciones"
+      },
+      {
+        "role": "Nefrólogo",
+        "kpis": "Eficacia en diálisis, control IRC, complicaciones"
+      },
+      {
+        "role": "Gastroenterólogo",
+        "kpis": "Tasa detección, tiempos reporte, calidad imagen"
+      },
+      {
+        "role": "Traumatólogo",
+        "kpis": "Recuperación funcional, tiempos quirúrgicos"
+      },
+      {
+        "role": "Oncólogo",
+        "kpis": "Respuesta terapéutica, adherencia, complicaciones"
+      },
+      {
+        "role": "Hematólogo",
+        "kpis": "Control cuadros hematológicos, respuesta terapia"
+      },
+      {
+        "role": "Psiquiatra",
+        "kpis": "Adherencia, reducción crisis, satisfacción"
+      },
+      {
+        "role": "Anestesiólogo",
+        "kpis": "Complicaciones, tiempos inducción/recuperación"
+      },
+      {
+        "role": "Radiólogo",
+        "kpis": "TAT informes, precisión diagnóstica, repetición"
+      },
+      {
+        "role": "Médico Emergencias",
+        "kpis": "Triage, tiempos atención, estabilización"
+      },
+      {
+        "role": "Médico Intensivista",
+        "kpis": "Mortalidad ajustada, ventilación, infecciones UCI"
+      },
+      {
+        "role": "Cirujano Plástico",
+        "kpis": "Complicaciones, tiempos recuperación, satisfacción"
+      },
+      {
+        "role": "Reumatólogo",
+        "kpis": "Control dolor, adherencia"
+      },
+      {
+        "role": "Urólogo",
+        "kpis": "Resolución quirúrgica, control postoperatorio"
+      },
+      {
+        "role": "Oftalmólogo",
+        "kpis": "Agudeza visual post tratamiento, complicaciones"
+      },
+      {
+        "role": "Otorrino",
+        "kpis": "Resolución síntomas, reducción recurrencias"
+      },
+      {
+        "role": "Médico Ocupacional",
+        "kpis": "Reducción incapacidades, incidentes laborales"
+      }
+    ],
+    "Enfermería": [
+      {
+        "role": "Enfermero General",
+        "kpis": "Adherencia protocolos, errores medicación, tiempos"
+      },
+      {
+        "role": "Enfermero UCI",
+        "kpis": "Eventos críticos, vigilancia continua, adherencia"
+      },
+      {
+        "role": "Enfermero Quirúrgico",
+        "kpis": "Preparación, conteos, tiempos SOP"
+      },
+      {
+        "role": "Enfermero Pediátrico",
+        "kpis": "Manejo emocional, adherencia"
+      },
+      {
+        "role": "Enfermero Obstétrico",
+        "kpis": "Indicadores materno-perinatales"
+      },
+      {
+        "role": "Enfermero Epidemiología",
+        "kpis": "Brote, notificaciones, vigilancia"
+      },
+      {
+        "role": "Enfermero Control Infecciones",
+        "kpis": "IAAS, higiene manos, cumplimiento"
+      },
+      {
+        "role": "Enfermero Domiciliar",
+        "kpis": "Adherencia terapias, satisfacción paciente"
+      },
+      {
+        "role": "Coordinador Enfermería",
+        "kpis": "Rotación personal, cumplimiento horarios"
+      },
+      {
+        "role": "Enfermero SOP",
+        "kpis": "Tiempos quirófano, seguridad"
+      },
+      {
+        "role": "Enfermero Hemodiálisis",
+        "kpis": "Adecuación sesiones, eventos adversos"
+      },
+      {
+        "role": "Enfermero Emergencias",
+        "kpis": "Triage, tiempos atención"
+      },
+      {
+        "role": "Enfermero Oncología",
+        "kpis": "Adherencia quimio, complicaciones"
+      },
+      {
+        "role": "Técnico Enfermería",
+        "kpis": "Ejecución tareas, eficiencia"
+      },
+      {
+        "role": "Auxiliar Enfermería",
+        "kpis": "Soporte, cumplimiento básico"
+      }
+    ],
+    "Quirófano": [
+      {
+        "role": "Circulante",
+        "kpis": "Flujo quirúrgico, tiempos, seguridad"
+      },
+      {
+        "role": "Instrumentista",
+        "kpis": "Conteos, eficiencia, baja tasa errores"
+      },
+      {
+        "role": "Coordinador Quirófanos",
+        "kpis": "Ocupación, productividad, puntualidad"
+      },
+      {
+        "role": "Anestesiólogo (SOP)",
+        "kpis": "Tiempos, complicaciones, recuperación"
+      },
+      {
+        "role": "Auxiliar Sala",
+        "kpis": "Preparación, limpieza, soporte"
+      },
+      {
+        "role": "Supervisor Quirófanos",
+        "kpis": "Cumplimiento protocolos, IAAS"
+      },
+      {
+        "role": "Técnico Esterilización",
+        "kpis": "Tasa fallas esterilización, logística"
+      },
+      {
+        "role": "Enfermero SOP (extra)",
+        "kpis": "Tiempos, adherencia protocolos"
+      },
+      {
+        "role": "Auxiliar Instrumentación",
+        "kpis": "Apoyo técnico, eficiencia"
+      },
+      {
+        "role": "Programador Cirugías",
+        "kpis": "Optimización agenda, ocupación"
+      }
+    ],
+    "Laboratorio": [
+      {
+        "role": "Tecnólogo Médico Lab",
+        "kpis": "TAT, precisión, control calidad"
+      },
+      {
+        "role": "Microbiólogo",
+        "kpis": "Tiempos cultivo, exactitud, control"
+      },
+      {
+        "role": "Bacteriólogo",
+        "kpis": "TAT, identificación precisa"
+      },
+      {
+        "role": "Citotecnólogo",
+        "kpis": "Tasa detección cáncer, precisión"
+      },
+      {
+        "role": "Patólogo",
+        "kpis": "Exactitud diagnóstica, TAT"
+      },
+      {
+        "role": "Técnico Flebotomía",
+        "kpis": "Tasa rechazo, calidad muestras"
+      },
+      {
+        "role": "Coordinador Lab",
+        "kpis": "Cumplimiento estándares, TAT"
+      },
+      {
+        "role": "Bioanalista Clínico",
+        "kpis": "Calidad, exactitud, validación"
+      },
+      {
+        "role": "Especialista Inmunología",
+        "kpis": "Precisión pruebas, control"
+      },
+      {
+        "role": "Especialista Hematología",
+        "kpis": "Exactitud hematológica"
+      },
+      {
+        "role": "Especialista Química Clínica",
+        "kpis": "TAT, precisión"
+      },
+      {
+        "role": "Especialista Moléculas",
+        "kpis": "Exactitud PCR, tiempos"
+      },
+      {
+        "role": "Técnico Banco Sangre",
+        "kpis": "Seguridad transfusional"
+      },
+      {
+        "role": "Gestor Calidad Lab",
+        "kpis": "ISO 15189, indicadores"
+      },
+      {
+        "role": "Patólogo Forense",
+        "kpis": "TAT, exactitud pericial"
+      }
+    ],
+    "Imagen": [
+      {
+        "role": "Técnico RX",
+        "kpis": "Tasa repetición, calidad imagen"
+      },
+      {
+        "role": "Técnico TAC",
+        "kpis": "Tiempos, repetición, dosis"
+      },
+      {
+        "role": "Técnico RM",
+        "kpis": "Tiempos, calidad, repetición"
+      },
+      {
+        "role": "Técnico Mamografía",
+        "kpis": "Tasa detección, calidad"
+      },
+      {
+        "role": "Técnico Ultrasonido",
+        "kpis": "Calidad imagen, precisión"
+      },
+      {
+        "role": "Radiólogo (Imagen)",
+        "kpis": "TAT, precisión"
+      },
+      {
+        "role": "Supervisor Imagen",
+        "kpis": "Productividad, calidad"
+      },
+      {
+        "role": "Coordinador Imagen",
+        "kpis": "TAT global, productividad"
+      },
+      {
+        "role": "Especialista Intervencionismo",
+        "kpis": "Éxito procedimientos"
+      },
+      {
+        "role": "Especialista Medicina Nuclear",
+        "kpis": "Tiempos, precisión, seguridad"
+      }
+    ],
+    "Farmacia": [
+      {
+        "role": "Farmacéutico Regente",
+        "kpis": "Errores medicación, inventario"
+      },
+      {
+        "role": "Técnico Farmacia",
+        "kpis": "Exactitud, tiempos, control"
+      },
+      {
+        "role": "Asistente Farmacia",
+        "kpis": "Productividad, exactitud"
+      },
+      {
+        "role": "Coordinador Farmacia",
+        "kpis": "Inventario, costos"
+      },
+      {
+        "role": "Especialista Farmacovigilancia",
+        "kpis": "Notificaciones, eventos"
+      },
+      {
+        "role": "Especialista Farmacoeconomía",
+        "kpis": "Optimización costos"
+      },
+      {
+        "role": "Químico Farmacéutico",
+        "kpis": "Formulación, control"
+      },
+      {
+        "role": "Especialista Formulación",
+        "kpis": "Calidad, estabilidad"
+      },
+      {
+        "role": "Inspector BPM",
+        "kpis": "Cumplimiento BPM"
+      },
+      {
+        "role": "Director Técnico",
+        "kpis": "Supervisión, calidad"
+      }
+    ],
+    "Terapias": [
+      {
+        "role": "Fisioterapeuta",
+        "kpis": "Recuperación, adherencia"
+      },
+      {
+        "role": "Terapeuta Ocupacional",
+        "kpis": "AVD, independencia"
+      },
+      {
+        "role": "Terapeuta Respiratorio",
+        "kpis": "Ventilación, adherencia"
+      },
+      {
+        "role": "Terapeuta Lenguaje",
+        "kpis": "Progreso comunicativo"
+      },
+      {
+        "role": "Psicólogo Clínico",
+        "kpis": "Mejoría, adherencia"
+      },
+      {
+        "role": "Neuropsicólogo",
+        "kpis": "Evaluación, progreso"
+      },
+      {
+        "role": "Trabajador Social",
+        "kpis": "Casos resueltos"
+      },
+      {
+        "role": "Nutricionista",
+        "kpis": "Control antropométrico"
+      },
+      {
+        "role": "Kinesiólogo",
+        "kpis": "Movilidad, dolor"
+      },
+      {
+        "role": "Rehabilitador Cardiopulmonar",
+        "kpis": "Capacidad funcional"
+      },
+      {
+        "role": "Masoterapeuta Clínico",
+        "kpis": "Dolor, satisfacción"
+      },
+      {
+        "role": "Podólogo Clínico",
+        "kpis": "Complicaciones, resolución"
+      },
+      {
+        "role": "Terapeuta Deportiva",
+        "kpis": "Retorno deporte"
+      },
+      {
+        "role": "Educador Físico Clínico",
+        "kpis": "Mejoría funcional"
+      },
+      {
+        "role": "Terapeuta Conductual",
+        "kpis": "Mejoría comportamental"
+      }
+    ],
+    "Administración": [
+      {
+        "role": "Administrador Hospitalario",
+        "kpis": "Rotación camas, eficiencia"
+      },
+      {
+        "role": "Director Médico",
+        "kpis": "Resultados clínicos"
+      },
+      {
+        "role": "Jefe Enfermería",
+        "kpis": "Rotación, calidad"
+      },
+      {
+        "role": "Jefe Laboratorio",
+        "kpis": "TAT, estándares"
+      },
+      {
+        "role": "Coordinador Biomédica",
+        "kpis": "Disponibilidad equipos"
+      },
+      {
+        "role": "Gestor Calidad",
+        "kpis": "ISO, auditorías"
+      },
+      {
+        "role": "Supervisor Clínico",
+        "kpis": "Indicadores área"
+      },
+      {
+        "role": "Programador Médico",
+        "kpis": "Productividad agendas"
+      },
+      {
+        "role": "Facturador Médico",
+        "kpis": "Exactitud, velocidad"
+      },
+      {
+        "role": "Auditor Médico",
+        "kpis": "Reclamos, calidad"
+      },
+      {
+        "role": "Analista Datos Clínicos",
+        "kpis": "Indicadores, BI"
+      },
+      {
+        "role": "Coordinador Seguros",
+        "kpis": "Trámites, TAT"
+      },
+      {
+        "role": "Gestor Riesgos",
+        "kpis": "Reducción incidentes"
+      },
+      {
+        "role": "Jefe Admisión",
+        "kpis": "Tiempos espera"
+      },
+      {
+        "role": "Coordinador Referencias",
+        "kpis": "TAT, continuidad"
+      },
+      {
+        "role": "Coordinador Camas",
+        "kpis": "Ocupación, rotación"
+      },
+      {
+        "role": "Director Clínica",
+        "kpis": "Rentabilidad, satisfacción"
+      },
+      {
+        "role": "Coordinador Logística Médica",
+        "kpis": "Inventario, abastecimiento"
+      },
+      {
+        "role": "Administrador Clínica Privada",
+        "kpis": "Eficiencia operativa"
+      },
+      {
+        "role": "Gestor Cumplimiento Sanitario",
+        "kpis": "Normativas cumplidas"
+      }
+    ],
+    "Dispositivos Médicos": [
+      {
+        "role": "Ingeniero Biomédico",
+        "kpis": "Disponibilidad equipos, fallas"
+      },
+      {
+        "role": "Técnico Biomédico",
+        "kpis": "Reparación, tiempos"
+      },
+      {
+        "role": "Asistente Biomédico",
+        "kpis": "Soporte, TAT"
+      },
+      {
+        "role": "Especialista Validación",
+        "kpis": "Protocolos, exactitud"
+      },
+      {
+        "role": "Especialista Metrología",
+        "kpis": "Trazabilidad, precisión"
+      },
+      {
+        "role": "Especialista Esterilización Industrial",
+        "kpis": "Tasa fallas, cumplimiento"
+      },
+      {
+        "role": "Ingeniero Calidad Dispositivos",
+        "kpis": "Defectos, auditorías"
+      },
+      {
+        "role": "Ingeniero Producción Médica",
+        "kpis": "Productividad, scrap"
+      },
+      {
+        "role": "Coordinador Mantenimiento",
+        "kpis": "MTTR, disponibilidad"
+      },
+      {
+        "role": "Director Planta Dispositivos",
+        "kpis": "Producción, eficiencia"
+      },
+      {
+        "role": "Ingeniero Empaque Estéril",
+        "kpis": "Integridad empaque"
+      },
+      {
+        "role": "Especialista Limpieza/Despirogenado",
+        "kpis": "Endotoxinas, validación"
+      },
+      {
+        "role": "Auditor Calidad Dispositivos",
+        "kpis": "Hallazgos, cumplimiento"
+      },
+      {
+        "role": "Ingeniero Procesos Médicos",
+        "kpis": "Optimización, scrap"
+      },
+      {
+        "role": "Especialista Regulatorio",
+        "kpis": "Registros, cumplimiento"
+      }
+    ],
+    "Salud Pública": [
+      {
+        "role": "Médico Comunitario",
+        "kpis": "Cobertura, morbilidad"
+      },
+      {
+        "role": "Técnico Atención Primaria",
+        "kpis": "Coordinación, respuesta"
+      },
+      {
+        "role": "Enfermero Comunitario",
+        "kpis": "Coberturas, visitas"
+      },
+      {
+        "role": "Técnico Saneamiento",
+        "kpis": "Control riesgos"
+      },
+      {
+        "role": "Epidemiólogo",
+        "kpis": "Brotes, vigilancia"
+      },
+      {
+        "role": "Educador Salud",
+        "kpis": "Cobertura educativa"
+      },
+      {
+        "role": "Promotor Salud",
+        "kpis": "Comunidades atendidas"
+      },
+      {
+        "role": "Inspector Sanitario",
+        "kpis": "Normativa, hallazgos"
+      },
+      {
+        "role": "Coordinador Área Rectora",
+        "kpis": "Indicadores regionales"
+      },
+      {
+        "role": "Analista Epidemiología",
+        "kpis": "Vigilancia, reportes"
+      }
+    ],
+    "Salud Digital": [
+      {
+        "role": "Médico Telemedicina",
+        "kpis": "Resolución virtual, TAT"
+      },
+      {
+        "role": "Enfermero Teleasistencia",
+        "kpis": "Tiempos, resolución"
+      },
+      {
+        "role": "Coordinador Telemedicina",
+        "kpis": "Productividad, KPIs"
+      },
+      {
+        "role": "Técnico Teleconsulta",
+        "kpis": "Soporte equipos, TAT"
+      },
+      {
+        "role": "Analista Datos Digitales",
+        "kpis": "Indicadores, data"
+      },
+      {
+        "role": "Ingeniero Equipos Telemedicina",
+        "kpis": "Mantenimiento, fallas"
+      },
+      {
+        "role": "Especialista Plataformas Salud",
+        "kpis": "Disponibilidad, adopción"
+      },
+      {
+        "role": "Gestor Operaciones Salud Digital",
+        "kpis": "TAT, eficiencia"
+      },
+      {
+        "role": "Asistente Telemedicina",
+        "kpis": "Soporte, productividad"
+      },
+      {
+        "role": "Supervisor Telemedicina",
+        "kpis": "Cumplimiento, calidad"
+      }
+    ]
+  },
+  "BPO_SharedServices": {
+    "Customer Service": [
+      {
+        "role": "Customer Service Representative",
+        "kpis": "CSAT, AHT, FCR, Adherence, QA Score"
+      },
+      {
+        "role": "Senior Customer Service Representative",
+        "kpis": "CSAT, AHT, Resolution Quality, Escalation Rate"
+      },
+      {
+        "role": "Bilingual Customer Service Agent",
+        "kpis": "Language Quality, CSAT, Accuracy, AHT"
+      },
+      {
+        "role": "Customer Experience Associate",
+        "kpis": "NPS, CSAT, Empathy Score, Resolution Time"
+      },
+      {
+        "role": "Chat/Email Support Specialist",
+        "kpis": "Response Time, Accuracy, QA Score"
+      },
+      {
+        "role": "Claims Customer Agent",
+        "kpis": "Claims Accuracy, TAT, Compliance"
+      },
+      {
+        "role": "Collections Agent",
+        "kpis": "Recovery Rate, Promise-to-Pay, Compliance"
+      },
+      {
+        "role": "Retention Specialist",
+        "kpis": "Save Rate, Churn Reduction, Offer Effectiveness"
+      },
+      {
+        "role": "Escalations Specialist",
+        "kpis": "Resolution Time, Case Quality, Severity Management"
+      }
+    ],
+    "Technical Support": [
+      {
+        "role": "Technical Support Agent Tier 1",
+        "kpis": "First Contact Resolution, Technical Accuracy, AHT"
+      },
+      {
+        "role": "Technical Support Agent Tier 2",
+        "kpis": "Resolution Rate, Escalation Avoidance, Troubleshooting Quality"
+      },
+      {
+        "role": "Technical Support Agent Tier 3",
+        "kpis": "Root Cause Resolution, Advanced Diagnostics, Escalation Quality"
+      }
+    ],
+    "Workforce Management": [
+      {
+        "role": "Workforce Analyst Junior",
+        "kpis": "Schedule Accuracy, Forecasting Error"
+      },
+      {
+        "role": "Workforce Analyst Senior",
+        "kpis": "Forecast Accuracy, Shrinkage Control, SLA Attainment"
+      }
+    ],
+    "Quality": [
+      {
+        "role": "Quality Analyst (QA)",
+        "kpis": "QA Score, Error Rate, Coaching Impact"
+      },
+      {
+        "role": "Quality Supervisor",
+        "kpis": "QA Calibration, Quality Improvement Rate"
+      }
+    ],
+    "Operations": [
+      {
+        "role": "Team Leader Contact Center",
+        "kpis": "Team CSAT, Attendance, SLA Compliance, Attrition"
+      },
+      {
+        "role": "Operations Supervisor",
+        "kpis": "Productivity, SLA, Workforce Adherence"
+      },
+      {
+        "role": "Operations Manager",
+        "kpis": "Revenue Per FTE, SLA, Efficiency"
+      },
+      {
+        "role": "Site Director",
+        "kpis": "P&L, Client Satisfaction, Operational KPIs"
+      },
+      {
+        "role": "Data Entry Specialist",
+        "kpis": "Accuracy, Speed, Error Rate"
+      },
+      {
+        "role": "Back Office Specialist",
+        "kpis": "TAT, Accuracy, SLA"
+      },
+      {
+        "role": "Document Management Specialist",
+        "kpis": "Error Rate, TAT"
+      },
+      {
+        "role": "Knowledge Base Manager BPO",
+        "kpis": "Article Quality, Usage Rate"
+      },
+      {
+        "role": "Business Process Analyst",
+        "kpis": "Process Efficiency, Improvement Rate"
+      }
+    ],
+    "Finance SSC": [
+      {
+        "role": "Accounts Payable Analyst",
+        "kpis": "Invoice Accuracy, TAT, Aging Resolution"
+      },
+      {
+        "role": "Accounts Receivable Analyst",
+        "kpis": "Collection Rate, Aging < 30 days, Cash Application Accuracy"
+      },
+      {
+        "role": "Billing Specialist",
+        "kpis": "Billing Accuracy, On-Time Billing, Dispute Rate"
+      },
+      {
+        "role": "Payroll Analyst",
+        "kpis": "Payroll Accuracy, Error Rate, On-Time Delivery"
+      },
+      {
+        "role": "Financial Analyst SSC",
+        "kpis": "Forecast Accuracy, Variance Analysis, Reporting Quality"
+      },
+      {
+        "role": "Order-to-Cash Specialist",
+        "kpis": "Order Accuracy, On-Time Processing, TAT"
+      },
+      {
+        "role": "Procure-to-Pay Specialist",
+        "kpis": "PO Cycle Time, Compliance, Vendor Satisfaction"
+      },
+      {
+        "role": "Record-to-Report Analyst",
+        "kpis": "Close Cycle Time, Accuracy, Compliance"
+      },
+      {
+        "role": "Collections Analyst",
+        "kpis": "Recovery Rate, TAT, Dispute Resolution"
+      },
+      {
+        "role": "Treasury Analyst",
+        "kpis": "Cash Position Accuracy, Forecast Accuracy"
+      },
+      {
+        "role": "Credit Analyst",
+        "kpis": "Credit Decision Accuracy, Risk Indicators"
+      },
+      {
+        "role": "Expense Analyst",
+        "kpis": "Expense Accuracy, Policy Compliance"
+      },
+      {
+        "role": "Compliance Analyst (SSC)",
+        "kpis": "Audit Findings, SLA Compliance"
+      },
+      {
+        "role": "Master Data Specialist",
+        "kpis": "Data Accuracy, SLA, Error Rate"
+      },
+      {
+        "role": "SSC Team Leader Finance",
+        "kpis": "Productivity, Accuracy, SLA Compliance"
+      }
+    ],
+    "HR SSC": [
+      {
+        "role": "HR Operations Specialist",
+        "kpis": "Case Resolution, SLA, Accuracy"
+      },
+      {
+        "role": "HR Generalist SSC",
+        "kpis": "Employee Satisfaction, Case Accuracy"
+      },
+      {
+        "role": "Recruiting Coordinator",
+        "kpis": "Time-to-Schedule, Accuracy, Candidate Experience"
+      },
+      {
+        "role": "Talent Acquisition Specialist",
+        "kpis": "Time-to-Fill, Offer Acceptance, Funnel Conversion"
+      },
+      {
+        "role": "Onboarding Specialist (HRSS)",
+        "kpis": "Time-to-Onboard, Completion Rate"
+      },
+      {
+        "role": "HR Payroll Specialist",
+        "kpis": "Payroll Accuracy, SLA"
+      },
+      {
+        "role": "HR Compliance Specialist",
+        "kpis": "Policy Compliance, Audit Results"
+      },
+      {
+        "role": "HR Data Analyst",
+        "kpis": "Data Accuracy, Report Quality"
+      },
+      {
+        "role": "HR Shared Services Manager",
+        "kpis": "SLAs, Efficiency, Customer Satisfaction"
+      },
+      {
+        "role": "HR Workforce Planner",
+        "kpis": "Hiring Forecast Accuracy, Workforce Efficiency"
+      }
+    ],
+    "IT Support": [
+      {
+        "role": "IT Support Specialist L1",
+        "kpis": "Ticket Resolution, FCR, Response Time"
+      },
+      {
+        "role": "IT Support Specialist L2",
+        "kpis": "Troubleshooting Quality, Escalation Avoidance"
+      },
+      {
+        "role": "IT Support Specialist L3",
+        "kpis": "Root-Cause Resolution, SLA Compliance"
+      },
+      {
+        "role": "Helpdesk Analyst",
+        "kpis": "Ticket Quality, CSAT, Response Time"
+      },
+      {
+        "role": "Service Desk Technician",
+        "kpis": "FCR, SLA, AHT"
+      },
+      {
+        "role": "Infrastructure Monitoring Analyst",
+        "kpis": "Incident Detection Time, Response SLA"
+      },
+      {
+        "role": "Network Support Analyst",
+        "kpis": "Uptime, Incident Resolution"
+      },
+      {
+        "role": "IT Asset Manager",
+        "kpis": "Accuracy, Asset Lifecycle KPIs"
+      },
+      {
+        "role": "ITSM Administrator",
+        "kpis": "Workflow Efficiency, SLA Compliance"
+      },
+      {
+        "role": "IT Shared Services Manager",
+        "kpis": "SLA, Efficiency, Cost Control"
+      }
+    ]
+  },
+  "Finanzas_Banca_Fintech": {
+    "Banking Operations": [
+      {
+        "role": "Teller / Cajero",
+        "kpis": "Accuracy, Cash Balancing, TAT, Customer Satisfaction"
+      },
+      {
+        "role": "Senior Teller",
+        "kpis": "Error Rate Reduction, Compliance, TAT"
+      },
+      {
+        "role": "Branch Service Officer",
+        "kpis": "Customer Satisfaction, SLA, Process Compliance"
+      },
+      {
+        "role": "Branch Manager",
+        "kpis": "Branch Profitability, NPS, Sales Target Achievement"
+      },
+      {
+        "role": "Loan Officer",
+        "kpis": "Approval Accuracy, Portfolio Quality, TAT"
+      },
+      {
+        "role": "Credit Officer",
+        "kpis": "Risk Assessment Accuracy, Delinquency Rates"
+      },
+      {
+        "role": "Credit Underwriter",
+        "kpis": "Decision Accuracy, Turnaround Time"
+      },
+      {
+        "role": "KYC Officer",
+        "kpis": "KYC Accuracy, Compliance Rate, Backlog Clearance"
+      },
+      {
+        "role": "AML Analyst",
+        "kpis": "Alert Quality, False Positive Reduction, Investigation TAT"
+      },
+      {
+        "role": "Banking Operations Analyst",
+        "kpis": "Process Efficiency, SLA, Accuracy"
+      },
+      {
+        "role": "Back Office Banking Analyst",
+        "kpis": "Reconciliation, Error Rate, SLA"
+      },
+      {
+        "role": "Treasury Back Office Analyst",
+        "kpis": "Settlement Accuracy, TAT, Compliance"
+      },
+      {
+        "role": "Payment Processing Specialist",
+        "kpis": "Accuracy, TAT, Compliance"
+      },
+      {
+        "role": "Fraud Analyst",
+        "kpis": "Detection Rate, False Positive Rate, Resolution Time"
+      },
+      {
+        "role": "Risk Analyst Banking",
+        "kpis": "Risk Model Accuracy, Portfolio Indicators"
+      },
+      {
+        "role": "Collections Officer",
+        "kpis": "Recovery Rate, Promise-to-Pay, Roll Rate"
+      },
+      {
+        "role": "Customer Account Specialist",
+        "kpis": "Resolution Time, Accuracy, CSAT"
+      },
+      {
+        "role": "Mortgage Specialist",
+        "kpis": "Approval TAT, Default Rate, Customer Satisfaction"
+      },
+      {
+        "role": "Wealth Management Assistant",
+        "kpis": "Portfolio Support Accuracy, Client Satisfaction"
+      },
+      {
+        "role": "Banking Compliance Coordinator",
+        "kpis": "Compliance Rate, Audit Findings"
+      }
+    ],
+    "Fintech": [
+      {
+        "role": "Fintech Product Manager",
+        "kpis": "Activation Rate, Conversion Rate, Feature Adoption"
+      },
+      {
+        "role": "Fintech Business Analyst",
+        "kpis": "Requirements Quality, Delivery TAT"
+      },
+      {
+        "role": "Crypto Compliance Analyst",
+        "kpis": "KYC/AML Accuracy, Fraud Detection"
+      },
+      {
+        "role": "Blockchain Analyst",
+        "kpis": "Chain Monitoring Accuracy, Alert Quality"
+      },
+      {
+        "role": "DeFi Analyst",
+        "kpis": "Protocol Risk, Yield Accuracy"
+      },
+      {
+        "role": "Fintech Operations Specialist",
+        "kpis": "SLA, Onboarding Efficiency"
+      },
+      {
+        "role": "Product Owner (Fintech)",
+        "kpis": "Backlog Quality, Delivery Velocity"
+      },
+      {
+        "role": "Fintech Customer Support Agent",
+        "kpis": "CSAT, Resolution Accuracy"
+      },
+      {
+        "role": "Crypto Payments Specialist",
+        "kpis": "Tx Success Rate, Fee Efficiency"
+      },
+      {
+        "role": "Fintech Data Analyst",
+        "kpis": "Insight Accuracy, KPI Monitoring"
+      },
+      {
+        "role": "Compliance Officer (Fintech)",
+        "kpis": "Regulatory Compliance, Audit Quality"
+      },
+      {
+        "role": "Fraud Operations Specialist",
+        "kpis": "Fraud Detection, Chargeback Reduction"
+      },
+      {
+        "role": "Onboarding KYC Specialist",
+        "kpis": "Verification Accuracy, TAT"
+      },
+      {
+        "role": "Fintech Growth Analyst",
+        "kpis": "Conversion Rate, CAC, Activation Rate"
+      },
+      {
+        "role": "Fintech Risk Manager",
+        "kpis": "Portfolio Risk, Exposure Metrics"
+      },
+      {
+        "role": "Crypto Operations Manager",
+        "kpis": "Uptime, Tx Efficiency, SLA"
+      },
+      {
+        "role": "Fintech Payments Analyst",
+        "kpis": "Reconciliation Accuracy, Settlement TAT"
+      },
+      {
+        "role": "Crypto Wallet Support Specialist",
+        "kpis": "Wallet Recovery Rate, Issue Resolution TAT"
+      },
+      {
+        "role": "Fintech API Specialist",
+        "kpis": "API Uptime, Latency, Error Rate"
+      },
+      {
+        "role": "Fintech Customer Success Manager",
+        "kpis": "Renewals, NPS, Onboarding Success"
+      }
+    ],
+    "Finance SSC": [
+      {
+        "role": "Accounts Payable Analyst",
+        "kpis": "Invoice Accuracy, TAT, Aging"
+      },
+      {
+        "role": "Accounts Receivable Analyst",
+        "kpis": "Collection Rate, Cash Posting Accuracy"
+      },
+      {
+        "role": "Billing Analyst",
+        "kpis": "Billing Accuracy, Dispute Rate"
+      },
+      {
+        "role": "Financial Reporting Analyst",
+        "kpis": "Report Accuracy, TAT"
+      },
+      {
+        "role": "Audit Analyst",
+        "kpis": "Audit Findings, Compliance"
+      },
+      {
+        "role": "Internal Controls Analyst",
+        "kpis": "Control Effectiveness, Issue Remediation"
+      },
+      {
+        "role": "Treasury Analyst",
+        "kpis": "Cash Forecast Accuracy, Liquidity KPIs"
+      },
+      {
+        "role": "FP&A Analyst",
+        "kpis": "Forecast Accuracy, Variance Analysis"
+      },
+      {
+        "role": "Senior Financial Analyst",
+        "kpis": "Financial Insights Quality, Reporting Excellence"
+      },
+      {
+        "role": "Payroll Analyst",
+        "kpis": "Payroll Accuracy, SLA"
+      },
+      {
+        "role": "Compensation & Benefits Analyst",
+        "kpis": "Accuracy, Benchmarking Quality"
+      },
+      {
+        "role": "Expense Management Analyst",
+        "kpis": "Policy Compliance, Accuracy"
+      },
+      {
+        "role": "Record-to-Report Specialist",
+        "kpis": "Close Cycle Time, Accuracy"
+      },
+      {
+        "role": "Order-to-Cash Specialist",
+        "kpis": "Order Accuracy, TAT"
+      },
+      {
+        "role": "Finance SSC Manager",
+        "kpis": "SLA, Efficiency, Productivity"
+      }
+    ]
+  },
+  "Manufactura_Avanzada": {
+    "Manufacturing Operations": [
+      {
+        "role": "Production Operator",
+        "kpis": "Throughput, Scrap Rate, Cycle Time"
+      },
+      {
+        "role": "Senior Production Operator",
+        "kpis": "Quality, Productivity, Waste Reduction"
+      },
+      {
+        "role": "Production Line Leader",
+        "kpis": "Line Efficiency, OEE, Downtime Reduction"
+      },
+      {
+        "role": "Manufacturing Supervisor",
+        "kpis": "Productivity, Scrap %, Safety KPIs"
+      },
+      {
+        "role": "Manufacturing Manager",
+        "kpis": "OEE, Cost Reduction, Output vs Plan"
+      },
+      {
+        "role": "Shift Supervisor",
+        "kpis": "Shift Output, Attendance, Scrap Rate"
+      },
+      {
+        "role": "Assembly Technician",
+        "kpis": "Accuracy, Rework %, Speed"
+      },
+      {
+        "role": "Machine Operator",
+        "kpis": "Machine Uptime, Cycle Time, Reject Rate"
+      },
+      {
+        "role": "CNC Operator",
+        "kpis": "Precision, Scrap %, Machine Uptime"
+      },
+      {
+        "role": "CNC Programmer",
+        "kpis": "Program Accuracy, Setup Time, Tool Efficiency"
+      },
+      {
+        "role": "Packaging Technician",
+        "kpis": "Packaging Accuracy, Speed, Damages"
+      },
+      {
+        "role": "Warehouse Operator",
+        "kpis": "Pick Accuracy, Speed, Inventory Accuracy"
+      },
+      {
+        "role": "Material Handler",
+        "kpis": "Material Availability, Delivery Time"
+      },
+      {
+        "role": "Forklift Operator",
+        "kpis": "Safety, Accuracy, Movement Efficiency"
+      },
+      {
+        "role": "Inventory Control Specialist",
+        "kpis": "Cycle Count Accuracy, Shrinkage"
+      },
+      {
+        "role": "Logistics Clerk",
+        "kpis": "TAT, Accuracy, Order Completion"
+      },
+      {
+        "role": "Production Planner",
+        "kpis": "Schedule Accuracy, WIP Levels"
+      },
+      {
+        "role": "Manufacturing Scheduler",
+        "kpis": "Plan Adherence, Capacity Utilization"
+      },
+      {
+        "role": "Maintenance Technician",
+        "kpis": "MTTR, MTBF, Preventive Compliance"
+      },
+      {
+        "role": "Maintenance Engineer",
+        "kpis": "Reliability, Downtime Reduction"
+      }
+    ],
+    "Quality": [
+      {
+        "role": "Quality Inspector",
+        "kpis": "Defect Detection Rate, Accuracy, Documentation"
+      },
+      {
+        "role": "Quality Technician",
+        "kpis": "Testing Precision, Scrap Reduction"
+      },
+      {
+        "role": "Quality Engineer",
+        "kpis": "PPM, NCR Reduction, CAPA Effectiveness"
+      },
+      {
+        "role": "Senior Quality Engineer",
+        "kpis": "Audit Success, Quality KPIs"
+      },
+      {
+        "role": "Supplier Quality Engineer",
+        "kpis": "Supplier PPM, Audit Findings"
+      },
+      {
+        "role": "Process Quality Engineer",
+        "kpis": "Process Stability, Variation Reduction"
+      },
+      {
+        "role": "Metrology Technician",
+        "kpis": "Calibration Accuracy, Compliance"
+      },
+      {
+        "role": "Calibration Specialist",
+        "kpis": "Timeliness, Accuracy, Compliance"
+      },
+      {
+        "role": "Document Control Specialist",
+        "kpis": "Document Accuracy, SOP Compliance"
+      },
+      {
+        "role": "CAPA Specialist",
+        "kpis": "CAPA Closure Time, Effectiveness"
+      },
+      {
+        "role": "Process Auditor",
+        "kpis": "Audit Findings, Compliance"
+      },
+      {
+        "role": "Internal Auditor",
+        "kpis": "Audit Accuracy, NCR Closure"
+      },
+      {
+        "role": "External Auditor Coordinator",
+        "kpis": "Audit Preparation Success"
+      },
+      {
+        "role": "Quality Manager",
+        "kpis": "PPM, Cost of Quality, Audit Success"
+      },
+      {
+        "role": "QA Supervisor",
+        "kpis": "Team Performance, NCR Reduction"
+      }
+    ],
+    "Regulatory": [
+      {
+        "role": "Regulatory Affairs Specialist",
+        "kpis": "Filing Accuracy, Approval Timelines"
+      },
+      {
+        "role": "Regulatory Affairs Coordinator",
+        "kpis": "Document Quality, Compliance"
+      }
+    ],
+    "Quality/Validation": [
+      {
+        "role": "Validation Technician",
+        "kpis": "Protocol Execution, Accuracy"
+      },
+      {
+        "role": "Validation Engineer",
+        "kpis": "Validation Completion, Deviations"
+      }
+    ],
+    "Quality/CI": [
+      {
+        "role": "Continuous Improvement Engineer",
+        "kpis": "Kaizen Impact, Waste Reduction"
+      }
+    ],
+    "Engineering": [
+      {
+        "role": "Process Engineer",
+        "kpis": "Cycle Time, Yield, Efficiency"
+      },
+      {
+        "role": "Senior Process Engineer",
+        "kpis": "Process Optimization, Cost Savings"
+      },
+      {
+        "role": "Manufacturing Engineer",
+        "kpis": "OEE, Line Balancing, Scrap"
+      },
+      {
+        "role": "Industrial Engineer",
+        "kpis": "Time Studies, Layout Optimization"
+      },
+      {
+        "role": "Automation Engineer",
+        "kpis": "Automation Uptime, Cycle Reduction"
+      },
+      {
+        "role": "Tooling Engineer",
+        "kpis": "Tool Life, Precision"
+      },
+      {
+        "role": "Tooling Technician",
+        "kpis": "Tool Repair Time, Accuracy"
+      },
+      {
+        "role": "Mechanical Engineer",
+        "kpis": "Equipment Reliability, Design Quality"
+      },
+      {
+        "role": "Electrical Engineer",
+        "kpis": "System Stability, Power Efficiency"
+      },
+      {
+        "role": "Mechatronics Engineer",
+        "kpis": "System Integration, Downtime"
+      },
+      {
+        "role": "PLC Programmer",
+        "kpis": "PLC Uptime, Troubleshooting"
+      },
+      {
+        "role": "Robotics Technician",
+        "kpis": "Robot Uptime, Accuracy"
+      },
+      {
+        "role": "Robotics Engineer",
+        "kpis": "Cycle Time, Automation Efficiency"
+      },
+      {
+        "role": "Manufacturing Project Engineer",
+        "kpis": "Project Delivery, Cost Control"
+      },
+      {
+        "role": "NPI Engineer",
+        "kpis": "Launch Success, First-Pass Yield"
+      },
+      {
+        "role": "R&D Engineer",
+        "kpis": "Prototype Success, Innovation KPIs"
+      },
+      {
+        "role": "Test Engineer",
+        "kpis": "Test Coverage, Accuracy"
+      },
+      {
+        "role": "Engineering Manager",
+        "kpis": "Engineering KPIs, Cost Efficiency"
+      }
+    ],
+    "Engineering/CI": [
+      {
+        "role": "Lean Manufacturing Engineer",
+        "kpis": "Waste Reduction, Lean KPIs"
+      },
+      {
+        "role": "Six Sigma Specialist",
+        "kpis": "Defect Reduction, DMAIC Results"
+      }
+    ],
+    "Supply Chain": [
+      {
+        "role": "Supply Chain Analyst",
+        "kpis": "Inventory Accuracy, Forecast Error"
+      },
+      {
+        "role": "Supply Planner",
+        "kpis": "Planning Accuracy, Fill Rate"
+      },
+      {
+        "role": "Demand Planner",
+        "kpis": "Forecast Accuracy, Service Level"
+      },
+      {
+        "role": "Procurement Specialist",
+        "kpis": "Cost Savings, Supplier Reliability"
+      },
+      {
+        "role": "Purchasing Buyer",
+        "kpis": "On-Time Delivery, PO Accuracy"
+      },
+      {
+        "role": "Senior Buyer",
+        "kpis": "Supplier Performance, Cost KPIs"
+      },
+      {
+        "role": "Category Manager",
+        "kpis": "Category Profitability, Savings"
+      },
+      {
+        "role": "Customs Specialist",
+        "kpis": "Clearance Time, Compliance"
+      },
+      {
+        "role": "Logistics Coordinator",
+        "kpis": "Transport KPIs, TAT"
+      },
+      {
+        "role": "Warehouse Supervisor",
+        "kpis": "Inventory Accuracy, Productivity"
+      },
+      {
+        "role": "Inventory Analyst",
+        "kpis": "Cycle Count Accuracy, Shrinkage"
+      },
+      {
+        "role": "Fleet Coordinator",
+        "kpis": "Utilization, Cost per km"
+      },
+      {
+        "role": "Import-Export Analyst",
+        "kpis": "Lead Time, Documentation Accuracy"
+      },
+      {
+        "role": "SC Manager",
+        "kpis": "E2E KPIs, OTIF, Cost Reduction"
+      },
+      {
+        "role": "Operations Manager SC",
+        "kpis": "Throughput, Efficiency"
+      }
+    ],
+    "HSE": [
+      {
+        "role": "HSE Technician",
+        "kpis": "Incident Rate, Compliance"
+      },
+      {
+        "role": "HSE Specialist",
+        "kpis": "Training Completion, Audits"
+      },
+      {
+        "role": "HSE Engineer",
+        "kpis": "Risk Reduction, Compliance"
+      },
+      {
+        "role": "Ergonomics Specialist",
+        "kpis": "Ergonomic Incident Reduction"
+      },
+      {
+        "role": "Environmental Engineer",
+        "kpis": "Waste Reduction, Compliance"
+      },
+      {
+        "role": "Safety Coordinator",
+        "kpis": "Incident Investigations, KPIs"
+      },
+      {
+        "role": "Occupational Health Nurse",
+        "kpis": "Case Management, Incident Reduction"
+      },
+      {
+        "role": "Fire Safety Technician",
+        "kpis": "Readiness, Inspection Results"
+      },
+      {
+        "role": "HSE Manager",
+        "kpis": "Zero Harm KPIs, Compliance"
+      },
+      {
+        "role": "Sustainability Manager",
+        "kpis": "Environmental KPIs, ESG Metrics"
+      }
+    ]
+  },
+  "Hoteleria_Turismo": {
+    "Hotel Operations": [
+      {
+        "role": "Front Desk Agent",
+        "kpis": "Check-in TAT, CSAT, Accuracy, Upsell Rate"
+      },
+      {
+        "role": "Front Desk Supervisor",
+        "kpis": "Team SLA, Guest Satisfaction, Error Reduction"
+      },
+      {
+        "role": "Guest Relations Officer",
+        "kpis": "NPS, Complaint Resolution Time, VIP Satisfaction"
+      },
+      {
+        "role": "Concierge",
+        "kpis": "Service Fulfillment, Guest Satisfaction, Request Accuracy"
+      },
+      {
+        "role": "Bellman",
+        "kpis": "Guest Assistance Time, Luggage Handling Accuracy"
+      },
+      {
+        "role": "Night Auditor",
+        "kpis": "Report Accuracy, Reconciliation Time"
+      },
+      {
+        "role": "Reservations Agent",
+        "kpis": "Booking Accuracy, Conversion Rate, Call Handling"
+      },
+      {
+        "role": "Reservations Manager",
+        "kpis": "Occupancy Management, Revenue Impact"
+      },
+      {
+        "role": "Duty Manager",
+        "kpis": "Crisis Handling, SLA, Guest Satisfaction"
+      },
+      {
+        "role": "Hotel Manager",
+        "kpis": "RevPAR, ADR, Occupancy, NPS"
+      },
+      {
+        "role": "General Manager",
+        "kpis": "Financial Performance, Guest Experience, Employee Retention"
+      },
+      {
+        "role": "Executive Housekeeper",
+        "kpis": "Room Readiness, Cleanliness Score, Productivity"
+      },
+      {
+        "role": "Housekeeping Supervisor",
+        "kpis": "Inspection Quality, Team Productivity"
+      },
+      {
+        "role": "Room Attendant",
+        "kpis": "Room Cleaning TAT, Inspection Score"
+      },
+      {
+        "role": "Laundry Attendant",
+        "kpis": "Laundry Output, Quality, TAT"
+      },
+      {
+        "role": "Valet Parking Attendant",
+        "kpis": "Vehicle Handling Accuracy, Service Speed"
+      },
+      {
+        "role": "Security Officer",
+        "kpis": "Incident Rate, Patrol Compliance"
+      },
+      {
+        "role": "Maintenance Technician",
+        "kpis": "Work Order Completion, Response Time"
+      },
+      {
+        "role": "Chief Engineer",
+        "kpis": "Facility Uptime, Maintenance KPIs"
+      },
+      {
+        "role": "Hotel IT Support",
+        "kpis": "System Uptime, Ticket Resolution"
+      }
+    ],
+    "Food & Beverage": [
+      {
+        "role": "Restaurant Host",
+        "kpis": "Seating Efficiency, Guest Satisfaction"
+      },
+      {
+        "role": "Waiter / Server",
+        "kpis": "Table Turnover, Service Accuracy, Tips"
+      },
+      {
+        "role": "Senior Server",
+        "kpis": "Upsell Rate, Guest Experience Score"
+      },
+      {
+        "role": "Bartender",
+        "kpis": "Drink Quality, Speed, Tips"
+      },
+      {
+        "role": "Barback",
+        "kpis": "Availability, Support Efficiency"
+      },
+      {
+        "role": "Sommelier",
+        "kpis": "Wine Sales, Guest Experience"
+      },
+      {
+        "role": "F&B Supervisor",
+        "kpis": "Team Productivity, Guest Satisfaction"
+      },
+      {
+        "role": "F&B Manager",
+        "kpis": "Revenue, Food Cost %, Guest Experience"
+      },
+      {
+        "role": "Chef de Partie",
+        "kpis": "Food Quality, Station Efficiency"
+      },
+      {
+        "role": "Sous Chef",
+        "kpis": "Food Quality, Kitchen Efficiency"
+      },
+      {
+        "role": "Executive Chef",
+        "kpis": "Food Cost %, Menu Performance"
+      },
+      {
+        "role": "Kitchen Assistant",
+        "kpis": "Prep Accuracy, Speed"
+      },
+      {
+        "role": "Dishwasher",
+        "kpis": "Cleaning TAT, Availability"
+      },
+      {
+        "role": "Barista",
+        "kpis": "Drink Quality, Speed, CSAT"
+      },
+      {
+        "role": "Catering Coordinator",
+        "kpis": "Event Accuracy, Guest Satisfaction"
+      },
+      {
+        "role": "Banquet Server",
+        "kpis": "Event Execution, Service Quality"
+      },
+      {
+        "role": "Banquet Captain",
+        "kpis": "Team Coordination, Event KPIs"
+      },
+      {
+        "role": "Banquet Manager",
+        "kpis": "Event Profitability, Execution Quality"
+      },
+      {
+        "role": "F&B Cost Controller",
+        "kpis": "Food Cost %, Waste Reduction"
+      },
+      {
+        "role": "Cafeteria Attendant",
+        "kpis": "Service Efficiency, Cleanliness"
+      }
+    ],
+    "Sales & Revenue": [
+      {
+        "role": "Sales Coordinator",
+        "kpis": "Lead Accuracy, TAT"
+      },
+      {
+        "role": "Sales Executive",
+        "kpis": "Revenue, Conversion Rate, Pipeline"
+      },
+      {
+        "role": "Sales Manager",
+        "kpis": "Sales Targets, Contract Value"
+      },
+      {
+        "role": "Senior Sales Manager",
+        "kpis": "Revenue Growth, Segment Penetration"
+      },
+      {
+        "role": "Director of Sales",
+        "kpis": "Sales Strategy, Revenue Performance"
+      },
+      {
+        "role": "Group Sales Manager",
+        "kpis": "Group Booking Revenue, Occupancy"
+      },
+      {
+        "role": "Revenue Analyst",
+        "kpis": "Forecast Accuracy, Pricing Efficiency"
+      },
+      {
+        "role": "Revenue Manager",
+        "kpis": "RevPAR, ADR, Occupancy"
+      },
+      {
+        "role": "Director of Revenue",
+        "kpis": "Pricing Strategy, Profitability"
+      },
+      {
+        "role": "Event Planner",
+        "kpis": "Event Satisfaction, Accuracy, Profitability"
+      },
+      {
+        "role": "Wedding Coordinator",
+        "kpis": "Client Satisfaction, Execution KPIs"
+      },
+      {
+        "role": "MICE Specialist",
+        "kpis": "Group Booking Efficiency, Client Satisfaction"
+      },
+      {
+        "role": "Banquet Sales Executive",
+        "kpis": "Revenue, Upsell"
+      },
+      {
+        "role": "Travel Agency Liaison",
+        "kpis": "Booking Accuracy, Partner Satisfaction"
+      },
+      {
+        "role": "Tour Sales Coordinator",
+        "kpis": "Tour Conversion, Guest Satisfaction"
+      }
+    ],
+    "Resort Operations": [
+      {
+        "role": "Recreation Attendant",
+        "kpis": "Activity Participation, Guest Satisfaction"
+      },
+      {
+        "role": "Recreation Supervisor",
+        "kpis": "Program Execution, Safety KPIs"
+      },
+      {
+        "role": "Lifeguard",
+        "kpis": "Incident Prevention, Compliance"
+      },
+      {
+        "role": "Spa Therapist",
+        "kpis": "Treatment Satisfaction, Sales"
+      },
+      {
+        "role": "Spa Receptionist",
+        "kpis": "Booking Accuracy, Guest Experience"
+      },
+      {
+        "role": "Spa Manager",
+        "kpis": "Treatment Revenue, Guest KPIs"
+      },
+      {
+        "role": "Kids Club Attendant",
+        "kpis": "Engagement, Safety"
+      },
+      {
+        "role": "Tour Guide",
+        "kpis": "Knowledge Score, Guest Satisfaction"
+      },
+      {
+        "role": "Entertainment Coordinator",
+        "kpis": "Program Quality, Attendance"
+      },
+      {
+        "role": "Entertainment Manager",
+        "kpis": "Program Success, Team Performance"
+      }
+    ]
+  },
+  "Logistica_SupplyChain": {
+    "Supply Chain": [
+      {
+        "role": "Supply Chain Analyst",
+        "kpis": "Forecast Accuracy, Inventory Accuracy, OTIF"
+      },
+      {
+        "role": "Supply Chain Coordinator",
+        "kpis": "Order Accuracy, TAT, Supplier Communication"
+      },
+      {
+        "role": "Supply Chain Planner",
+        "kpis": "Plan Adherence, Capacity Utilization, Fill Rate"
+      },
+      {
+        "role": "Demand Planner",
+        "kpis": "Forecast Accuracy, Service Level, Bias"
+      },
+      {
+        "role": "Supply Planner",
+        "kpis": "Inventory Levels, Fill Rate, Backorder Reduction"
+      },
+      {
+        "role": "S&OP Coordinator",
+        "kpis": "Forecast Consensus Quality, Cycle Time"
+      },
+      {
+        "role": "S&OP Manager",
+        "kpis": "S&OP Accuracy, E2E KPIs, Cost Optimization"
+      },
+      {
+        "role": "Master Planner",
+        "kpis": "Production Plan Accuracy, WIP Control"
+      },
+      {
+        "role": "IBP Manager",
+        "kpis": "Integrated Planning KPIs, Scenario Accuracy"
+      },
+      {
+        "role": "SCM Manager",
+        "kpis": "OTIF, Cost % Sales, Lead Time Reduction"
+      },
+      {
+        "role": "SC Director",
+        "kpis": "Total Cost Ownership, E2E KPIs"
+      }
+    ],
+    "Procurement": [
+      {
+        "role": "Procurement Analyst",
+        "kpis": "Cost Savings, Supplier Performance"
+      },
+      {
+        "role": "Procurement Specialist",
+        "kpis": "PO Accuracy, Supplier On-Time Delivery"
+      },
+      {
+        "role": "Strategic Sourcing Specialist",
+        "kpis": "Savings, Contract Compliance"
+      },
+      {
+        "role": "Senior Buyer",
+        "kpis": "Supplier KPIs, Price Variance Reduction"
+      },
+      {
+        "role": "Category Manager",
+        "kpis": "Category Profitability, Supplier Optimization"
+      },
+      {
+        "role": "Procurement Manager",
+        "kpis": "Cost Reduction, Supplier Compliance"
+      }
+    ],
+    "Trade Compliance": [
+      {
+        "role": "Import-Export Specialist",
+        "kpis": "Clearance Time, Documentation Accuracy"
+      },
+      {
+        "role": "Customs Specialist",
+        "kpis": "Regulatory Compliance, Lead Time"
+      },
+      {
+        "role": "Trade Compliance Officer",
+        "kpis": "Audit Results, Zero Violations"
+      },
+      {
+        "role": "Customs Broker Assistant",
+        "kpis": "Document Quality, Approval Time"
+      }
+    ],
+    "Logistics": [
+      {
+        "role": "Logistics Coordinator",
+        "kpis": "Transport TAT, Delivery Accuracy"
+      },
+      {
+        "role": "Logistics Analyst",
+        "kpis": "Freight Cost Optimization, On-Time Delivery"
+      },
+      {
+        "role": "Logistics Specialist",
+        "kpis": "Route Efficiency, SLA Compliance"
+      },
+      {
+        "role": "Distribution Center Manager",
+        "kpis": "DC Throughput, Cost Control"
+      },
+      {
+        "role": "3PL Account Manager",
+        "kpis": "SLA, Client Satisfaction"
+      },
+      {
+        "role": "Logistics Director",
+        "kpis": "Freight Cost %, OTIF, Efficiency KPIs"
+      }
+    ],
+    "Warehouse": [
+      {
+        "role": "Warehouse Associate",
+        "kpis": "Pick Accuracy, Speed, Inventory Accuracy"
+      },
+      {
+        "role": "Warehouse Supervisor",
+        "kpis": "Productivity, Accuracy, Safety KPIs"
+      },
+      {
+        "role": "Warehouse Manager",
+        "kpis": "Cost Efficiency, OTIF, Inventory Accuracy"
+      },
+      {
+        "role": "Inventory Analyst",
+        "kpis": "Cycle Count Accuracy, Shrinkage Reduction"
+      },
+      {
+        "role": "Inventory Control Specialist",
+        "kpis": "Stock Accuracy, Variance Reduction"
+      }
+    ],
+    "Fulfillment": [
+      {
+        "role": "Fulfillment Associate",
+        "kpis": "Order Accuracy, Packing Speed"
+      },
+      {
+        "role": "Fulfillment Supervisor",
+        "kpis": "Order Flow, Productivity, SLA"
+      }
+    ],
+    "Transport": [
+      {
+        "role": "Transportation Planner",
+        "kpis": "Route Optimization, Cost per km"
+      },
+      {
+        "role": "Fleet Coordinator",
+        "kpis": "Fleet Utilization, Downtime"
+      },
+      {
+        "role": "Fleet Manager",
+        "kpis": "Maintenance KPIs, Cost per Mile"
+      },
+      {
+        "role": "Truck Driver",
+        "kpis": "On-Time Delivery, Safety Compliance"
+      },
+      {
+        "role": "Last-Mile Delivery Driver",
+        "kpis": "Delivery Success Rate, Route Efficiency"
+      },
+      {
+        "role": "Dispatcher",
+        "kpis": "Dispatch Accuracy, Response Time"
+      }
+    ],
+    "SC Tech": [
+      {
+        "role": "ERP Specialist (SC)",
+        "kpis": "System Accuracy, Uptime, Data Quality"
+      },
+      {
+        "role": "SAP MM Analyst",
+        "kpis": "Master Data Accuracy, Transaction Accuracy"
+      },
+      {
+        "role": "SAP PP Analyst",
+        "kpis": "Scheduling Accuracy, System Utilization"
+      },
+      {
+        "role": "TMS Analyst",
+        "kpis": "Route Optimization, System Stability"
+      },
+      {
+        "role": "WMS Analyst",
+        "kpis": "Inventory Accuracy, Scan Compliance"
+      },
+      {
+        "role": "Automation Technician (SC)",
+        "kpis": "Uptime, Fault Recovery"
+      },
+      {
+        "role": "SC Data Analyst",
+        "kpis": "Forecast Metrics, BI Quality"
+      },
+      {
+        "role": "EDI Specialist",
+        "kpis": "Integration Accuracy, Response Time"
+      },
+      {
+        "role": "RFID Specialist",
+        "kpis": "Tag Accuracy, Read Rate"
+      },
+      {
+        "role": "SC Systems Manager",
+        "kpis": "System Stability, KPI Accuracy"
+      },
+      {
+        "role": "Digital Supply Chain Manager",
+        "kpis": "Digital Adoption, Automation KPIs"
+      },
+      {
+        "role": "Operations Excellence Analyst",
+        "kpis": "Process KPIs, Waste Reduction"
+      },
+      {
+        "role": "Lean Supply Chain Specialist",
+        "kpis": "Flow Efficiency, Kaizen Results"
+      },
+      {
+        "role": "Warehouse Automation Engineer",
+        "kpis": "Automation Uptime, Productivity"
+      },
+      {
+        "role": "Robotics Technician (SC)",
+        "kpis": "Robot Uptime, Integration Accuracy"
+      }
+    ]
+  },
+  "Educacion": {
+    "K-12 Education": [
+      {
+        "role": "Elementary School Teacher",
+        "kpis": "Student Progress, Assessment Scores, Parent Satisfaction"
+      },
+      {
+        "role": "Middle School Teacher",
+        "kpis": "Learning Outcomes, Classroom Management, Attendance"
+      },
+      {
+        "role": "High School Teacher",
+        "kpis": "Exam Results, Graduation Rate, Engagement"
+      },
+      {
+        "role": "Science Teacher",
+        "kpis": "Lab Safety, Assessment Scores"
+      },
+      {
+        "role": "Math Teacher",
+        "kpis": "Standardized Test Performance, Improvement Rate"
+      },
+      {
+        "role": "English Teacher",
+        "kpis": "Reading Levels, Writing Scores"
+      },
+      {
+        "role": "Social Studies Teacher",
+        "kpis": "Curriculum Coverage, Assessment Results"
+      },
+      {
+        "role": "Physical Education Teacher",
+        "kpis": "Fitness Improvement, Participation"
+      },
+      {
+        "role": "Special Education Teacher",
+        "kpis": "IEP Completion, Student Progress"
+      },
+      {
+        "role": "Art Teacher",
+        "kpis": "Creativity Metrics, Participation"
+      },
+      {
+        "role": "Music Teacher",
+        "kpis": "Performance Quality, Skill Improvement"
+      },
+      {
+        "role": "Computer Teacher",
+        "kpis": "Digital Skills Acquisition, Test Results"
+      },
+      {
+        "role": "Language Teacher",
+        "kpis": "Fluency Progress, Exam Results"
+      },
+      {
+        "role": " substitute Teacher",
+        "kpis": "Classroom Management, Coverage Quality"
+      },
+      {
+        "role": "Homeroom Teacher",
+        "kpis": "Attendance, Parent Communication"
+      },
+      {
+        "role": "Guidance Counselor",
+        "kpis": "Case Resolution, Student Wellbeing"
+      },
+      {
+        "role": "Library Media Specialist",
+        "kpis": "Book Circulation, Literacy Programs"
+      },
+      {
+        "role": "Teacher Assistant",
+        "kpis": "Support Quality, Efficiency"
+      },
+      {
+        "role": "Curriculum Coordinator",
+        "kpis": "Curriculum Compliance, Learning Outcomes"
+      },
+      {
+        "role": "School Psychologist",
+        "kpis": "Case Resolution, Testing Accuracy"
+      }
+    ],
+    "Higher Education": [
+      {
+        "role": "University Professor",
+        "kpis": "Research Output, Student Evaluations"
+      },
+      {
+        "role": "Adjunct Professor",
+        "kpis": "Teaching Quality, Evaluation Scores"
+      },
+      {
+        "role": "Lecturer",
+        "kpis": "Classroom Engagement, Assessment Quality"
+      },
+      {
+        "role": "Teaching Assistant (University)",
+        "kpis": "Grading Accuracy, Support Quality"
+      },
+      {
+        "role": "Academic Researcher",
+        "kpis": "Publications, Grants Won"
+      },
+      {
+        "role": "Lab Instructor",
+        "kpis": "Lab Quality, Student Safety"
+      },
+      {
+        "role": "Program Director",
+        "kpis": "Program Outcomes, Accreditation"
+      },
+      {
+        "role": "Dean of Faculty",
+        "kpis": "Academic Quality, Faculty KPIs"
+      },
+      {
+        "role": "Registrar",
+        "kpis": "Enrollment Accuracy, TAT"
+      },
+      {
+        "role": "Admissions Officer",
+        "kpis": "Conversion Rate, Lead Quality"
+      },
+      {
+        "role": "Financial Aid Officer",
+        "kpis": "Processing Accuracy, Student Satisfaction"
+      },
+      {
+        "role": "International Programs Coordinator",
+        "kpis": "Exchange Participation, Compliance"
+      },
+      {
+        "role": "Academic Advisor",
+        "kpis": "Student Retention, Graduation Rate"
+      },
+      {
+        "role": "Campus Life Coordinator",
+        "kpis": "Engagement Metrics, Events Execution"
+      },
+      {
+        "role": "Career Services Specialist",
+        "kpis": "Placement Rate, Employer Satisfaction"
+      },
+      {
+        "role": "Research Assistant",
+        "kpis": "Data Accuracy, Contribution Quality"
+      },
+      {
+        "role": "Library Technician",
+        "kpis": "Catalog Accuracy, Service Quality"
+      },
+      {
+        "role": "E-learning Specialist",
+        "kpis": "Course Completion, Platform Adoption"
+      },
+      {
+        "role": "Instructional Designer",
+        "kpis": "Course Quality, Learning Outcomes"
+      },
+      {
+        "role": "University IT Support",
+        "kpis": "System Uptime, Ticket Resolution"
+      }
+    ],
+    "Administration": [
+      {
+        "role": "School Administrator",
+        "kpis": "Operational KPIs, Budget Adherence"
+      },
+      {
+        "role": "School Principal",
+        "kpis": "Academic Results, Parent Satisfaction"
+      },
+      {
+        "role": "Assistant Principal",
+        "kpis": "Discipline Management, Academic KPIs"
+      },
+      {
+        "role": "School Secretary",
+        "kpis": "Documentation Accuracy, Response Time"
+      },
+      {
+        "role": "Admissions Coordinator (K-12)",
+        "kpis": "Enrollment Conversion, Inquiry Response"
+      },
+      {
+        "role": "School Operations Manager",
+        "kpis": "Facility KPIs, Cost Control"
+      },
+      {
+        "role": "Student Services Coordinator",
+        "kpis": "Case Handling, Satisfaction"
+      },
+      {
+        "role": "Parent Relations Coordinator",
+        "kpis": "Communication KPIs, Satisfaction"
+      },
+      {
+        "role": "Transportation Coordinator",
+        "kpis": "Route Efficiency, Safety KPIs"
+      },
+      {
+        "role": "School Nurse",
+        "kpis": "Case Resolution, Incident Reduction"
+      },
+      {
+        "role": "Facilities Manager (Education)",
+        "kpis": "Maintenance KPIs, Safety Compliance"
+      },
+      {
+        "role": "IT Coordinator (Education)",
+        "kpis": "System Uptime, Support Quality"
+      },
+      {
+        "role": "HR Coordinator (Education)",
+        "kpis": "Hiring TAT, Staff Satisfaction"
+      },
+      {
+        "role": "School Security Officer",
+        "kpis": "Incident Rate, Patrol Compliance"
+      },
+      {
+        "role": "Cafeteria Manager",
+        "kpis": "Food Cost %, Service KPIs"
+      }
+    ]
+  },
+  "Construccion_IngenieriaCivil": {
+    "Field Operations": [
+      {
+        "role": "Construction Laborer",
+        "kpis": "Productivity, Safety Compliance, Attendance"
+      },
+      {
+        "role": "Skilled Laborer",
+        "kpis": "Task Accuracy, Productivity, Quality"
+      },
+      {
+        "role": "Carpenter",
+        "kpis": "Precision, Speed, Rework %"
+      },
+      {
+        "role": "Electrician",
+        "kpis": "Code Compliance, Safety, Installation Quality"
+      },
+      {
+        "role": "Plumber",
+        "kpis": "Leak-Free Rate, Quality, TAT"
+      },
+      {
+        "role": "Welder",
+        "kpis": "Weld Quality, Defect Rate, Safety KPIs"
+      },
+      {
+        "role": "Mason",
+        "kpis": "Precision, Productivity, Quality Score"
+      },
+      {
+        "role": "Heavy Equipment Operator",
+        "kpis": "Machine Uptime, Safety, Accuracy"
+      },
+      {
+        "role": "Crane Operator",
+        "kpis": "Load Accuracy, Zero Incidents"
+      },
+      {
+        "role": "Foreman",
+        "kpis": "Crew Productivity, Safety, Quality"
+      },
+      {
+        "role": "Site Supervisor",
+        "kpis": "Schedule Adherence, Safety, Resource Use"
+      },
+      {
+        "role": "Field Engineer",
+        "kpis": "Quality Checks, TAT, Issue Resolution"
+      },
+      {
+        "role": "Safety Technician (Construction)",
+        "kpis": "Incident Rate, Inspection Compliance"
+      },
+      {
+        "role": "QA/QC Inspector (Construction)",
+        "kpis": "Inspection Success, NCR Reduction"
+      },
+      {
+        "role": "Surveyor",
+        "kpis": "Measurement Accuracy, TAT"
+      },
+      {
+        "role": "Concrete Technician",
+        "kpis": "Mix Accuracy, Quality, Strength Testing"
+      },
+      {
+        "role": "Roofer",
+        "kpis": "Leak-Free Rate, Quality, Safety"
+      },
+      {
+        "role": "Painter (Construction)",
+        "kpis": "Finish Quality, Productivity"
+      },
+      {
+        "role": "Scaffolding Technician",
+        "kpis": "Assembly Accuracy, Safety"
+      },
+      {
+        "role": "General Contractor Assistant",
+        "kpis": "Support Efficiency, Documentation Accuracy"
+      }
+    ],
+    "Project Management": [
+      {
+        "role": "Project Coordinator",
+        "kpis": "TAT, Documentation Accuracy"
+      },
+      {
+        "role": "Project Engineer",
+        "kpis": "Issue Resolution, Schedule Support"
+      },
+      {
+        "role": "Senior Project Engineer",
+        "kpis": "Technical Decisions, Quality"
+      },
+      {
+        "role": "Assistant Project Manager",
+        "kpis": "Task Completion, Cost Control"
+      },
+      {
+        "role": "Project Manager",
+        "kpis": "Schedule, Scope, Budget, Client Satisfaction"
+      },
+      {
+        "role": "Senior Project Manager",
+        "kpis": "Portfolio KPIs, Risk Reduction"
+      },
+      {
+        "role": "Construction Manager",
+        "kpis": "Site Delivery, Safety, Cost KPIs"
+      },
+      {
+        "role": "Site Manager",
+        "kpis": "Progress vs Plan, Safety Compliance"
+      },
+      {
+        "role": "Program Manager (Construction)",
+        "kpis": "Multi-Project Delivery, Budget Control"
+      },
+      {
+        "role": "Cost Estimator",
+        "kpis": "Estimate Accuracy, Variance"
+      },
+      {
+        "role": "Scheduler / Planning Engineer",
+        "kpis": "Schedule Accuracy, Critical Path KPIs"
+      },
+      {
+        "role": "Document Controller",
+        "kpis": "Filing Accuracy, TAT"
+      },
+      {
+        "role": "Risk Manager (Construction)",
+        "kpis": "Risk Reduction, Mitigation Closure"
+      },
+      {
+        "role": "Change Order Specialist",
+        "kpis": "Approval Time, Accuracy"
+      },
+      {
+        "role": "Contract Administrator",
+        "kpis": "Compliance, Documentation Quality"
+      },
+      {
+        "role": "Procurement Engineer",
+        "kpis": "PO Accuracy, Lead Time"
+      },
+      {
+        "role": "Construction Buyer",
+        "kpis": "Supplier OTIF, Costs"
+      },
+      {
+        "role": "Site Logistics Coordinator",
+        "kpis": "Movement Efficiency, Safety"
+      },
+      {
+        "role": "Project Controls Analyst",
+        "kpis": "Cost Control, Earned Value"
+      },
+      {
+        "role": "HSE Manager (Construction)",
+        "kpis": "Zero Harm KPIs, Compliance"
+      }
+    ],
+    "Engineering & Design": [
+      {
+        "role": "Civil Engineer",
+        "kpis": "Design Accuracy, Compliance, Cost Efficiency"
+      },
+      {
+        "role": "Structural Engineer",
+        "kpis": "Load Calculations Accuracy, Compliance"
+      },
+      {
+        "role": "Geotechnical Engineer",
+        "kpis": "Testing Accuracy, Stability Analysis"
+      },
+      {
+        "role": "Architect",
+        "kpis": "Design Quality, Client Satisfaction"
+      },
+      {
+        "role": "Draftsman / CAD Technician",
+        "kpis": "Drawing Accuracy, Revision Speed"
+      },
+      {
+        "role": "BIM Modeler",
+        "kpis": "Model Accuracy, Clash Detection"
+      },
+      {
+        "role": "BIM Coordinator",
+        "kpis": "Model Consistency, Issue Resolution"
+      },
+      {
+        "role": "Mechanical Engineer (Construction)",
+        "kpis": "System Performance, Compliance"
+      },
+      {
+        "role": "Electrical Engineer (Construction)",
+        "kpis": "Load Calculations, Safety"
+      },
+      {
+        "role": "HVAC Engineer",
+        "kpis": "System Efficiency, Quality KPIs"
+      },
+      {
+        "role": "Plumbing Engineer",
+        "kpis": "Design Accuracy, Compliance"
+      },
+      {
+        "role": "Fire Protection Engineer",
+        "kpis": "Regulatory Compliance, System Testing"
+      },
+      {
+        "role": "Urban Planner",
+        "kpis": "Zoning Compliance, Project Coverage"
+      },
+      {
+        "role": "Landscape Architect",
+        "kpis": "Design Quality, Cost Efficiency"
+      },
+      {
+        "role": "Environmental Engineer",
+        "kpis": "Compliance, Impact Mitigation"
+      },
+      {
+        "role": "Materials Engineer",
+        "kpis": "Testing Accuracy, Material Performance"
+      },
+      {
+        "role": "Survey Engineer",
+        "kpis": "Measurement Accuracy, Efficiency"
+      },
+      {
+        "role": "Design Manager",
+        "kpis": "Design Quality, Rework Reduction"
+      },
+      {
+        "role": "Structural Draftsman",
+        "kpis": "Drawing Quality, Revision Time"
+      },
+      {
+        "role": "QA/QC Engineer",
+        "kpis": "NCR Reduction, Audit Results"
+      }
+    ]
+  },
+  "RRHH": {
+    "HR Operations": [
+      {
+        "role": "HR Assistant",
+        "kpis": "Case Resolution Time, Accuracy, Employee Satisfaction"
+      },
+      {
+        "role": "HR Coordinator",
+        "kpis": "Task Completion, Documentation Accuracy"
+      },
+      {
+        "role": "HR Generalist",
+        "kpis": "Employee Relations KPIs, Time-to-Resolve"
+      },
+      {
+        "role": "HR Specialist",
+        "kpis": "Policy Compliance, SLA, Accuracy"
+      },
+      {
+        "role": "HR Operations Analyst",
+        "kpis": "Process Efficiency, KPI Reporting"
+      },
+      {
+        "role": "HR Operations Manager",
+        "kpis": "SLA Compliance, Productivity"
+      },
+      {
+        "role": "HR Administrator",
+        "kpis": "Record Accuracy, On-Time Processing"
+      },
+      {
+        "role": "HRBP (Junior)",
+        "kpis": "Case Handling, Employee Support KPIs"
+      },
+      {
+        "role": "HRBP (Senior)",
+        "kpis": "Retention, Talent Strategy, Manager Satisfaction"
+      },
+      {
+        "role": "Global HR Operations Specialist",
+        "kpis": "Cross-country SLA, Compliance"
+      },
+      {
+        "role": "HR Shared Services Specialist",
+        "kpis": "Ticket Resolution, SLA Compliance"
+      },
+      {
+        "role": "HR SSC Manager",
+        "kpis": "Efficiency %, Employee Experience"
+      },
+      {
+        "role": "HR Transformation Specialist",
+        "kpis": "Process Automation Impact"
+      },
+      {
+        "role": "HR Policy Analyst",
+        "kpis": "Policy Compliance, Audit Findings"
+      },
+      {
+        "role": "HR Compliance Coordinator",
+        "kpis": "Regulatory Accuracy, Zero Violations"
+      },
+      {
+        "role": "HR Helpdesk Agent",
+        "kpis": "TAT, Accuracy, CSAT"
+      },
+      {
+        "role": "People Operations Specialist",
+        "kpis": "Engagement, SLA, Time-to-Resolve"
+      },
+      {
+        "role": "People Operations Manager",
+        "kpis": "People KPIs, Turnover %"
+      },
+      {
+        "role": "HR Digitalization Specialist",
+        "kpis": "System Adoption %, Automation KPIs"
+      },
+      {
+        "role": "HR Governance Manager",
+        "kpis": "Compliance Score, Audit Success"
+      }
+    ],
+    "Talent Acquisition": [
+      {
+        "role": "Recruiting Coordinator",
+        "kpis": "Time-to-Schedule, Interview SLA"
+      },
+      {
+        "role": "Recruiter",
+        "kpis": "Time-to-Fill, Offer Acceptance Rate"
+      },
+      {
+        "role": "Senior Recruiter",
+        "kpis": "Pipeline Strength, Hiring KPIs"
+      },
+      {
+        "role": "Technical Recruiter",
+        "kpis": "Tech Pipeline Quality, Fill Rate"
+      },
+      {
+        "role": "Executive Recruiter",
+        "kpis": "Leadership Hire Success"
+      },
+      {
+        "role": "Sourcing Specialist",
+        "kpis": "Sourcing Volume, Conversion Rate"
+      },
+      {
+        "role": "TA Analyst",
+        "kpis": "Pipeline Analytics, Funnel KPIs"
+      },
+      {
+        "role": "TA Operations Specialist",
+        "kpis": "ATS Accuracy, SLA"
+      },
+      {
+        "role": "Employer Branding Specialist",
+        "kpis": "Brand Reach, Application Growth"
+      },
+      {
+        "role": "Campus Recruiter",
+        "kpis": "Intern Conversion Rate"
+      },
+      {
+        "role": "TA Manager",
+        "kpis": "Hiring Targets, TA Efficiency"
+      },
+      {
+        "role": "Senior TA Manager",
+        "kpis": "Hiring Strategy Impact"
+      },
+      {
+        "role": "Head of Talent Acquisition",
+        "kpis": "Hiring SLA, Quality of Hire"
+      },
+      {
+        "role": "Talent Scout",
+        "kpis": "High Potential Talent Identification"
+      },
+      {
+        "role": "Interview Specialist",
+        "kpis": "Evaluation Accuracy, SLA"
+      },
+      {
+        "role": "ATS Administrator",
+        "kpis": "ATS Uptime, Data Accuracy"
+      },
+      {
+        "role": "Onboarding Specialist",
+        "kpis": "Time-to-Onboard, Completion Rate"
+      },
+      {
+        "role": "Global TA Specialist",
+        "kpis": "Cross-country Hiring KPIs"
+      },
+      {
+        "role": "TA Compliance Specialist",
+        "kpis": "Documentation Quality"
+      },
+      {
+        "role": "Recruitment Marketing Manager",
+        "kpis": "Lead Conversion, Branding KPIs"
+      }
+    ],
+    "Comp & Ben": [
+      {
+        "role": "Compensation Analyst",
+        "kpis": "Benchmark Accuracy, Salary Structure Quality"
+      },
+      {
+        "role": "Benefits Analyst",
+        "kpis": "Enrollment %, Satisfaction, Costs"
+      },
+      {
+        "role": "Compensation & Benefits Specialist",
+        "kpis": "Policy Accuracy, Process KPIs"
+      },
+      {
+        "role": "Payroll Analyst",
+        "kpis": "Payroll Accuracy, On-Time Completion"
+      },
+      {
+        "role": "Senior Payroll Specialist",
+        "kpis": "Error Rate Reduction, SLA"
+      },
+      {
+        "role": "Global Payroll Coordinator",
+        "kpis": "Multi-country Accuracy, Compliance"
+      },
+      {
+        "role": "Total Rewards Analyst",
+        "kpis": "TR Program Adoption, Satisfaction"
+      },
+      {
+        "role": "C&B Manager",
+        "kpis": "Cost Optimization, TR KPIs"
+      },
+      {
+        "role": "Global C&B Manager",
+        "kpis": "Worldwide Consistency, Benchmarking"
+      },
+      {
+        "role": "Head of Total Rewards",
+        "kpis": "Reward Strategy KPIs, Retention Impact"
+      }
+    ],
+    "Learning & Development": [
+      {
+        "role": "L&D Coordinator",
+        "kpis": "Training Completion %, Scheduling Accuracy"
+      },
+      {
+        "role": "L&D Specialist",
+        "kpis": "Learning Impact Score, Participation"
+      },
+      {
+        "role": "Instructional Designer",
+        "kpis": "Course Quality, Completion Rates"
+      },
+      {
+        "role": "Training Facilitator",
+        "kpis": "Training Satisfaction, Knowledge Gain"
+      },
+      {
+        "role": "Corporate Trainer",
+        "kpis": "Training Hours Delivered, Effectiveness"
+      },
+      {
+        "role": "Soft Skills Trainer",
+        "kpis": "Behavioral Change Metrics"
+      },
+      {
+        "role": "Technical Trainer",
+        "kpis": "Certification Rates, Skills Improvement"
+      },
+      {
+        "role": "LMS Administrator",
+        "kpis": "LMS Uptime, Data Accuracy"
+      },
+      {
+        "role": "Leadership Development Specialist",
+        "kpis": "Leadership Pipeline KPIs"
+      },
+      {
+        "role": "Learning Analyst",
+        "kpis": "ROI of Training, Engagement"
+      },
+      {
+        "role": "L&D Manager",
+        "kpis": "Program Effectiveness, Skills Development KPIs"
+      },
+      {
+        "role": "Talent Development Manager",
+        "kpis": "Internal Mobility %, Successors"
+      },
+      {
+        "role": "Organizational Development Specialist",
+        "kpis": "Change Adoption, Culture KPIs"
+      },
+      {
+        "role": "Change Management Specialist",
+        "kpis": "Adoption Rate, Resistance Metrics"
+      },
+      {
+        "role": "Director of L&D",
+        "kpis": "Skills Growth, Learning ROI"
+      }
+    ],
+    "HR Leadership": [
+      {
+        "role": "HR Manager",
+        "kpis": "HR KPIs, Engagement, Turnover"
+      },
+      {
+        "role": "Senior HR Manager",
+        "kpis": "Strategic KPIs, Leadership Impact"
+      },
+      {
+        "role": "HR Director",
+        "kpis": "Organizational KPIs, HR Strategy Execution"
+      },
+      {
+        "role": "VP of HR",
+        "kpis": "People Metrics, Retention, Culture KPIs"
+      },
+      {
+        "role": "Chief People Officer (CPO)",
+        "kpis": "Company-wide People KPIs"
+      },
+      {
+        "role": "Global HR Director",
+        "kpis": "Cross-region People KPIs"
+      },
+      {
+        "role": "Regional HR Manager",
+        "kpis": "Regional Talent KPIs"
+      },
+      {
+        "role": "Diversity & Inclusion Specialist",
+        "kpis": "D&I KPIs, Representation Metrics"
+      },
+      {
+        "role": "Employee Experience Manager",
+        "kpis": "EX Score, Engagement KPIs"
+      },
+      {
+        "role": "Head of People",
+        "kpis": "People Strategy, KPIs, Organizational Health"
+      }
+    ]
+  },
+  "Legal": {
+    "Corporate Law": [
+      {
+        "role": "Corporate Attorney",
+        "kpis": "Contract Accuracy, TAT, Risk Mitigation"
+      },
+      {
+        "role": "Senior Corporate Attorney",
+        "kpis": "Deal Success, Compliance, Advisory Quality"
+      },
+      {
+        "role": "Legal Counsel",
+        "kpis": "Contract Quality, SLA, Stakeholder Satisfaction"
+      },
+      {
+        "role": "Associate Attorney",
+        "kpis": "Case Preparation Quality, Research Accuracy"
+      },
+      {
+        "role": "General Counsel",
+        "kpis": "Legal Risk Reduction, Compliance, Cost Control"
+      },
+      {
+        "role": "Paralegal (Corporate)",
+        "kpis": "Document Accuracy, Filing TAT"
+      },
+      {
+        "role": "Contracts Manager",
+        "kpis": "Contract Cycle Time, Error Rate"
+      },
+      {
+        "role": "Contract Administrator",
+        "kpis": "Documentation Accuracy, Compliance"
+      },
+      {
+        "role": "M&A Attorney",
+        "kpis": "Deal Completion, Due Diligence Accuracy"
+      },
+      {
+        "role": "Compliance Attorney",
+        "kpis": "Audit Results, Regulatory Compliance"
+      },
+      {
+        "role": "Corporate Governance Specialist",
+        "kpis": "Board Compliance, Reporting Accuracy"
+      },
+      {
+        "role": "Entity Management Specialist",
+        "kpis": "Entity Compliance, TAT"
+      },
+      {
+        "role": "Corporate Legal Assistant",
+        "kpis": "Support Accuracy, Filing Quality"
+      },
+      {
+        "role": "Intellectual Property Attorney",
+        "kpis": "Patent/Trademark Success Rate"
+      },
+      {
+        "role": "Trademark Coordinator",
+        "kpis": "Filing Accuracy, Portfolio KPIs"
+      },
+      {
+        "role": "Data Privacy Lawyer",
+        "kpis": "GDPR/Local Compliance, Incident Reduction"
+      },
+      {
+        "role": "Legal Risk Analyst",
+        "kpis": "Risk Identification, Mitigation Success"
+      },
+      {
+        "role": "Corporate Litigation Analyst",
+        "kpis": "Case Accuracy, Evidence Quality"
+      },
+      {
+        "role": "Corporate Policy Analyst",
+        "kpis": "Policy Accuracy, Adoption Rate"
+      },
+      {
+        "role": "Corporate Law Manager",
+        "kpis": "Department KPIs, SLA"
+      }
+    ],
+    "Litigation": [
+      {
+        "role": "Litigation Attorney",
+        "kpis": "Case Win Rate, Settlement Efficiency"
+      },
+      {
+        "role": "Senior Litigation Attorney",
+        "kpis": "High-Value Case Wins, Legal Strategy Impact"
+      },
+      {
+        "role": "Litigation Paralegal",
+        "kpis": "Evidence Accuracy, Discovery KPIs"
+      },
+      {
+        "role": "Court Liaison",
+        "kpis": "Filing TAT, Compliance"
+      },
+      {
+        "role": "Claims Attorney",
+        "kpis": "Resolution TAT, Quality of Claims Defense"
+      },
+      {
+        "role": "Arbitration Specialist",
+        "kpis": "Case Resolution Time, Neutrality KPIs"
+      },
+      {
+        "role": "Mediation Specialist",
+        "kpis": "Settlement Rate, Client Satisfaction"
+      },
+      {
+        "role": "Legal Investigator",
+        "kpis": "Evidence Quality, Investigation TAT"
+      },
+      {
+        "role": "Trial Preparation Specialist",
+        "kpis": "Case Readiness, Documentation Accuracy"
+      },
+      {
+        "role": "Legal Researcher",
+        "kpis": "Research Accuracy, Timeliness"
+      },
+      {
+        "role": "Litigation Support Analyst",
+        "kpis": "Document Review Accuracy"
+      },
+      {
+        "role": "Discovery Specialist",
+        "kpis": "Data Accuracy, Timeliness"
+      },
+      {
+        "role": "Court Filing Specialist",
+        "kpis": "Zero Rejections, Filing Speed"
+      },
+      {
+        "role": "Litigation Manager",
+        "kpis": "Case Outcomes, SLA"
+      },
+      {
+        "role": "Legal Operations Specialist",
+        "kpis": "Process Efficiency, Budget Control"
+      }
+    ],
+    "Regulatory": [
+      {
+        "role": "Compliance Officer",
+        "kpis": "Regulatory Compliance %, Audit Findings"
+      },
+      {
+        "role": "Senior Compliance Officer",
+        "kpis": "Regulatory Strategy, Incident Reduction"
+      },
+      {
+        "role": "Regulatory Affairs Specialist",
+        "kpis": "Filing Accuracy, Approval Time"
+      },
+      {
+        "role": "AML/KYC Legal Specialist",
+        "kpis": "KYC Accuracy, AML Case Resolution"
+      },
+      {
+        "role": "Risk & Compliance Analyst",
+        "kpis": "Risk Indicators, Mitigations"
+      },
+      {
+        "role": "Internal Audit Specialist",
+        "kpis": "Audit Accuracy, Findings Closure"
+      },
+      {
+        "role": "Policy & Regulatory Counsel",
+        "kpis": "Policy Effectiveness, Compliance"
+      },
+      {
+        "role": "Ethics & Compliance Manager",
+        "kpis": "Ethics KPIs, Zero Violations"
+      },
+      {
+        "role": "Sanctions Screening Analyst",
+        "kpis": "Alert Accuracy, False Positives"
+      },
+      {
+        "role": "Regulatory Compliance Manager",
+        "kpis": "Global Compliance %, SLA"
+      },
+      {
+        "role": "SOX Compliance Analyst",
+        "kpis": "Control Effectiveness, Audit Results"
+      },
+      {
+        "role": "Data Protection Officer",
+        "kpis": "GDPR Compliance, Incident Reduction"
+      },
+      {
+        "role": "Environmental Compliance Specialist",
+        "kpis": "Environmental KPIs, Zero Fines"
+      },
+      {
+        "role": "Regulatory Legal Assistant",
+        "kpis": "Documentation Accuracy"
+      },
+      {
+        "role": "Regulatory Affairs Manager",
+        "kpis": "Regulatory KPIs, Filing Success"
+      }
+    ],
+    "Legal Support": [
+      {
+        "role": "Paralegal",
+        "kpis": "Document Accuracy, Research Quality"
+      },
+      {
+        "role": "Senior Paralegal",
+        "kpis": "Case Preparation Efficiency"
+      },
+      {
+        "role": "Legal Assistant",
+        "kpis": "Admin Accuracy, SLA"
+      },
+      {
+        "role": "Legal Secretary",
+        "kpis": "Scheduling Accuracy, Documentation Quality"
+      },
+      {
+        "role": "Document Review Specialist",
+        "kpis": "Review Accuracy, TAT"
+      },
+      {
+        "role": "E-discovery Specialist",
+        "kpis": "Data Integrity, Processing Speed"
+      },
+      {
+        "role": "Legal Operations Analyst",
+        "kpis": "Process KPIs, Cost Savings"
+      },
+      {
+        "role": "Legal Billing Specialist",
+        "kpis": "Billing Accuracy, Cycle Time"
+      },
+      {
+        "role": "Corporate Compliance Assistant",
+        "kpis": "Compliance Documentation"
+      },
+      {
+        "role": "Legal Admin Manager",
+        "kpis": "Department Efficiency KPIs"
+      }
+    ]
+  },
+  "Seguros": {
+    "Underwriting": [
+      {
+        "role": "Underwriting Assistant",
+        "kpis": "TAT, Documentation Accuracy, Risk Input Quality"
+      },
+      {
+        "role": "Junior Underwriter",
+        "kpis": "Assessment Accuracy, SLA Compliance"
+      },
+      {
+        "role": "Underwriter",
+        "kpis": "Risk Selection Quality, Loss Ratio"
+      },
+      {
+        "role": "Senior Underwriter",
+        "kpis": "Portfolio Profitability, Risk Accuracy"
+      },
+      {
+        "role": "Commercial Lines Underwriter",
+        "kpis": "Policy Accuracy, Renewal Rate"
+      },
+      {
+        "role": "Personal Lines Underwriter",
+        "kpis": "Processing Speed, Accuracy"
+      },
+      {
+        "role": "Life Insurance Underwriter",
+        "kpis": "Medical Risk Accuracy, Approval TAT"
+      },
+      {
+        "role": "Health Underwriter",
+        "kpis": "Case Evaluation Quality, SLA"
+      },
+      {
+        "role": "P&C Underwriter",
+        "kpis": "Loss Ratio, Claim Trends"
+      },
+      {
+        "role": "Reinsurance Underwriter",
+        "kpis": "Risk Evaluation, Treaty Accuracy"
+      },
+      {
+        "role": "Marine Insurance Underwriter",
+        "kpis": "Risk Modeling Accuracy"
+      },
+      {
+        "role": "Aviation Insurance Underwriter",
+        "kpis": "Risk Assessment Precision"
+      },
+      {
+        "role": "Technical Underwriting Analyst",
+        "kpis": "Risk Models, Data Quality"
+      },
+      {
+        "role": "Underwriting Manager",
+        "kpis": "Loss Ratio, Portfolio KPIs"
+      },
+      {
+        "role": "Chief Underwriter",
+        "kpis": "Strategy, Compliance, Profitability"
+      }
+    ],
+    "Claims": [
+      {
+        "role": "Claims Assistant",
+        "kpis": "Document Quality, TAT"
+      },
+      {
+        "role": "Claims Processor",
+        "kpis": "Accuracy, Processing Speed"
+      },
+      {
+        "role": "Claims Adjuster",
+        "kpis": "Investigation Quality, Settlement TAT"
+      },
+      {
+        "role": "Senior Claims Adjuster",
+        "kpis": "Complex Case Handling, Accuracy"
+      },
+      {
+        "role": "Field Adjuster",
+        "kpis": "Investigation SLA, Accuracy"
+      },
+      {
+        "role": "Auto Claims Adjuster",
+        "kpis": "Cycle Time, Estimation Accuracy"
+      },
+      {
+        "role": "Property Claims Adjuster",
+        "kpis": "Inspection Quality, Settlement Ratio"
+      },
+      {
+        "role": "Casualty Claims Adjuster",
+        "kpis": "Case Resolution Rate"
+      },
+      {
+        "role": "Medical Claims Specialist",
+        "kpis": "Coding Accuracy, Adjudication TAT"
+      },
+      {
+        "role": "Life Claims Specialist",
+        "kpis": "Payout Accuracy, Fraud Detection"
+      },
+      {
+        "role": "Disability Claims Examiner",
+        "kpis": "Case Duration, Resolution Accuracy"
+      },
+      {
+        "role": "Claims Analyst",
+        "kpis": "Fraud Detection, Trend Analysis"
+      },
+      {
+        "role": "Claims Quality Auditor",
+        "kpis": "Error Rate, Audit Results"
+      },
+      {
+        "role": "Claims Supervisor",
+        "kpis": "Team Productivity, SLA"
+      },
+      {
+        "role": "Claims Manager",
+        "kpis": "Loss Ratio, Cycle Time"
+      },
+      {
+        "role": "Subrogation Specialist",
+        "kpis": "Recovery Rate, Case Closure Time"
+      },
+      {
+        "role": "Fraud Investigator",
+        "kpis": "Fraud Detection Rate, Case Quality"
+      },
+      {
+        "role": "Catastrophe Claims Adjuster",
+        "kpis": "High-Volume Case Accuracy"
+      },
+      {
+        "role": "Litigated Claims Specialist",
+        "kpis": "Case Strategy Quality"
+      },
+      {
+        "role": "Chief Claims Officer",
+        "kpis": "Claims KPIs, Loss Control"
+      }
+    ],
+    "Sales": [
+      {
+        "role": "Insurance Sales Agent",
+        "kpis": "Conversion Rate, Premium Generated"
+      },
+      {
+        "role": "Senior Sales Agent",
+        "kpis": "Renewal %, Premium Growth"
+      },
+      {
+        "role": "Broker Relations Coordinator",
+        "kpis": "Broker Satisfaction, Response Time"
+      },
+      {
+        "role": "Channel Sales Manager",
+        "kpis": "Channel Revenue, Broker Growth"
+      },
+      {
+        "role": "Insurance Advisor",
+        "kpis": "Needs Assessment Accuracy, Closing Rate"
+      },
+      {
+        "role": "Customer Retention Specialist",
+        "kpis": "Renewal Rate, Churn Reduction"
+      },
+      {
+        "role": "Corporate Accounts Executive",
+        "kpis": "B2B Premiums, Client Satisfaction"
+      },
+      {
+        "role": "Key Account Manager",
+        "kpis": "Account Growth, Retention"
+      },
+      {
+        "role": "Affinity Programs Specialist",
+        "kpis": "Program Enrollment %, Profitability"
+      },
+      {
+        "role": "Insurance Sales Trainer",
+        "kpis": "Sales Skill Improvement, Training KPIs"
+      },
+      {
+        "role": "Distribution Manager",
+        "kpis": "Network Growth, Sales KPIs"
+      },
+      {
+        "role": "Bancassurance Specialist",
+        "kpis": "Bank Channel Conversions"
+      },
+      {
+        "role": "Sales Operations Analyst",
+        "kpis": "Sales Forecast Accuracy"
+      },
+      {
+        "role": "Sales Performance Manager",
+        "kpis": "Team KPIs, Target Achievement"
+      },
+      {
+        "role": "Chief Sales Officer",
+        "kpis": "Revenue Growth, Distribution KPIs"
+      }
+    ],
+    "Actuarial": [
+      {
+        "role": "Actuarial Assistant",
+        "kpis": "Model Accuracy, Data Quality"
+      },
+      {
+        "role": "Actuarial Analyst",
+        "kpis": "Pricing Accuracy, Loss Modeling"
+      },
+      {
+        "role": "Senior Actuarial Analyst",
+        "kpis": "Trend Analysis, Predictive Modeling"
+      },
+      {
+        "role": "Actuarial Pricing Specialist",
+        "kpis": "Premium Adequacy, Forecast Accuracy"
+      },
+      {
+        "role": "Actuarial Risk Analyst",
+        "kpis": "Risk Indicators, Portfolio Metrics"
+      },
+      {
+        "role": "Reserving Analyst",
+        "kpis": "Reserve Accuracy, Variance"
+      },
+      {
+        "role": "Actuary",
+        "kpis": "Model Integrity, Pricing KPIs"
+      },
+      {
+        "role": "Senior Actuary",
+        "kpis": "Profitability Modeling, Portfolio Health"
+      },
+      {
+        "role": "Chief Actuary",
+        "kpis": "Pricing Strategy, Loss Ratio Control"
+      },
+      {
+        "role": "Actuarial Manager",
+        "kpis": "Model Governance, Accuracy KPIs"
       }
     ]
   }
