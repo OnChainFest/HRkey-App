@@ -79,6 +79,24 @@
     .btn-verify-identity:hover { background: #fbbf24; color: #000; }
     .btn-company-dashboard { background: rgba(0,196,199,0.2); color: #00C4C7; padding: 6px 14px; border-radius: 15px; font-size: 12px; font-weight: 500; border: 1px solid #00C4C7; cursor: pointer; margin-left: 10px; transition: all 0.3s ease; text-decoration: none; display: inline-block; }
     .btn-company-dashboard:hover { background: #00C4C7; color: #000; }
+
+    /* KPI Selector Section */
+    .kpi-selector-section { background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border-radius: 15px; padding: 30px; box-shadow: 0 4px 15px rgba(0,196,199,0.1); margin-bottom: 30px; border: 1px solid rgba(0,196,199,0.2); }
+    .kpi-selector-section h2 { color: #ffffff; margin-bottom: 10px; font-size: 24px; }
+    .kpi-selector-section .section-description { color: #888888; margin-bottom: 25px; font-size: 15px; }
+    #kpi-selector { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    .kpi-select-group { display: flex; flex-direction: column; gap: 8px; }
+    .kpi-select-group label { color: #00C4C7; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-select-group select { background: #0a0a0a; border: 2px solid rgba(0,196,199,0.3); border-radius: 10px; padding: 12px 15px; color: #ffffff; font-size: 15px; cursor: pointer; transition: all 0.3s ease; font-family: 'Rubik', sans-serif; }
+    .kpi-select-group select:hover:not(:disabled) { border-color: #00C4C7; box-shadow: 0 0 10px rgba(0,196,199,0.2); }
+    .kpi-select-group select:focus { outline: none; border-color: #00C4C7; box-shadow: 0 0 15px rgba(0,196,199,0.3); }
+    .kpi-select-group select:disabled { opacity: 0.5; cursor: not-allowed; border-color: rgba(0,196,199,0.1); }
+    .kpi-select-group select option { background: #1a1a1a; color: #ffffff; padding: 10px; }
+    .selected-kpis-display { margin-top: 20px; padding: 20px; background: rgba(0,196,199,0.05); border-radius: 10px; border: 1px solid rgba(0,196,199,0.2); display: none; }
+    .selected-kpis-display h3 { color: #00C4C7; font-size: 16px; margin-bottom: 12px; }
+    .selected-kpis-display .kpi-tags { display: flex; flex-wrap: wrap; gap: 10px; }
+    .selected-kpis-display .kpi-tag { background: rgba(0,196,199,0.2); color: #00C4C7; padding: 8px 16px; border-radius: 20px; font-size: 13px; border: 1px solid #00C4C7; }
+    @media (min-width: 768px) { #kpi-selector { grid-template-columns: repeat(3, 1fr); } }
   </style>
 </head>
 <body>
@@ -163,6 +181,41 @@
           🚀 Request New Reference
         </button>
       </div>
+
+      <!-- KPI Selector Section -->
+      <section class="kpi-selector-section" id="kpi-selector-section">
+        <h2>🎯 Selecciona tus KPIs profesionales</h2>
+        <p class="section-description">Explora KPIs relevantes para tu rol profesional seleccionando primero tu familia de trabajo, luego tu rol específico</p>
+
+        <div id="kpi-selector">
+          <div class="kpi-select-group">
+            <label for="familySelect">Familia Profesional</label>
+            <select id="familySelect">
+              <option value="">Selecciona una familia…</option>
+            </select>
+          </div>
+
+          <div class="kpi-select-group">
+            <label for="roleSelect">Rol</label>
+            <select id="roleSelect" disabled>
+              <option value="">Selecciona un rol…</option>
+            </select>
+          </div>
+
+          <div class="kpi-select-group">
+            <label for="kpiSelect">KPI</label>
+            <select id="kpiSelect" disabled>
+              <option value="">Selecciona un KPI…</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Display selected KPI information -->
+        <div class="selected-kpis-display" id="selectedKpisDisplay">
+          <h3>📊 KPIs para este rol:</h3>
+          <div class="kpi-tags" id="kpiTags"></div>
+        </div>
+      </section>
 
       <!-- References Table -->
       <div class="references-table">
@@ -506,6 +559,259 @@
       document.addEventListener('DOMContentLoaded', () => dashboard.init());
     } else {
       dashboard.init();
+    }
+
+    // ============================================
+    // KPI SELECTOR FUNCTIONALITY
+    // ============================================
+    /**
+     * KPI Selector Module
+     * Loads Roles_All_Industries_KPIs.json and populates cascading dropdowns
+     * File location: /WebDapp/Roles_All_Industries_KPIs.json (same directory as app.html)
+     */
+    window.kpiSelector = {
+      data: null,
+      selectedFamily: null,
+      selectedRole: null,
+
+      /**
+       * Initialize the KPI selector by loading JSON data
+       */
+      async init() {
+        try {
+          // Load JSON file from same directory (public/WebDapp/)
+          const response = await fetch('Roles_All_Industries_KPIs.json');
+
+          if (!response.ok) {
+            throw new Error(`Failed to load KPI data: ${response.status}`);
+          }
+
+          this.data = await response.json();
+          this.populateFamilySelect();
+          this.attachEventListeners();
+
+          console.log('✅ KPI Selector initialized successfully');
+        } catch (error) {
+          console.error('❌ Error initializing KPI Selector:', error);
+          this.showError('No se pudo cargar los datos de KPIs. Por favor, recarga la página.');
+        }
+      },
+
+      /**
+       * Extract all unique families from all industries
+       */
+      getAllFamilies() {
+        const families = new Set();
+
+        // Iterate through all industries
+        Object.keys(this.data).forEach(industry => {
+          // Get all families within this industry
+          Object.keys(this.data[industry]).forEach(family => {
+            families.add(family);
+          });
+        });
+
+        // Return sorted array of unique families
+        return Array.from(families).sort();
+      },
+
+      /**
+       * Populate the Family dropdown with all unique families
+       */
+      populateFamilySelect() {
+        const familySelect = document.getElementById('familySelect');
+        const families = this.getAllFamilies();
+
+        // Clear existing options (except the first placeholder)
+        familySelect.innerHTML = '<option value="">Selecciona una familia…</option>';
+
+        // Add family options
+        families.forEach(family => {
+          const option = document.createElement('option');
+          option.value = family;
+          option.textContent = family;
+          familySelect.appendChild(option);
+        });
+
+        console.log(`✅ Loaded ${families.length} families`);
+      },
+
+      /**
+       * Get all roles for a specific family (across all industries)
+       */
+      getRolesForFamily(familyName) {
+        const roles = [];
+
+        // Search through all industries for this family
+        Object.keys(this.data).forEach(industry => {
+          if (this.data[industry][familyName]) {
+            // Add all roles from this family
+            this.data[industry][familyName].forEach(roleObj => {
+              roles.push(roleObj);
+            });
+          }
+        });
+
+        // Remove duplicate roles (if same role appears in multiple industries)
+        const uniqueRoles = roles.reduce((acc, current) => {
+          const exists = acc.find(item => item.role === current.role);
+          if (!exists) {
+            acc.push(current);
+          }
+          return acc;
+        }, []);
+
+        return uniqueRoles.sort((a, b) => a.role.localeCompare(b.role));
+      },
+
+      /**
+       * Handle family selection change
+       */
+      onFamilyChange(selectedFamily) {
+        const roleSelect = document.getElementById('roleSelect');
+        const kpiSelect = document.getElementById('kpiSelect');
+        const displayArea = document.getElementById('selectedKpisDisplay');
+
+        // Store selected family
+        this.selectedFamily = selectedFamily;
+        this.selectedRole = null;
+
+        if (!selectedFamily) {
+          // Reset role and KPI selects
+          roleSelect.innerHTML = '<option value="">Selecciona un rol…</option>';
+          roleSelect.disabled = true;
+          kpiSelect.innerHTML = '<option value="">Selecciona un KPI…</option>';
+          kpiSelect.disabled = true;
+          displayArea.style.display = 'none';
+          return;
+        }
+
+        // Get roles for this family
+        const roles = this.getRolesForFamily(selectedFamily);
+
+        // Populate role select
+        roleSelect.innerHTML = '<option value="">Selecciona un rol…</option>';
+        roles.forEach(roleObj => {
+          const option = document.createElement('option');
+          option.value = roleObj.role;
+          option.textContent = roleObj.role;
+          option.dataset.kpis = roleObj.kpis; // Store KPIs in data attribute
+          roleSelect.appendChild(option);
+        });
+
+        // Enable role select
+        roleSelect.disabled = false;
+
+        // Reset KPI select
+        kpiSelect.innerHTML = '<option value="">Selecciona un KPI…</option>';
+        kpiSelect.disabled = true;
+        displayArea.style.display = 'none';
+
+        console.log(`✅ Loaded ${roles.length} roles for family: ${selectedFamily}`);
+      },
+
+      /**
+       * Handle role selection change
+       */
+      onRoleChange(selectedRole) {
+        const roleSelect = document.getElementById('roleSelect');
+        const kpiSelect = document.getElementById('kpiSelect');
+        const displayArea = document.getElementById('selectedKpisDisplay');
+        const kpiTagsContainer = document.getElementById('kpiTags');
+
+        // Store selected role
+        this.selectedRole = selectedRole;
+
+        if (!selectedRole) {
+          kpiSelect.innerHTML = '<option value="">Selecciona un KPI…</option>';
+          kpiSelect.disabled = true;
+          displayArea.style.display = 'none';
+          return;
+        }
+
+        // Get KPIs for selected role
+        const selectedOption = roleSelect.options[roleSelect.selectedIndex];
+        const kpisString = selectedOption.dataset.kpis;
+
+        if (!kpisString) {
+          console.error('No KPIs found for role:', selectedRole);
+          return;
+        }
+
+        // Split KPIs by comma and trim whitespace
+        const kpis = kpisString.split(',').map(kpi => kpi.trim()).filter(kpi => kpi);
+
+        // Populate KPI select
+        kpiSelect.innerHTML = '<option value="">Selecciona un KPI…</option>';
+        kpis.forEach(kpi => {
+          const option = document.createElement('option');
+          option.value = kpi;
+          option.textContent = kpi;
+          kpiSelect.appendChild(option);
+        });
+
+        // Enable KPI select
+        kpiSelect.disabled = false;
+
+        // Display all KPIs as tags
+        kpiTagsContainer.innerHTML = '';
+        kpis.forEach(kpi => {
+          const tag = document.createElement('span');
+          tag.className = 'kpi-tag';
+          tag.textContent = kpi;
+          kpiTagsContainer.appendChild(tag);
+        });
+
+        // Show display area
+        displayArea.style.display = 'block';
+
+        console.log(`✅ Loaded ${kpis.length} KPIs for role: ${selectedRole}`);
+      },
+
+      /**
+       * Attach event listeners to dropdowns
+       */
+      attachEventListeners() {
+        const familySelect = document.getElementById('familySelect');
+        const roleSelect = document.getElementById('roleSelect');
+        const kpiSelect = document.getElementById('kpiSelect');
+
+        familySelect.addEventListener('change', (e) => {
+          this.onFamilyChange(e.target.value);
+        });
+
+        roleSelect.addEventListener('change', (e) => {
+          this.onRoleChange(e.target.value);
+        });
+
+        kpiSelect.addEventListener('change', (e) => {
+          const selectedKpi = e.target.value;
+          if (selectedKpi) {
+            console.log(`✅ Selected KPI: ${selectedKpi} for role: ${this.selectedRole} in family: ${this.selectedFamily}`);
+            // You can add additional functionality here when a KPI is selected
+            // For example, save to localStorage, trigger an event, etc.
+          }
+        });
+      },
+
+      /**
+       * Show error message
+       */
+      showError(message) {
+        const section = document.getElementById('kpi-selector-section');
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-error';
+        errorDiv.style.marginTop = '20px';
+        errorDiv.innerHTML = `❌ ${message}`;
+        section.appendChild(errorDiv);
+      }
+    };
+
+    // Initialize KPI Selector when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => kpiSelector.init());
+    } else {
+      kpiSelector.init();
     }
   </script>
 </body>
