@@ -44,6 +44,9 @@
       {
         "role": "Data Analyst",
         "kpis": "Report accuracy, Insights delivered, Stakeholder satisfaction, Query efficiency, Dashboard adoption"
+      }
+    ]
+  },
   "Tech_150": {
     "Software Engineering": [
       {
@@ -162,223 +165,6 @@
     "Product & Design": [
       {
         "role": "Product Manager",
-        "kpis": "Feature adoption rate, Time to market, User satisfaction, Revenue growth, Roadmap execution"
-      },
-      {
-        "role": "UX Designer",
-        "kpis": "User satisfaction score, Task completion rate, Design iteration time, Usability testing score"
-      },
-      {
-        "role": "UI Designer",
-        "kpis": "Design consistency, Component library usage, Design delivery time, Stakeholder approval rate"
-      }
-    ],
-    "QA & Testing": [
-      {
-        "role": "QA Engineer",
-        "kpis": "Bug detection rate, Test coverage, Regression test time, Bug escape rate, Test automation percentage"
-      },
-      {
-        "role": "Automation Engineer",
-        "kpis": "Test automation coverage, Test execution time, False positive rate, CI/CD integration success"
-      }
-    ]
-  },
-  "Legal": {
-    "Corporate Law": [
-      {
-        "role": "Corporate Attorney",
-        "kpis": "Contract turnaround time, Legal risk mitigation, Compliance rate, Client satisfaction, Cost per matter"
-      },
-      {
-        "role": "Legal Counsel",
-        "kpis": "Matter resolution time, Legal cost management, Risk assessment accuracy, Regulatory compliance"
-      }
-    ],
-    "Intellectual Property": [
-      {
-        "role": "IP Attorney",
-        "kpis": "Patent application success rate, Trademark registration time, IP portfolio value, Filing accuracy"
-      },
-      {
-        "role": "Patent Agent",
-        "kpis": "Patent prosecution time, Office action response time, Patent grant rate, Client communication"
-      }
-    ],
-    "Litigation": [
-      {
-        "role": "Litigation Attorney",
-        "kpis": "Case win rate, Settlement value, Case resolution time, Client satisfaction, Cost efficiency"
-      }
-    ]
-  },
-  "Finance": {
-    "Accounting": [
-      {
-        "role": "Accountant",
-        "kpis": "Reporting accuracy, Month-end close time, Audit findings, Compliance rate, Process efficiency"
-      },
-      {
-        "role": "Financial Analyst",
-        "kpis": "Forecast accuracy, Report quality, Analysis turnaround time, Stakeholder satisfaction"
-      },
-      {
-        "role": "Controller",
-        "kpis": "Financial close time, Audit results, Team productivity, Process improvements, Compliance rate"
-      }
-    ],
-    "Investment Banking": [
-      {
-        "role": "Investment Banker",
-        "kpis": "Deal volume, Revenue generated, Client acquisition, Transaction success rate, Client retention"
-      },
-      {
-        "role": "Financial Advisor",
-        "kpis": "Assets under management, Client satisfaction, Portfolio performance, Client retention, Revenue growth"
-      }
-    ],
-    "Risk Management": [
-      {
-        "role": "Risk Analyst",
-        "kpis": "Risk identification rate, Risk assessment accuracy, Mitigation effectiveness, Compliance rate"
-      }
-    ]
-  },
-  "Marketing": {
-    "Digital Marketing": [
-      {
-        "role": "Digital Marketing Manager",
-        "kpis": "Campaign ROI, Lead generation, Conversion rate, Cost per acquisition, Customer lifetime value"
-      },
-      {
-        "role": "SEO Specialist",
-        "kpis": "Organic traffic growth, Keyword rankings, Backlink quality, Domain authority, Conversion rate"
-      },
-      {
-        "role": "Social Media Manager",
-        "kpis": "Engagement rate, Follower growth, Reach, Content performance, Community sentiment"
-      },
-      {
-        "role": "Content Marketing Manager",
-        "kpis": "Content engagement, Lead generation, SEO performance, Content production rate, Brand awareness"
-      }
-    ],
-    "Brand & Communications": [
-      {
-        "role": "Brand Manager",
-        "kpis": "Brand awareness, Brand sentiment, Market share, Campaign effectiveness, Customer loyalty"
-      },
-      {
-        "role": "PR Manager",
-        "kpis": "Media coverage, Press release pickup, Brand mentions, Crisis management, Stakeholder relations"
-      }
-    ],
-    "Growth Marketing": [
-      {
-        "role": "Growth Marketing Manager",
-        "kpis": "User acquisition cost, Customer lifetime value, Activation rate, Retention rate, Referral rate"
-      }
-    ]
-  },
-  "Sales": {
-    "Enterprise Sales": [
-      {
-        "role": "Account Executive",
-        "kpis": "Quota attainment, Revenue generated, Deal size, Sales cycle length, Win rate"
-      },
-      {
-        "role": "Sales Development Representative",
-        "kpis": "Qualified leads, Meeting conversion rate, Outreach volume, Response rate, Pipeline contribution"
-      },
-      {
-        "role": "Sales Manager",
-        "kpis": "Team quota attainment, Revenue growth, Pipeline quality, Team productivity, Win rate"
-      }
-    ],
-    "Customer Success": [
-      {
-        "role": "Customer Success Manager",
-        "kpis": "Customer retention, Net revenue retention, Customer satisfaction, Account expansion, Time to value"
-      },
-      {
-        "role": "Account Manager",
-        "kpis": "Account growth, Customer satisfaction, Renewal rate, Upsell revenue, Relationship strength"
-      }
-    ]
-  },
-  "Healthcare": {
-    "Clinical": [
-      {
-        "role": "Nurse Practitioner",
-        "kpis": "Patient satisfaction, Treatment outcomes, Patient volume, Clinical quality metrics, Compliance rate"
-      },
-      {
-        "role": "Physician",
-        "kpis": "Patient outcomes, Patient satisfaction, Treatment effectiveness, Clinical efficiency, Research contributions"
-      }
-    ],
-    "Healthcare Administration": [
-      {
-        "role": "Healthcare Administrator",
-        "kpis": "Operational efficiency, Cost reduction, Patient satisfaction, Staff retention, Compliance rate"
-      },
-      {
-        "role": "Medical Billing Specialist",
-        "kpis": "Claim acceptance rate, Days in AR, Collection rate, Billing accuracy, Process efficiency"
-      }
-    ]
-  },
-  "Operations": {
-    "Supply Chain": [
-      {
-        "role": "Supply Chain Manager",
-        "kpis": "On-time delivery, Inventory turnover, Supply chain cost, Supplier performance, Order accuracy"
-      },
-      {
-        "role": "Logistics Coordinator",
-        "kpis": "Delivery accuracy, Transportation cost, On-time delivery, Inventory accuracy, Process efficiency"
-      }
-    ],
-    "Operations Management": [
-      {
-        "role": "Operations Manager",
-        "kpis": "Operational efficiency, Cost reduction, Process improvement, Team productivity, Quality metrics"
-      },
-      {
-        "role": "Project Manager",
-        "kpis": "Project completion rate, Budget adherence, Timeline adherence, Stakeholder satisfaction, Team performance"
-      }
-    ]
-  },
-  "Human Resources": {
-    "Talent Acquisition": [
-      {
-        "role": "Recruiter",
-        "kpis": "Time to hire, Cost per hire, Offer acceptance rate, Quality of hire, Candidate satisfaction"
-      },
-      {
-        "role": "Talent Acquisition Manager",
-        "kpis": "Hiring goal achievement, Recruitment cost, Time to fill, Quality of hire, Team productivity"
-      }
-    ],
-    "HR Operations": [
-      {
-        "role": "HR Manager",
-        "kpis": "Employee satisfaction, Retention rate, Time to hire, HR cost per employee, Compliance rate"
-      },
-      {
-        "role": "HR Business Partner",
-        "kpis": "Employee engagement, Talent development, Organizational effectiveness, Stakeholder satisfaction"
-      }
-    ],
-    "Learning & Development": [
-      {
-        "role": "Training Manager",
-        "kpis": "Training completion rate, Employee skill improvement, Training ROI, Program satisfaction, Knowledge retention"
-      }
-    ]
-  }
-}
         "kpis": "Feature Adoption, Time-to-Value, Roadmap Predictability"
       },
       {
@@ -436,6 +222,16 @@
       {
         "role": "UX Writer",
         "kpis": "Content Comprehension, Error Reduction"
+      }
+    ],
+    "QA & Testing": [
+      {
+        "role": "QA Engineer",
+        "kpis": "Bug detection rate, Test coverage, Regression test time, Bug escape rate, Test automation percentage"
+      },
+      {
+        "role": "Automation Engineer",
+        "kpis": "Test automation coverage, Test execution time, False positive rate, CI/CD integration success"
       }
     ],
     "Data & AI": [
@@ -884,6 +680,422 @@
       {
         "role": "AI Product Architect",
         "kpis": "AI Feature Adoption, Strategic Impact"
+      }
+    ]
+  },
+  "Legal": {
+    "Corporate Law": [
+      {
+        "role": "Corporate Attorney",
+        "kpis": "Contract Accuracy, TAT, Risk Mitigation"
+      },
+      {
+        "role": "Senior Corporate Attorney",
+        "kpis": "Deal Success, Compliance, Advisory Quality"
+      },
+      {
+        "role": "Legal Counsel",
+        "kpis": "Contract Quality, SLA, Stakeholder Satisfaction"
+      },
+      {
+        "role": "Associate Attorney",
+        "kpis": "Case Preparation Quality, Research Accuracy"
+      },
+      {
+        "role": "General Counsel",
+        "kpis": "Legal Risk Reduction, Compliance, Cost Control"
+      },
+      {
+        "role": "Paralegal (Corporate)",
+        "kpis": "Document Accuracy, Filing TAT"
+      },
+      {
+        "role": "Contracts Manager",
+        "kpis": "Contract Cycle Time, Error Rate"
+      },
+      {
+        "role": "Contract Administrator",
+        "kpis": "Documentation Accuracy, Compliance"
+      },
+      {
+        "role": "M&A Attorney",
+        "kpis": "Deal Completion, Due Diligence Accuracy"
+      },
+      {
+        "role": "Compliance Attorney",
+        "kpis": "Audit Results, Regulatory Compliance"
+      },
+      {
+        "role": "Corporate Governance Specialist",
+        "kpis": "Board Compliance, Reporting Accuracy"
+      },
+      {
+        "role": "Entity Management Specialist",
+        "kpis": "Entity Compliance, TAT"
+      },
+      {
+        "role": "Corporate Legal Assistant",
+        "kpis": "Support Accuracy, Filing Quality"
+      },
+      {
+        "role": "Intellectual Property Attorney",
+        "kpis": "Patent/Trademark Success Rate"
+      },
+      {
+        "role": "Trademark Coordinator",
+        "kpis": "Filing Accuracy, Portfolio KPIs"
+      },
+      {
+        "role": "Data Privacy Lawyer",
+        "kpis": "GDPR/Local Compliance, Incident Reduction"
+      },
+      {
+        "role": "Legal Risk Analyst",
+        "kpis": "Risk Identification, Mitigation Success"
+      },
+      {
+        "role": "Corporate Litigation Analyst",
+        "kpis": "Case Accuracy, Evidence Quality"
+      },
+      {
+        "role": "Corporate Policy Analyst",
+        "kpis": "Policy Accuracy, Adoption Rate"
+      },
+      {
+        "role": "Corporate Law Manager",
+        "kpis": "Department KPIs, SLA"
+      }
+    ],
+    "Litigation": [
+      {
+        "role": "Litigation Attorney",
+        "kpis": "Case Win Rate, Settlement Efficiency"
+      },
+      {
+        "role": "Senior Litigation Attorney",
+        "kpis": "High-Value Case Wins, Legal Strategy Impact"
+      },
+      {
+        "role": "Litigation Paralegal",
+        "kpis": "Evidence Accuracy, Discovery KPIs"
+      },
+      {
+        "role": "Court Liaison",
+        "kpis": "Filing TAT, Compliance"
+      },
+      {
+        "role": "Claims Attorney",
+        "kpis": "Resolution TAT, Quality of Claims Defense"
+      },
+      {
+        "role": "Arbitration Specialist",
+        "kpis": "Case Resolution Time, Neutrality KPIs"
+      },
+      {
+        "role": "Mediation Specialist",
+        "kpis": "Settlement Rate, Client Satisfaction"
+      },
+      {
+        "role": "Legal Investigator",
+        "kpis": "Evidence Quality, Investigation TAT"
+      },
+      {
+        "role": "Trial Preparation Specialist",
+        "kpis": "Case Readiness, Documentation Accuracy"
+      },
+      {
+        "role": "Legal Researcher",
+        "kpis": "Research Accuracy, Timeliness"
+      },
+      {
+        "role": "Litigation Support Analyst",
+        "kpis": "Document Review Accuracy"
+      },
+      {
+        "role": "Discovery Specialist",
+        "kpis": "Data Accuracy, Timeliness"
+      },
+      {
+        "role": "Court Filing Specialist",
+        "kpis": "Zero Rejections, Filing Speed"
+      },
+      {
+        "role": "Litigation Manager",
+        "kpis": "Case Outcomes, SLA"
+      },
+      {
+        "role": "Legal Operations Specialist",
+        "kpis": "Process Efficiency, Budget Control"
+      }
+    ],
+    "Regulatory": [
+      {
+        "role": "Compliance Officer",
+        "kpis": "Regulatory Compliance %, Audit Findings"
+      },
+      {
+        "role": "Senior Compliance Officer",
+        "kpis": "Regulatory Strategy, Incident Reduction"
+      },
+      {
+        "role": "Regulatory Affairs Specialist",
+        "kpis": "Filing Accuracy, Approval Time"
+      },
+      {
+        "role": "AML/KYC Legal Specialist",
+        "kpis": "KYC Accuracy, AML Case Resolution"
+      },
+      {
+        "role": "Risk & Compliance Analyst",
+        "kpis": "Risk Indicators, Mitigations"
+      },
+      {
+        "role": "Internal Audit Specialist",
+        "kpis": "Audit Accuracy, Findings Closure"
+      },
+      {
+        "role": "Policy & Regulatory Counsel",
+        "kpis": "Policy Effectiveness, Compliance"
+      },
+      {
+        "role": "Ethics & Compliance Manager",
+        "kpis": "Ethics KPIs, Zero Violations"
+      },
+      {
+        "role": "Sanctions Screening Analyst",
+        "kpis": "Alert Accuracy, False Positives"
+      },
+      {
+        "role": "Regulatory Compliance Manager",
+        "kpis": "Global Compliance %, SLA"
+      },
+      {
+        "role": "SOX Compliance Analyst",
+        "kpis": "Control Effectiveness, Audit Results"
+      },
+      {
+        "role": "Data Protection Officer",
+        "kpis": "GDPR Compliance, Incident Reduction"
+      },
+      {
+        "role": "Environmental Compliance Specialist",
+        "kpis": "Environmental KPIs, Zero Fines"
+      },
+      {
+        "role": "Regulatory Legal Assistant",
+        "kpis": "Documentation Accuracy"
+      },
+      {
+        "role": "Regulatory Affairs Manager",
+        "kpis": "Regulatory KPIs, Filing Success"
+      }
+    ],
+    "Legal Support": [
+      {
+        "role": "Paralegal",
+        "kpis": "Document Accuracy, Research Quality"
+      },
+      {
+        "role": "Senior Paralegal",
+        "kpis": "Case Preparation Efficiency"
+      },
+      {
+        "role": "Legal Assistant",
+        "kpis": "Admin Accuracy, SLA"
+      },
+      {
+        "role": "Legal Secretary",
+        "kpis": "Scheduling Accuracy, Documentation Quality"
+      },
+      {
+        "role": "Document Review Specialist",
+        "kpis": "Review Accuracy, TAT"
+      },
+      {
+        "role": "E-discovery Specialist",
+        "kpis": "Data Integrity, Processing Speed"
+      },
+      {
+        "role": "Legal Operations Analyst",
+        "kpis": "Process KPIs, Cost Savings"
+      },
+      {
+        "role": "Legal Billing Specialist",
+        "kpis": "Billing Accuracy, Cycle Time"
+      },
+      {
+        "role": "Corporate Compliance Assistant",
+        "kpis": "Compliance Documentation"
+      },
+      {
+        "role": "Legal Admin Manager",
+        "kpis": "Department Efficiency KPIs"
+      }
+    ]
+  },
+  "Finance": {
+    "Accounting": [
+      {
+        "role": "Accountant",
+        "kpis": "Reporting accuracy, Month-end close time, Audit findings, Compliance rate, Process efficiency"
+      },
+      {
+        "role": "Financial Analyst",
+        "kpis": "Forecast accuracy, Report quality, Analysis turnaround time, Stakeholder satisfaction"
+      },
+      {
+        "role": "Controller",
+        "kpis": "Financial close time, Audit results, Team productivity, Process improvements, Compliance rate"
+      }
+    ],
+    "Investment Banking": [
+      {
+        "role": "Investment Banker",
+        "kpis": "Deal volume, Revenue generated, Client acquisition, Transaction success rate, Client retention"
+      },
+      {
+        "role": "Financial Advisor",
+        "kpis": "Assets under management, Client satisfaction, Portfolio performance, Client retention, Revenue growth"
+      }
+    ],
+    "Risk Management": [
+      {
+        "role": "Risk Analyst",
+        "kpis": "Risk identification rate, Risk assessment accuracy, Mitigation effectiveness, Compliance rate"
+      }
+    ]
+  },
+  "Marketing": {
+    "Digital Marketing": [
+      {
+        "role": "Digital Marketing Manager",
+        "kpis": "Campaign ROI, Lead generation, Conversion rate, Cost per acquisition, Customer lifetime value"
+      },
+      {
+        "role": "SEO Specialist",
+        "kpis": "Organic traffic growth, Keyword rankings, Backlink quality, Domain authority, Conversion rate"
+      },
+      {
+        "role": "Social Media Manager",
+        "kpis": "Engagement rate, Follower growth, Reach, Content performance, Community sentiment"
+      },
+      {
+        "role": "Content Marketing Manager",
+        "kpis": "Content engagement, Lead generation, SEO performance, Content production rate, Brand awareness"
+      }
+    ],
+    "Brand & Communications": [
+      {
+        "role": "Brand Manager",
+        "kpis": "Brand awareness, Brand sentiment, Market share, Campaign effectiveness, Customer loyalty"
+      },
+      {
+        "role": "PR Manager",
+        "kpis": "Media coverage, Press release pickup, Brand mentions, Crisis management, Stakeholder relations"
+      }
+    ],
+    "Growth Marketing": [
+      {
+        "role": "Growth Marketing Manager",
+        "kpis": "User acquisition cost, Customer lifetime value, Activation rate, Retention rate, Referral rate"
+      }
+    ]
+  },
+  "Sales": {
+    "Enterprise Sales": [
+      {
+        "role": "Account Executive",
+        "kpis": "Quota attainment, Revenue generated, Deal size, Sales cycle length, Win rate"
+      },
+      {
+        "role": "Sales Development Representative",
+        "kpis": "Qualified leads, Meeting conversion rate, Outreach volume, Response rate, Pipeline contribution"
+      },
+      {
+        "role": "Sales Manager",
+        "kpis": "Team quota attainment, Revenue growth, Pipeline quality, Team productivity, Win rate"
+      }
+    ],
+    "Customer Success": [
+      {
+        "role": "Customer Success Manager",
+        "kpis": "Customer retention, Net revenue retention, Customer satisfaction, Account expansion, Time to value"
+      },
+      {
+        "role": "Account Manager",
+        "kpis": "Account growth, Customer satisfaction, Renewal rate, Upsell revenue, Relationship strength"
+      }
+    ]
+  },
+  "Healthcare": {
+    "Clinical": [
+      {
+        "role": "Nurse Practitioner",
+        "kpis": "Patient satisfaction, Treatment outcomes, Patient volume, Clinical quality metrics, Compliance rate"
+      },
+      {
+        "role": "Physician",
+        "kpis": "Patient outcomes, Patient satisfaction, Treatment effectiveness, Clinical efficiency, Research contributions"
+      }
+    ],
+    "Healthcare Administration": [
+      {
+        "role": "Healthcare Administrator",
+        "kpis": "Operational efficiency, Cost reduction, Patient satisfaction, Staff retention, Compliance rate"
+      },
+      {
+        "role": "Medical Billing Specialist",
+        "kpis": "Claim acceptance rate, Days in AR, Collection rate, Billing accuracy, Process efficiency"
+      }
+    ]
+  },
+  "Operations": {
+    "Supply Chain": [
+      {
+        "role": "Supply Chain Manager",
+        "kpis": "On-time delivery, Inventory turnover, Supply chain cost, Supplier performance, Order accuracy"
+      },
+      {
+        "role": "Logistics Coordinator",
+        "kpis": "Delivery accuracy, Transportation cost, On-time delivery, Inventory accuracy, Process efficiency"
+      }
+    ],
+    "Operations Management": [
+      {
+        "role": "Operations Manager",
+        "kpis": "Operational efficiency, Cost reduction, Process improvement, Team productivity, Quality metrics"
+      },
+      {
+        "role": "Project Manager",
+        "kpis": "Project completion rate, Budget adherence, Timeline adherence, Stakeholder satisfaction, Team performance"
+      }
+    ]
+  },
+  "Human Resources": {
+    "Talent Acquisition": [
+      {
+        "role": "Recruiter",
+        "kpis": "Time to hire, Cost per hire, Offer acceptance rate, Quality of hire, Candidate satisfaction"
+      },
+      {
+        "role": "Talent Acquisition Manager",
+        "kpis": "Hiring goal achievement, Recruitment cost, Time to fill, Quality of hire, Team productivity"
+      }
+    ],
+    "HR Operations": [
+      {
+        "role": "HR Manager",
+        "kpis": "Employee satisfaction, Retention rate, Time to hire, HR cost per employee, Compliance rate"
+      },
+      {
+        "role": "HR Business Partner",
+        "kpis": "Employee engagement, Talent development, Organizational effectiveness, Stakeholder satisfaction"
+      }
+    ],
+    "Learning & Development": [
+      {
+        "role": "Training Manager",
+        "kpis": "Training completion rate, Employee skill improvement, Training ROI, Program satisfaction, Knowledge retention"
       }
     ]
   },
@@ -3670,256 +3882,6 @@
       {
         "role": "Head of People",
         "kpis": "People Strategy, KPIs, Organizational Health"
-      }
-    ]
-  },
-  "Legal": {
-    "Corporate Law": [
-      {
-        "role": "Corporate Attorney",
-        "kpis": "Contract Accuracy, TAT, Risk Mitigation"
-      },
-      {
-        "role": "Senior Corporate Attorney",
-        "kpis": "Deal Success, Compliance, Advisory Quality"
-      },
-      {
-        "role": "Legal Counsel",
-        "kpis": "Contract Quality, SLA, Stakeholder Satisfaction"
-      },
-      {
-        "role": "Associate Attorney",
-        "kpis": "Case Preparation Quality, Research Accuracy"
-      },
-      {
-        "role": "General Counsel",
-        "kpis": "Legal Risk Reduction, Compliance, Cost Control"
-      },
-      {
-        "role": "Paralegal (Corporate)",
-        "kpis": "Document Accuracy, Filing TAT"
-      },
-      {
-        "role": "Contracts Manager",
-        "kpis": "Contract Cycle Time, Error Rate"
-      },
-      {
-        "role": "Contract Administrator",
-        "kpis": "Documentation Accuracy, Compliance"
-      },
-      {
-        "role": "M&A Attorney",
-        "kpis": "Deal Completion, Due Diligence Accuracy"
-      },
-      {
-        "role": "Compliance Attorney",
-        "kpis": "Audit Results, Regulatory Compliance"
-      },
-      {
-        "role": "Corporate Governance Specialist",
-        "kpis": "Board Compliance, Reporting Accuracy"
-      },
-      {
-        "role": "Entity Management Specialist",
-        "kpis": "Entity Compliance, TAT"
-      },
-      {
-        "role": "Corporate Legal Assistant",
-        "kpis": "Support Accuracy, Filing Quality"
-      },
-      {
-        "role": "Intellectual Property Attorney",
-        "kpis": "Patent/Trademark Success Rate"
-      },
-      {
-        "role": "Trademark Coordinator",
-        "kpis": "Filing Accuracy, Portfolio KPIs"
-      },
-      {
-        "role": "Data Privacy Lawyer",
-        "kpis": "GDPR/Local Compliance, Incident Reduction"
-      },
-      {
-        "role": "Legal Risk Analyst",
-        "kpis": "Risk Identification, Mitigation Success"
-      },
-      {
-        "role": "Corporate Litigation Analyst",
-        "kpis": "Case Accuracy, Evidence Quality"
-      },
-      {
-        "role": "Corporate Policy Analyst",
-        "kpis": "Policy Accuracy, Adoption Rate"
-      },
-      {
-        "role": "Corporate Law Manager",
-        "kpis": "Department KPIs, SLA"
-      }
-    ],
-    "Litigation": [
-      {
-        "role": "Litigation Attorney",
-        "kpis": "Case Win Rate, Settlement Efficiency"
-      },
-      {
-        "role": "Senior Litigation Attorney",
-        "kpis": "High-Value Case Wins, Legal Strategy Impact"
-      },
-      {
-        "role": "Litigation Paralegal",
-        "kpis": "Evidence Accuracy, Discovery KPIs"
-      },
-      {
-        "role": "Court Liaison",
-        "kpis": "Filing TAT, Compliance"
-      },
-      {
-        "role": "Claims Attorney",
-        "kpis": "Resolution TAT, Quality of Claims Defense"
-      },
-      {
-        "role": "Arbitration Specialist",
-        "kpis": "Case Resolution Time, Neutrality KPIs"
-      },
-      {
-        "role": "Mediation Specialist",
-        "kpis": "Settlement Rate, Client Satisfaction"
-      },
-      {
-        "role": "Legal Investigator",
-        "kpis": "Evidence Quality, Investigation TAT"
-      },
-      {
-        "role": "Trial Preparation Specialist",
-        "kpis": "Case Readiness, Documentation Accuracy"
-      },
-      {
-        "role": "Legal Researcher",
-        "kpis": "Research Accuracy, Timeliness"
-      },
-      {
-        "role": "Litigation Support Analyst",
-        "kpis": "Document Review Accuracy"
-      },
-      {
-        "role": "Discovery Specialist",
-        "kpis": "Data Accuracy, Timeliness"
-      },
-      {
-        "role": "Court Filing Specialist",
-        "kpis": "Zero Rejections, Filing Speed"
-      },
-      {
-        "role": "Litigation Manager",
-        "kpis": "Case Outcomes, SLA"
-      },
-      {
-        "role": "Legal Operations Specialist",
-        "kpis": "Process Efficiency, Budget Control"
-      }
-    ],
-    "Regulatory": [
-      {
-        "role": "Compliance Officer",
-        "kpis": "Regulatory Compliance %, Audit Findings"
-      },
-      {
-        "role": "Senior Compliance Officer",
-        "kpis": "Regulatory Strategy, Incident Reduction"
-      },
-      {
-        "role": "Regulatory Affairs Specialist",
-        "kpis": "Filing Accuracy, Approval Time"
-      },
-      {
-        "role": "AML/KYC Legal Specialist",
-        "kpis": "KYC Accuracy, AML Case Resolution"
-      },
-      {
-        "role": "Risk & Compliance Analyst",
-        "kpis": "Risk Indicators, Mitigations"
-      },
-      {
-        "role": "Internal Audit Specialist",
-        "kpis": "Audit Accuracy, Findings Closure"
-      },
-      {
-        "role": "Policy & Regulatory Counsel",
-        "kpis": "Policy Effectiveness, Compliance"
-      },
-      {
-        "role": "Ethics & Compliance Manager",
-        "kpis": "Ethics KPIs, Zero Violations"
-      },
-      {
-        "role": "Sanctions Screening Analyst",
-        "kpis": "Alert Accuracy, False Positives"
-      },
-      {
-        "role": "Regulatory Compliance Manager",
-        "kpis": "Global Compliance %, SLA"
-      },
-      {
-        "role": "SOX Compliance Analyst",
-        "kpis": "Control Effectiveness, Audit Results"
-      },
-      {
-        "role": "Data Protection Officer",
-        "kpis": "GDPR Compliance, Incident Reduction"
-      },
-      {
-        "role": "Environmental Compliance Specialist",
-        "kpis": "Environmental KPIs, Zero Fines"
-      },
-      {
-        "role": "Regulatory Legal Assistant",
-        "kpis": "Documentation Accuracy"
-      },
-      {
-        "role": "Regulatory Affairs Manager",
-        "kpis": "Regulatory KPIs, Filing Success"
-      }
-    ],
-    "Legal Support": [
-      {
-        "role": "Paralegal",
-        "kpis": "Document Accuracy, Research Quality"
-      },
-      {
-        "role": "Senior Paralegal",
-        "kpis": "Case Preparation Efficiency"
-      },
-      {
-        "role": "Legal Assistant",
-        "kpis": "Admin Accuracy, SLA"
-      },
-      {
-        "role": "Legal Secretary",
-        "kpis": "Scheduling Accuracy, Documentation Quality"
-      },
-      {
-        "role": "Document Review Specialist",
-        "kpis": "Review Accuracy, TAT"
-      },
-      {
-        "role": "E-discovery Specialist",
-        "kpis": "Data Integrity, Processing Speed"
-      },
-      {
-        "role": "Legal Operations Analyst",
-        "kpis": "Process KPIs, Cost Savings"
-      },
-      {
-        "role": "Legal Billing Specialist",
-        "kpis": "Billing Accuracy, Cycle Time"
-      },
-      {
-        "role": "Corporate Compliance Assistant",
-        "kpis": "Compliance Documentation"
-      },
-      {
-        "role": "Legal Admin Manager",
-        "kpis": "Department Efficiency KPIs"
       }
     ]
   },
