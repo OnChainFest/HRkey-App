@@ -1,0 +1,22 @@
+# ============================================================================
+# HRKey ML - Dependencias Python
+# ============================================================================
+# Para el análisis de correlaciones KPI
+
+# Core data science
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Supabase client (opcional, puede usar requests directo)
+supabase>=2.0.0
+
+# HTTP requests (fallback si supabase-py no está disponible)
+requests>=2.31.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Opcional: Visualización (para análisis futuro)
+matplotlib>=3.7.0
+seaborn>=0.12.0
