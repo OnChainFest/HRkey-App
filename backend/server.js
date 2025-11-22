@@ -19,6 +19,7 @@ import signersController from './controllers/signersController.js';
 import auditController from './controllers/auditController.js';
 import dataAccessController from './controllers/dataAccessController.js';
 import revenueController from './controllers/revenueController.js';
+import kpiObservationsController from './controllers/kpiObservationsController.js';
 
 // Import middleware
 import {
@@ -568,6 +569,80 @@ app.get('/api/revenue/shares', requireAuth, revenueController.getRevenueShares);
 app.get('/api/revenue/transactions', requireAuth, revenueController.getTransactionHistory);
 app.get('/api/revenue/summary', requireAuth, revenueController.getEarningsSummary);
 app.post('/api/revenue/payout/request', requireAuth, revenueController.requestPayout);
+
+/* =========================
+   KPI OBSERVATIONS ENDPOINTS (Proof of Correlation MVP)
+   ========================= */
+
+// ===== KPI OBSERVATIONS - Data Capture for ML Correlation Engine =====
+// These endpoints capture structured KPI evaluations that will be used by the Python
+// correlation engine to measure relationships between KPIs and job outcomes.
+
+/**
+ * POST /api/kpi-observations
+ * Create one or more KPI observations (batch insert)
+ *
+ * Example curl:
+ * curl -X POST http://localhost:3001/api/kpi-observations \
+ *   -H "Content-Type: application/json" \
+ *   -d '{
+ *     "subject_wallet": "0xSUBJECT_ADDRESS",
+ *     "observer_wallet": "0xOBSERVER_ADDRESS",
+ *     "role_id": "uuid-of-role",
+ *     "role_name": "Backend Developer",
+ *     "observations": [
+ *       {
+ *         "kpi_name": "deployment_frequency",
+ *         "rating_value": 4,
+ *         "outcome_value": 120,
+ *         "context_notes": "Deployed 120 times in Q1 2024",
+ *         "observation_period": "Q1 2024"
+ *       },
+ *       {
+ *         "kpi_name": "code_quality",
+ *         "rating_value": 5,
+ *         "context_notes": "Excellent code reviews"
+ *       }
+ *     ]
+ *   }'
+ */
+app.post('/api/kpi-observations', kpiObservationsController.createKpiObservations);
+
+/**
+ * GET /api/kpi-observations
+ * Retrieve KPI observations with filters
+ *
+ * Query params:
+ * - subject_wallet: Filter by subject
+ * - observer_wallet: Filter by observer
+ * - role_id: Filter by role
+ * - kpi_name: Filter by KPI name
+ * - verified: Filter by verification status (true/false)
+ * - limit: Max results (default: 200, max: 1000)
+ * - offset: Pagination offset
+ *
+ * Example:
+ * curl http://localhost:3001/api/kpi-observations?subject_wallet=0xABC&limit=50
+ */
+app.get('/api/kpi-observations', kpiObservationsController.getKpiObservations);
+
+/**
+ * GET /api/kpi-observations/summary
+ * Get aggregated KPI summary (for analytics/Python ML)
+ *
+ * This endpoint uses the kpi_observations_summary VIEW which aggregates
+ * observations by (subject, role, kpi) - perfect for feeding into pandas/scikit-learn.
+ *
+ * Query params:
+ * - subject_wallet: Filter by subject
+ * - role_id: Filter by role
+ * - kpi_name: Filter by KPI
+ * - limit: Max results (default: 100, max: 1000)
+ *
+ * Example:
+ * curl http://localhost:3001/api/kpi-observations/summary?role_id=uuid
+ */
+app.get('/api/kpi-observations/summary', kpiObservationsController.getKpiObservationsSummary);
 
 /* =========================
    Start
