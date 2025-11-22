@@ -20,6 +20,7 @@ import auditController from './controllers/auditController.js';
 import dataAccessController from './controllers/dataAccessController.js';
 import revenueController from './controllers/revenueController.js';
 import kpiObservationsController from './controllers/kpiObservationsController.js';
+import hrkeyScoreService from './hrkeyScoreService.js';
 
 // Import middleware
 import {
@@ -643,6 +644,160 @@ app.get('/api/kpi-observations', kpiObservationsController.getKpiObservations);
  * curl http://localhost:3001/api/kpi-observations/summary?role_id=uuid
  */
 app.get('/api/kpi-observations/summary', kpiObservationsController.getKpiObservationsSummary);
+
+/* =========================
+   HRKEY SCORE ENDPOINTS (ML-powered scoring)
+   ========================= */
+
+// ===== HRKEY SCORE - ML-powered professional scoring =====
+// This endpoint calculates a professional score (0-100) based on KPI observations
+// using a trained Ridge regression model.
+
+/**
+ * POST /api/hrkey-score
+ * Calculate HRKey Score for a subject+role
+ *
+ * Request body:
+ * {
+ *   "subject_wallet": "0xSUBJECT_ADDRESS",
+ *   "role_id": "uuid-of-role"
+ * }
+ *
+ * Response (success):
+ * {
+ *   "ok": true,
+ *   "subject_wallet": "0xSUBJECT",
+ *   "role_id": "uuid",
+ *   "score": 78.45,              // HRKey Score (0-100)
+ *   "raw_prediction": 125432.50, // Raw prediction in outcome_value scale
+ *   "confidence": 0.8944,        // Confidence level (0-1)
+ *   "confidence_percentage": 89.44,
+ *   "n_observations": 16,        // Number of KPI observations used
+ *   "used_kpis": ["kpi_1", "kpi_2", ...],
+ *   "model_info": {
+ *     "model_type": "ridge",
+ *     "trained_at": "2025-11-22T...",
+ *     "role_scope": "global",
+ *     "metrics": { "mae": 8234.56, "rmse": 10567.89, "r2": 0.7456 }
+ *   }
+ * }
+ *
+ * Response (not enough data):
+ * {
+ *   "ok": false,
+ *   "reason": "NOT_ENOUGH_DATA",
+ *   "message": "Se requieren al menos 3 observaciones...",
+ *   "n_observations": 2
+ * }
+ *
+ * Example curl:
+ * curl -X POST http://localhost:3001/api/hrkey-score \
+ *   -H "Content-Type: application/json" \
+ *   -d '{
+ *     "subject_wallet": "0xSUBJECT_ADDRESS",
+ *     "role_id": "UUID_OF_ROLE"
+ *   }'
+ */
+app.post('/api/hrkey-score', async (req, res) => {
+  try {
+    const { subject_wallet, role_id } = req.body;
+
+    // Validar campos requeridos
+    if (!subject_wallet || !role_id) {
+      return res.status(400).json({
+        ok: false,
+        error: 'MISSING_FIELDS',
+        message: 'Se requieren subject_wallet y role_id.',
+        required: ['subject_wallet', 'role_id']
+      });
+    }
+
+    // Calcular HRKey Score
+    const result = await hrkeyScoreService.computeHrkeyScore({
+      subjectWallet: subject_wallet,
+      roleId: role_id
+    });
+
+    // Manejar casos de error específicos
+    if (!result.ok) {
+      // NOT_ENOUGH_DATA → 422 Unprocessable Entity
+      if (result.reason === 'NOT_ENOUGH_DATA') {
+        return res.status(422).json(result);
+      }
+
+      // NO_VALID_KPIS → 422 Unprocessable Entity
+      if (result.reason === 'NO_VALID_KPIS') {
+        return res.status(422).json(result);
+      }
+
+      // MODEL_NOT_CONFIGURED → 503 Service Unavailable
+      if (result.reason === 'INTERNAL_ERROR') {
+        return res.status(503).json({
+          ok: false,
+          error: 'MODEL_NOT_AVAILABLE',
+          message: 'El modelo de scoring no está configurado. Contacta al administrador.',
+          details: result.message
+        });
+      }
+
+      // ROLE_MISMATCH → 400 Bad Request
+      if (result.reason === 'ROLE_MISMATCH') {
+        return res.status(400).json(result);
+      }
+
+      // Otros errores → 500 Internal Server Error
+      return res.status(500).json(result);
+    }
+
+    // Éxito → 200 OK
+    return res.json(result);
+
+  } catch (err) {
+    console.error('❌ Error en /api/hrkey-score:', err);
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+      message: 'Error inesperado calculando HRKey Score.',
+      details: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/hrkey-score/model-info
+ * Get information about the loaded ML model
+ *
+ * Response:
+ * {
+ *   "ok": true,
+ *   "model_type": "ridge",
+ *   "trained_at": "2025-11-22T...",
+ *   "role_scope": "global",
+ *   "n_features": 8,
+ *   "metrics": { "mae": 8234.56, "rmse": 10567.89, "r2": 0.7456 },
+ *   "features": [
+ *     { "name": "deployment_frequency", "coef": 12345.67, "abs_coef": 12345.67 },
+ *     ...
+ *   ],
+ *   "target_stats": { "min": 65000, "max": 180000, "mean": 115234.5, "std": 28456.7 }
+ * }
+ *
+ * Example:
+ * curl http://localhost:3001/api/hrkey-score/model-info
+ */
+app.get('/api/hrkey-score/model-info', async (req, res) => {
+  try {
+    const modelInfo = hrkeyScoreService.getModelInfo();
+    return res.json(modelInfo);
+  } catch (err) {
+    console.error('❌ Error en /api/hrkey-score/model-info:', err);
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+      message: err.message
+    });
+  }
+});
 
 /* =========================
    Start
