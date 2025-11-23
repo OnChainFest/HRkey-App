@@ -38,7 +38,19 @@ from dotenv import load_dotenv
 # ============================================================================
 
 # Cargar variables de entorno
-load_dotenv()
+# Buscar .env en múltiples ubicaciones
+env_paths = [
+    '.env',  # Directorio actual (ml/)
+    '../.env',  # Directorio raíz
+    '../backend/.env',  # Backend directory
+]
+
+for env_path in env_paths:
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+        break
+else:
+    load_dotenv()  # Fallback a búsqueda por defecto
 
 # Configurar logging
 logging.basicConfig(
@@ -73,14 +85,17 @@ def get_supabase_connection():
         dict: Configuración de conexión con 'method', 'url', 'key'
     """
     supabase_url = os.getenv('SUPABASE_URL')
-    supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
+    # Intentar ambas variantes del nombre de la clave
+    supabase_key = os.getenv('SUPABASE_SERVICE_KEY') or os.getenv('SUPABASE_SERVICE_ROLE_KEY')
 
     if not supabase_url or not supabase_key:
         raise ValueError(
-            "SUPABASE_URL y SUPABASE_SERVICE_KEY deben estar definidos en .env\n"
+            "SUPABASE_URL y SUPABASE_SERVICE_KEY (o SUPABASE_SERVICE_ROLE_KEY) deben estar definidos en .env\n"
             "Ejemplo:\n"
             "  SUPABASE_URL=https://xxx.supabase.co\n"
-            "  SUPABASE_SERVICE_KEY=eyJhbGc..."
+            "  SUPABASE_SERVICE_KEY=eyJhbGc...\n"
+            "  O alternativamente:\n"
+            "  SUPABASE_SERVICE_ROLE_KEY=eyJhbGc..."
         )
 
     # Intentar importar supabase-py
