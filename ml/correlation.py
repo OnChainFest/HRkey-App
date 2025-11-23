@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
 """
-HRKey - Proof of Correlation MVP (Simplified)
-==============================================
+HRKey - Proof of Correlation MVP (Ultra Simplificado)
+=====================================================
 
-Script simplificado para el MVP del Proof of Correlation.
-Solo usa dos tablas: user_kpis y job_outcomes.
-NO depende de la tabla users.
+MVP mínimo que NO depende de tablas que aún no existen (user_kpis).
+Solo usa tablas básicas: users, references, reference_requests
+
+Objetivo:
+- Correlacionar variables del requester con scores de referencias
+- Generar advertencias si faltan datos pero NO romper
+- Permitir iteración rápida sin necesidad de datos complejos
 
 Flujo:
-1. Cargar datos de user_kpis y job_outcomes
-2. Hacer merge por user_id
-3. Calcular correlaciones entre KPIs y outcomes
+1. Cargar references, reference_requests, users
+2. Construir dataset de correlación simple
+3. Calcular correlaciones
 4. Exportar resultados
 
 Autor: HRKey Data Team
-Fecha: 2025-11-22 (Simplificado)
+Fecha: 2025-11-23 (MVP Ultra Simple)
 """
 
 import os
@@ -22,7 +26,7 @@ import sys
 import json
 import logging
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import pandas as pd
 import numpy as np
@@ -48,27 +52,13 @@ logger = logging.getLogger(__name__)
 # CONSTANTES
 # ============================================================================
 
-# Tablas de Supabase
-TABLE_KPIS = "user_kpis"
-TABLE_OUTCOMES = "job_outcomes"
-
-# Columnas de KPIs (ajusta según tu schema real)
-KPI_COLS = [
-    "deployment_frequency",
-    "code_quality",
-    "api_response_time",
-    "error_rate",
-    "test_coverage",
-    "lead_time",
-    "mttr",
-    "customer_satisfaction"
-]
-
-# Columna de outcome (del schema job_outcomes)
-OUTCOME_COL = "performance_score"
+# Tablas mínimas requeridas
+TABLE_REFERENCES = "references"
+TABLE_REFERENCE_REQUESTS = "reference_requests"
+TABLE_USERS = "users"
 
 # Configuración de análisis
-MIN_OBSERVATIONS_PER_KPI = 10
+MIN_OBSERVATIONS = 5
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'output')
 
 # ============================================================================
@@ -113,7 +103,7 @@ def fetch_table(table_name: str) -> pd.DataFrame:
     Carga una tabla completa desde Supabase.
 
     Args:
-        table_name: Nombre de la tabla (user_kpis o job_outcomes)
+        table_name: Nombre de la tabla
 
     Returns:
         pd.DataFrame: DataFrame con todos los datos de la tabla
@@ -130,7 +120,7 @@ def fetch_table(table_name: str) -> pd.DataFrame:
             data = response.data
 
             if not data:
-                logger.warning(f"⚠️  Tabla {table_name} está vacía")
+                logger.warning(f"⚠️  Tabla {table_name} está vacía o no existe")
                 return pd.DataFrame()
 
             df = pd.DataFrame(data)
@@ -138,8 +128,8 @@ def fetch_table(table_name: str) -> pd.DataFrame:
             return df
 
         except Exception as e:
-            logger.error(f"❌ Error al cargar {table_name}: {e}")
-            raise
+            logger.warning(f"⚠️  No se pudo cargar {table_name}: {e}")
+            return pd.DataFrame()
 
     # Opción 2: Usar requests directo (fallback)
     else:
@@ -158,7 +148,7 @@ def fetch_table(table_name: str) -> pd.DataFrame:
             data = response.json()
 
             if not data:
-                logger.warning(f"⚠️  Tabla {table_name} está vacía")
+                logger.warning(f"⚠️  Tabla {table_name} está vacía o no existe")
                 return pd.DataFrame()
 
             df = pd.DataFrame(data)
@@ -166,8 +156,8 @@ def fetch_table(table_name: str) -> pd.DataFrame:
             return df
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"❌ Error al cargar {table_name}: {e}")
-            raise
+            logger.warning(f"⚠️  No se pudo cargar {table_name}: {e}")
+            return pd.DataFrame()
 
 
 # ============================================================================
@@ -176,174 +166,230 @@ def fetch_table(table_name: str) -> pd.DataFrame:
 
 def build_dataset() -> pd.DataFrame:
     """
-    Crea un DataFrame donde cada fila es un usuario con:
-      - KPIs (user_kpis)
-      - outcome de desempeño (job_outcomes)
+    Construye un dataset simple para correlaciones MVP.
+
+    Estrategia:
+    - Cargar references (tabla principal)
+    - Agregar info de reference_requests si existe
+    - Agregar info de users si existe
+    - Crear variables para correlación
 
     Returns:
-        pd.DataFrame: Dataset limpio con user_id, KPIs y outcome
+        pd.DataFrame: Dataset para análisis de correlación
     """
     logger.info("\n" + "=" * 80)
-    logger.info("CONSTRUYENDO DATASET")
+    logger.info("CONSTRUYENDO DATASET MVP")
     logger.info("=" * 80)
 
-    # Cargar tablas
-    kpis_raw = fetch_table(TABLE_KPIS)
-    outcomes = fetch_table(TABLE_OUTCOMES)
+    # Cargar tabla principal: references
+    references = fetch_table(TABLE_REFERENCES)
 
-    if kpis_raw.empty or outcomes.empty:
-        raise RuntimeError(
-            "Alguna de las tablas user_kpis / job_outcomes está vacía. "
-            f"Verifica que ya tengas datos en {TABLE_KPIS} y {TABLE_OUTCOMES}."
-        )
+    if references.empty:
+        logger.error(f"❌ La tabla {TABLE_REFERENCES} está vacía o no existe")
+        logger.error("   No se puede continuar sin datos de referencias")
+        return pd.DataFrame()
 
-    # Verificar que user_kpis tenga las columnas necesarias
-    required_kpi_cols = ['user_id', 'kpi_name']
-    for col in required_kpi_cols:
-        if col not in kpis_raw.columns:
-            raise RuntimeError(f"Falta la columna '{col}' en {TABLE_KPIS}.")
+    logger.info(f"\n📊 Referencias cargadas: {len(references)}")
+    logger.info(f"   Columnas disponibles: {list(references.columns)}")
 
-    if 'user_id' not in outcomes.columns:
-        raise RuntimeError(f"Falta la columna 'user_id' en {TABLE_OUTCOMES}.")
+    # Inicializar dataset base
+    df = references.copy()
 
-    # Transformar user_kpis de formato largo a formato ancho
-    # La tabla user_kpis tiene: user_id, kpi_name, kpi_value, normalized_value, etc.
-    # Necesitamos pivotar para que cada KPI sea una columna
-    logger.info(f"\n🔄 Pivotando {TABLE_KPIS} de formato largo a formato ancho...")
+    # Intentar cargar reference_requests (opcional)
+    reference_requests = fetch_table(TABLE_REFERENCE_REQUESTS)
+    if not reference_requests.empty:
+        logger.info(f"\n✅ Reference requests cargadas: {len(reference_requests)}")
 
-    # Decidir qué valor usar: normalized_value si existe, sino kpi_value
-    value_col = 'normalized_value' if 'normalized_value' in kpis_raw.columns else 'kpi_value'
-    if value_col not in kpis_raw.columns:
-        raise RuntimeError(
-            f"La tabla {TABLE_KPIS} debe tener al menos 'kpi_value' o 'normalized_value'. "
-            f"Columnas encontradas: {list(kpis_raw.columns)}"
-        )
+        # Merge con references si tienen columna común
+        if 'request_id' in df.columns and 'id' in reference_requests.columns:
+            df = df.merge(
+                reference_requests,
+                left_on='request_id',
+                right_on='id',
+                how='left',
+                suffixes=('', '_request')
+            )
+            logger.info(f"   Merged {len(df)} referencias con requests")
+        else:
+            logger.warning("   ⚠️  No se pudo hacer merge: faltan columnas request_id o id")
+    else:
+        logger.warning(f"⚠️  Tabla {TABLE_REFERENCE_REQUESTS} no disponible (continuando sin ella)")
 
-    logger.info(f"   Usando columna '{value_col}' para valores de KPIs")
+    # Intentar cargar users (opcional)
+    users = fetch_table(TABLE_USERS)
+    if not users.empty:
+        logger.info(f"\n✅ Users cargados: {len(users)}")
 
-    # Pivotar: crear una columna por cada kpi_name
-    kpis = kpis_raw.pivot_table(
-        index='user_id',
-        columns='kpi_name',
-        values=value_col,
-        aggfunc='mean'  # Si hay múltiples valores, promediar
-    ).reset_index()
+        # Merge con users si hay user_id
+        if 'user_id' in df.columns and 'id' in users.columns:
+            df = df.merge(
+                users,
+                left_on='user_id',
+                right_on='id',
+                how='left',
+                suffixes=('', '_user')
+            )
+            logger.info(f"   Merged {len(df)} referencias con users")
+        else:
+            logger.warning("   ⚠️  No se pudo hacer merge: faltan columnas user_id o id")
+    else:
+        logger.warning(f"⚠️  Tabla {TABLE_USERS} no disponible (continuando sin ella)")
 
-    logger.info(f"   KPIs únicos encontrados: {list(kpis.columns[1:])}")
-    logger.info(f"   Total usuarios con KPIs: {len(kpis)}")
-
-    # Merge básico solo entre KPIs y outcomes
-    logger.info(f"\n🔗 Haciendo merge de {TABLE_KPIS} y {TABLE_OUTCOMES} por user_id...")
-    df = kpis.merge(outcomes, on="user_id", suffixes=("_kpi", "_outcome"))
-    logger.info(f"   Filas después del merge: {len(df)}")
-
-    # Verificar que exista la columna de outcome
-    if OUTCOME_COL not in df.columns:
-        raise RuntimeError(
-            f"No se encontró la columna de outcome '{OUTCOME_COL}' en la tabla {TABLE_OUTCOMES}."
-        )
-
-    # Identificar columnas de KPIs (todas excepto user_id, outcome, y columnas del merge)
-    # Después del pivot, las columnas de KPIs son las que vinieron de kpi_name
-    kpi_cols_in_df = [col for col in df.columns
-                      if col not in ['user_id', OUTCOME_COL]
-                      and not col.endswith('_kpi')
-                      and not col.endswith('_outcome')]
-
-    logger.info(f"\n📊 KPIs encontrados en el dataset: {kpi_cols_in_df}")
-
-    # Filtrar solo columnas relevantes (user_id + KPIs + outcome)
-    cols_to_keep = ["user_id"] + kpi_cols_in_df + [OUTCOME_COL]
-    df = df[cols_to_keep].copy()
-
-    # Limpieza básica
-    logger.info("\n🧹 Limpiando datos...")
-
-    # Quitar filas sin outcome
-    original_count = len(df)
-    df = df.dropna(subset=[OUTCOME_COL])
-    removed_outcome = original_count - len(df)
-    if removed_outcome > 0:
-        logger.info(f"   Removidas {removed_outcome} filas sin outcome")
-
-    # Quitar filas donde TODOS los KPIs son NULL
-    original_count = len(df)
-    df = df.dropna(subset=kpi_cols_in_df, how="all")
-    removed_kpis = original_count - len(df)
-    if removed_kpis > 0:
-        logger.info(f"   Removidas {removed_kpis} filas sin ningún KPI")
-
-    logger.info(f"\n🧮 Dataset final: {df.shape[0]} filas x {df.shape[1]} columnas.")
-    logger.info(f"   Columnas: {list(df.columns)}")
-    logger.info(f"   KPIs disponibles: {kpi_cols_in_df}")
+    # Log del dataset final
+    logger.info(f"\n🧮 Dataset construido:")
+    logger.info(f"   Total filas: {len(df)}")
+    logger.info(f"   Total columnas: {len(df.columns)}")
+    logger.info(f"   Columnas: {list(df.columns)[:20]}")  # Primeras 20 columnas
 
     return df
+
+
+# ============================================================================
+# EXTRACCIÓN DE VARIABLES PARA CORRELACIÓN
+# ============================================================================
+
+def extract_correlation_variables(df: pd.DataFrame) -> tuple:
+    """
+    Extrae variables numéricas para correlación.
+
+    Returns:
+        tuple: (features_df, outcome_col_name) o (None, None) si no hay datos
+    """
+    logger.info("\n" + "=" * 80)
+    logger.info("EXTRAYENDO VARIABLES PARA CORRELACIÓN")
+    logger.info("=" * 80)
+
+    if df.empty:
+        logger.error("❌ DataFrame vacío")
+        return None, None
+
+    # Identificar columnas numéricas
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+
+    if not numeric_cols:
+        logger.error("❌ No se encontraron columnas numéricas para correlacionar")
+        return None, None
+
+    logger.info(f"\n📊 Columnas numéricas encontradas: {len(numeric_cols)}")
+    logger.info(f"   {numeric_cols}")
+
+    # Buscar columna de outcome (score o rating)
+    outcome_col = None
+    outcome_candidates = [
+        'overall_rating',
+        'rating',
+        'score',
+        'performance_score',
+        'verification_score'
+    ]
+
+    for candidate in outcome_candidates:
+        if candidate in numeric_cols:
+            outcome_col = candidate
+            logger.info(f"\n✅ Outcome encontrado: {outcome_col}")
+            break
+
+    if outcome_col is None:
+        logger.warning("\n⚠️  No se encontró columna de outcome típica")
+        logger.warning(f"   Buscadas: {outcome_candidates}")
+        logger.warning(f"   Usando la primera columna numérica como outcome: {numeric_cols[0]}")
+        outcome_col = numeric_cols[0]
+
+    # Features = todas las numéricas excepto el outcome
+    feature_cols = [col for col in numeric_cols if col != outcome_col]
+
+    if not feature_cols:
+        logger.error("❌ No hay features numéricas para correlacionar")
+        return None, None
+
+    logger.info(f"\n📈 Features (variables X): {len(feature_cols)}")
+    logger.info(f"   {feature_cols}")
+    logger.info(f"\n🎯 Outcome (variable Y): {outcome_col}")
+
+    # Crear DataFrame de features
+    features_df = df[feature_cols + [outcome_col]].copy()
+
+    # Remover filas con NaN en outcome
+    original_count = len(features_df)
+    features_df = features_df.dropna(subset=[outcome_col])
+    removed = original_count - len(features_df)
+
+    if removed > 0:
+        logger.warning(f"⚠️  Removidas {removed} filas sin valor en {outcome_col}")
+
+    logger.info(f"\n🧮 Dataset final para correlación:")
+    logger.info(f"   Filas: {len(features_df)}")
+    logger.info(f"   Features: {len(feature_cols)}")
+
+    return features_df, outcome_col
 
 
 # ============================================================================
 # CÁLCULO DE CORRELACIONES
 # ============================================================================
 
-def compute_correlations(df: pd.DataFrame) -> List[Dict]:
+def compute_correlations(df: pd.DataFrame, outcome_col: str) -> List[Dict]:
     """
-    Calcula correlaciones entre cada KPI y el outcome.
+    Calcula correlaciones entre features y outcome.
 
     Args:
-        df: DataFrame con columnas de KPIs y OUTCOME_COL
+        df: DataFrame con features y outcome
+        outcome_col: Nombre de la columna outcome
 
     Returns:
-        List[Dict]: Lista de resultados con correlaciones por KPI
+        List[Dict]: Lista de resultados con correlaciones
     """
     logger.info("\n" + "=" * 80)
     logger.info("CALCULANDO CORRELACIONES")
     logger.info("=" * 80)
 
     if df.empty:
-        logger.error("❌ DataFrame vacío, no se pueden calcular correlaciones")
+        logger.error("❌ DataFrame vacío")
         return []
 
-    # Detectar columnas de KPIs (todas excepto user_id y outcome_col)
-    kpi_cols_present = [c for c in df.columns if c not in ['user_id', OUTCOME_COL]]
+    # Obtener lista de features (todas excepto outcome)
+    feature_cols = [col for col in df.columns if col != outcome_col]
 
-    logger.info(f"\n📊 Analizando {len(kpi_cols_present)} KPIs...")
-    logger.info(f"   KPIs: {kpi_cols_present}\n")
+    logger.info(f"\n📊 Analizando {len(feature_cols)} features vs {outcome_col}\n")
 
     results = []
 
-    for kpi_name in kpi_cols_present:
+    for feature_name in feature_cols:
         logger.info(f"{'─' * 80}")
-        logger.info(f"KPI: {kpi_name}")
+        logger.info(f"Feature: {feature_name}")
 
         # Extraer datos válidos (sin NaN)
-        valid_data = df[[kpi_name, OUTCOME_COL]].dropna()
+        valid_data = df[[feature_name, outcome_col]].dropna()
         n_obs = len(valid_data)
 
         logger.info(f"   Observaciones válidas: {n_obs}")
 
         # Validar cantidad mínima
-        if n_obs < MIN_OBSERVATIONS_PER_KPI:
-            logger.warning(f"   ⚠️  INSUFICIENTE: Se necesitan al menos {MIN_OBSERVATIONS_PER_KPI}")
+        if n_obs < MIN_OBSERVATIONS:
+            logger.warning(f"   ⚠️  INSUFICIENTE: Se necesitan al menos {MIN_OBSERVATIONS}")
             results.append({
-                'kpi_name': kpi_name,
+                'feature_name': feature_name,
+                'outcome_name': outcome_col,
                 'pearson_corr': None,
                 'pearson_pvalue': None,
                 'spearman_corr': None,
                 'spearman_pvalue': None,
                 'n_observations': n_obs,
                 'sufficient_data': False,
-                'warning': f'Insuficientes datos (min: {MIN_OBSERVATIONS_PER_KPI})'
+                'warning': f'Insuficientes datos (min: {MIN_OBSERVATIONS})'
             })
             continue
 
         # Extraer arrays
-        x = valid_data[kpi_name].values
-        y = valid_data[OUTCOME_COL].values
+        x = valid_data[feature_name].values
+        y = valid_data[outcome_col].values
 
         # Validar varianza
         if x.std() == 0 or y.std() == 0:
             logger.warning(f"   ⚠️  Varianza cero")
             results.append({
-                'kpi_name': kpi_name,
+                'feature_name': feature_name,
+                'outcome_name': outcome_col,
                 'pearson_corr': None,
                 'pearson_pvalue': None,
                 'spearman_corr': None,
@@ -387,7 +433,8 @@ def compute_correlations(df: pd.DataFrame) -> List[Dict]:
 
         # Guardar resultado
         results.append({
-            'kpi_name': kpi_name,
+            'feature_name': feature_name,
+            'outcome_name': outcome_col,
             'pearson_corr': float(pearson_corr) if pearson_corr is not None else None,
             'pearson_pvalue': float(pearson_pval) if pearson_pval is not None else None,
             'spearman_corr': float(spearman_corr) if spearman_corr is not None else None,
@@ -405,15 +452,15 @@ def compute_correlations(df: pd.DataFrame) -> List[Dict]:
     valid_results = [r for r in results if r['sufficient_data'] and r['pearson_corr'] is not None]
     insufficient_results = [r for r in results if not r['sufficient_data']]
 
-    logger.info(f"\n✅ KPIs con datos suficientes: {len(valid_results)}")
-    logger.info(f"⚠️  KPIs con datos insuficientes: {len(insufficient_results)}")
+    logger.info(f"\n✅ Features con datos suficientes: {len(valid_results)}")
+    logger.info(f"⚠️  Features con datos insuficientes: {len(insufficient_results)}")
 
     if valid_results:
         # Top 5 positivas
         top_positive = sorted(valid_results, key=lambda x: x['pearson_corr'], reverse=True)[:5]
         logger.info("\n🔝 TOP 5 CORRELACIONES POSITIVAS:")
         for i, r in enumerate(top_positive, 1):
-            logger.info(f"   {i}. {r['kpi_name']}: r = {r['pearson_corr']:+.4f} (n = {r['n_observations']})")
+            logger.info(f"   {i}. {r['feature_name']}: r = {r['pearson_corr']:+.4f} (n = {r['n_observations']})")
 
         # Top 5 negativas
         top_negative = sorted(valid_results, key=lambda x: x['pearson_corr'])[:5]
@@ -421,7 +468,7 @@ def compute_correlations(df: pd.DataFrame) -> List[Dict]:
             logger.info("\n🔻 TOP 5 CORRELACIONES NEGATIVAS:")
             for i, r in enumerate(top_negative, 1):
                 if r['pearson_corr'] < 0:
-                    logger.info(f"   {i}. {r['kpi_name']}: r = {r['pearson_corr']:+.4f} (n = {r['n_observations']})")
+                    logger.info(f"   {i}. {r['feature_name']}: r = {r['pearson_corr']:+.4f} (n = {r['n_observations']})")
 
     return results
 
@@ -430,12 +477,13 @@ def compute_correlations(df: pd.DataFrame) -> List[Dict]:
 # EXPORTACIÓN
 # ============================================================================
 
-def export_results(results: List[Dict]) -> None:
+def export_results(results: List[Dict], outcome_col: str) -> None:
     """
     Exporta resultados a CSV y JSON.
 
     Args:
         results: Lista de resultados de correlaciones
+        outcome_col: Nombre de la columna outcome usada
     """
     logger.info("\n" + "=" * 80)
     logger.info("EXPORTANDO RESULTADOS")
@@ -448,8 +496,8 @@ def export_results(results: List[Dict]) -> None:
     # Crear directorio de salida
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    csv_path = os.path.join(OUTPUT_DIR, 'kpi_correlations_mvp.csv')
-    json_path = os.path.join(OUTPUT_DIR, 'kpi_correlations_mvp.json')
+    csv_path = os.path.join(OUTPUT_DIR, 'correlations_mvp.csv')
+    json_path = os.path.join(OUTPUT_DIR, 'correlations_mvp.json')
 
     # Exportar CSV
     try:
@@ -464,11 +512,11 @@ def export_results(results: List[Dict]) -> None:
         output_data = {
             'metadata': {
                 'analysis_date': datetime.now().isoformat(),
-                'total_kpis': len(results),
-                'kpis_with_sufficient_data': len([r for r in results if r['sufficient_data']]),
-                'min_observations_threshold': MIN_OBSERVATIONS_PER_KPI,
-                'tables_used': [TABLE_KPIS, TABLE_OUTCOMES],
-                'outcome_column': OUTCOME_COL
+                'total_features': len(results),
+                'features_with_sufficient_data': len([r for r in results if r['sufficient_data']]),
+                'min_observations_threshold': MIN_OBSERVATIONS,
+                'tables_used': [TABLE_REFERENCES, TABLE_REFERENCE_REQUESTS, TABLE_USERS],
+                'outcome_column': outcome_col
             },
             'results': results
         }
@@ -487,13 +535,15 @@ def export_results(results: List[Dict]) -> None:
 
 def main():
     """
-    Pipeline completo de análisis de correlaciones (MVP simplificado).
+    Pipeline completo de análisis de correlaciones (MVP ultra simple).
     """
     logger.info("\n" + "=" * 80)
-    logger.info("HRKEY - PROOF OF CORRELATION MVP (SIMPLIFICADO)")
+    logger.info("HRKEY - PROOF OF CORRELATION MVP (ULTRA SIMPLE)")
     logger.info("=" * 80)
     logger.info(f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    logger.info(f"Tablas: {TABLE_KPIS}, {TABLE_OUTCOMES}")
+    logger.info(f"Tablas: {TABLE_REFERENCES} (principal)")
+    logger.info(f"        {TABLE_REFERENCE_REQUESTS} (opcional)")
+    logger.info(f"        {TABLE_USERS} (opcional)")
     logger.info(f"Output: {OUTPUT_DIR}")
 
     try:
@@ -502,38 +552,47 @@ def main():
 
         if df.empty:
             logger.error("\n❌ ANÁLISIS CANCELADO: No hay datos válidos")
-            logger.error("   Verifica que:")
-            logger.error(f"   1. La tabla {TABLE_KPIS} tenga datos")
-            logger.error(f"   2. La tabla {TABLE_OUTCOMES} tenga datos")
-            logger.error("   3. Ambas tablas tengan la columna 'user_id'")
-            logger.error(f"   4. La tabla {TABLE_OUTCOMES} tenga la columna '{OUTCOME_COL}'")
+            logger.error(f"   Verifica que la tabla {TABLE_REFERENCES} tenga datos")
             return 1
 
-        # Paso 2: Calcular correlaciones
-        results = compute_correlations(df)
+        # Paso 2: Extraer variables para correlación
+        features_df, outcome_col = extract_correlation_variables(df)
+
+        if features_df is None or features_df.empty:
+            logger.error("\n❌ ANÁLISIS CANCELADO: No se pudieron extraer variables numéricas")
+            return 1
+
+        # Paso 3: Calcular correlaciones
+        results = compute_correlations(features_df, outcome_col)
 
         if not results:
-            logger.error("\n❌ ANÁLISIS CANCELADO: No se pudieron calcular correlaciones")
-            return 1
+            logger.warning("\n⚠️  No se pudieron calcular correlaciones (puede ser normal si hay pocos datos)")
+            logger.warning("   Continúa agregando datos y ejecuta nuevamente")
+            return 0
 
-        # Paso 3: Exportar resultados
-        export_results(results)
+        # Paso 4: Exportar resultados
+        export_results(results, outcome_col)
 
         # Resumen final
         logger.info("\n" + "=" * 80)
         logger.info("✅ ANÁLISIS COMPLETADO EXITOSAMENTE")
         logger.info("=" * 80)
         logger.info(f"\n📊 RESULTADOS:")
-        logger.info(f"   Total KPIs analizados: {len(results)}")
-        logger.info(f"   KPIs con datos suficientes: {len([r for r in results if r['sufficient_data']])}")
+        logger.info(f"   Total features analizadas: {len(results)}")
+        logger.info(f"   Features con datos suficientes: {len([r for r in results if r['sufficient_data']])}")
+        logger.info(f"   Outcome usado: {outcome_col}")
         logger.info(f"\n📁 ARCHIVOS GENERADOS:")
-        logger.info(f"   CSV: ml/output/kpi_correlations_mvp.csv")
-        logger.info(f"   JSON: ml/output/kpi_correlations_mvp.json")
+        logger.info(f"   CSV: ml/output/correlations_mvp.csv")
+        logger.info(f"   JSON: ml/output/correlations_mvp.json")
 
         return 0
 
     except Exception as e:
         logger.error(f"\n❌ ERROR CRÍTICO: {e}", exc_info=True)
+        logger.error("\n💡 SUGERENCIAS:")
+        logger.error("   1. Verifica que las variables de entorno estén configuradas (.env)")
+        logger.error("   2. Verifica que la tabla 'references' exista y tenga datos")
+        logger.error("   3. Verifica la conexión a Supabase")
         return 1
 
 
