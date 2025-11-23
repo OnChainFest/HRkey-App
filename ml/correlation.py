@@ -4,11 +4,11 @@ HRKey - Proof of Correlation MVP (Simplified)
 ==============================================
 
 Script simplificado para el MVP del Proof of Correlation.
-Solo usa dos tablas: user_kpis y user_outcomes.
+Solo usa dos tablas: user_kpis y job_outcomes.
 NO depende de la tabla users.
 
 Flujo:
-1. Cargar datos de user_kpis y user_outcomes
+1. Cargar datos de user_kpis y job_outcomes
 2. Hacer merge por user_id
 3. Calcular correlaciones entre KPIs y outcomes
 4. Exportar resultados
@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 
 # Tablas de Supabase
 TABLE_KPIS = "user_kpis"
-TABLE_OUTCOMES = "user_outcomes"
+TABLE_OUTCOMES = "job_outcomes"
 
 # Columnas de KPIs (ajusta según tu schema real)
 KPI_COLS = [
@@ -64,8 +64,8 @@ KPI_COLS = [
     "customer_satisfaction"
 ]
 
-# Columna de outcome
-OUTCOME_COL = "performance_outcome"
+# Columna de outcome (del schema job_outcomes)
+OUTCOME_COL = "performance_score"
 
 # Configuración de análisis
 MIN_OBSERVATIONS_PER_KPI = 10
@@ -113,7 +113,7 @@ def fetch_table(table_name: str) -> pd.DataFrame:
     Carga una tabla completa desde Supabase.
 
     Args:
-        table_name: Nombre de la tabla (user_kpis o user_outcomes)
+        table_name: Nombre de la tabla (user_kpis o job_outcomes)
 
     Returns:
         pd.DataFrame: DataFrame con todos los datos de la tabla
@@ -178,7 +178,7 @@ def build_dataset() -> pd.DataFrame:
     """
     Crea un DataFrame donde cada fila es un usuario con:
       - KPIs (user_kpis)
-      - outcome de desempeño (user_outcomes)
+      - outcome de desempeño (job_outcomes)
 
     Returns:
         pd.DataFrame: Dataset limpio con user_id, KPIs y outcome
@@ -188,42 +188,72 @@ def build_dataset() -> pd.DataFrame:
     logger.info("=" * 80)
 
     # Cargar tablas
-    kpis = fetch_table(TABLE_KPIS)
+    kpis_raw = fetch_table(TABLE_KPIS)
     outcomes = fetch_table(TABLE_OUTCOMES)
 
-    if kpis.empty or outcomes.empty:
+    if kpis_raw.empty or outcomes.empty:
         raise RuntimeError(
-            "Alguna de las tablas user_kpis / user_outcomes está vacía. "
+            "Alguna de las tablas user_kpis / job_outcomes está vacía. "
             f"Verifica que ya tengas datos en {TABLE_KPIS} y {TABLE_OUTCOMES}."
         )
 
-    # Ambas tablas deben tener 'user_id'
-    for df, name in [(kpis, TABLE_KPIS), (outcomes, TABLE_OUTCOMES)]:
-        if "user_id" not in df.columns:
-            raise RuntimeError(f"Falta la columna 'user_id' en {name}.")
+    # Verificar que user_kpis tenga las columnas necesarias
+    required_kpi_cols = ['user_id', 'kpi_name']
+    for col in required_kpi_cols:
+        if col not in kpis_raw.columns:
+            raise RuntimeError(f"Falta la columna '{col}' en {TABLE_KPIS}.")
+
+    if 'user_id' not in outcomes.columns:
+        raise RuntimeError(f"Falta la columna 'user_id' en {TABLE_OUTCOMES}.")
+
+    # Transformar user_kpis de formato largo a formato ancho
+    # La tabla user_kpis tiene: user_id, kpi_name, kpi_value, normalized_value, etc.
+    # Necesitamos pivotar para que cada KPI sea una columna
+    logger.info(f"\n🔄 Pivotando {TABLE_KPIS} de formato largo a formato ancho...")
+
+    # Decidir qué valor usar: normalized_value si existe, sino kpi_value
+    value_col = 'normalized_value' if 'normalized_value' in kpis_raw.columns else 'kpi_value'
+    if value_col not in kpis_raw.columns:
+        raise RuntimeError(
+            f"La tabla {TABLE_KPIS} debe tener al menos 'kpi_value' o 'normalized_value'. "
+            f"Columnas encontradas: {list(kpis_raw.columns)}"
+        )
+
+    logger.info(f"   Usando columna '{value_col}' para valores de KPIs")
+
+    # Pivotar: crear una columna por cada kpi_name
+    kpis = kpis_raw.pivot_table(
+        index='user_id',
+        columns='kpi_name',
+        values=value_col,
+        aggfunc='mean'  # Si hay múltiples valores, promediar
+    ).reset_index()
+
+    logger.info(f"   KPIs únicos encontrados: {list(kpis.columns[1:])}")
+    logger.info(f"   Total usuarios con KPIs: {len(kpis)}")
 
     # Merge básico solo entre KPIs y outcomes
     logger.info(f"\n🔗 Haciendo merge de {TABLE_KPIS} y {TABLE_OUTCOMES} por user_id...")
     df = kpis.merge(outcomes, on="user_id", suffixes=("_kpi", "_outcome"))
     logger.info(f"   Filas después del merge: {len(df)}")
 
-    # Filtrar solo columnas relevantes
-    cols_to_keep = ["user_id"]
-
-    # Agregar columnas de KPIs que existan
-    for kpi in KPI_COLS:
-        if kpi in df.columns:
-            cols_to_keep.append(kpi)
-        else:
-            logger.warning(f"   ⚠️  KPI '{kpi}' no encontrado en el dataset")
-
     # Verificar que exista la columna de outcome
     if OUTCOME_COL not in df.columns:
         raise RuntimeError(
             f"No se encontró la columna de outcome '{OUTCOME_COL}' en la tabla {TABLE_OUTCOMES}."
         )
-    cols_to_keep.append(OUTCOME_COL)
 
+    # Identificar columnas de KPIs (todas excepto user_id, outcome, y columnas del merge)
+    # Después del pivot, las columnas de KPIs son las que vinieron de kpi_name
+    kpi_cols_in_df = [col for col in df.columns
+                      if col not in ['user_id', OUTCOME_COL]
+                      and not col.endswith('_kpi')
+                      and not col.endswith('_outcome')]
+
+    logger.info(f"\n📊 KPIs encontrados en el dataset: {kpi_cols_in_df}")
+
+    # Filtrar solo columnas relevantes (user_id + KPIs + outcome)
+    cols_to_keep = ["user_id"] + kpi_cols_in_df + [OUTCOME_COL]
     df = df[cols_to_keep].copy()
 
     # Limpieza básica
@@ -237,16 +267,15 @@ def build_dataset() -> pd.DataFrame:
         logger.info(f"   Removidas {removed_outcome} filas sin outcome")
 
     # Quitar filas donde TODOS los KPIs son NULL
-    kpi_cols_present = [c for c in KPI_COLS if c in df.columns]
     original_count = len(df)
-    df = df.dropna(subset=kpi_cols_present, how="all")
+    df = df.dropna(subset=kpi_cols_in_df, how="all")
     removed_kpis = original_count - len(df)
     if removed_kpis > 0:
         logger.info(f"   Removidas {removed_kpis} filas sin ningún KPI")
 
     logger.info(f"\n🧮 Dataset final: {df.shape[0]} filas x {df.shape[1]} columnas.")
     logger.info(f"   Columnas: {list(df.columns)}")
-    logger.info(f"   KPIs disponibles: {kpi_cols_present}")
+    logger.info(f"   KPIs disponibles: {kpi_cols_in_df}")
 
     return df
 
@@ -273,10 +302,13 @@ def compute_correlations(df: pd.DataFrame) -> List[Dict]:
         logger.error("❌ DataFrame vacío, no se pueden calcular correlaciones")
         return []
 
-    results = []
-    kpi_cols_present = [c for c in KPI_COLS if c in df.columns]
+    # Detectar columnas de KPIs (todas excepto user_id y outcome_col)
+    kpi_cols_present = [c for c in df.columns if c not in ['user_id', OUTCOME_COL]]
 
-    logger.info(f"\n📊 Analizando {len(kpi_cols_present)} KPIs...\n")
+    logger.info(f"\n📊 Analizando {len(kpi_cols_present)} KPIs...")
+    logger.info(f"   KPIs: {kpi_cols_present}\n")
+
+    results = []
 
     for kpi_name in kpi_cols_present:
         logger.info(f"{'─' * 80}")
