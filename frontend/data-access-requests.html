@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Access Requests | HRKey</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Rubik', sans-serif; }
+        body { background: #0a0a0a; color: #ffffff; padding: 20px 0; }
+        .header-gradient {
+            background: linear-gradient(135deg, #000000 0%, #00C4C7 100%);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,196,199,0.3);
+        }
+        .card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 1px solid rgba(0,196,199,0.2);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,196,199,0.1);
+            margin-bottom: 24px;
+        }
+        .card-header {
+            background: rgba(0,196,199,0.1);
+            border-bottom: 1px solid rgba(0,196,199,0.2);
+            color: #00C4C7;
+            font-weight: 600;
+        }
+        .request-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 1px solid rgba(0,196,199,0.2);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .request-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,196,199,0.3);
+        }
+        .company-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0,196,199,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #00C4C7;
+            border: 1px solid #00C4C7;
+        }
+        .verified-icon {
+            color: #10b981;
+        }
+        .price-badge {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #000000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 18px;
+        }
+        .btn-approve {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            padding: 12px 28px;
+            border-radius: 25px;
+            color: #ffffff;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16,185,129,0.4);
+        }
+        .btn-approve:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16,185,129,0.6);
+        }
+        .btn-reject {
+            background: transparent;
+            border: 2px solid #ef4444;
+            padding: 10px 24px;
+            border-radius: 25px;
+            color: #ef4444;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-reject:hover {
+            background: #ef4444;
+            color: #ffffff;
+        }
+        .data-type-badge {
+            background: rgba(0,196,199,0.2);
+            color: #00C4C7;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid #00C4C7;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888888;
+        }
+        .loading-spinner {
+            border: 3px solid rgba(0,196,199,0.2);
+            border-top: 3px solid #00C4C7;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 40px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .request-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0,196,199,0.2);
+        }
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .detail-label {
+            font-size: 12px;
+            color: #888888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .detail-value {
+            font-size: 14px;
+            color: #cccccc;
+        }
+        .earnings-split {
+            background: rgba(16,185,129,0.1);
+            border: 1px solid #10b981;
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        .earnings-split h6 {
+            color: #10b981;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        .split-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .split-item {
+            text-align: center;
+            padding: 8px;
+            background: rgba(16,185,129,0.05);
+            border-radius: 8px;
+        }
+        .split-amount {
+            font-size: 16px;
+            font-weight: 600;
+            color: #10b981;
+        }
+        .split-label {
+            font-size: 11px;
+            color: #888888;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/WebDapp/app.html" class="btn btn-link text-white mb-3">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+
+        <div class="header-gradient">
+            <h1><i class="bi bi-shield-check"></i> Data Access Requests</h1>
+            <p class="mb-0">Manage who can access your professional data</p>
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h3 class="text-warning" id="pending-count">-</h3>
+                        <p class="mb-0 text-muted small">Pending Requests</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h3 class="text-success" id="approved-count">-</h3>
+                        <p class="mb-0 text-muted small">Approved</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h3 class="text-danger" id="rejected-count">-</h3>
+                        <p class="mb-0 text-muted small">Rejected</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Requests -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="bi bi-clock-history"></i> Pending Requests</h4>
+            </div>
+            <div class="card-body">
+                <div id="requests-container">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="bi bi-list-check"></i> Recent Activity</h4>
+            </div>
+            <div class="card-body">
+                <div id="activity-container">
+                    <p class="text-muted text-center">Loading activity...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Ethers.js for wallet signing -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+    <!-- Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Supabase config
+        const SUPABASE_URL = 'https://wrervcydgdrlcndtjboy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXJ2Y3lkZ2RybGNuZHRqYm95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA2MzQ3MzIsImV4cCI6MjA0NjIxMDczMn0.MiQw5lMykMpTh-nNrF5m6OdqCkFcQcC-SBw9yHBT_8E';
+
+        // Get backend URL based on environment
+        function getBackendUrl() {
+            if (typeof API_BASE_URL !== 'undefined') {
+                return API_BASE_URL;
+            }
+            return window.location.hostname === 'localhost'
+                ? 'http://localhost:3001'
+                : 'https://hrkey.xyz';
+        }
+
+        const BACKEND_URL = getBackendUrl();
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Check authentication
+        async function checkAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                window.location.href = '/WebDapp/auth.html';
+                return null;
+            }
+            return session;
+        }
+
+        // Load pending requests
+        async function loadPendingRequests() {
+            try {
+                const session = await checkAuth();
+                if (!session) return;
+
+                const response = await fetch(`${BACKEND_URL}/api/data-access/pending`, {
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayRequests(data.requests);
+                    updateStats();
+                } else {
+                    console.error('Error loading requests:', data);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('requests-container').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Error loading requests. Please try again.
+                    </div>
+                `;
+            }
+        }
+
+        // Display requests
+        function displayRequests(requests) {
+            const container = document.getElementById('requests-container');
+
+            if (requests.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-inbox" style="font-size: 48px; color: #555;"></i>
+                        <h5 class="mt-3">No pending requests</h5>
+                        <p class="text-muted">Companies will need your approval to access your data</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = requests.map(request => `
+                <div class="request-card" id="request-${request.id}">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <span class="company-badge">
+                                <i class="bi bi-building"></i>
+                                ${request.company.name}
+                                ${request.company.verified ? '<i class="bi bi-patch-check-fill verified-icon"></i>' : ''}
+                            </span>
+                            <span class="data-type-badge ms-2">
+                                <i class="bi bi-file-text"></i> ${request.dataType}
+                            </span>
+                        </div>
+                        <span class="price-badge">
+                            $${request.priceAmount} ${request.currency}
+                        </span>
+                    </div>
+
+                    ${request.requestReason ? `
+                        <div class="mb-3">
+                            <strong>Reason:</strong>
+                            <p class="text-muted mb-0">${request.requestReason}</p>
+                        </div>
+                    ` : ''}
+
+                    <div class="earnings-split">
+                        <h6><i class="bi bi-cash-coin"></i> Revenue Split (if approved)</h6>
+                        <div class="split-grid">
+                            <div class="split-item">
+                                <div class="split-amount">$${(request.priceAmount * 0.40).toFixed(2)}</div>
+                                <div class="split-label">You earn</div>
+                            </div>
+                            <div class="split-item">
+                                <div class="split-amount">$${(request.priceAmount * 0.20).toFixed(2)}</div>
+                                <div class="split-label">Ref Creator</div>
+                            </div>
+                            <div class="split-item">
+                                <div class="split-amount">$${(request.priceAmount * 0.40).toFixed(2)}</div>
+                                <div class="split-label">Platform</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="request-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Requested</span>
+                            <span class="detail-value">${new Date(request.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Expires</span>
+                            <span class="detail-value">${new Date(request.expiresAt).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3 mt-4">
+                        <button class="btn btn-approve flex-grow-1" onclick="approveRequest('${request.id}', ${request.priceAmount})">
+                            <i class="bi bi-check-circle"></i> Approve & Sign
+                        </button>
+                        <button class="btn btn-reject" onclick="rejectRequest('${request.id}')">
+                            <i class="bi bi-x-circle"></i> Reject
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Approve request with wallet signature
+        async function approveRequest(requestId, amount) {
+            try {
+                const session = await checkAuth();
+                if (!session) return;
+
+                // Check if wallet is connected
+                if (!window.ethereum) {
+                    alert('Please install MetaMask or another Web3 wallet');
+                    return;
+                }
+
+                // Show loading
+                const requestCard = document.getElementById(`request-${requestId}`);
+                requestCard.style.opacity = '0.6';
+                requestCard.style.pointerEvents = 'none';
+
+                // Connect wallet
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                const signer = await provider.getSigner();
+                const walletAddress = await signer.getAddress();
+
+                // Create message to sign
+                const message = `I authorize HRKey to share my professional data as per request ${requestId}. I understand I will receive $${(amount * 0.40).toFixed(2)} USD. Timestamp: ${new Date().toISOString()}`;
+
+                // Request signature
+                const signature = await signer.signMessage(message);
+
+                // Send approval to backend
+                const response = await fetch(`${BACKEND_URL}/api/data-access/${requestId}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        signature,
+                        walletAddress,
+                        message
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(`✅ Approved! You earned $${data.revenueShare.userAmount}`);
+                    loadPendingRequests(); // Refresh
+                } else {
+                    alert('❌ Error: ' + (data.message || 'Failed to approve request'));
+                    requestCard.style.opacity = '1';
+                    requestCard.style.pointerEvents = 'auto';
+                }
+            } catch (error) {
+                console.error('Error approving request:', error);
+                alert('❌ Error: ' + error.message);
+                const requestCard = document.getElementById(`request-${requestId}`);
+                if (requestCard) {
+                    requestCard.style.opacity = '1';
+                    requestCard.style.pointerEvents = 'auto';
+                }
+            }
+        }
+
+        // Reject request
+        async function rejectRequest(requestId) {
+            if (!confirm('Are you sure you want to reject this request?')) {
+                return;
+            }
+
+            try {
+                const session = await checkAuth();
+                if (!session) return;
+
+                const response = await fetch(`${BACKEND_URL}/api/data-access/${requestId}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ Request rejected');
+                    loadPendingRequests(); // Refresh
+                } else {
+                    alert('❌ Error: ' + (data.message || 'Failed to reject request'));
+                }
+            } catch (error) {
+                console.error('Error rejecting request:', error);
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        // Update stats
+        async function updateStats() {
+            try {
+                const session = await checkAuth();
+                if (!session) return;
+
+                // TODO: Add endpoint to get stats by status
+                // For now, just show pending count
+                const response = await fetch(`${BACKEND_URL}/api/data-access/pending`, {
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('pending-count').textContent = data.total;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPendingRequests();
+        });
+    </script>
+</body>
+</html>

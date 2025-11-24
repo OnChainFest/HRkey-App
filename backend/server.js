@@ -401,8 +401,36 @@ class ReferenceService {
    ========================= */
 const app = express();
 
+// CORS configuration (dynamic based on environment)
+const FRONTEND_URL = process.env.FRONTEND_URL || APP_URL;
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      FRONTEND_URL,
+      'http://localhost:8000',
+      'http://localhost:3000',
+      'http://127.0.0.1:8000',
+      'https://hrkey.xyz',
+      'https://hrkey.vercel.app'
+    ];
+
+    if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️  CORS blocked origin: ${origin}`);
+      callback(null, true); // Allow anyway for now (can change to false in production)
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
 // Stripe webhook necesita body RAW; para el resto usamos JSON normal
-app.use(cors());
+app.use(cors(corsOptions));
 app.use((req, res, next) => {
   if (req.path === '/webhook') return next();
   return express.json()(req, res, next);
