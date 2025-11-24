@@ -1,0 +1,279 @@
+subject_wallet,observer_wallet,role_id,role_name,kpi_name,rating_value,outcome_value,context_notes,observed_at,source,verified
+0xSUBJECT001,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,3,117.73,Evaluated during Q1 2024 performance review,2025-10-29T15:12:14.608185Z,synthetic,True
+0xSUBJECT001,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,4,156.15,Based on peer feedback and metrics,2025-10-05T15:12:14.608215Z,synthetic,False
+0xSUBJECT001,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,4,159.95,Evaluated during Q2 2024 performance review,2025-10-16T15:12:14.608232Z,synthetic,False
+0xSUBJECT001,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,4,173.23,Evaluated during Q4 2024 performance review,2025-11-13T15:12:14.608247Z,synthetic,False
+0xSUBJECT001,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,4,118.87,Observation period: Jul-Sep 2024,2025-11-13T15:12:14.608263Z,synthetic,True
+0xSUBJECT001,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,3,133.13,Consistent performance across sprint cycles,2025-10-14T15:12:14.608276Z,synthetic,True
+0xSUBJECT002,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,2,106.5,Observation period: Jul-Sep 2024,2025-06-14T15:12:14.608291Z,synthetic,True
+0xSUBJECT002,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,api_response_time,3,90.42,Measured over 3 month period,2025-07-02T15:12:14.608309Z,synthetic,False
+0xSUBJECT002,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,2,60.65,Measured over 3 month period,2025-07-04T15:12:14.608320Z,synthetic,False
+0xSUBJECT002,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,4,159.66,Observation period: Apr-Jun 2024,2025-11-12T15:12:14.608329Z,synthetic,False
+0xSUBJECT002,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,3,113.16,Evaluated during Q3 2024 performance review,2025-07-28T15:12:14.608336Z,synthetic,False
+0xSUBJECT002,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,2,66.67,Observation period: Jul-Sep 2024,2025-07-31T15:12:14.608352Z,synthetic,True
+0xSUBJECT002,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,4,112.26,Based on peer feedback and metrics,2025-10-05T15:12:14.608359Z,synthetic,True
+0xSUBJECT002,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,3,97.19,Observation period: Apr-Jun 2024,2025-08-24T15:12:14.608367Z,synthetic,True
+0xSUBJECT002,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,4,192.09,Measured over 3 month period,2025-07-11T15:12:14.608374Z,synthetic,True
+0xSUBJECT002,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,api_response_time,5,177.77,Consistent performance across sprint cycles,2025-06-01T15:12:14.608381Z,synthetic,False
+0xSUBJECT002,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,2,77.98,Observation period: Apr-Jun 2024,2025-08-30T15:12:14.608388Z,synthetic,True
+0xSUBJECT003,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,documentation_quality,3,98.7,Measured over 2 month period,2025-09-01T15:12:14.608397Z,synthetic,True
+0xSUBJECT003,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,4,156.06,Measured over 2 month period,2025-06-30T15:12:14.608404Z,synthetic,True
+0xSUBJECT003,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,4,160.66,Evaluated during Q4 2024 performance review,2025-08-11T15:12:14.608411Z,synthetic,True
+0xSUBJECT003,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,4,135.95,Measured over 1 month period,2025-10-06T15:12:14.608418Z,synthetic,True
+0xSUBJECT003,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,api_response_time,3,111.57,Based on peer feedback and metrics,2025-08-03T15:12:14.608427Z,synthetic,True
+0xSUBJECT003,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,2,101.56,Measured over 1 month period,2025-10-01T15:12:14.608434Z,synthetic,True
+0xSUBJECT003,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,5,200,Observation period: Oct-Dec 2024,2025-09-12T15:12:14.608442Z,synthetic,False
+0xSUBJECT003,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,code_quality,4,184.3,Measured over 3 month period,2025-09-05T15:12:14.608449Z,synthetic,True
+0xSUBJECT003,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,5,182.82,Based on peer feedback and metrics,2025-11-07T15:12:14.608457Z,synthetic,True
+0xSUBJECT003,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,4,136.61,Consistent performance across sprint cycles,2025-06-28T15:12:14.608464Z,synthetic,True
+0xSUBJECT003,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,api_response_time,2,79.84,Measured over 1 month period,2025-07-30T15:12:14.608472Z,synthetic,True
+0xSUBJECT004,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,code_quality,2,105.49,Observation period: Jul-Sep 2024,2025-11-07T15:12:14.608480Z,synthetic,False
+0xSUBJECT004,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,4,160.46,Evaluated during Q1 2024 performance review,2025-06-10T15:12:14.608486Z,synthetic,True
+0xSUBJECT004,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,api_response_time,5,168.95,Observation period: Jul-Sep 2024,2025-10-16T15:12:14.608493Z,synthetic,False
+0xSUBJECT004,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,code_quality,4,168.41,Evaluated during Q1 2024 performance review,2025-11-11T15:12:14.608500Z,synthetic,True
+0xSUBJECT004,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,api_response_time,4,117.0,Evaluated during Q4 2024 performance review,2025-08-03T15:12:14.608507Z,synthetic,True
+0xSUBJECT004,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,4,143.47,Consistent performance across sprint cycles,2025-10-18T15:12:14.608525Z,synthetic,False
+0xSUBJECT004,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,3,122.08,Observation period: Oct-Dec 2024,2025-10-29T15:12:14.608533Z,synthetic,True
+0xSUBJECT004,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,code_quality,5,195.07,Observation period: Apr-Jun 2024,2025-08-31T15:12:14.608540Z,synthetic,True
+0xSUBJECT004,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,5,176.47,Observation period: Jul-Sep 2024,2025-07-30T15:12:14.608547Z,synthetic,True
+0xSUBJECT004,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,documentation_quality,3,82.16,Based on peer feedback and metrics,2025-11-07T15:12:14.608554Z,synthetic,False
+0xSUBJECT005,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,5,154.81,Evaluated during Q2 2024 performance review,2025-09-19T15:12:14.608562Z,synthetic,False
+0xSUBJECT005,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,api_response_time,3,113.38,Evaluated during Q4 2024 performance review,2025-10-26T15:12:14.608569Z,synthetic,False
+0xSUBJECT005,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,3,114.97,Evaluated during Q3 2024 performance review,2025-06-07T15:12:14.608576Z,synthetic,False
+0xSUBJECT005,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,4,132.7,Measured over 1 month period,2025-05-30T15:12:14.608584Z,synthetic,False
+0xSUBJECT005,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,4,105.31,Observation period: Jul-Sep 2024,2025-07-07T15:12:14.608591Z,synthetic,False
+0xSUBJECT005,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,3,108.09,Evaluated during Q4 2024 performance review,2025-10-01T15:12:14.608597Z,synthetic,False
+0xSUBJECT005,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,2,96.53,Observation period: Apr-Jun 2024,2025-09-25T15:12:14.608604Z,synthetic,True
+0xSUBJECT005,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,5,200,Based on peer feedback and metrics,2025-11-06T15:12:14.608611Z,synthetic,True
+0xSUBJECT005,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,3,81.24,Observation period: Jan-Mar 2024,2025-06-10T15:12:14.608618Z,synthetic,True
+0xSUBJECT005,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,2,62.88,Based on peer feedback and metrics,2025-10-24T15:12:14.608626Z,synthetic,False
+0xSUBJECT005,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,4,156.21,Observation period: Oct-Dec 2024,2025-10-15T15:12:14.608633Z,synthetic,False
+0xSUBJECT005,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,4,130.53,Consistent performance across sprint cycles,2025-11-05T15:12:14.608640Z,synthetic,False
+0xSUBJECT006,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,3,151.32,Measured over 2 month period,2025-05-28T15:12:14.608648Z,synthetic,False
+0xSUBJECT006,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,3,100.33,Measured over 3 month period,2025-08-09T15:12:14.608654Z,synthetic,False
+0xSUBJECT006,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,3,127.64,Consistent performance across sprint cycles,2025-08-09T15:12:14.608662Z,synthetic,False
+0xSUBJECT006,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,3,127.13,Based on peer feedback and metrics,2025-08-13T15:12:14.608669Z,synthetic,True
+0xSUBJECT006,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,2,91.5,Measured over 2 month period,2025-07-29T15:12:14.608676Z,synthetic,False
+0xSUBJECT006,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,3,154.21,Evaluated during Q3 2024 performance review,2025-08-19T15:12:14.608682Z,synthetic,False
+0xSUBJECT007,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,5,167.12,Observation period: Jan-Mar 2024,2025-06-11T15:12:14.608690Z,synthetic,True
+0xSUBJECT007,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,3,130.95,Consistent performance across sprint cycles,2025-10-26T15:12:14.608697Z,synthetic,False
+0xSUBJECT007,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,code_quality,4,163.64,Based on peer feedback and metrics,2025-09-06T15:12:14.608704Z,synthetic,False
+0xSUBJECT007,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,2,98.85,Consistent performance across sprint cycles,2025-06-17T15:12:14.608711Z,synthetic,True
+0xSUBJECT007,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,3,107.64,Measured over 1 month period,2025-08-22T15:12:14.608719Z,synthetic,False
+0xSUBJECT007,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,5,200,Based on peer feedback and metrics,2025-07-30T15:12:14.608726Z,synthetic,False
+0xSUBJECT007,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,3,120.75,Evaluated during Q3 2024 performance review,2025-06-26T15:12:14.608733Z,synthetic,False
+0xSUBJECT007,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,4,157.23,Measured over 1 month period,2025-06-06T15:12:14.608740Z,synthetic,False
+0xSUBJECT007,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,code_quality,3,155.78,Evaluated during Q3 2024 performance review,2025-08-29T15:12:14.608747Z,synthetic,True
+0xSUBJECT007,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,4,167.42,Evaluated during Q4 2024 performance review,2025-09-24T15:12:14.608755Z,synthetic,True
+0xSUBJECT007,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,api_response_time,3,91.38,Based on peer feedback and metrics,2025-06-08T15:12:14.608762Z,synthetic,False
+0xSUBJECT008,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,bug_resolution_time,3,108.47,Observation period: Apr-Jun 2024,2025-09-07T15:12:14.608770Z,synthetic,False
+0xSUBJECT008,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,deployment_frequency,2,109.3,Consistent performance across sprint cycles,2025-09-15T15:12:14.608777Z,synthetic,True
+0xSUBJECT008,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,3,105.18,Based on peer feedback and metrics,2025-10-23T15:12:14.608784Z,synthetic,False
+0xSUBJECT008,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,documentation_quality,4,120.49,Measured over 2 month period,2025-10-29T15:12:14.608791Z,synthetic,False
+0xSUBJECT008,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,5,145.8,Measured over 2 month period,2025-07-25T15:12:14.608801Z,synthetic,True
+0xSUBJECT008,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,bug_resolution_time,2,92.93,Based on peer feedback and metrics,2025-09-08T15:12:14.608808Z,synthetic,False
+0xSUBJECT008,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,bug_resolution_time,4,134.98,Based on peer feedback and metrics,2025-08-03T15:12:14.608815Z,synthetic,True
+0xSUBJECT008,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,bug_resolution_time,5,159.66,Observation period: Jan-Mar 2024,2025-10-01T15:12:14.608821Z,synthetic,True
+0xSUBJECT008,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,bug_resolution_time,2,82.67,Observation period: Jul-Sep 2024,2025-06-01T15:12:14.608828Z,synthetic,False
+0xSUBJECT008,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,documentation_quality,4,110.46,Based on peer feedback and metrics,2025-06-02T15:12:14.608835Z,synthetic,True
+0xSUBJECT008,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,test_coverage,4,160.82,Observation period: Jan-Mar 2024,2025-09-17T15:12:14.608842Z,synthetic,False
+0xSUBJECT009,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,3,108.97,Based on peer feedback and metrics,2025-09-08T15:12:14.608850Z,synthetic,False
+0xSUBJECT009,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,4,171.99,Observation period: Jan-Mar 2024,2025-09-03T15:12:14.608856Z,synthetic,True
+0xSUBJECT009,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,4,120.84,Observation period: Oct-Dec 2024,2025-10-11T15:12:14.608864Z,synthetic,False
+0xSUBJECT009,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,5,138.74,Evaluated during Q3 2024 performance review,2025-08-12T15:12:14.608874Z,synthetic,True
+0xSUBJECT009,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,api_response_time,4,117.99,Consistent performance across sprint cycles,2025-08-14T15:12:14.608881Z,synthetic,False
+0xSUBJECT009,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,api_response_time,5,152.97,Evaluated during Q1 2024 performance review,2025-07-16T15:12:14.608888Z,synthetic,True
+0xSUBJECT009,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,4,139.94,Based on peer feedback and metrics,2025-08-03T15:12:14.608895Z,synthetic,True
+0xSUBJECT009,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,api_response_time,5,156.78,Based on peer feedback and metrics,2025-11-17T15:12:14.608902Z,synthetic,True
+0xSUBJECT009,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,2,97.55,Observation period: Jan-Mar 2024,2025-10-26T15:12:14.608909Z,synthetic,False
+0xSUBJECT009,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,4,104.39,Based on peer feedback and metrics,2025-07-24T15:12:14.608917Z,synthetic,True
+0xSUBJECT009,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,5,192.98,Consistent performance across sprint cycles,2025-10-21T15:12:14.608924Z,synthetic,False
+0xSUBJECT010,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,documentation_quality,4,114.69,Based on peer feedback and metrics,2025-06-09T15:12:14.608932Z,synthetic,False
+0xSUBJECT010,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,api_response_time,4,127.64,Observation period: Apr-Jun 2024,2025-07-31T15:12:14.608939Z,synthetic,False
+0xSUBJECT010,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,code_quality,1,83.73,Observation period: Oct-Dec 2024,2025-05-28T15:12:14.608949Z,synthetic,False
+0xSUBJECT010,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,4,172.55,Measured over 3 month period,2025-10-30T15:12:14.608956Z,synthetic,True
+0xSUBJECT010,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,documentation_quality,3,92.09,Consistent performance across sprint cycles,2025-10-16T15:12:14.608964Z,synthetic,False
+0xSUBJECT010,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,documentation_quality,5,154.8,Measured over 3 month period,2025-07-11T15:12:14.608971Z,synthetic,True
+0xSUBJECT010,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,3,116.09,Evaluated during Q2 2024 performance review,2025-09-12T15:12:14.608978Z,synthetic,True
+0xSUBJECT010,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,4,172.64,Consistent performance across sprint cycles,2025-11-13T15:12:14.608987Z,synthetic,False
+0xSUBJECT011,0xOBSERVER04,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,code_quality,4,197.97,Measured over 3 month period,2025-10-12T15:12:14.608995Z,synthetic,True
+0xSUBJECT011,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,test_coverage,3,126.01,Consistent performance across sprint cycles,2025-07-30T15:12:14.609002Z,synthetic,True
+0xSUBJECT011,0xOBSERVER04,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,deployment_frequency,5,200,Consistent performance across sprint cycles,2025-09-09T15:12:14.609009Z,synthetic,True
+0xSUBJECT011,0xOBSERVER04,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,test_coverage,2,90.17,Measured over 1 month period,2025-08-25T15:12:14.609016Z,synthetic,False
+0xSUBJECT011,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,deployment_frequency,5,200,Observation period: Jul-Sep 2024,2025-09-12T15:12:14.609026Z,synthetic,False
+0xSUBJECT011,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,documentation_quality,4,125.55,Evaluated during Q1 2024 performance review,2025-06-12T15:12:14.609033Z,synthetic,False
+0xSUBJECT011,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,documentation_quality,2,63.82,Based on peer feedback and metrics,2025-08-10T15:12:14.609040Z,synthetic,False
+0xSUBJECT012,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,api_response_time,3,108.64,Measured over 1 month period,2025-07-24T15:12:14.609048Z,synthetic,True
+0xSUBJECT012,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,5,200,Evaluated during Q3 2024 performance review,2025-08-15T15:12:14.609055Z,synthetic,False
+0xSUBJECT012,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,3,115.7,Consistent performance across sprint cycles,2025-06-05T15:12:14.609062Z,synthetic,True
+0xSUBJECT012,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,3,91.16,Evaluated during Q3 2024 performance review,2025-07-04T15:12:14.609069Z,synthetic,False
+0xSUBJECT012,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,4,99.12,Evaluated during Q1 2024 performance review,2025-11-13T15:12:14.609076Z,synthetic,True
+0xSUBJECT012,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,3,137.47,Evaluated during Q4 2024 performance review,2025-05-30T15:12:14.609084Z,synthetic,False
+0xSUBJECT012,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,5,163.44,Measured over 2 month period,2025-06-01T15:12:14.609091Z,synthetic,True
+0xSUBJECT012,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,api_response_time,5,151.23,Consistent performance across sprint cycles,2025-06-12T15:12:14.609100Z,synthetic,True
+0xSUBJECT012,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,2,93.19,Observation period: Jan-Mar 2024,2025-06-14T15:12:14.609107Z,synthetic,True
+0xSUBJECT012,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,2,91.76,Observation period: Apr-Jun 2024,2025-10-02T15:12:14.609113Z,synthetic,True
+0xSUBJECT013,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,code_quality,4,198.3,Consistent performance across sprint cycles,2025-10-27T15:12:14.609130Z,synthetic,True
+0xSUBJECT013,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,bug_resolution_time,1,55.78,Evaluated during Q4 2024 performance review,2025-10-23T15:12:14.609137Z,synthetic,False
+0xSUBJECT013,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,test_coverage,4,135.94,Based on peer feedback and metrics,2025-07-19T15:12:14.609144Z,synthetic,False
+0xSUBJECT013,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,test_coverage,2,92.91,Measured over 2 month period,2025-08-14T15:12:14.609151Z,synthetic,True
+0xSUBJECT013,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,deployment_frequency,4,146.11,Based on peer feedback and metrics,2025-09-15T15:12:14.609157Z,synthetic,False
+0xSUBJECT013,0xOBSERVER04,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,test_coverage,2,99.16,Observation period: Oct-Dec 2024,2025-06-10T15:12:14.609164Z,synthetic,False
+0xSUBJECT013,0xOBSERVER04,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,3,105.82,Consistent performance across sprint cycles,2025-09-05T15:12:14.609171Z,synthetic,False
+0xSUBJECT013,0xOBSERVER04,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,code_quality,2,121.5,Consistent performance across sprint cycles,2025-11-01T15:12:14.609180Z,synthetic,True
+0xSUBJECT013,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,bug_resolution_time,4,142.59,Measured over 2 month period,2025-09-01T15:12:14.609187Z,synthetic,True
+0xSUBJECT013,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,3,101.31,Evaluated during Q2 2024 performance review,2025-10-01T15:12:14.609194Z,synthetic,False
+0xSUBJECT013,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,bug_resolution_time,2,79.35,Consistent performance across sprint cycles,2025-09-28T15:12:14.609201Z,synthetic,True
+0xSUBJECT013,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,code_quality,4,171.57,Observation period: Jan-Mar 2024,2025-08-30T15:12:14.609208Z,synthetic,False
+0xSUBJECT014,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,documentation_quality,2,68.62,Observation period: Oct-Dec 2024,2025-08-20T15:12:14.609216Z,synthetic,False
+0xSUBJECT014,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,api_response_time,4,128.56,Based on peer feedback and metrics,2025-11-03T15:12:14.609223Z,synthetic,True
+0xSUBJECT014,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,documentation_quality,3,92.28,Observation period: Oct-Dec 2024,2025-07-23T15:12:14.609230Z,synthetic,True
+0xSUBJECT014,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,api_response_time,2,80.59,Observation period: Jul-Sep 2024,2025-06-26T15:12:14.609237Z,synthetic,False
+0xSUBJECT014,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,1,56.43,Consistent performance across sprint cycles,2025-10-01T15:12:14.609244Z,synthetic,True
+0xSUBJECT014,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,4,151.66,Measured over 1 month period,2025-08-19T15:12:14.609254Z,synthetic,True
+0xSUBJECT014,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,3,105.68,Measured over 3 month period,2025-09-05T15:12:14.609261Z,synthetic,False
+0xSUBJECT015,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,2,115.7,Evaluated during Q3 2024 performance review,2025-07-30T15:12:14.609268Z,synthetic,True
+0xSUBJECT015,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,4,149.18,Observation period: Apr-Jun 2024,2025-09-06T15:12:14.609275Z,synthetic,True
+0xSUBJECT015,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,4,127.14,Evaluated during Q3 2024 performance review,2025-08-27T15:12:14.609282Z,synthetic,True
+0xSUBJECT015,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,api_response_time,2,68.53,Measured over 3 month period,2025-06-10T15:12:14.609291Z,synthetic,False
+0xSUBJECT015,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,4,156.05,Measured over 1 month period,2025-06-13T15:12:14.609298Z,synthetic,True
+0xSUBJECT015,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,4,167.69,Evaluated during Q1 2024 performance review,2025-06-26T15:12:14.609317Z,synthetic,False
+0xSUBJECT015,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,1,63.4,Based on peer feedback and metrics,2025-09-12T15:12:14.609329Z,synthetic,False
+0xSUBJECT015,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,3,132.25,Measured over 3 month period,2025-06-11T15:12:14.609340Z,synthetic,True
+0xSUBJECT015,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,2,114.21,Observation period: Apr-Jun 2024,2025-08-29T15:12:14.609350Z,synthetic,False
+0xSUBJECT016,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,bug_resolution_time,3,123.79,Based on peer feedback and metrics,2025-08-17T15:12:14.609357Z,synthetic,True
+0xSUBJECT016,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,documentation_quality,2,59.73,Based on peer feedback and metrics,2025-06-04T15:12:14.609364Z,synthetic,True
+0xSUBJECT016,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,4,112.45,Based on peer feedback and metrics,2025-08-27T15:12:14.609371Z,synthetic,True
+0xSUBJECT016,0xOBSERVER04,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,4,119.52,Consistent performance across sprint cycles,2025-10-23T15:12:14.609378Z,synthetic,True
+0xSUBJECT016,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,2,69.94,Observation period: Apr-Jun 2024,2025-07-23T15:12:14.609386Z,synthetic,True
+0xSUBJECT016,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,4,127.5,Observation period: Jul-Sep 2024,2025-07-13T15:12:14.609393Z,synthetic,False
+0xSUBJECT016,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,code_quality,2,116.89,Measured over 1 month period,2025-06-18T15:12:14.609402Z,synthetic,False
+0xSUBJECT016,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,documentation_quality,5,144.65,Measured over 2 month period,2025-08-02T15:12:14.609409Z,synthetic,True
+0xSUBJECT016,0xOBSERVER04,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,3,92.52,Based on peer feedback and metrics,2025-08-19T15:12:14.609417Z,synthetic,True
+0xSUBJECT016,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,4,140.14,Evaluated during Q1 2024 performance review,2025-07-06T15:12:14.609426Z,synthetic,True
+0xSUBJECT017,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,bug_resolution_time,4,122.85,Measured over 1 month period,2025-09-29T15:12:14.609434Z,synthetic,True
+0xSUBJECT017,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,test_coverage,3,138.95,Evaluated during Q2 2024 performance review,2025-08-21T15:12:14.609440Z,synthetic,False
+0xSUBJECT017,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,code_quality,1,87.77,Based on peer feedback and metrics,2025-07-27T15:12:14.609447Z,synthetic,True
+0xSUBJECT017,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,deployment_frequency,3,145.26,Observation period: Jan-Mar 2024,2025-07-07T15:12:14.609454Z,synthetic,False
+0xSUBJECT017,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,deployment_frequency,3,137.5,Measured over 1 month period,2025-06-18T15:12:14.609461Z,synthetic,True
+0xSUBJECT017,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,documentation_quality,4,104.99,Measured over 3 month period,2025-11-24T15:12:14.609468Z,synthetic,True
+0xSUBJECT017,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,documentation_quality,4,107.32,Evaluated during Q1 2024 performance review,2025-07-13T15:12:14.609475Z,synthetic,False
+0xSUBJECT017,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,4,120.6,Evaluated during Q3 2024 performance review,2025-11-07T15:12:14.609482Z,synthetic,False
+0xSUBJECT017,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,code_quality,3,136.07,Measured over 3 month period,2025-06-13T15:12:14.609489Z,synthetic,True
+0xSUBJECT018,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,documentation_quality,1,50,Based on peer feedback and metrics,2025-10-04T15:12:14.609499Z,synthetic,False
+0xSUBJECT018,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,3,118.36,Consistent performance across sprint cycles,2025-10-07T15:12:14.609506Z,synthetic,False
+0xSUBJECT018,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,3,128.04,Measured over 1 month period,2025-08-04T15:12:14.609513Z,synthetic,False
+0xSUBJECT018,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,api_response_time,4,134.58,Consistent performance across sprint cycles,2025-11-04T15:12:14.609528Z,synthetic,False
+0xSUBJECT018,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,3,123.91,Measured over 3 month period,2025-08-02T15:12:14.609535Z,synthetic,False
+0xSUBJECT018,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,4,173.02,Evaluated during Q4 2024 performance review,2025-06-20T15:12:14.609541Z,synthetic,True
+0xSUBJECT019,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,4,165.55,Measured over 3 month period,2025-10-15T15:12:14.609549Z,synthetic,True
+0xSUBJECT019,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,3,149.23,Observation period: Jan-Mar 2024,2025-08-24T15:12:14.609556Z,synthetic,False
+0xSUBJECT019,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,api_response_time,3,86.43,Consistent performance across sprint cycles,2025-10-20T15:12:14.609562Z,synthetic,True
+0xSUBJECT019,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,4,167.95,Measured over 2 month period,2025-08-17T15:12:14.609569Z,synthetic,True
+0xSUBJECT019,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,4,160.94,Measured over 1 month period,2025-10-04T15:12:14.609578Z,synthetic,True
+0xSUBJECT019,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,5,153.04,Based on peer feedback and metrics,2025-09-04T15:12:14.609585Z,synthetic,False
+0xSUBJECT019,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,api_response_time,4,142.15,Observation period: Jul-Sep 2024,2025-06-14T15:12:14.609592Z,synthetic,True
+0xSUBJECT019,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,3,142.74,Observation period: Oct-Dec 2024,2025-08-24T15:12:14.609599Z,synthetic,True
+0xSUBJECT019,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,3,140.59,Evaluated during Q4 2024 performance review,2025-07-25T15:12:14.609609Z,synthetic,True
+0xSUBJECT019,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,api_response_time,3,104.35,Measured over 1 month period,2025-08-28T15:12:14.609616Z,synthetic,True
+0xSUBJECT019,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,3,118.61,Consistent performance across sprint cycles,2025-09-28T15:12:14.609623Z,synthetic,True
+0xSUBJECT020,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,api_response_time,4,130.33,Based on peer feedback and metrics,2025-11-01T15:12:14.609633Z,synthetic,False
+0xSUBJECT020,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,4,120.19,Measured over 3 month period,2025-11-13T15:12:14.609640Z,synthetic,True
+0xSUBJECT020,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,4,144.86,Evaluated during Q4 2024 performance review,2025-09-23T15:12:14.609647Z,synthetic,True
+0xSUBJECT020,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,3,141.47,Consistent performance across sprint cycles,2025-08-29T15:12:14.609656Z,synthetic,False
+0xSUBJECT020,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,4,154.69,Evaluated during Q3 2024 performance review,2025-10-28T15:12:14.609663Z,synthetic,False
+0xSUBJECT020,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,2,80.89,Consistent performance across sprint cycles,2025-08-18T15:12:14.609669Z,synthetic,False
+0xSUBJECT020,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,3,143.63,Evaluated during Q3 2024 performance review,2025-07-20T15:12:14.609676Z,synthetic,False
+0xSUBJECT020,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,5,160.05,Measured over 2 month period,2025-08-26T15:12:14.609683Z,synthetic,False
+0xSUBJECT020,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,api_response_time,4,123.39,Evaluated during Q3 2024 performance review,2025-09-18T15:12:14.609690Z,synthetic,False
+0xSUBJECT020,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,3,123.63,Based on peer feedback and metrics,2025-08-18T15:12:14.609697Z,synthetic,True
+0xSUBJECT021,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,4,146.57,Based on peer feedback and metrics,2025-08-23T15:12:14.609705Z,synthetic,False
+0xSUBJECT021,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,1,53.47,Based on peer feedback and metrics,2025-08-31T15:12:14.609711Z,synthetic,True
+0xSUBJECT021,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,api_response_time,2,87.76,Based on peer feedback and metrics,2025-09-09T15:12:14.609718Z,synthetic,False
+0xSUBJECT021,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,3,127.31,Measured over 3 month period,2025-08-10T15:12:14.609727Z,synthetic,False
+0xSUBJECT021,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,documentation_quality,4,114.81,Observation period: Apr-Jun 2024,2025-10-12T15:12:14.609734Z,synthetic,True
+0xSUBJECT021,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,2,83.5,Observation period: Oct-Dec 2024,2025-08-09T15:12:14.609741Z,synthetic,False
+0xSUBJECT022,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,5,187.38,Consistent performance across sprint cycles,2025-11-09T15:12:14.609749Z,synthetic,False
+0xSUBJECT022,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,3,99.22,Consistent performance across sprint cycles,2025-07-11T15:12:14.609755Z,synthetic,False
+0xSUBJECT022,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,3,134.36,Measured over 3 month period,2025-09-09T15:12:14.609762Z,synthetic,False
+0xSUBJECT022,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,4,174.07,Based on peer feedback and metrics,2025-09-15T15:12:14.609769Z,synthetic,False
+0xSUBJECT022,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,5,200,Evaluated during Q1 2024 performance review,2025-09-11T15:12:14.609776Z,synthetic,False
+0xSUBJECT022,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,4,140.79,Evaluated during Q3 2024 performance review,2025-07-10T15:12:14.609783Z,synthetic,True
+0xSUBJECT022,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,4,183.69,Measured over 1 month period,2025-06-14T15:12:14.609790Z,synthetic,False
+0xSUBJECT022,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,2,73.52,Measured over 3 month period,2025-11-23T15:12:14.609799Z,synthetic,False
+0xSUBJECT022,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,4,104.85,Based on peer feedback and metrics,2025-09-12T15:12:14.609806Z,synthetic,True
+0xSUBJECT022,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,5,157.94,Observation period: Oct-Dec 2024,2025-10-10T15:12:14.609813Z,synthetic,False
+0xSUBJECT022,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,3,136.07,Based on peer feedback and metrics,2025-08-31T15:12:14.609820Z,synthetic,False
+0xSUBJECT022,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,3,156.25,Consistent performance across sprint cycles,2025-09-01T15:12:14.609827Z,synthetic,True
+0xSUBJECT023,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,api_response_time,4,135.73,Consistent performance across sprint cycles,2025-10-11T15:12:14.609834Z,synthetic,True
+0xSUBJECT023,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,2,83.42,Measured over 2 month period,2025-09-03T15:12:14.609841Z,synthetic,True
+0xSUBJECT023,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,5,181.06,Consistent performance across sprint cycles,2025-07-01T15:12:14.609848Z,synthetic,True
+0xSUBJECT023,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,3,118.52,Consistent performance across sprint cycles,2025-06-02T15:12:14.609855Z,synthetic,False
+0xSUBJECT023,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,3,97.91,Based on peer feedback and metrics,2025-10-16T15:12:14.609862Z,synthetic,False
+0xSUBJECT023,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,4,147.57,Consistent performance across sprint cycles,2025-06-25T15:12:14.609870Z,synthetic,True
+0xSUBJECT023,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,2,86.22,Consistent performance across sprint cycles,2025-07-18T15:12:14.609877Z,synthetic,False
+0xSUBJECT023,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,4,167.44,Observation period: Jan-Mar 2024,2025-07-17T15:12:14.609884Z,synthetic,False
+0xSUBJECT023,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,4,161.98,Evaluated during Q1 2024 performance review,2025-09-07T15:12:14.609891Z,synthetic,True
+0xSUBJECT023,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,1,57.2,Evaluated during Q1 2024 performance review,2025-11-08T15:12:14.609898Z,synthetic,False
+0xSUBJECT023,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,4,166.28,Measured over 2 month period,2025-06-12T15:12:14.609905Z,synthetic,False
+0xSUBJECT024,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,documentation_quality,4,106.89,Observation period: Apr-Jun 2024,2025-10-10T15:12:14.609912Z,synthetic,True
+0xSUBJECT024,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,deployment_frequency,3,140.68,Measured over 1 month period,2025-08-08T15:12:14.609921Z,synthetic,False
+0xSUBJECT024,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,code_quality,2,122.94,Evaluated during Q1 2024 performance review,2025-10-27T15:12:14.609928Z,synthetic,True
+0xSUBJECT024,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,code_quality,2,95.04,Evaluated during Q1 2024 performance review,2025-06-24T15:12:14.609935Z,synthetic,False
+0xSUBJECT024,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,test_coverage,4,165.75,Based on peer feedback and metrics,2025-11-10T15:12:14.609944Z,synthetic,False
+0xSUBJECT024,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,bug_resolution_time,3,122.42,Consistent performance across sprint cycles,2025-06-08T15:12:14.609951Z,synthetic,True
+0xSUBJECT025,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,4,109.55,Measured over 3 month period,2025-07-21T15:12:14.609959Z,synthetic,False
+0xSUBJECT025,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,documentation_quality,3,82.72,Consistent performance across sprint cycles,2025-10-08T15:12:14.609965Z,synthetic,True
+0xSUBJECT025,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,4,175.61,Consistent performance across sprint cycles,2025-07-05T15:12:14.609972Z,synthetic,True
+0xSUBJECT025,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,api_response_time,5,173.9,Measured over 2 month period,2025-11-01T15:12:14.609979Z,synthetic,True
+0xSUBJECT025,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,4,172.41,Consistent performance across sprint cycles,2025-06-06T15:12:14.609986Z,synthetic,False
+0xSUBJECT025,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,5,200,Based on peer feedback and metrics,2025-10-25T15:12:14.609993Z,synthetic,True
+0xSUBJECT025,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,4,166.73,Consistent performance across sprint cycles,2025-08-19T15:12:14.610000Z,synthetic,False
+0xSUBJECT025,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,3,119.99,Consistent performance across sprint cycles,2025-07-27T15:12:14.610006Z,synthetic,False
+0xSUBJECT025,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,4,143.62,Observation period: Jul-Sep 2024,2025-07-06T15:12:14.610015Z,synthetic,False
+0xSUBJECT025,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,4,168.12,Measured over 2 month period,2025-07-07T15:12:14.610022Z,synthetic,False
+0xSUBJECT026,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,api_response_time,2,77.57,Evaluated during Q1 2024 performance review,2025-10-08T15:12:14.610030Z,synthetic,True
+0xSUBJECT026,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,4,141.59,Measured over 3 month period,2025-10-17T15:12:14.610037Z,synthetic,False
+0xSUBJECT026,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,deployment_frequency,4,143.59,Based on peer feedback and metrics,2025-07-11T15:12:14.610044Z,synthetic,False
+0xSUBJECT026,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,1,65.64,Evaluated during Q4 2024 performance review,2025-06-05T15:12:14.610051Z,synthetic,True
+0xSUBJECT026,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,code_quality,4,168.48,Consistent performance across sprint cycles,2025-08-26T15:12:14.610058Z,synthetic,False
+0xSUBJECT026,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,5,176.67,Measured over 1 month period,2025-06-02T15:12:14.610064Z,synthetic,False
+0xSUBJECT026,0xOBSERVER04,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,test_coverage,2,79.74,Consistent performance across sprint cycles,2025-10-12T15:12:14.610071Z,synthetic,True
+0xSUBJECT026,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,3,123.24,Evaluated during Q4 2024 performance review,2025-05-31T15:12:14.610078Z,synthetic,False
+0xSUBJECT026,0xOBSERVER01,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,2,93.94,Measured over 3 month period,2025-11-20T15:12:14.610089Z,synthetic,True
+0xSUBJECT026,0xOBSERVER02,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,api_response_time,4,128.52,Observation period: Oct-Dec 2024,2025-08-17T15:12:14.610098Z,synthetic,True
+0xSUBJECT026,0xOBSERVER03,a1b2c3d4-1111-4444-8888-000000000001,Backend Developer,bug_resolution_time,2,83.4,Evaluated during Q3 2024 performance review,2025-11-05T15:12:14.610106Z,synthetic,False
+0xSUBJECT027,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,code_quality,4,175.2,Consistent performance across sprint cycles,2025-10-08T15:12:14.610114Z,synthetic,True
+0xSUBJECT027,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,documentation_quality,2,60.95,Consistent performance across sprint cycles,2025-06-15T15:12:14.610124Z,synthetic,True
+0xSUBJECT027,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,deployment_frequency,5,200,Observation period: Apr-Jun 2024,2025-09-16T15:12:14.610131Z,synthetic,False
+0xSUBJECT027,0xOBSERVER04,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,test_coverage,2,81.99,Evaluated during Q1 2024 performance review,2025-07-06T15:12:14.610138Z,synthetic,False
+0xSUBJECT027,0xOBSERVER04,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,test_coverage,4,164.39,Measured over 3 month period,2025-07-04T15:12:14.610145Z,synthetic,True
+0xSUBJECT027,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,code_quality,3,142.71,Measured over 2 month period,2025-11-08T15:12:14.610152Z,synthetic,False
+0xSUBJECT027,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,test_coverage,3,137.13,Evaluated during Q4 2024 performance review,2025-06-17T15:12:14.610159Z,synthetic,True
+0xSUBJECT027,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,5,149.57,Consistent performance across sprint cycles,2025-06-19T15:12:14.610168Z,synthetic,False
+0xSUBJECT027,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,documentation_quality,3,90.72,Observation period: Oct-Dec 2024,2025-05-31T15:12:14.610175Z,synthetic,False
+0xSUBJECT028,0xOBSERVER04,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,documentation_quality,5,151.84,Consistent performance across sprint cycles,2025-09-02T15:12:14.610183Z,synthetic,True
+0xSUBJECT028,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,bug_resolution_time,4,141.92,Observation period: Oct-Dec 2024,2025-06-03T15:12:14.610190Z,synthetic,False
+0xSUBJECT028,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,4,137.18,Consistent performance across sprint cycles,2025-08-12T15:12:14.610197Z,synthetic,True
+0xSUBJECT028,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,4,136.93,Measured over 3 month period,2025-11-06T15:12:14.610204Z,synthetic,False
+0xSUBJECT028,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,bug_resolution_time,4,134.1,Consistent performance across sprint cycles,2025-07-10T15:12:14.610211Z,synthetic,True
+0xSUBJECT028,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,documentation_quality,4,116.87,Evaluated during Q4 2024 performance review,2025-06-12T15:12:14.610220Z,synthetic,True
+0xSUBJECT028,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,deployment_frequency,3,141.78,Measured over 2 month period,2025-07-05T15:12:14.610227Z,synthetic,False
+0xSUBJECT028,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,documentation_quality,3,75.45,Evaluated during Q3 2024 performance review,2025-10-29T15:12:14.610234Z,synthetic,True
+0xSUBJECT029,0xOBSERVER04,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,4,126.8,Measured over 2 month period,2025-08-27T15:12:14.610246Z,synthetic,False
+0xSUBJECT029,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,deployment_frequency,1,76.55,Observation period: Jan-Mar 2024,2025-11-19T15:12:14.610252Z,synthetic,True
+0xSUBJECT029,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,bug_resolution_time,4,132.9,Observation period: Apr-Jun 2024,2025-08-07T15:12:14.610260Z,synthetic,True
+0xSUBJECT029,0xOBSERVER04,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,documentation_quality,3,94.27,Evaluated during Q4 2024 performance review,2025-10-05T15:12:14.610266Z,synthetic,True
+0xSUBJECT029,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,code_quality,4,198.86,Consistent performance across sprint cycles,2025-11-08T15:12:14.610273Z,synthetic,True
+0xSUBJECT029,0xOBSERVER01,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,test_coverage,3,134.16,Measured over 3 month period,2025-07-12T15:12:14.610280Z,synthetic,True
+0xSUBJECT029,0xOBSERVER03,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,api_response_time,4,130.44,Observation period: Jan-Mar 2024,2025-06-05T15:12:14.610287Z,synthetic,False
+0xSUBJECT029,0xOBSERVER02,a1b2c3d4-2222-4444-8888-000000000002,Frontend Developer,deployment_frequency,3,119.45,Based on peer feedback and metrics,2025-05-31T15:12:14.610294Z,synthetic,True
+0xSUBJECT030,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,test_coverage,3,122.36,Consistent performance across sprint cycles,2025-06-12T15:12:14.610302Z,synthetic,True
+0xSUBJECT030,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,4,188.52,Observation period: Oct-Dec 2024,2025-08-25T15:12:14.610309Z,synthetic,False
+0xSUBJECT030,0xOBSERVER04,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,3,109.73,Based on peer feedback and metrics,2025-08-03T15:12:14.610320Z,synthetic,True
+0xSUBJECT030,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,1,71.56,Measured over 3 month period,2025-09-12T15:12:14.610327Z,synthetic,True
+0xSUBJECT030,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,3,111.42,Observation period: Oct-Dec 2024,2025-08-23T15:12:14.610335Z,synthetic,False
+0xSUBJECT030,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,deployment_frequency,3,151.77,Measured over 1 month period,2025-08-01T15:12:14.610342Z,synthetic,True
+0xSUBJECT030,0xOBSERVER02,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,4,186.8,Observation period: Apr-Jun 2024,2025-08-27T15:12:14.610349Z,synthetic,True
+0xSUBJECT030,0xOBSERVER01,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,code_quality,4,183.76,Consistent performance across sprint cycles,2025-06-25T15:12:14.610356Z,synthetic,False
+0xSUBJECT030,0xOBSERVER03,a1b2c3d4-3333-4444-8888-000000000003,DevOps Engineer,bug_resolution_time,5,175.76,Evaluated during Q1 2024 performance review,2025-06-04T15:12:14.610363Z,synthetic,False

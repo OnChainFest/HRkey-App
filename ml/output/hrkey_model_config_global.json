@@ -1,0 +1,58 @@
+{
+  "model_type": "ridge",
+  "version": "1.0.0",
+  "trained_at": "2025-11-24T15:12:37.791837Z",
+  "role_scope": "global",
+  "intercept": 88.47531958565203,
+  "features": [
+    {
+      "name": "code_quality",
+      "coef": 4.83648050459342,
+      "abs_coef": 4.83648050459342
+    },
+    {
+      "name": "test_coverage",
+      "coef": 3.8828963662716514,
+      "abs_coef": 3.8828963662716514
+    },
+    {
+      "name": "deployment_frequency",
+      "coef": 3.3512624212293725,
+      "abs_coef": 3.3512624212293725
+    },
+    {
+      "name": "bug_resolution_time",
+      "coef": 2.7206426708212263,
+      "abs_coef": 2.7206426708212263
+    },
+    {
+      "name": "api_response_time",
+      "coef": -1.8140190525300486,
+      "abs_coef": 1.8140190525300486
+    },
+    {
+      "name": "documentation_quality",
+      "coef": 1.0319045501809414,
+      "abs_coef": 1.0319045501809414
+    }
+  ],
+  "target_stats": {
+    "min": 97.68857142857144,
+    "max": 151.26500000000001,
+    "mean": 128.51456626984125,
+    "std": 13.057787734089448
+  },
+  "train_info": {
+    "n_features": 6,
+    "n_samples": null,
+    "metrics": {
+      "mae": 12.436382851888773,
+      "rmse": 15.464497032548515,
+      "r2": -2.6716522857681446
+    }
+  },
+  "scoring_config": {
+    "min_observations_required": 3,
+    "default_imputation_value": 0.0
+  }
+}

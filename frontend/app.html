@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <meta name="author" content="HRKey"/>
+  <meta name="description" content="HRKey Dashboard - Manage Your Professional References"/>
+  <meta name="keywords" content="HRKey, Dashboard, References, Blockchain, Professional">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <!-- Build: 2025-11-19 Force cache refresh -->
+  <title>HRKey Dashboard</title>
+
+  <!-- Favicon (ajusta si no existe) -->
+  <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+  <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+
+  <!-- Fuentes y Bootstrap desde CDN (para evitar errores si archivos locales no existen) -->
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Archivos locales (descomenta si los tienes) -->
+  <!-- <link href="css/bootstrap.min.css" rel="stylesheet"> -->
+  <!-- <link href="css/flaticon.css" rel="stylesheet"> -->
+  <!-- <link href="css/style.css" rel="stylesheet"> -->
+  <!-- <link href="css/responsive.css" rel="stylesheet"> -->
+
+  <style>
+    /* Estilos embebidos (mueve a un archivo CSS externo si prefieres) */
+    body { background-color: #0a0a0a; font-family: 'Rubik', sans-serif; }
+    .dashboard-header { background: linear-gradient(135deg, #000000 0%, #00C4C7 100%); color: white; padding: 20px 0; box-shadow: 0 4px 20px rgba(0,196,199,0.3); }
+    .header-content { display: flex; justify-content: space-between; align-items: center; }
+    .logo-section { display: flex; align-items: center; }
+    .logo-section img { width: 120px; height: auto; margin-right: 0; }
+    .user-section { display: flex; align-items: center; gap: 20px; }
+    .wallet-info { background: rgba(0,196,199,0.2); padding: 8px 16px; border-radius: 25px; font-size: 14px; border: 1px solid #00C4C7; }
+    .user-name-display { background: rgba(0,196,199,0.15); padding: 8px 16px; border-radius: 25px; font-size: 14px; margin-right: 10px; }
+    .main-content { padding: 30px 0; background: #0a0a0a; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
+    .stat-card { background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(0,196,199,0.1); border-left: 4px solid #00C4C7; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,196,199,0.3); }
+    .stat-card h3 { font-size: 14px; color: #00C4C7; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-card .number { font-size: 36px; font-weight: 700; color: #ffffff; margin-bottom: 5px; }
+    .stat-card .label { font-size: 13px; color: #888888; }
+    .action-section { background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border-radius: 15px; padding: 30px; box-shadow: 0 4px 15px rgba(0,196,199,0.1); margin-bottom: 30px; text-align: center; border: 1px solid rgba(0,196,199,0.2); }
+    .action-section h2 { color: #ffffff; margin-bottom: 15px; font-size: 24px; }
+    .action-section p { color: #888888; margin-bottom: 25px; font-size: 15px; }
+    .btn-primary { background: linear-gradient(135deg, #00C4C7 0%, #00d2cc 100%); border: none; padding: 14px 35px; border-radius: 25px; color: #000000; font-weight: 600; transition: all 0.3s ease; font-size: 15px; cursor: pointer; text-decoration: none; display: inline-block; box-shadow: 0 4px 15px rgba(0,196,199,0.4); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,196,199,0.6); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-secondary { background: transparent; border: 2px solid #00C4C7; padding: 8px 16px; border-radius: 20px; color: #00C4C7; font-weight: 500; transition: all 0.3s ease; font-size: 13px; cursor: pointer; }
+    .btn-secondary:hover { background: #00C4C7; color: #000000; }
+    .references-table { background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border-radius: 15px; padding: 30px; box-shadow: 0 4px 15px rgba(0,196,199,0.1); border: 1px solid rgba(0,196,199,0.2); }
+    .references-table h2 { color: #ffffff; margin-bottom: 25px; font-size: 24px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: rgba(0,196,199,0.1); color: #00C4C7; font-weight: 600; padding: 12px; text-align: left; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 15px 12px; border-bottom: 1px solid rgba(0,196,199,0.1); color: #cccccc; }
+    .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+    .status-pending { background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid #fbbf24; }
+    .status-completed { background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid #10b981; }
+    .status-blockchain { background: rgba(0,196,199,0.2); color: #00C4C7; border: 1px solid #00C4C7; }
+    .btn-logout { background: rgba(0,196,199,0.2); border: 1px solid #00C4C7; padding: 8px 20px; border-radius: 20px; color: #00C4C7; font-size: 14px; cursor: pointer; transition: all 0.3s ease; }
+    .btn-logout:hover { background: #00C4C7; color: #000000; }
+    .empty-state { text-align: center; padding: 60px 20px; color: #888888; }
+    .empty-state svg { width: 100px; height: 100px; margin-bottom: 20px; opacity: 0.3; }
+    .loading-spinner { border: 3px solid rgba(0,196,199,0.2); border-top: 3px solid #00C4C7; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .alert { padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .alert-success { background: rgba(16,185,129,0.1); color: #10b981; border-left: 4px solid #10b981; }
+    .alert-error { background: rgba(239,68,68,0.1); color: #ef4444; border-left: 4px solid #ef4444; }
+    .alert-info { background: rgba(0,196,199,0.1); color: #00C4C7; border-left: 4px solid #00C4C7; }
+    .upgrade-banner { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #000000; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+    .plan-badge { display: inline-block; padding: 4px 12px; border-radius: 15px; font-size: 11px; font-weight: 600; margin-left: 10px; }
+    .plan-free { background: rgba(0,196,199,0.3); color: #00C4C7; border: 1px solid #00C4C7; }
+    .plan-pro { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #000000; }
+    .action-buttons { display: flex; gap: 8px; }
+    /* Identity Verification Badge */
+    .verified-badge { background: rgba(16,185,129,0.2); color: #10b981; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; border: 1px solid #10b981; margin-left: 10px; }
+    .btn-verify-identity { background: rgba(251,191,36,0.2); color: #fbbf24; padding: 6px 14px; border-radius: 15px; font-size: 12px; font-weight: 500; border: 1px solid #fbbf24; cursor: pointer; margin-left: 10px; transition: all 0.3s ease; text-decoration: none; display: inline-block; }
+    .btn-verify-identity:hover { background: #fbbf24; color: #000; }
+    .btn-company-dashboard { background: rgba(0,196,199,0.2); color: #00C4C7; padding: 6px 14px; border-radius: 15px; font-size: 12px; font-weight: 500; border: 1px solid #00C4C7; cursor: pointer; margin-left: 10px; transition: all 0.3s ease; text-decoration: none; display: inline-block; }
+    .btn-company-dashboard:hover { background: #00C4C7; color: #000; }
+
+    /* KPI Selector Section */
+    .kpi-selector-section { background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border-radius: 15px; padding: 30px; box-shadow: 0 4px 15px rgba(0,196,199,0.1); margin-bottom: 30px; border: 1px solid rgba(0,196,199,0.2); }
+    .kpi-selector-section h2 { color: #ffffff; margin-bottom: 10px; font-size: 24px; }
+    .kpi-selector-section .section-description { color: #888888; margin-bottom: 25px; font-size: 15px; }
+    #kpi-selector { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    .kpi-select-group { display: flex; flex-direction: column; gap: 8px; }
+    .kpi-select-group label { color: #00C4C7; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-select-group select { background: #0a0a0a; border: 2px solid rgba(0,196,199,0.3); border-radius: 10px; padding: 12px 15px; color: #ffffff; font-size: 15px; cursor: pointer; transition: all 0.3s ease; font-family: 'Rubik', sans-serif; }
+    .kpi-select-group select:hover:not(:disabled) { border-color: #00C4C7; box-shadow: 0 0 10px rgba(0,196,199,0.2); }
+    .kpi-select-group select:focus { outline: none; border-color: #00C4C7; box-shadow: 0 0 15px rgba(0,196,199,0.3); }
+    .kpi-select-group select:disabled { opacity: 0.5; cursor: not-allowed; border-color: rgba(0,196,199,0.1); }
+    .kpi-select-group select option { background: #1a1a1a; color: #ffffff; padding: 10px; }
+    .selected-kpis-display { margin-top: 20px; padding: 20px; background: rgba(0,196,199,0.05); border-radius: 10px; border: 1px solid rgba(0,196,199,0.2); display: none; }
+    .selected-kpis-display h3 { color: #00C4C7; font-size: 16px; margin-bottom: 12px; }
+    .selected-kpis-display .kpi-tags { display: flex; flex-wrap: wrap; gap: 10px; }
+    .selected-kpis-display .kpi-tag { background: rgba(0,196,199,0.2); color: #00C4C7; padding: 8px 16px; border-radius: 20px; font-size: 13px; border: 1px solid #00C4C7; }
+    @media (min-width: 768px) { #kpi-selector { grid-template-columns: repeat(3, 1fr); } }
+
+    /* HRKey Score Panel Styles */
+    .hrkey-card { background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border-radius: 15px; padding: 30px; box-shadow: 0 4px 15px rgba(0,196,199,0.1); margin-bottom: 30px; border: 1px solid rgba(0,196,199,0.2); }
+    .hrkey-score-header { margin-bottom: 25px; }
+    .hrkey-score-header h2 { color: #ffffff; margin-bottom: 8px; font-size: 26px; font-weight: 700; }
+    .hrkey-score-subtitle { color: #888888; font-size: 15px; margin: 0; line-height: 1.5; }
+
+    /* Input Section */
+    .hrkey-score-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .hrkey-score-input-group { display: flex; flex-direction: column; gap: 8px; }
+    .hrkey-score-input-group label { color: #00C4C7; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .hrkey-score-input-group input { background: #0a0a0a; border: 2px solid rgba(0,196,199,0.3); border-radius: 10px; padding: 12px 15px; color: #ffffff; font-size: 15px; transition: all 0.3s ease; font-family: 'Rubik', sans-serif; }
+    .hrkey-score-input-group input:hover:not(:disabled) { border-color: #00C4C7; box-shadow: 0 0 10px rgba(0,196,199,0.2); }
+    .hrkey-score-input-group input:focus { outline: none; border-color: #00C4C7; box-shadow: 0 0 15px rgba(0,196,199,0.3); }
+    .hrkey-score-input-group input::placeholder { color: #666666; }
+    .hrkey-score-role-display { background: rgba(0,196,199,0.1); border: 2px solid rgba(0,196,199,0.3); border-radius: 10px; padding: 12px 15px; color: #00C4C7; font-size: 15px; font-weight: 500; }
+
+    /* Actions & Status */
+    .hrkey-score-actions { text-align: center; margin-bottom: 20px; }
+    .hrkey-score-status { padding: 15px; border-radius: 10px; margin: 15px 0; font-size: 14px; text-align: center; }
+    .hrkey-score-status.info { background: rgba(0,196,199,0.1); color: #00C4C7; border: 1px solid rgba(0,196,199,0.3); }
+    .hrkey-score-status.loading { background: rgba(251,191,36,0.1); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+    .hrkey-score-status.error { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .hrkey-score-status.success { background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+
+    /* Results Layout */
+    .hrkey-score-result { margin-top: 30px; }
+    .hrkey-score-result.hidden { display: none; }
+    .hrkey-score-layout { display: flex; gap: 30px; flex-wrap: wrap; }
+    .hrkey-score-left { flex: 1; min-width: 300px; display: flex; flex-direction: column; align-items: center; gap: 25px; }
+    .hrkey-score-right { flex: 1.5; min-width: 350px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Gauge Styles */
+    .hrkey-gauge-container { width: 100%; max-width: 250px; }
+    .hrkey-gauge { position: relative; width: 100%; padding-bottom: 100%; }
+    .hrkey-gauge-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    .hrkey-gauge-bg, .hrkey-gauge-fg { stroke-dasharray: 314.159; transition: stroke-dashoffset 1.5s ease, stroke 0.5s ease; }
+    .hrkey-gauge-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+    .hrkey-gauge-score-value { font-size: 48px; font-weight: 700; color: #00C4C7; display: block; line-height: 1; text-shadow: 0 0 20px rgba(0,196,199,0.5); }
+    .hrkey-gauge-score-label { font-size: 14px; color: #888888; display: block; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Confidence Meter */
+    .hrkey-confidence-container { width: 100%; max-width: 250px; }
+    .hrkey-confidence-label-top { display: block; color: #00C4C7; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; font-weight: 600; text-align: center; }
+    .hrkey-confidence-bar-container { margin-bottom: 8px; }
+    .hrkey-confidence-bar-bg { background: rgba(255,255,255,0.1); height: 12px; border-radius: 10px; overflow: hidden; }
+    .hrkey-confidence-bar-fill { height: 100%; background: linear-gradient(90deg, #00C4C7 0%, #00d2cc 100%); border-radius: 10px; width: 0%; transition: width 1s ease; box-shadow: 0 0 10px rgba(0,196,199,0.6); }
+    .hrkey-confidence-text { text-align: center; color: #ffffff; font-size: 14px; font-weight: 600; }
+
+    /* Meta Card */
+    .hrkey-meta-card { background: rgba(0,196,199,0.05); border: 1px solid rgba(0,196,199,0.2); border-radius: 12px; padding: 20px; }
+    .hrkey-meta-title { color: #00C4C7; font-size: 16px; font-weight: 600; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .hrkey-meta-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+    .hrkey-meta-item { display: flex; flex-direction: column; gap: 5px; }
+    .hrkey-meta-label { color: #888888; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .hrkey-meta-value { color: #ffffff; font-size: 14px; font-weight: 500; word-break: break-all; }
+
+    /* KPI Breakdown */
+    .hrkey-kpi-breakdown { background: rgba(0,0,0,0.3); border: 1px solid rgba(0,196,199,0.2); border-radius: 12px; padding: 20px; }
+    .hrkey-breakdown-title { color: #00C4C7; font-size: 16px; font-weight: 600; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .hrkey-kpi-section { margin-bottom: 20px; }
+    .hrkey-kpi-section:last-child { margin-bottom: 0; }
+    .hrkey-kpi-section-title { color: #ffffff; font-size: 13px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .hrkey-kpi-section-title.positive { color: #10b981; }
+    .hrkey-kpi-section-title.negative { color: #ef4444; }
+    .hrkey-kpi-icon { font-size: 12px; }
+    .hrkey-kpi-list { list-style: none; padding: 0; margin: 0; }
+    .hrkey-kpi-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: rgba(0,0,0,0.3); border-radius: 8px; margin-bottom: 8px; transition: background 0.3s ease; }
+    .hrkey-kpi-item:hover { background: rgba(0,196,199,0.1); }
+    .hrkey-kpi-item:last-child { margin-bottom: 0; }
+    .hrkey-kpi-name { color: #cccccc; font-size: 13px; flex: 1; }
+    .hrkey-kpi-contribution { font-size: 14px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
+    .hrkey-kpi-item.positive .hrkey-kpi-contribution { color: #10b981; background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.3); }
+    .hrkey-kpi-item.negative .hrkey-kpi-contribution { color: #ef4444; background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.3); }
+    .hrkey-kpi-empty { color: #666666; font-size: 13px; font-style: italic; padding: 10px; text-align: center; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hrkey-score-inputs { grid-template-columns: 1fr; }
+      .hrkey-score-layout { flex-direction: column; }
+      .hrkey-meta-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="dashboard-header">
+    <div class="container">
+      <div class="header-content">
+        <div class="logo-section">
+          <a href="index.html">  <!-- Ruta relativa -->
+            <img src="images/LogoHRKEY-transparente.png" alt="HRKey Logo">
+          </a>
+        </div>
+        <div class="user-section">
+          <span class="user-name-display" id="userName">Loading...</span>
+          <!-- Identity Verification Badge/Button -->
+          <span id="identityBadge"></span>
+          <span class="wallet-info" id="walletDisplay">Not connected</span>
+          <!-- Company Dashboard Link (only for signers) -->
+          <a href="/WebDapp/company_dashboard.html" id="companyDashboardLink" style="display: none;" class="btn-company-dashboard">My Company</a>
+          <button class="btn-logout" onclick="dashboard.logout()">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="container">
+      <!-- Upgrade Banner -->
+      <div id="upgradeBanner" class="upgrade-banner" style="display: none;">
+        <div>
+          <strong>🎯 Upgrade to PRO</strong>
+          <p style="margin: 5px 0 0 0; font-size: 13px;">You've used your 1 FREE reference. Upgrade to PRO for unlimited references and blockchain verification!</p>
+        </div>
+        <button class="btn-primary" style="background: #000000; color: #fbbf24; border: 2px solid #fbbf24;" onclick="dashboard.upgradeToPro()">Upgrade Now</button>
+      </div>
+
+      <!-- Statistics Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total References</h3>
+          <div class="number" id="statTotal">0</div>
+          <div class="label">All time</div>
+        </div>
+        <div class="stat-card">
+          <h3>Pending</h3>
+          <div class="number" id="statPending">0</div>
+          <div class="label">Awaiting response</div>
+        </div>
+        <div class="stat-card">
+          <h3>Completed</h3>
+          <div class="number" id="statCompleted">0</div>
+          <div class="label">Ready to use</div>
+        </div>
+        <div class="stat-card">
+          <h3>On Blockchain</h3>
+          <div class="number" id="statBlockchain">0</div>
+          <div class="label">Verified</div>
+        </div>
+        <!-- NEW: Data Access Requests -->
+        <div class="stat-card" onclick="window.location='/WebDapp/data-access-requests.html'" style="cursor: pointer;">
+          <h3>Data Requests</h3>
+          <div class="number" id="statDataRequests">0</div>
+          <div class="label">Pending approval</div>
+        </div>
+        <!-- NEW: Total Earnings -->
+        <div class="stat-card" onclick="window.location='/WebDapp/earnings-dashboard.html'" style="cursor: pointer;">
+          <h3>Earnings</h3>
+          <div class="number" id="statEarnings">$0</div>
+          <div class="label">Available balance</div>
+        </div>
+      </div>
+
+      <!-- Alert Messages -->
+      <div id="alertContainer"></div>
+
+      <!-- Request New Reference Action -->
+      <div class="action-section">
+        <h2>📝 Ready to grow your professional profile?</h2>
+        <p>Request a new reference from a colleague, manager, or client</p>
+        <button class="btn-primary" onclick="dashboard.createNewReference()" id="requestBtn">
+          🚀 Request New Reference
+        </button>
+      </div>
+
+      <!-- KPI Selector Section -->
+      <section class="kpi-selector-section" id="kpi-selector-section">
+        <h2>🎯 Selecciona tus KPIs profesionales</h2>
+        <p class="section-description">Explora KPIs relevantes para tu rol profesional seleccionando primero tu familia de trabajo, luego tu rol específico</p>
+
+        <div id="kpi-selector">
+          <div class="kpi-select-group">
+            <label for="familySelect">Familia Profesional</label>
+            <select id="familySelect">
+              <option value="">Selecciona una familia…</option>
+            </select>
+          </div>
+
+          <div class="kpi-select-group">
+            <label for="roleSelect">Rol</label>
+            <select id="roleSelect" disabled>
+              <option value="">Selecciona un rol…</option>
+            </select>
+          </div>
+
+          <div class="kpi-select-group">
+            <label for="kpiSelect">KPI</label>
+            <select id="kpiSelect" disabled>
+              <option value="">Selecciona un KPI…</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Display selected KPI information -->
+        <div class="selected-kpis-display" id="selectedKpisDisplay">
+          <h3>📊 KPIs para este rol:</h3>
+          <div class="kpi-tags" id="kpiTags"></div>
+        </div>
+      </section>
+
+      <!-- HRKey Score Panel -->
+      <section class="hrkey-score-panel hrkey-card" id="hrkey-score-panel">
+        <!-- Header Section -->
+        <div class="hrkey-score-header">
+          <h2>🎯 HRKey Score</h2>
+          <p class="hrkey-score-subtitle">
+            Predicción de desempeño basada en referencias verificadas y KPIs profesionales
+          </p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="hrkey-score-inputs">
+          <div class="hrkey-score-input-group">
+            <label for="subjectWalletInput">Wallet del Candidato</label>
+            <input
+              type="text"
+              id="subjectWalletInput"
+              placeholder="0x1234...abcd o wallet completo"
+              maxlength="42"
+            />
+          </div>
+
+          <div class="hrkey-score-input-group">
+            <label>Rol Seleccionado</label>
+            <div class="hrkey-score-role-display">
+              <span id="hrkey-selected-role-display">No seleccionado</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="hrkey-score-actions">
+          <button class="btn-primary" id="btn-calc-hrkey-score">
+            🚀 Calcular HRKey Score
+          </button>
+        </div>
+
+        <!-- Status Messages -->
+        <div id="hrkey-score-status" class="hrkey-score-status" style="display: none;"></div>
+
+        <!-- Results Display (Two Column Layout) -->
+        <div id="hrkey-score-result" class="hrkey-score-result hidden">
+          <div class="hrkey-score-layout">
+            <!-- Left Column: Gauge & Confidence -->
+            <div class="hrkey-score-left">
+              <!-- Circular Gauge -->
+              <div id="hrkey-score-gauge-container" class="hrkey-gauge-container">
+                <div class="hrkey-gauge">
+                  <svg viewBox="0 0 120 120" class="hrkey-gauge-svg">
+                    <!-- Background circle -->
+                    <circle
+                      class="hrkey-gauge-bg"
+                      cx="60"
+                      cy="60"
+                      r="50"
+                      fill="none"
+                      stroke="rgba(255,255,255,0.1)"
+                      stroke-width="8"
+                    />
+                    <!-- Foreground circle (animated) -->
+                    <circle
+                      class="hrkey-gauge-fg"
+                      cx="60"
+                      cy="60"
+                      r="50"
+                      fill="none"
+                      stroke="#00C4C7"
+                      stroke-width="8"
+                      stroke-linecap="round"
+                      transform="rotate(-90 60 60)"
+                    />
+                  </svg>
+                  <div class="hrkey-gauge-center">
+                    <span class="hrkey-gauge-score-value" id="hrkey-gauge-score-value">--</span>
+                    <span class="hrkey-gauge-score-label">/ 100</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Confidence Meter -->
+              <div id="hrkey-score-confidence-container" class="hrkey-confidence-container">
+                <label class="hrkey-confidence-label-top">Confianza del Modelo</label>
+                <div class="hrkey-confidence-bar-container">
+                  <div class="hrkey-confidence-bar-bg">
+                    <div class="hrkey-confidence-bar-fill" id="hrkey-confidence-bar-fill"></div>
+                  </div>
+                </div>
+                <div class="hrkey-confidence-text" id="hrkey-confidence-text">--</div>
+              </div>
+            </div>
+
+            <!-- Right Column: Meta Card & KPI Breakdown -->
+            <div class="hrkey-score-right">
+              <!-- Meta Card -->
+              <div class="hrkey-meta-card" id="hrkey-meta-card">
+                <h3 class="hrkey-meta-title">Información del Análisis</h3>
+                <div class="hrkey-meta-grid">
+                  <div class="hrkey-meta-item">
+                    <span class="hrkey-meta-label">Rol</span>
+                    <span class="hrkey-meta-value" id="hrkey-meta-role-name">--</span>
+                  </div>
+                  <div class="hrkey-meta-item">
+                    <span class="hrkey-meta-label">Candidato</span>
+                    <span class="hrkey-meta-value" id="hrkey-meta-wallet">--</span>
+                  </div>
+                  <div class="hrkey-meta-item">
+                    <span class="hrkey-meta-label">Observaciones</span>
+                    <span class="hrkey-meta-value" id="hrkey-meta-n-observations">--</span>
+                  </div>
+                  <div class="hrkey-meta-item">
+                    <span class="hrkey-meta-label">Modelo</span>
+                    <span class="hrkey-meta-value" id="hrkey-meta-model">--</span>
+                  </div>
+                  <div class="hrkey-meta-item">
+                    <span class="hrkey-meta-label">Precisión (R²)</span>
+                    <span class="hrkey-meta-value" id="hrkey-meta-r2">--</span>
+                  </div>
+                  <div class="hrkey-meta-item">
+                    <span class="hrkey-meta-label">Predicción Raw</span>
+                    <span class="hrkey-meta-value" id="hrkey-meta-raw-prediction">--</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KPI Breakdown -->
+              <div class="hrkey-kpi-breakdown" id="hrkey-kpi-breakdown">
+                <h3 class="hrkey-breakdown-title">Contribución de KPIs al Score</h3>
+
+                <!-- Positive KPIs -->
+                <div class="hrkey-kpi-section">
+                  <h4 class="hrkey-kpi-section-title positive">
+                    <span class="hrkey-kpi-icon">▲</span> KPIs que impulsan el score
+                  </h4>
+                  <ul class="hrkey-kpi-list" id="hrkey-kpi-positive-list">
+                    <li class="hrkey-kpi-empty">No hay datos disponibles</li>
+                  </ul>
+                </div>
+
+                <!-- Negative KPIs -->
+                <div class="hrkey-kpi-section">
+                  <h4 class="hrkey-kpi-section-title negative">
+                    <span class="hrkey-kpi-icon">▼</span> KPIs que limitan el score
+                  </h4>
+                  <ul class="hrkey-kpi-list" id="hrkey-kpi-negative-list">
+                    <li class="hrkey-kpi-empty">No hay datos disponibles</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- References Table -->
+      <div class="references-table">
+        <h2>📋 My References</h2>
+        <div id="tableContainer">
+          <div class="loading-spinner"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Configuration (load first) -->
+  <script src="js/api-config.js"></script>
+
+  <!-- Identity Badge Loader (load before main dashboard script) -->
+  <script>
+    // Set supabaseClient globally for identity-badge-loader.js
+    window.supabaseClient = null;
+  </script>
+
+  <!-- Script de guard híbrido optimizado -->
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    // Configura tus valores (igual que en index.html)
+    window.__SUPABASE_URL__ = "https://wrervcydgdrlcndtjboy.supabase.co";
+    window.__SUPABASE_ANON_KEY__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXJ2Y3lkZ2RybGNuZHRqYm95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NzYxNTYsImV4cCI6MjA3MzU1MjE1Nn0.63M53sZW4LEYMOaxScvtLhQr_6VUj7rOaaGtlR745IM";
+    const SUPABASE_URL = window.__SUPABASE_URL__;
+    const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__;
+    const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+    // Evalúa sesión demo o cupón
+    const userData = (() => {
+      try { return JSON.parse(localStorage.getItem('hrkey_user_data') || 'null'); }
+      catch { return null; }
+    })();
+
+    // Check authentication
+    async function checkAuth() {
+      let isAuthenticated = false;
+      let user = null;
+
+      // Check Supabase session first
+      if (supabase) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            isAuthenticated = true;
+            user = {
+              name: session.user.user_metadata?.full_name || session.user.email || 'User',
+              email: session.user.email,
+              wallet: userData?.wallet || 'Not connected',
+              authenticated: true
+            };
+          }
+        } catch (e) {
+          console.error('Supabase session check failed:', e);
+        }
+      }
+
+      // Fallback to localStorage
+      if (!isAuthenticated && userData?.authenticated) {
+        isAuthenticated = true;
+        user = userData;
+      }
+
+      // Redirect if not authenticated
+      if (!isAuthenticated) {
+        window.location.replace('/WebDapp/auth.html');
+        return null;
+      }
+
+      return user;
+    }
+
+    // Get backend URL based on environment
+    function getBackendUrl() {
+      // Use API_BASE_URL from api-config.js (preferred)
+      if (typeof API_BASE_URL !== 'undefined' && API_BASE_URL) {
+        return API_BASE_URL;
+      }
+      // Fallback based on environment
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:3001';
+      }
+      // Production fallback (Render)
+      return 'https://hrkey-backend.onrender.com';
+    }
+
+    // Dashboard functionality
+    window.dashboard = {
+      user: null,
+      plan: null,
+      references: [],
+
+      async init() {
+        // Check authentication
+        this.user = await checkAuth();
+        if (!this.user) return;
+
+        // Load plan
+        try {
+          this.plan = JSON.parse(localStorage.getItem('hrkey_user_plan') || '{"plan":"free","features":{"maxReferences":1},"usage":{"referencesUsed":0}}');
+        } catch {
+          this.plan = { plan: 'free', features: { maxReferences: 1 }, usage: { referencesUsed: 0 } };
+        }
+
+        // Update UI
+        this.updateUserInfo();
+        this.loadReferences();
+        this.updateStats();
+        this.checkUpgradeBanner();
+      },
+
+      updateUserInfo() {
+        document.getElementById('userName').textContent = this.user.name || 'User';
+        document.getElementById('walletDisplay').textContent =
+          this.user.wallet && this.user.wallet !== 'Not connected'
+            ? `${this.user.wallet.slice(0, 6)}...${this.user.wallet.slice(-4)}`
+            : 'Not connected';
+      },
+
+      loadReferences() {
+        // Load references from localStorage
+        try {
+          this.references = JSON.parse(localStorage.getItem('hrkey_references') || '[]');
+        } catch {
+          this.references = [];
+        }
+
+        this.renderTable();
+      },
+
+      renderTable() {
+        const container = document.getElementById('tableContainer');
+
+        if (this.references.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3>No references yet</h3>
+              <p>Start building your professional profile by requesting your first reference</p>
+            </div>
+          `;
+          return;
+        }
+
+        const tableHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Referee Name</th>
+                <th>Company</th>
+                <th>Date Requested</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${this.references.map(ref => `
+                <tr>
+                  <td>${ref.refereeName || 'N/A'}</td>
+                  <td>${ref.company || 'N/A'}</td>
+                  <td>${ref.dateRequested ? new Date(ref.dateRequested).toLocaleDateString() : 'N/A'}</td>
+                  <td>
+                    <span class="status-badge ${
+                      ref.status === 'blockchain' ? 'status-blockchain' :
+                      ref.status === 'completed' ? 'status-completed' :
+                      'status-pending'
+                    }">
+                      ${ref.status === 'blockchain' ? '⛓️ On Chain' :
+                        ref.status === 'completed' ? '✅ Completed' :
+                        '⏳ Pending'}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <button class="btn-secondary" onclick="dashboard.viewReference('${ref.id}')">View</button>
+                      ${ref.status === 'completed' && this.plan.plan === 'pro' ?
+                        `<button class="btn-secondary" onclick="dashboard.verifyOnChain('${ref.id}')">Verify</button>` :
+                        ''}
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        container.innerHTML = tableHTML;
+      },
+
+      updateStats() {
+        const total = this.references.length;
+        const pending = this.references.filter(r => r.status === 'pending').length;
+        const completed = this.references.filter(r => r.status === 'completed').length;
+        const blockchain = this.references.filter(r => r.status === 'blockchain').length;
+
+        document.getElementById('statTotal').textContent = total;
+        document.getElementById('statPending').textContent = pending;
+        document.getElementById('statCompleted').textContent = completed;
+        document.getElementById('statBlockchain').textContent = blockchain;
+
+        // Load new stats: Data Access Requests & Earnings
+        this.loadDataAccessStats();
+        this.loadEarningsStats();
+      },
+
+      async loadDataAccessStats() {
+        try {
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (!session) return;
+
+          const backendUrl = getBackendUrl();
+          const response = await fetch(`${backendUrl}/api/data-access/pending`, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            document.getElementById('statDataRequests').textContent = data.total || 0;
+            // Show notification badge if there are pending requests
+            if (data.total > 0) {
+              document.getElementById('statDataRequests').style.color = '#fbbf24';
+            }
+          }
+        } catch (error) {
+          console.error('Error loading data access stats:', error);
+          document.getElementById('statDataRequests').textContent = '0';
+        }
+      },
+
+      async loadEarningsStats() {
+        try {
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (!session) return;
+
+          const backendUrl = getBackendUrl();
+          const response = await fetch(`${backendUrl}/api/revenue/balance`, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            const balance = data.balance.currentBalance || 0;
+            document.getElementById('statEarnings').textContent = `$${balance.toFixed(0)}`;
+            // Highlight if there's money available
+            if (balance >= 50) {
+              document.getElementById('statEarnings').style.color = '#10b981';
+            }
+          }
+        } catch (error) {
+          console.error('Error loading earnings stats:', error);
+          document.getElementById('statEarnings').textContent = '$0';
+        }
+      },
+
+      checkUpgradeBanner() {
+        const banner = document.getElementById('upgradeBanner');
+        if (this.plan.plan === 'free' && this.plan.usage.referencesUsed >= this.plan.features.maxReferences) {
+          banner.style.display = 'flex';
+        } else {
+          banner.style.display = 'none';
+        }
+      },
+
+      createNewReference() {
+        // Check if user has reached their limit
+        if (this.plan.plan === 'free' && this.references.length >= this.plan.features.maxReferences) {
+          this.showAlert('You have reached your free plan limit. Upgrade to PRO for unlimited references!', 'error');
+          document.getElementById('upgradeBanner').style.display = 'flex';
+          return;
+        }
+
+        // Redirect to reference request page (you'll need to create this)
+        window.location.href = '/WebDapp/request-reference.html';
+      },
+
+      viewReference(id) {
+        // Redirect to reference management page
+        window.location.href = `/WebDapp/reference-management-page.html?id=${id}`;
+      },
+
+      verifyOnChain(id) {
+        this.showAlert('Blockchain verification coming soon!', 'info');
+      },
+
+      async upgradeToPro() {
+        try {
+          this.showAlert('Redirecting to checkout...', 'info');
+
+          const response = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: this.user.email })
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.url) {
+            // Redirect to Stripe Checkout
+            window.location.href = data.url;
+          } else {
+            this.showAlert(data.message || 'Failed to start checkout. Please try again.', 'error');
+          }
+        } catch (error) {
+          console.error('Upgrade error:', error);
+          this.showAlert('An error occurred. Please try again later.', 'error');
+        }
+      },
+
+      logout() {
+        if (confirm('Are you sure you want to logout?')) {
+          // Clear localStorage
+          localStorage.removeItem('hrkey_user_data');
+          localStorage.removeItem('hrkey_user_plan');
+          localStorage.removeItem('hrkey_references');
+          localStorage.removeItem('hrkey_session');
+
+          // Sign out from Supabase
+          if (supabase) {
+            supabase.auth.signOut().catch(e => console.error('Supabase signout error:', e));
+          }
+
+          // Redirect to home
+          window.location.replace('/WebDapp/auth.html');
+        }
+      },
+
+      showAlert(message, type = 'info') {
+        const container = document.getElementById('alertContainer');
+        const alertHTML = `
+          <div class="alert alert-${type}">
+            ${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'} ${message}
+          </div>
+        `;
+        container.innerHTML = alertHTML;
+
+        setTimeout(() => {
+          container.innerHTML = '';
+        }, 5000);
+      }
+    };
+
+    // Initialize dashboard when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => dashboard.init());
+    } else {
+      dashboard.init();
+    }
+
+    // ============================================
+    // KPI SELECTOR FUNCTIONALITY
+    // ============================================
+    /**
+     * KPI Selector Module
+     * Loads Roles_All_Industries_KPIs.json and populates cascading dropdowns
+     * File location: /WebDapp/Roles_All_Industries_KPIs.json (same directory as app.html)
+     */
+    window.kpiSelector = {
+      data: null,
+      selectedFamily: null,
+      selectedRole: null,
+
+      /**
+       * Initialize the KPI selector by loading JSON data
+       */
+      async init() {
+        try {
+          // Load JSON file from same directory (public/WebDapp/)
+          const response = await fetch('Roles_All_Industries_KPIs.json');
+
+          if (!response.ok) {
+            throw new Error(`Failed to load KPI data: ${response.status}`);
+          }
+
+          this.data = await response.json();
+          this.populateFamilySelect();
+          this.attachEventListeners();
+
+          console.log('✅ KPI Selector initialized successfully');
+        } catch (error) {
+          console.error('❌ Error initializing KPI Selector:', error);
+          this.showError('No se pudo cargar los datos de KPIs. Por favor, recarga la página.');
+        }
+      },
+
+      /**
+       * Extract all unique families from all industries
+       */
+      getAllFamilies() {
+        const families = new Set();
+
+        // Iterate through all industries
+        Object.keys(this.data).forEach(industry => {
+          // Get all families within this industry
+          Object.keys(this.data[industry]).forEach(family => {
+            families.add(family);
+          });
+        });
+
+        // Return sorted array of unique families
+        return Array.from(families).sort();
+      },
+
+      /**
+       * Populate the Family dropdown with all unique families
+       */
+      populateFamilySelect() {
+        const familySelect = document.getElementById('familySelect');
+        const families = this.getAllFamilies();
+
+        // Clear existing options (except the first placeholder)
+        familySelect.innerHTML = '<option value="">Selecciona una familia…</option>';
+
+        // Add family options
+        families.forEach(family => {
+          const option = document.createElement('option');
+          option.value = family;
+          option.textContent = family;
+          familySelect.appendChild(option);
+        });
+
+        console.log(`✅ Loaded ${families.length} families`);
+      },
+
+      /**
+       * Get all roles for a specific family (across all industries)
+       */
+      getRolesForFamily(familyName) {
+        const roles = [];
+
+        // Search through all industries for this family
+        Object.keys(this.data).forEach(industry => {
+          if (this.data[industry][familyName]) {
+            // Add all roles from this family
+            this.data[industry][familyName].forEach(roleObj => {
+              roles.push(roleObj);
+            });
+          }
+        });
+
+        // Remove duplicate roles (if same role appears in multiple industries)
+        const uniqueRoles = roles.reduce((acc, current) => {
+          const exists = acc.find(item => item.role === current.role);
+          if (!exists) {
+            acc.push(current);
+          }
+          return acc;
+        }, []);
+
+        return uniqueRoles.sort((a, b) => a.role.localeCompare(b.role));
+      },
+
+      /**
+       * Handle family selection change
+       */
+      onFamilyChange(selectedFamily) {
+        const roleSelect = document.getElementById('roleSelect');
+        const kpiSelect = document.getElementById('kpiSelect');
+        const displayArea = document.getElementById('selectedKpisDisplay');
+
+        // Store selected family
+        this.selectedFamily = selectedFamily;
+        this.selectedRole = null;
+
+        if (!selectedFamily) {
+          // Reset role and KPI selects
+          roleSelect.innerHTML = '<option value="">Selecciona un rol…</option>';
+          roleSelect.disabled = true;
+          kpiSelect.innerHTML = '<option value="">Selecciona un KPI…</option>';
+          kpiSelect.disabled = true;
+          displayArea.style.display = 'none';
+          return;
+        }
+
+        // Get roles for this family
+        const roles = this.getRolesForFamily(selectedFamily);
+
+        // Populate role select
+        roleSelect.innerHTML = '<option value="">Selecciona un rol…</option>';
+        roles.forEach(roleObj => {
+          const option = document.createElement('option');
+          option.value = roleObj.role;
+          option.textContent = roleObj.role;
+          option.dataset.kpis = roleObj.kpis; // Store KPIs in data attribute
+          roleSelect.appendChild(option);
+        });
+
+        // Enable role select
+        roleSelect.disabled = false;
+
+        // Reset KPI select
+        kpiSelect.innerHTML = '<option value="">Selecciona un KPI…</option>';
+        kpiSelect.disabled = true;
+        displayArea.style.display = 'none';
+
+        console.log(`✅ Loaded ${roles.length} roles for family: ${selectedFamily}`);
+      },
+
+      /**
+       * Handle role selection change
+       */
+      onRoleChange(selectedRole) {
+        const roleSelect = document.getElementById('roleSelect');
+        const kpiSelect = document.getElementById('kpiSelect');
+        const displayArea = document.getElementById('selectedKpisDisplay');
+        const kpiTagsContainer = document.getElementById('kpiTags');
+
+        // Store selected role
+        this.selectedRole = selectedRole;
+
+        if (!selectedRole) {
+          kpiSelect.innerHTML = '<option value="">Selecciona un KPI…</option>';
+          kpiSelect.disabled = true;
+          displayArea.style.display = 'none';
+          return;
+        }
+
+        // Get KPIs for selected role
+        const selectedOption = roleSelect.options[roleSelect.selectedIndex];
+        const kpisString = selectedOption.dataset.kpis;
+
+        if (!kpisString) {
+          console.error('No KPIs found for role:', selectedRole);
+          return;
+        }
+
+        // Split KPIs by comma and trim whitespace
+        const kpis = kpisString.split(',').map(kpi => kpi.trim()).filter(kpi => kpi);
+
+        // Populate KPI select
+        kpiSelect.innerHTML = '<option value="">Selecciona un KPI…</option>';
+        kpis.forEach(kpi => {
+          const option = document.createElement('option');
+          option.value = kpi;
+          option.textContent = kpi;
+          kpiSelect.appendChild(option);
+        });
+
+        // Enable KPI select
+        kpiSelect.disabled = false;
+
+        // Display all KPIs as tags
+        kpiTagsContainer.innerHTML = '';
+        kpis.forEach(kpi => {
+          const tag = document.createElement('span');
+          tag.className = 'kpi-tag';
+          tag.textContent = kpi;
+          kpiTagsContainer.appendChild(tag);
+        });
+
+        // Show display area
+        displayArea.style.display = 'block';
+
+        console.log(`✅ Loaded ${kpis.length} KPIs for role: ${selectedRole}`);
+      },
+
+      /**
+       * Attach event listeners to dropdowns
+       */
+      attachEventListeners() {
+        const familySelect = document.getElementById('familySelect');
+        const roleSelect = document.getElementById('roleSelect');
+        const kpiSelect = document.getElementById('kpiSelect');
+
+        familySelect.addEventListener('change', (e) => {
+          this.onFamilyChange(e.target.value);
+        });
+
+        roleSelect.addEventListener('change', (e) => {
+          this.onRoleChange(e.target.value);
+        });
+
+        kpiSelect.addEventListener('change', (e) => {
+          const selectedKpi = e.target.value;
+          if (selectedKpi) {
+            console.log(`✅ Selected KPI: ${selectedKpi} for role: ${this.selectedRole} in family: ${this.selectedFamily}`);
+            // You can add additional functionality here when a KPI is selected
+            // For example, save to localStorage, trigger an event, etc.
+          }
+        });
+      },
+
+      /**
+       * Show error message
+       */
+      showError(message) {
+        const section = document.getElementById('kpi-selector-section');
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-error';
+        errorDiv.style.marginTop = '20px';
+        errorDiv.innerHTML = `❌ ${message}`;
+        section.appendChild(errorDiv);
+      }
+    };
+
+    // Initialize KPI Selector when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => kpiSelector.init());
+    } else {
+      kpiSelector.init();
+    }
+
+    // ============================================
+    // HRKEY SCORE FUNCTIONALITY
+    // ============================================
+    /**
+     * HRKey Score Module
+     * Calls the backend endpoint POST /api/hrkey-score to calculate a professional score
+     * based on KPI observations for a subject (candidate) and role.
+     *
+     * Backend Endpoint: POST /api/hrkey-score
+     * Request Body:
+     * {
+     *   "subject_wallet": "0xABC...",
+     *   "role_id": "uuid-of-role"
+     * }
+     *
+     * Response (Success):
+     * {
+     *   "ok": true,
+     *   "subject_wallet": "0xABC",
+     *   "role_id": "uuid",
+     *   "score": 78.45,              // HRKey Score (0-100)
+     *   "raw_prediction": 125432.50, // Raw prediction in outcome_value scale
+     *   "confidence": 0.8944,        // Confidence level (0-1)
+     *   "confidence_percentage": 89.44,
+     *   "n_observations": 16,
+     *   "used_kpis": ["kpi_1", "kpi_2", ...],
+     *   "model_info": {
+     *     "model_type": "ridge",
+     *     "trained_at": "2025-11-22T...",
+     *     "role_scope": "global",
+     *     "metrics": { "mae": 8234.56, "rmse": 10567.89, "r2": 0.7456 }
+     *   }
+     * }
+     *
+     * Response (Error - Not Enough Data):
+     * {
+     *   "ok": false,
+     *   "reason": "NOT_ENOUGH_DATA",
+     *   "message": "Se requieren al menos 3 observaciones...",
+     *   "n_observations": 2
+     * }
+     */
+    window.hrkeyScore = {
+      /**
+       * Initialize HRKey Score functionality
+       */
+      init() {
+        // Attach button click handler
+        const btnCalc = document.getElementById('btn-calc-hrkey-score');
+        if (btnCalc) {
+          btnCalc.addEventListener('click', () => this.onCalculateHrkeyScore());
+        }
+
+        // Update role display when role changes
+        const roleSelect = document.getElementById('roleSelect');
+        if (roleSelect) {
+          roleSelect.addEventListener('change', () => this.updateRoleDisplay());
+        }
+
+        console.log('✅ HRKey Score module initialized');
+      },
+
+      /**
+       * Update the selected role display
+       */
+      updateRoleDisplay() {
+        const roleSelect = document.getElementById('roleSelect');
+        const roleDisplay = document.getElementById('hrkey-selected-role-display');
+
+        if (roleDisplay && roleSelect) {
+          const selectedRole = roleSelect.value;
+          roleDisplay.textContent = selectedRole || 'No seleccionado';
+        }
+      },
+
+      /**
+       * Calculate HRKey Score for a subject+role
+       */
+      async onCalculateHrkeyScore() {
+        const statusEl = document.getElementById('hrkey-score-status');
+        const resultEl = document.getElementById('hrkey-score-result');
+        const btnCalc = document.getElementById('btn-calc-hrkey-score');
+
+        // 1. Get subject_wallet from input
+        const subjectWalletInput = document.getElementById('subjectWalletInput');
+        const subjectWallet = subjectWalletInput?.value?.trim();
+
+        // 2. Get role_id from roleSelect
+        // NOTE: Currently roleSelect stores role NAME, not role_id (UUID)
+        // For the MVP, we'll use the role name. In production, you should store role_id
+        // in a data attribute or fetch it from the backend.
+        const roleSelect = document.getElementById('roleSelect');
+        const roleId = roleSelect?.value; // This is actually role NAME for now
+
+        // Validations
+        if (!subjectWallet) {
+          this.showStatus('Por favor ingresa el wallet del candidato.', 'error');
+          return;
+        }
+
+        if (!roleId) {
+          this.showStatus('Por favor selecciona un rol primero.', 'error');
+          return;
+        }
+
+        // Basic wallet validation (0x + 40 hex chars)
+        if (!subjectWallet.match(/^0x[a-fA-F0-9]{40}$/)) {
+          this.showStatus('El wallet debe ser una dirección Ethereum válida (0x + 40 caracteres hex).', 'error');
+          return;
+        }
+
+        try {
+          // Disable button and show loading
+          if (btnCalc) btnCalc.disabled = true;
+          this.showStatus('Calculando HRKey Score...', 'loading');
+          if (resultEl) resultEl.classList.add('hidden');
+
+          // Get backend URL
+          const backendUrl = getBackendUrl();
+
+          // Call API
+          const response = await fetch(`${backendUrl}/api/hrkey-score`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              subject_wallet: subjectWallet,
+              role_id: roleId // Using role name for now; update to UUID when available
+            })
+          });
+
+          const data = await response.json();
+
+          // Handle errors
+          if (!response.ok || !data.ok) {
+            // Specific error handling
+            if (data.reason === 'NOT_ENOUGH_DATA') {
+              this.showStatus(
+                `⚠️ ${data.message || 'No hay suficientes datos para este candidato en este rol.'}`,
+                'error'
+              );
+            } else if (data.reason === 'NO_VALID_KPIS') {
+              this.showStatus(
+                `⚠️ ${data.message || 'No se encontraron KPIs válidos para este candidato.'}`,
+                'error'
+              );
+            } else if (data.reason === 'INTERNAL_ERROR') {
+              this.showStatus(
+                '❌ El modelo de scoring no está configurado. Contacta al administrador.',
+                'error'
+              );
+            } else {
+              this.showStatus(
+                `❌ ${data.message || 'No se pudo calcular el HRKey Score.'}`,
+                'error'
+              );
+            }
+            return;
+          }
+
+          // Success - render results
+          this.renderHrkeyScoreResult(data);
+          this.showStatus('✅ HRKey Score calculado correctamente.', 'success');
+
+        } catch (err) {
+          console.error('❌ Error calculando HRKey Score:', err);
+          this.showStatus('❌ Error inesperado al calcular el HRKey Score. Verifica tu conexión.', 'error');
+        } finally {
+          // Re-enable button
+          if (btnCalc) btnCalc.disabled = false;
+        }
+      },
+
+      /**
+       * Render the HRKey Score results
+       * Updates gauge, confidence, meta card, and KPI breakdown
+       */
+      renderHrkeyScoreResult(data) {
+        const resultEl = document.getElementById('hrkey-score-result');
+        if (!resultEl) return;
+
+        // 1. Update Gauge
+        this.updateGauge(data.score);
+
+        // 2. Update Confidence Meter
+        this.updateConfidence(data);
+
+        // 3. Update Meta Card
+        this.updateMetaCard(data);
+
+        // 4. Update KPI Breakdown
+        this.updateKpiBreakdown(data);
+
+        // Show results
+        resultEl.classList.remove('hidden');
+      },
+
+      /**
+       * Update the circular gauge with score
+       * Animates the SVG circle and updates the color based on score range
+       */
+      updateGauge(score) {
+        const scoreValue = typeof score === 'number' ? Math.max(0, Math.min(100, score)) : 0;
+
+        // Update gauge text
+        const gaugeValueEl = document.getElementById('hrkey-gauge-score-value');
+        if (gaugeValueEl) {
+          gaugeValueEl.textContent = scoreValue.toFixed(1);
+        }
+
+        // Update gauge circle (SVG animation)
+        const gaugeFg = document.querySelector('.hrkey-gauge-fg');
+        if (gaugeFg) {
+          // Circle circumference = 2 * PI * radius = 2 * 3.14159 * 50 = 314.159
+          const circumference = 314.159;
+          const offset = circumference - (scoreValue / 100) * circumference;
+
+          // Set stroke-dashoffset to animate the fill
+          gaugeFg.style.strokeDashoffset = offset;
+
+          // Update color based on score range
+          let color = '#ef4444'; // Red for low scores (0-40)
+          if (scoreValue >= 85) {
+            color = '#00C4C7'; // Teal for excellent (85-100)
+          } else if (scoreValue >= 70) {
+            color = '#10b981'; // Green for good (70-85)
+          } else if (scoreValue >= 40) {
+            color = '#fbbf24'; // Yellow for moderate (40-70)
+          }
+
+          gaugeFg.style.stroke = color;
+
+          // Also update the value color to match
+          if (gaugeValueEl) {
+            gaugeValueEl.style.color = color;
+            gaugeValueEl.style.textShadow = `0 0 20px ${color}`;
+          }
+        }
+      },
+
+      /**
+       * Update the confidence meter (bar visualization)
+       */
+      updateConfidence(data) {
+        // Normalize confidence to 0-100
+        let confidencePercent = 0;
+        if (data.confidence_percentage != null) {
+          confidencePercent = data.confidence_percentage;
+        } else if (data.confidence != null) {
+          confidencePercent = data.confidence * 100;
+        }
+
+        confidencePercent = Math.max(0, Math.min(100, confidencePercent));
+
+        // Update bar fill
+        const barFill = document.getElementById('hrkey-confidence-bar-fill');
+        if (barFill) {
+          barFill.style.width = `${confidencePercent}%`;
+        }
+
+        // Update text label
+        const confidenceText = document.getElementById('hrkey-confidence-text');
+        if (confidenceText) {
+          let label = 'Baja';
+          if (confidencePercent >= 70) {
+            label = 'Alta';
+          } else if (confidencePercent >= 40) {
+            label = 'Media';
+          }
+
+          confidenceText.textContent = `${label} (${confidencePercent.toFixed(1)}%)`;
+        }
+      },
+
+      /**
+       * Update the meta card with model and analysis information
+       */
+      updateMetaCard(data) {
+        // Role name
+        const roleNameEl = document.getElementById('hrkey-meta-role-name');
+        if (roleNameEl) {
+          const roleSelect = document.getElementById('roleSelect');
+          const roleName = roleSelect?.options[roleSelect.selectedIndex]?.text || data.role_id || '--';
+          roleNameEl.textContent = roleName;
+        }
+
+        // Wallet (truncated)
+        const walletEl = document.getElementById('hrkey-meta-wallet');
+        if (walletEl) {
+          const wallet = data.subject_wallet || '--';
+          const truncated = wallet.length > 10
+            ? `${wallet.slice(0, 6)}...${wallet.slice(-4)}`
+            : wallet;
+          walletEl.textContent = truncated;
+        }
+
+        // Observations
+        const observationsEl = document.getElementById('hrkey-meta-n-observations');
+        if (observationsEl) {
+          observationsEl.textContent = data.n_observations != null ? data.n_observations : '--';
+        }
+
+        // Model type
+        const modelEl = document.getElementById('hrkey-meta-model');
+        if (modelEl) {
+          const modelType = data.model_info?.model_type || 'Unknown';
+          modelEl.textContent = modelType.charAt(0).toUpperCase() + modelType.slice(1);
+        }
+
+        // R² score
+        const r2El = document.getElementById('hrkey-meta-r2');
+        if (r2El) {
+          const r2 = data.model_info?.metrics?.r2;
+          r2El.textContent = r2 != null ? r2.toFixed(3) : '--';
+        }
+
+        // Raw prediction
+        const rawPredEl = document.getElementById('hrkey-meta-raw-prediction');
+        if (rawPredEl) {
+          const rawPred = data.raw_prediction != null
+            ? `$${data.raw_prediction.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+            : '--';
+          rawPredEl.textContent = rawPred;
+        }
+      },
+
+      /**
+       * Update the KPI breakdown section
+       * Shows positive and negative contributors to the score
+       *
+       * NOTE: If backend doesn't provide kpi_breakdown, we generate synthetic data
+       * based on model_info.features for demonstration purposes.
+       */
+      updateKpiBreakdown(data) {
+        let breakdown = data.kpi_breakdown;
+
+        // If no breakdown provided, generate synthetic data
+        if (!breakdown || breakdown.length === 0) {
+          breakdown = this.generateSyntheticBreakdown(data);
+        }
+
+        // Separate into positive and negative
+        const positive = breakdown.filter(kpi => kpi.contribution > 0)
+          .sort((a, b) => b.contribution - a.contribution)
+          .slice(0, 5); // Top 5
+
+        const negative = breakdown.filter(kpi => kpi.contribution < 0)
+          .sort((a, b) => a.contribution - b.contribution)
+          .slice(0, 5); // Top 5 most negative
+
+        // Render positive KPIs
+        this.renderKpiList('hrkey-kpi-positive-list', positive, 'positive');
+
+        // Render negative KPIs
+        this.renderKpiList('hrkey-kpi-negative-list', negative, 'negative');
+      },
+
+      /**
+       * Generate synthetic KPI breakdown for demonstration
+       * This simulates the breakdown based on available data
+       *
+       * TODO: Remove this once backend provides real kpi_breakdown data
+       */
+      generateSyntheticBreakdown(data) {
+        const breakdown = [];
+
+        // Use debug info if available
+        if (data.debug?.kpi_averages && data.model_info?.features) {
+          const kpiAverages = data.debug.kpi_averages;
+          const features = data.model_info.features;
+
+          // Create breakdown from features and coefficients
+          features.forEach(feature => {
+            const kpiName = feature.name;
+            const coef = feature.coef || 0;
+            const avgRating = kpiAverages[kpiName] || 0;
+
+            // Contribution = coefficient * (rating - 3)
+            // This simulates how much this KPI pushes the score up or down
+            const contribution = coef * (avgRating - 3) / 1000; // Normalize
+
+            breakdown.push({
+              kpi_id: kpiName,
+              name: this.formatKpiName(kpiName),
+              contribution: contribution
+            });
+          });
+        } else if (data.used_kpis) {
+          // Fallback: create dummy data based on used KPIs
+          data.used_kpis.forEach((kpi, index) => {
+            const randomContribution = (Math.random() - 0.5) * 10;
+            breakdown.push({
+              kpi_id: kpi,
+              name: this.formatKpiName(kpi),
+              contribution: randomContribution
+            });
+          });
+        }
+
+        return breakdown;
+      },
+
+      /**
+       * Format KPI name from snake_case to Title Case
+       */
+      formatKpiName(kpiId) {
+        return kpiId
+          .split('_')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      },
+
+      /**
+       * Render a KPI list (positive or negative)
+       */
+      renderKpiList(listId, kpis, type) {
+        const listEl = document.getElementById(listId);
+        if (!listEl) return;
+
+        if (kpis.length === 0) {
+          listEl.innerHTML = '<li class="hrkey-kpi-empty">No hay datos disponibles</li>';
+          return;
+        }
+
+        listEl.innerHTML = kpis.map(kpi => `
+          <li class="hrkey-kpi-item ${type}">
+            <span class="hrkey-kpi-name">${kpi.name}</span>
+            <span class="hrkey-kpi-contribution">
+              ${kpi.contribution > 0 ? '+' : ''}${kpi.contribution.toFixed(1)} pts
+            </span>
+          </li>
+        `).join('');
+      },
+
+      /**
+       * Show status message
+       */
+      showStatus(message, type = 'info') {
+        const statusEl = document.getElementById('hrkey-score-status');
+        if (!statusEl) return;
+
+        // Update class
+        statusEl.className = `hrkey-score-status ${type}`;
+        statusEl.textContent = message;
+        statusEl.style.display = 'block';
+
+        // Auto-hide after 5 seconds for success/error
+        if (type === 'success' || type === 'error') {
+          setTimeout(() => {
+            statusEl.style.display = 'none';
+          }, 5000);
+        }
+      }
+    };
+
+    // Initialize HRKey Score when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => hrkeyScore.init());
+    } else {
+      hrkeyScore.init();
+    }
+  </script>
+</body>
+</html>

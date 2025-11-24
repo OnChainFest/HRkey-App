@@ -1,0 +1,30 @@
+{
+  "model_type": "ridge",
+  "role_scope": "global",
+  "trained_at": "2025-11-24T15:12:37.789226Z",
+  "train_metrics": {
+    "mae": 6.7001613479724424,
+    "rmse": 7.970772477490311,
+    "r2": 0.6601265021415166
+  },
+  "test_metrics": {
+    "mae": 12.436382851888773,
+    "rmse": 15.464497032548515,
+    "r2": -2.6716522857681446
+  },
+  "target_stats": {
+    "min": 97.68857142857144,
+    "max": 151.26500000000001,
+    "mean": 128.51456626984125,
+    "std": 13.057787734089448
+  },
+  "n_features": 6,
+  "features": [
+    "api_response_time",
+    "bug_resolution_time",
+    "code_quality",
+    "deployment_frequency",
+    "documentation_quality",
+    "test_coverage"
+  ]
+}

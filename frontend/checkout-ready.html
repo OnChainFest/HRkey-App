@@ -1,0 +1,80 @@
+// /api/create-checkout-session.js
+import Stripe from 'stripe';
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+
+  try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(500).json({ error: 'Missing STRIPE_SECRET_KEY' });
+    }
+    if (!process.env.STRIPE_PRICE_ID) {
+      return res.status(500).json({ error: 'Missing STRIPE_PRICE_ID' });
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-06-20',
+    });
+
+    const {
+      promo = 'JUNGLE',
+      email,
+      success_url = 'https://hrkey.xyz/success?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url = 'https://hrkey.xyz/cancel',
+    } = req.body || {};
+
+    // (Opcional) Validaciones mínimas
+    if (email && typeof email !== 'string') {
+      return res.status(400).json({ error: 'Invalid email' });
+    }
+
+    // 1) Buscar promotion code activo (JUNGLE)
+    let promotion_code_id = null;
+    try {
+      const promos = await stripe.promotionCodes.list({
+        code: String(promo).toUpperCase(),
+        active: true,
+        limit: 1,
+      });
+      promotion_code_id = promos.data[0]?.id || null;
+    } catch (_) {
+      // si falla, seguimos sin promotion_code
+      promotion_code_id = null;
+    }
+
+    // 2) Crear la sesión de Checkout (suscripción anual)
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_collection: 'always', // forzá tarjeta aunque total hoy sea $0
+      customer_creation: 'always',
+      customer_email: email || undefined,
+
+      line_items: [
+        {
+          price: process.env.STRIPE_PRICE_ID, // tu price anual PRO
+          quantity: 1,
+        },
+      ],
+
+      // Aplica el Promotion Code (JUNGLE = 100% off por 12 meses)
+      discounts: promotion_code_id ? [{ promotion_code: promotion_code_id }] : [],
+      allow_promotion_codes: true,
+
+      // URLs de retorno
+      success_url,
+      cancel_url,
+
+      // (Opcional) metadata útil para tu sistema
+      metadata: {
+        source: 'hrkey_checkout_ready',
+        promo: String(promo || '').toUpperCase(),
+      },
+    });
+
+    return res.status(200).json({ url: session.url });
+  } catch (err) {
+    console.error('[create-checkout-session] error:', err);
+    return res.status(500).json({ error: 'Failed to create checkout session' });
+  }
+}
+

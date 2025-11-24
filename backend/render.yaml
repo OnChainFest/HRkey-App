@@ -1,0 +1,67 @@
+# Render Blueprint for HRKey Backend
+# This file configures automatic deployment to Render.com
+#
+# To deploy:
+# 1. Push this repo to GitHub
+# 2. Go to https://dashboard.render.com/
+# 3. New -> Blueprint
+# 4. Connect your GitHub repo
+# 5. Render will auto-deploy using this configuration
+
+services:
+  - type: web
+    name: hrkey-backend
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    healthCheckPath: /health
+
+    # Environment variables (set these in Render Dashboard)
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: 3001
+
+      # Supabase credentials (REQUIRED - set in Render Dashboard)
+      - key: SUPABASE_URL
+        sync: false
+
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+      - key: SUPABASE_ANON_KEY
+        sync: false
+
+      # Stripe (REQUIRED for payments)
+      - key: STRIPE_SECRET_KEY
+        sync: false
+
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+      # Resend (REQUIRED for emails)
+      - key: RESEND_API_KEY
+        sync: false
+
+      # Frontend URL (REQUIRED for CORS)
+      - key: FRONTEND_URL
+        sync: false
+        # Example: https://hrkey.vercel.app
+
+      # Backend public URL (auto-set by Render)
+      - key: BACKEND_PUBLIC_URL
+        value: https://hrkey-backend.onrender.com
+
+      # Superadmin email (optional)
+      - key: HRKEY_SUPERADMIN_EMAIL
+        sync: false
+
+# Notes:
+# - Free tier sleeps after 15 min inactivity (cold start ~30s)
+# - To upgrade to paid plan: change "plan: starter" ($7/mo, no sleep)
+# - ML model loads from ../ml/output/hrkey_model_config_global.json
+# - Make sure this file is committed to your repo
