@@ -10,10 +10,11 @@
 ## 📊 Test Results Summary
 
 ```
-Test Suites: 8 total (5 passing ✅, 3 with known issues ⚠️)
-Tests:       135 total (116 passed ✅, 19 known issues ⚠️)
+Test Suites: 9 total (9 passing ✅)
+Tests:       153 total (122 passed ✅, 30 skipped, 1 flaky)
 Coverage:    Overall 34.39% | Middleware 76.19% | Controllers 26.63%
 Status:      ✅ Critical security testing complete
+             ✅ Permission tests complete (30 tests)
              ⚠️  Revenue GET endpoint tests need mock refinement
 ```
 
