@@ -7,6 +7,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
 import Stripe from 'stripe';
@@ -22,12 +24,21 @@ import revenueController from './controllers/revenueController.js';
 import kpiObservationsController from './controllers/kpiObservationsController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 
+// Import services
+import * as webhookService from './services/webhookService.js';
+
 // Import middleware
 import {
   requireAuth,
   requireSuperadmin,
   requireCompanySigner
 } from './middleware/auth.js';
+import { validateBody, validateParams } from './middleware/validate.js';
+
+// Import validation schemas
+import { createWalletSchema, getWalletParamsSchema } from './schemas/wallet.schema.js';
+import { createReferenceRequestSchema, submitReferenceSchema, getReferenceByTokenSchema } from './schemas/reference.schema.js';
+import { createPaymentIntentSchema } from './schemas/payment.schema.js';
 
 dotenv.config();
 
@@ -431,30 +442,143 @@ const corsOptions = {
 
 // Stripe webhook necesita body RAW; para el resto usamos JSON normal
 app.use(cors(corsOptions));
+
+// Security headers with helmet
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.coinbase.com", "https://js.stripe.com"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: [
+        "'self'",
+        "https://mainnet.base.org",
+        "https://sepolia.base.org",
+        "https://*.supabase.co",
+        "https://api.stripe.com"
+      ],
+      frameSrc: ["'self'", "https://js.stripe.com"],
+      fontSrc: ["'self'", "data:", "https:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      workerSrc: ["'self'", "blob:"]
+    }
+  },
+  crossOriginEmbedderPolicy: false, // Required for Base SDK compatibility
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  frameguard: {
+    action: 'deny'
+  },
+  noSniff: true,
+  xssFilter: true,
+  referrerPolicy: {
+    policy: 'strict-origin-when-cross-origin'
+  }
+}));
+
+// Rate limiting configuration
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Max 100 requests per IP per window
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting for health check
+    return req.path === '/health';
+  }
+});
+
+// Strict rate limiter for sensitive endpoints
+const strictLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // Max 5 requests per IP per hour
+  message: 'Too many attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true // Only count failed requests
+});
+
+// Auth-related rate limiter
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Max 10 attempts per IP
+  message: 'Too many authentication attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Apply general rate limiting to all API routes
+app.use('/api/', apiLimiter);
+
 app.use((req, res, next) => {
   if (req.path === '/webhook') return next();
   return express.json()(req, res, next);
 });
 
-// Health
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
+// Health check endpoint with service verification
+app.get('/health', async (req, res) => {
+  const healthcheck = {
+    status: 'healthy',
     service: 'HRKey Backend Service',
     timestamp: new Date().toISOString(),
-    email: RESEND_API_KEY ? 'configured' : 'not configured',
+    uptime: process.uptime(),
+    services: {}
+  };
+
+  try {
+    // Check Supabase connection
+    const { data, error } = await supabase
+      .from('users')
+      .select('count')
+      .limit(1);
+
+    healthcheck.services.database = error ? 'down' : 'up';
+    if (error) {
+      healthcheck.status = 'degraded';
+      healthcheck.services.database_error = error.message;
+    }
+  } catch (err) {
+    healthcheck.services.database = 'down';
+    healthcheck.services.database_error = err.message;
+    healthcheck.status = 'degraded';
+  }
+
+  // Check other services configuration
+  healthcheck.services.email = RESEND_API_KEY ? 'configured' : 'not configured';
+  healthcheck.services.stripe = STRIPE_SECRET_KEY && !STRIPE_SECRET_KEY.includes('reemplaza') ? 'configured' : 'not configured';
+  healthcheck.environment = {
+    node_env: process.env.NODE_ENV || 'development',
     app_url: APP_URL,
     backend_url: BACKEND_PUBLIC_URL
-  });
+  };
+
+  // Return appropriate status code
+  const statusCode = healthcheck.status === 'healthy' ? 200 : 503;
+  res.status(statusCode).json(healthcheck);
 });
 
 /* =========================
    Wallet endpoints
    ========================= */
-app.post('/api/wallet/create', async (req, res) => {
+app.post('/api/wallet/create', requireAuth, strictLimiter, validateBody(createWalletSchema), async (req, res) => {
   try {
-    const { userId, email } = req.body || {};
-    if (!userId || !email) return res.status(400).json({ error: 'Missing userId or email' });
+    const { userId, email } = req.body;
+
+    // Authorization check: users can only create wallets for themselves
+    if (req.user.id !== userId) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You can only create a wallet for yourself'
+      });
+    }
+
     const wallet = await WalletCreationService.createWalletForUser(userId, email);
     res.json({ success: true, wallet });
   } catch (e) {
@@ -463,7 +587,7 @@ app.post('/api/wallet/create', async (req, res) => {
   }
 });
 
-app.get('/api/wallet/:userId', async (req, res) => {
+app.get('/api/wallet/:userId', validateParams(getWalletParamsSchema), async (req, res) => {
   try {
     const { userId } = req.params;
     const wallet = await WalletCreationService.getUserWallet(userId);
@@ -478,8 +602,18 @@ app.get('/api/wallet/:userId', async (req, res) => {
 /* =========================
    Reference endpoints
    ========================= */
-app.post('/api/reference/request', async (req, res) => {
+app.post('/api/reference/request', requireAuth, validateBody(createReferenceRequestSchema), async (req, res) => {
   try {
+    const { userId } = req.body;
+
+    // Authorization check: users can only request references for themselves
+    if (req.user.id !== userId) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You can only request references for yourself'
+      });
+    }
+
     const result = await ReferenceService.createReferenceRequest(req.body);
     res.json(result);
   } catch (e) {
@@ -488,7 +622,7 @@ app.post('/api/reference/request', async (req, res) => {
   }
 });
 
-app.post('/api/reference/submit', async (req, res) => {
+app.post('/api/reference/submit', validateBody(submitReferenceSchema), async (req, res) => {
   try {
     const result = await ReferenceService.submitReference(req.body);
     res.json(result);
@@ -498,7 +632,7 @@ app.post('/api/reference/submit', async (req, res) => {
   }
 });
 
-app.get('/api/reference/by-token/:token', async (req, res) => {
+app.get('/api/reference/by-token/:token', validateParams(getReferenceByTokenSchema), async (req, res) => {
   try {
     const result = await ReferenceService.getReferenceByToken(req.params.token);
     res.json(result);
@@ -511,15 +645,17 @@ app.get('/api/reference/by-token/:token', async (req, res) => {
 /* =========================
    Stripe Payments
    ========================= */
-app.post('/create-payment-intent', async (req, res) => {
+app.post('/create-payment-intent', requireAuth, authLimiter, validateBody(createPaymentIntentSchema), async (req, res) => {
   try {
-    const { amount, email, promoCode } = req.body || {};
-    if (!amount) return res.status(400).json({ error: 'Missing amount' });
+    const { amount, email, promoCode } = req.body;
+
+    // Use authenticated user's email if not provided
+    const receiptEmail = email || req.user.email;
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount, // en centavos
       currency: 'usd',
-      receipt_email: email || undefined,
+      receipt_email: receiptEmail,
       metadata: {
         promoCode: promoCode || 'none',
         plan: 'pro-lifetime'
@@ -538,9 +674,11 @@ app.post('/create-payment-intent', async (req, res) => {
 });
 
 // Stripe webhook: body RAW
-app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
+
+  // Step 1: Verify Stripe signature
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
   } catch (err) {
@@ -548,13 +686,68 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === 'payment_intent.succeeded') {
-    const pi = event.data.object;
-    console.log('✅ Payment succeeded:', pi.id, 'email:', pi.receipt_email, 'amount:', pi.amount / 100);
-    // TODO: actualizar plan del usuario en Supabase
-  }
+  try {
+    // Step 2: Check idempotency - has this event already been processed?
+    const alreadyProcessed = await webhookService.isEventProcessed(event.id);
+    if (alreadyProcessed) {
+      console.log(`Event ${event.id} already processed, skipping (idempotency)`);
+      return res.json({ received: true, idempotent: true });
+    }
 
-  res.json({ received: true });
+    // Step 3: Process event based on type
+    switch (event.type) {
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object;
+        console.log('Processing payment_intent.succeeded:', paymentIntent.id);
+
+        const result = await webhookService.processPaymentSuccess(paymentIntent);
+
+        if (result.success) {
+          console.log('✅ Payment processed successfully:', {
+            user: result.user?.id,
+            plan: result.user?.plan,
+            transaction: result.transaction?.id
+          });
+        } else {
+          console.warn('⚠️ Payment processed with warnings:', result.reason);
+        }
+
+        // Step 4: Mark event as processed (idempotency)
+        await webhookService.markEventProcessed(event.id, event.type, {
+          payment_intent_id: paymentIntent.id,
+          amount: paymentIntent.amount,
+          email: paymentIntent.receipt_email
+        });
+
+        break;
+      }
+
+      case 'payment_intent.payment_failed': {
+        const paymentIntent = event.data.object;
+        console.log('Processing payment_intent.payment_failed:', paymentIntent.id);
+
+        await webhookService.processPaymentFailed(paymentIntent);
+        await webhookService.markEventProcessed(event.id, event.type, {
+          payment_intent_id: paymentIntent.id
+        });
+
+        break;
+      }
+
+      default:
+        // Unsupported event type - just log and mark as processed
+        console.log('Unsupported event type:', event.type);
+        await webhookService.markEventProcessed(event.id, event.type, {
+          note: 'Event type not explicitly handled'
+        });
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Webhook processing error:', error);
+    // Return 500 so Stripe will retry
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
 });
 
 /* =========================
@@ -562,7 +755,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
    ========================= */
 
 // ===== IDENTITY ENDPOINTS =====
-app.post('/api/identity/verify', requireAuth, identityController.verifyIdentity);
+app.post('/api/identity/verify', authLimiter, requireAuth, identityController.verifyIdentity);
 app.get('/api/identity/status/:userId', requireAuth, identityController.getIdentityStatus);
 
 // ===== COMPANY ENDPOINTS =====
@@ -573,7 +766,7 @@ app.patch('/api/company/:companyId', requireAuth, requireCompanySigner, companyC
 app.post('/api/company/:companyId/verify', requireAuth, requireSuperadmin, companyController.verifyCompany);
 
 // ===== COMPANY SIGNERS ENDPOINTS =====
-app.post('/api/company/:companyId/signers', requireAuth, requireCompanySigner, signersController.inviteSigner);
+app.post('/api/company/:companyId/signers', strictLimiter, requireAuth, requireCompanySigner, signersController.inviteSigner);
 app.get('/api/company/:companyId/signers', requireAuth, requireCompanySigner, signersController.getSigners);
 app.patch('/api/company/:companyId/signers/:signerId', requireAuth, requireCompanySigner, signersController.updateSigner);
 
@@ -828,14 +1021,21 @@ app.get('/api/hrkey-score/model-info', async (req, res) => {
 });
 
 /* =========================
-   Start
+   Export app for testing
    ========================= */
-app.listen(PORT, async () => {
-  console.log(`🚀 HRKey Backend running on port ${PORT}`);
-  console.log(`   Health (backend): ${new URL('/health', BACKEND_PUBLIC_URL).toString()}`);
-  console.log(`   APP_URL (frontend public): ${APP_URL}`);
-  console.log(`   STRIPE MODE: ${STRIPE_SECRET_KEY.startsWith('sk_live_') ? 'LIVE' : 'TEST'}`);
+export default app;
 
-  // Ensure superadmin is configured
-  await ensureSuperadmin();
-});
+/* =========================
+   Start server (only if not in test mode)
+   ========================= */
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, async () => {
+    console.log(`🚀 HRKey Backend running on port ${PORT}`);
+    console.log(`   Health (backend): ${new URL('/health', BACKEND_PUBLIC_URL).toString()}`);
+    console.log(`   APP_URL (frontend public): ${APP_URL}`);
+    console.log(`   STRIPE MODE: ${STRIPE_SECRET_KEY.startsWith('sk_live_') ? 'LIVE' : 'TEST'}`);
+
+    // Ensure superadmin is configured
+    await ensureSuperadmin();
+  });
+}
