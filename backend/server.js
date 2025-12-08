@@ -939,14 +939,21 @@ app.get('/api/hrkey-score/model-info', async (req, res) => {
 });
 
 /* =========================
-   Start
+   Export app for testing
    ========================= */
-app.listen(PORT, async () => {
-  console.log(`🚀 HRKey Backend running on port ${PORT}`);
-  console.log(`   Health (backend): ${new URL('/health', BACKEND_PUBLIC_URL).toString()}`);
-  console.log(`   APP_URL (frontend public): ${APP_URL}`);
-  console.log(`   STRIPE MODE: ${STRIPE_SECRET_KEY.startsWith('sk_live_') ? 'LIVE' : 'TEST'}`);
+export default app;
 
-  // Ensure superadmin is configured
-  await ensureSuperadmin();
-});
+/* =========================
+   Start server (only if not in test mode)
+   ========================= */
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, async () => {
+    console.log(`🚀 HRKey Backend running on port ${PORT}`);
+    console.log(`   Health (backend): ${new URL('/health', BACKEND_PUBLIC_URL).toString()}`);
+    console.log(`   APP_URL (frontend public): ${APP_URL}`);
+    console.log(`   STRIPE MODE: ${STRIPE_SECRET_KEY.startsWith('sk_live_') ? 'LIVE' : 'TEST'}`);
+
+    // Ensure superadmin is configured
+    await ensureSuperadmin();
+  });
+}
