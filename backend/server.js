@@ -13,6 +13,8 @@ import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
 import Stripe from 'stripe';
 import { makeRefereeLink as makeRefereeLinkUtil, APP_URL as UTIL_APP_URL } from './utils/appUrl.js';
+import * as Sentry from '@sentry/node';
+import * as SentryProfiling from '@sentry/profiling-node';
 
 // Import new controllers
 import identityController from './controllers/identityController.js';
@@ -26,6 +28,9 @@ import hrkeyScoreService from './hrkeyScoreService.js';
 
 // Import services
 import * as webhookService from './services/webhookService.js';
+
+// Import logging
+import logger, { requestIdMiddleware } from './logger.js';
 
 // Import middleware
 import {
@@ -41,6 +46,28 @@ import { createReferenceRequestSchema, submitReferenceSchema, getReferenceByToke
 import { createPaymentIntentSchema } from './schemas/payment.schema.js';
 
 dotenv.config();
+
+/* =========================
+   Sentry Error Monitoring
+   ========================= */
+const isTest = process.env.NODE_ENV === 'test';
+const sentryEnabled = !isTest && !!process.env.SENTRY_DSN;
+
+if (sentryEnabled) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.SENTRY_ENV || process.env.NODE_ENV || 'development',
+    enabled: sentryEnabled,
+    integrations: [
+      new Sentry.Integrations.Http({ tracing: true }),
+      new Sentry.Integrations.OnUncaughtException(),
+      new Sentry.Integrations.OnUnhandledRejection(),
+      new SentryProfiling.ProfilingIntegration()
+    ],
+    tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0'),
+    profilesSampleRate: parseFloat(process.env.SENTRY_PROFILES_SAMPLE_RATE || '0')
+  });
+}
 
 /* =========================
    URL helpers (robustos)
@@ -431,7 +458,7 @@ const corsOptions = {
     if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
       callback(null, true);
     } else {
-      console.warn(`⚠️  CORS blocked origin: ${origin}`);
+      logger.warn('CORS blocked origin', { origin });
       callback(null, true); // Allow anyway for now (can change to false in production)
     }
   },
@@ -442,6 +469,9 @@ const corsOptions = {
 
 // Stripe webhook necesita body RAW; para el resto usamos JSON normal
 app.use(cors(corsOptions));
+
+// Request ID middleware for request correlation
+app.use(requestIdMiddleware);
 
 // Security headers with helmet
 app.use(helmet({
@@ -522,46 +552,92 @@ app.use((req, res, next) => {
   return express.json()(req, res, next);
 });
 
-// Health check endpoint with service verification
-app.get('/health', async (req, res) => {
+/* =========================
+   Sentry Request & Tracing Handlers
+   ========================= */
+if (sentryEnabled) {
+  // Request handler must be the first middleware on the app
+  app.use(Sentry.Handlers.requestHandler());
+
+  // TracingHandler creates a trace for every incoming request
+  app.use(Sentry.Handlers.tracingHandler());
+
+  // Inject requestId and user context into Sentry scope
+  app.use((req, res, next) => {
+    const requestId = req.requestId || res.locals.requestId;
+    if (requestId) {
+      Sentry.setTag('request_id', requestId);
+    }
+
+    if (req.user) {
+      Sentry.setUser({
+        id: req.user.id,
+        email: req.user.email,
+        role: req.user.role
+      });
+    }
+
+    next();
+  });
+}
+
+/* =========================
+   Health Check Endpoints
+   ========================= */
+
+// Simple health check - no authentication, no external dependencies
+// Returns basic server status for quick liveness checks
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    version: '1.0.0',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Deep health check - includes Supabase connectivity check
+// Returns degraded status if external services are unavailable
+app.get('/health/deep', async (req, res) => {
   const healthcheck = {
-    status: 'healthy',
-    service: 'HRKey Backend Service',
+    status: 'ok',
     timestamp: new Date().toISOString(),
+    version: '1.0.0',
     uptime: process.uptime(),
-    services: {}
+    supabase: 'ok',
+    details: null
   };
 
   try {
-    // Check Supabase connection
-    const { data, error } = await supabase
+    // Lightweight Supabase ping with timeout
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Supabase health check timeout')), 5000)
+    );
+
+    const checkPromise = supabase
       .from('users')
       .select('count')
       .limit(1);
 
-    healthcheck.services.database = error ? 'down' : 'up';
+    const { error } = await Promise.race([checkPromise, timeoutPromise]);
+
     if (error) {
       healthcheck.status = 'degraded';
-      healthcheck.services.database_error = error.message;
+      healthcheck.supabase = 'error';
+      healthcheck.details = {
+        supabase_error: error.message
+      };
     }
   } catch (err) {
-    healthcheck.services.database = 'down';
-    healthcheck.services.database_error = err.message;
     healthcheck.status = 'degraded';
+    healthcheck.supabase = 'error';
+    healthcheck.details = {
+      supabase_error: err.message
+    };
   }
 
-  // Check other services configuration
-  healthcheck.services.email = RESEND_API_KEY ? 'configured' : 'not configured';
-  healthcheck.services.stripe = STRIPE_SECRET_KEY && !STRIPE_SECRET_KEY.includes('reemplaza') ? 'configured' : 'not configured';
-  healthcheck.environment = {
-    node_env: process.env.NODE_ENV || 'development',
-    app_url: APP_URL,
-    backend_url: BACKEND_PUBLIC_URL
-  };
-
-  // Return appropriate status code
-  const statusCode = healthcheck.status === 'healthy' ? 200 : 503;
-  res.status(statusCode).json(healthcheck);
+  // Return 200 even if degraded (service is still running)
+  // Monitoring systems can check the status field for degradation
+  res.status(200).json(healthcheck);
 });
 
 /* =========================
@@ -676,13 +752,32 @@ app.post('/create-payment-intent', requireAuth, authLimiter, validateBody(create
 // Stripe webhook: body RAW
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
+  const reqLogger = logger.withRequest(req);
   let event;
 
   // Step 1: Verify Stripe signature
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
+    reqLogger.error('Webhook signature verification failed', {
+      error: err.message,
+      hasSignature: !!sig
+    });
+
+    // Capture signature verification failures in Sentry
+    if (sentryEnabled) {
+      Sentry.captureException(err, scope => {
+        scope.setTag('controller', 'webhook');
+        scope.setTag('route', 'POST /webhook');
+        scope.setTag('error_type', 'signature_verification');
+        scope.setContext('webhook', {
+          hasSignature: !!sig,
+          path: req.path
+        });
+        return scope;
+      });
+    }
+
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
@@ -690,7 +785,10 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     // Step 2: Check idempotency - has this event already been processed?
     const alreadyProcessed = await webhookService.isEventProcessed(event.id);
     if (alreadyProcessed) {
-      console.log(`Event ${event.id} already processed, skipping (idempotency)`);
+      reqLogger.info('Event already processed, skipping (idempotency)', {
+        eventId: event.id,
+        eventType: event.type
+      });
       return res.json({ received: true, idempotent: true });
     }
 
@@ -698,18 +796,29 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object;
-        console.log('Processing payment_intent.succeeded:', paymentIntent.id);
+        reqLogger.info('Processing payment_intent.succeeded', {
+          paymentIntentId: paymentIntent.id,
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+          email: paymentIntent.receipt_email
+        });
 
         const result = await webhookService.processPaymentSuccess(paymentIntent);
 
         if (result.success) {
-          console.log('✅ Payment processed successfully:', {
-            user: result.user?.id,
+          reqLogger.info('Payment processed successfully', {
+            userId: result.user?.id,
+            userEmail: result.user?.email,
             plan: result.user?.plan,
-            transaction: result.transaction?.id
+            transactionId: result.transaction?.id,
+            paymentIntentId: result.paymentIntentId
           });
         } else {
-          console.warn('⚠️ Payment processed with warnings:', result.reason);
+          reqLogger.warn('Payment processed with warnings', {
+            reason: result.reason,
+            paymentIntentId: result.paymentIntentId,
+            email: result.email
+          });
         }
 
         // Step 4: Mark event as processed (idempotency)
@@ -724,7 +833,11 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
       case 'payment_intent.payment_failed': {
         const paymentIntent = event.data.object;
-        console.log('Processing payment_intent.payment_failed:', paymentIntent.id);
+        reqLogger.warn('Processing payment_intent.payment_failed', {
+          paymentIntentId: paymentIntent.id,
+          amount: paymentIntent.amount,
+          email: paymentIntent.receipt_email
+        });
 
         await webhookService.processPaymentFailed(paymentIntent);
         await webhookService.markEventProcessed(event.id, event.type, {
@@ -736,7 +849,10 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
       default:
         // Unsupported event type - just log and mark as processed
-        console.log('Unsupported event type:', event.type);
+        reqLogger.info('Unsupported event type', {
+          eventType: event.type,
+          eventId: event.id
+        });
         await webhookService.markEventProcessed(event.id, event.type, {
           note: 'Event type not explicitly handled'
         });
@@ -744,7 +860,27 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
     res.json({ received: true });
   } catch (error) {
-    console.error('Webhook processing error:', error);
+    reqLogger.error('Webhook processing error', {
+      error: error.message,
+      stack: error.stack,
+      eventId: event?.id,
+      eventType: event?.type
+    });
+
+    // Capture webhook processing errors in Sentry
+    if (sentryEnabled) {
+      Sentry.captureException(error, scope => {
+        scope.setTag('controller', 'webhook');
+        scope.setTag('route', 'POST /webhook');
+        scope.setTag('error_type', 'processing_error');
+        scope.setContext('webhook', {
+          eventId: event?.id,
+          eventType: event?.type
+        });
+        return scope;
+      });
+    }
+
     // Return 500 so Stripe will retry
     res.status(500).json({ error: 'Webhook processing failed' });
   }
@@ -1021,6 +1157,31 @@ app.get('/api/hrkey-score/model-info', async (req, res) => {
 });
 
 /* =========================
+   DEBUG ROUTE (Temporary - Remove after Sentry verification)
+   ========================= */
+// DEBUG: Ruta temporal para probar Sentry. Eliminar después.
+if (sentryEnabled) {
+  app.get('/debug-sentry', (req, res) => {
+    throw new Error('Sentry debug error – HRKey backend');
+  });
+}
+
+/* =========================
+   Sentry Error Handler
+   ========================= */
+// The Sentry error handler must be registered before any other error middleware
+// and after all controllers
+if (sentryEnabled) {
+  app.use(Sentry.Handlers.errorHandler({
+    shouldHandleError(error) {
+      // Only capture server errors (5xx), not client errors (4xx)
+      const statusCode = error.status || error.statusCode || 500;
+      return statusCode >= 500;
+    }
+  }));
+}
+
+/* =========================
    Export app for testing
    ========================= */
 export default app;
@@ -1030,10 +1191,13 @@ export default app;
    ========================= */
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, async () => {
-    console.log(`🚀 HRKey Backend running on port ${PORT}`);
-    console.log(`   Health (backend): ${new URL('/health', BACKEND_PUBLIC_URL).toString()}`);
-    console.log(`   APP_URL (frontend public): ${APP_URL}`);
-    console.log(`   STRIPE MODE: ${STRIPE_SECRET_KEY.startsWith('sk_live_') ? 'LIVE' : 'TEST'}`);
+    logger.info('HRKey Backend started', {
+      port: PORT,
+      nodeEnv: process.env.NODE_ENV || 'development',
+      healthEndpoint: new URL('/health', BACKEND_PUBLIC_URL).toString(),
+      frontendUrl: APP_URL,
+      stripeMode: STRIPE_SECRET_KEY.startsWith('sk_live_') ? 'LIVE' : 'TEST'
+    });
 
     // Ensure superadmin is configured
     await ensureSuperadmin();

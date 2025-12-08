@@ -13,6 +13,9 @@
     "test:verbose": "NODE_OPTIONS='--experimental-vm-modules' jest --verbose"
   },
   "dependencies": {
+    "@sentry/node": "^10.29.0",
+    "@sentry/profiling-node": "^10.29.0",
+    "@sentry/tracing": "^7.120.4",
     "@supabase/supabase-js": "^2.45.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -22,6 +25,7 @@
     "helmet": "^8.1.0",
     "resend": "^3.2.0",
     "stripe": "^14.5.0",
+    "winston": "^3.19.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {

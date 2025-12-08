@@ -57,32 +57,7 @@ describe('Revenue Controller Tests', () => {
   // GET /api/revenue/balance
   // ============================================================================
 
-  /*
-   * SKIPPED: GET endpoint tests for revenue controller hit complex Supabase query builder
-   * mocking issues. The query builder requires chained method mocking (.select().eq().gte()
-   * .order().range().single()) that is difficult to set up correctly in the test environment.
-   *
-   * WHY SKIPPED:
-   * - Supabase query builder chains don't persist across method calls in mocks
-   * - Mock setup requires recreating entire chain for each test
-   * - Test infrastructure complexity exceeds value for these GET endpoints
-   * - Actual functionality works correctly in production with real Supabase client
-   *
-   * WHAT'S MISSING:
-   * - Integration tests for GET /api/revenue/balance
-   * - Integration tests for GET /api/revenue/shares
-   * - Integration tests for GET /api/revenue/transactions
-   * - Integration tests for GET /api/revenue/summary
-   *
-   * TO RE-ENABLE:
-   * - Implement proper query builder mock persistence in supabase.mock.js
-   * - Or use real Supabase test instance with test database
-   * - Or refactor controllers to use simpler query patterns
-   *
-   * NOTE: POST endpoint tests (payout request) work fine and are NOT skipped.
-   */
-
-  describe.skip('GET /api/revenue/balance', () => {
+  describe('GET /api/revenue/balance', () => {
     test('AUTH-RC1: Should reject unauthenticated request', async () => {
       const response = await request(app)
         .get('/api/revenue/balance')
@@ -111,9 +86,19 @@ describe('Revenue Controller Tests', () => {
         mockAuthGetUserSuccess(userId)
       );
 
-      mockSupabaseClient.from().single
-        .mockResolvedValueOnce(mockDatabaseSuccess(user))
-        .mockResolvedValueOnce(mockDatabaseSuccess(balance));
+      // Mock for requireAuth middleware (users table)
+      mockSupabaseClient.from.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue(mockDatabaseSuccess(user))
+      });
+
+      // Mock for balance query (user_balance_ledger table)
+      mockSupabaseClient.from.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue(mockDatabaseSuccess(balance))
+      });
 
       const response = await request(app)
         .get('/api/revenue/balance')
@@ -142,9 +127,19 @@ describe('Revenue Controller Tests', () => {
         mockAuthGetUserSuccess(userId)
       );
 
-      mockSupabaseClient.from().single
-        .mockResolvedValueOnce(mockDatabaseSuccess(user))
-        .mockResolvedValueOnce(mockDatabaseError('No rows found', 'PGRST116'));
+      // Mock for requireAuth middleware (users table)
+      mockSupabaseClient.from.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue(mockDatabaseSuccess(user))
+      });
+
+      // Mock for balance query - return null data (no balance record)
+      mockSupabaseClient.from.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
+      });
 
       const response = await request(app)
         .get('/api/revenue/balance')
@@ -170,9 +165,19 @@ describe('Revenue Controller Tests', () => {
         mockAuthGetUserSuccess(userId)
       );
 
-      mockSupabaseClient.from().single
-        .mockResolvedValueOnce(mockDatabaseSuccess(user))
-        .mockResolvedValueOnce(mockDatabaseError('Connection timeout', 'DB_ERROR'));
+      // Mock for requireAuth middleware (users table)
+      mockSupabaseClient.from.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue(mockDatabaseSuccess(user))
+      });
+
+      // Mock for balance query - return database error
+      mockSupabaseClient.from.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue(mockDatabaseError('Connection timeout', 'DB_ERROR'))
+      });
 
       const response = await request(app)
         .get('/api/revenue/balance')
@@ -188,8 +193,7 @@ describe('Revenue Controller Tests', () => {
   // GET /api/revenue/shares
   // ============================================================================
 
-  // SKIPPED: See comment above GET /api/revenue/balance for full explanation
-  describe.skip('GET /api/revenue/shares', () => {
+  describe('GET /api/revenue/shares', () => {
     test('AUTH-RC2: Should reject unauthenticated request', async () => {
       const response = await request(app)
         .get('/api/revenue/shares')
@@ -229,12 +233,15 @@ describe('Revenue Controller Tests', () => {
         mockAuthGetUserSuccess(userId)
       );
 
-      mockSupabaseClient.from().single.mockResolvedValueOnce(
-        mockDatabaseSuccess(user)
-      );
+      // Mock for requireAuth middleware (users table)
+      mockSupabaseClient.from.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue(mockDatabaseSuccess(user))
+      });
 
-      mockSupabaseClient.from().mockReturnValue({
-        ...mockQueryBuilder,
+      // Mock for shares query with joins, ordering, and pagination
+      mockSupabaseClient.from.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         order: jest.fn().mockReturnThis(),
@@ -281,20 +288,34 @@ describe('Revenue Controller Tests', () => {
         mockAuthGetUserSuccess(userId)
       );
 
-      mockSupabaseClient.from().single.mockResolvedValueOnce(
-        mockDatabaseSuccess(user)
-      );
+      // Mock for requireAuth middleware (users table)
+      mockSupabaseClient.from.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue(mockDatabaseSuccess(user))
+      });
+
+      // Mock for shares query with status filter
+      // The controller calls: .select().eq('target_user_id').order().range()
+      // Then conditionally: .eq('status', status)
+      // So we need the final .eq() to return the result
+      const result = {
+        data: [],
+        error: null,
+        count: 0
+      };
 
       const queryBuilder = {
-        ...mockQueryBuilder,
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         order: jest.fn().mockReturnThis(),
-        range: jest.fn().mockResolvedValue({
-          data: [],
-          error: null,
-          count: 0
-        })
+        range: jest.fn().mockReturnThis()
+      };
+
+      // Make the query builder thenable so it can be awaited
+      queryBuilder.then = function(resolve) {
+        resolve(result);
+        return Promise.resolve(result);
       };
 
       mockSupabaseClient.from.mockReturnValueOnce(queryBuilder);
@@ -316,12 +337,15 @@ describe('Revenue Controller Tests', () => {
         mockAuthGetUserSuccess(userId)
       );
 
-      mockSupabaseClient.from().single.mockResolvedValueOnce(
-        mockDatabaseSuccess(user)
-      );
-
+      // Mock for requireAuth middleware (users table)
       mockSupabaseClient.from.mockReturnValueOnce({
-        ...mockQueryBuilder,
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue(mockDatabaseSuccess(user))
+      });
+
+      // Mock for shares query - return database error
+      mockSupabaseClient.from.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         order: jest.fn().mockReturnThis(),
@@ -345,8 +369,7 @@ describe('Revenue Controller Tests', () => {
   // GET /api/revenue/transactions
   // ============================================================================
 
-  // SKIPPED: See comment above GET /api/revenue/balance for full explanation
-  describe.skip('GET /api/revenue/transactions', () => {
+  describe('GET /api/revenue/transactions', () => {
     test('AUTH-RC3: Should reject unauthenticated request', async () => {
       const response = await request(app)
         .get('/api/revenue/transactions')
@@ -377,12 +400,15 @@ describe('Revenue Controller Tests', () => {
         mockAuthGetUserSuccess(userId)
       );
 
-      mockSupabaseClient.from().single.mockResolvedValueOnce(
-        mockDatabaseSuccess(user)
-      );
-
+      // Mock for requireAuth middleware (users table)
       mockSupabaseClient.from.mockReturnValueOnce({
-        ...mockQueryBuilder,
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue(mockDatabaseSuccess(user))
+      });
+
+      // Mock for transactions query
+      mockSupabaseClient.from.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         order: jest.fn().mockReturnThis(),
@@ -421,20 +447,34 @@ describe('Revenue Controller Tests', () => {
         mockAuthGetUserSuccess(userId)
       );
 
-      mockSupabaseClient.from().single.mockResolvedValueOnce(
-        mockDatabaseSuccess(user)
-      );
+      // Mock for requireAuth middleware (users table)
+      mockSupabaseClient.from.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue(mockDatabaseSuccess(user))
+      });
+
+      // Mock for transactions query with type filter
+      // The controller calls: .select().eq('user_id').order().range()
+      // Then conditionally: .eq('transaction_type', type)
+      // So we need to make the query builder thenable
+      const result = {
+        data: [],
+        error: null,
+        count: 0
+      };
 
       const queryBuilder = {
-        ...mockQueryBuilder,
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         order: jest.fn().mockReturnThis(),
-        range: jest.fn().mockResolvedValue({
-          data: [],
-          error: null,
-          count: 0
-        })
+        range: jest.fn().mockReturnThis()
+      };
+
+      // Make the query builder thenable so it can be awaited
+      queryBuilder.then = function(resolve) {
+        resolve(result);
+        return Promise.resolve(result);
       };
 
       mockSupabaseClient.from.mockReturnValueOnce(queryBuilder);
@@ -456,12 +496,15 @@ describe('Revenue Controller Tests', () => {
         mockAuthGetUserSuccess(userId)
       );
 
-      mockSupabaseClient.from().single.mockResolvedValueOnce(
-        mockDatabaseSuccess(user)
-      );
-
+      // Mock for requireAuth middleware (users table)
       mockSupabaseClient.from.mockReturnValueOnce({
-        ...mockQueryBuilder,
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue(mockDatabaseSuccess(user))
+      });
+
+      // Mock for transactions query - return database error
+      mockSupabaseClient.from.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         order: jest.fn().mockReturnThis(),
@@ -708,8 +751,7 @@ describe('Revenue Controller Tests', () => {
   // GET /api/revenue/summary
   // ============================================================================
 
-  // SKIPPED: See comment above GET /api/revenue/balance for full explanation
-  describe.skip('GET /api/revenue/summary', () => {
+  describe('GET /api/revenue/summary', () => {
     test('AUTH-RC5: Should reject unauthenticated request', async () => {
       const response = await request(app)
         .get('/api/revenue/summary')
@@ -742,38 +784,50 @@ describe('Revenue Controller Tests', () => {
         mockAuthGetUserSuccess(userId)
       );
 
-      // Mock for requireAuth user lookup
-      mockSupabaseClient.from().single.mockResolvedValueOnce(
-        mockDatabaseSuccess(user)
-      );
+      // Mock for requireAuth middleware (users table)
+      mockSupabaseClient.from.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue(mockDatabaseSuccess(user))
+      });
 
       // Mock for balance query (maybeSingle)
       mockSupabaseClient.from.mockReturnValueOnce({
-        ...mockQueryBuilder,
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            maybeSingle: jest.fn().mockResolvedValue(mockDatabaseSuccess(balance))
-          })
-        })
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue(mockDatabaseSuccess(balance))
       });
 
       // Mock for approved requests count
-      mockSupabaseClient.from.mockReturnValueOnce({
-        ...mockQueryBuilder,
-        select: jest.fn().mockResolvedValue({
-          data: null,
-          error: null,
-          count: 5
-        })
-      });
+      // The controller calls: .select('id', { count: 'exact', head: true }).eq().eq()
+      // So we need a thenable query builder
+      const countResult = {
+        data: null,
+        error: null,
+        count: 5
+      };
 
-      // Mock for revenue shares
-      mockSupabaseClient.from.mockReturnValueOnce({
-        ...mockQueryBuilder,
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue(mockDatabaseSuccess(revenueShares))
-        })
-      });
+      const countQuery = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis()
+      };
+
+      // Make it thenable so it can be awaited
+      countQuery.then = function(resolve) {
+        resolve(countResult);
+        return Promise.resolve(countResult);
+      };
+
+      mockSupabaseClient.from.mockReturnValueOnce(countQuery);
+
+      // Mock for revenue shares query
+      // The controller calls: .select('user_amount, status').eq('target_user_id', userId)
+      // And awaits the result, so .eq() should return the result
+      const sharesQuery = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ data: revenueShares, error: null })
+      };
+      mockSupabaseClient.from.mockReturnValueOnce(sharesQuery);
 
       const response = await request(app)
         .get('/api/revenue/summary')
@@ -796,7 +850,7 @@ describe('Revenue Controller Tests', () => {
           totalEarnedFromShares: 250
         },
         payoutInfo: {
-          minThreshold: 50.00,
+          minThreshold: "50.00",
           preferredMethod: 'wallet',
           lastPayoutAt: '2025-01-01T00:00:00Z'
         }
@@ -810,35 +864,48 @@ describe('Revenue Controller Tests', () => {
         mockAuthGetUserSuccess(userId)
       );
 
-      mockSupabaseClient.from().single.mockResolvedValueOnce(
-        mockDatabaseSuccess(user)
-      );
-
-      // Mock all queries to return empty/null results
+      // Mock for requireAuth middleware (users table)
       mockSupabaseClient.from.mockReturnValueOnce({
-        ...mockQueryBuilder,
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
-          })
-        })
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue(mockDatabaseSuccess(user))
       });
 
+      // Mock for balance query - return null (no balance record)
       mockSupabaseClient.from.mockReturnValueOnce({
-        ...mockQueryBuilder,
-        select: jest.fn().mockResolvedValue({
-          data: null,
-          error: null,
-          count: 0
-        })
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null })
       });
 
-      mockSupabaseClient.from.mockReturnValueOnce({
-        ...mockQueryBuilder,
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ data: [], error: null })
-        })
-      });
+      // Mock for approved requests count
+      // The controller calls: .select('id', { count: 'exact', head: true }).eq().eq()
+      const countResult = {
+        data: null,
+        error: null,
+        count: 0
+      };
+
+      const countQuery = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis()
+      };
+
+      // Make it thenable so it can be awaited
+      countQuery.then = function(resolve) {
+        resolve(countResult);
+        return Promise.resolve(countResult);
+      };
+
+      mockSupabaseClient.from.mockReturnValueOnce(countQuery);
+
+      // Mock for revenue shares query - return empty array
+      // The controller calls: .select('user_amount, status').eq('target_user_id', userId)
+      const sharesQuery = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ data: [], error: null })
+      };
+      mockSupabaseClient.from.mockReturnValueOnce(sharesQuery);
 
       const response = await request(app)
         .get('/api/revenue/summary')
@@ -860,12 +927,15 @@ describe('Revenue Controller Tests', () => {
         mockAuthGetUserSuccess(userId)
       );
 
-      mockSupabaseClient.from().single.mockResolvedValueOnce(
-        mockDatabaseSuccess(user)
-      );
+      // Mock for requireAuth middleware (users table)
+      mockSupabaseClient.from.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue(mockDatabaseSuccess(user))
+      });
 
-      // Simulate database error on balance query
-      mockSupabaseClient.from.mockImplementation(() => {
+      // Simulate database error by throwing when .from() is called for balance query
+      mockSupabaseClient.from.mockImplementationOnce(() => {
         throw new Error('Database connection lost');
       });
 

@@ -5,10 +5,15 @@
 // ============================================================================
 
 import { createClient } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/node';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+
+// Check if Sentry is enabled
+const isTest = process.env.NODE_ENV === 'test';
+const sentryEnabled = !isTest && !!process.env.SENTRY_DSN;
 
 // ============================================================================
 // GET USER BALANCE
@@ -323,6 +328,22 @@ export async function requestPayout(req, res) {
     });
   } catch (error) {
     console.error('Request payout error:', error);
+
+    // Capture payout errors in Sentry (critical - involves money)
+    if (sentryEnabled) {
+      Sentry.captureException(error, scope => {
+        scope.setTag('controller', 'revenue');
+        scope.setTag('route', 'POST /api/revenue/payout/request');
+        scope.setTag('error_type', 'payout_error');
+        scope.setContext('payout_request', {
+          userId: req.user?.id,
+          amount: req.body?.amount,
+          payoutMethod: req.body?.payoutMethod
+        });
+        return scope;
+      });
+    }
+
     return res.status(500).json({
       error: 'Internal server error'
     });
@@ -394,6 +415,20 @@ export async function getEarningsSummary(req, res) {
     });
   } catch (error) {
     console.error('Get earnings summary error:', error);
+
+    // Capture earnings summary errors in Sentry
+    if (sentryEnabled) {
+      Sentry.captureException(error, scope => {
+        scope.setTag('controller', 'revenue');
+        scope.setTag('route', 'GET /api/revenue/summary');
+        scope.setTag('error_type', 'summary_error');
+        scope.setContext('summary_request', {
+          userId: req.user?.id
+        });
+        return scope;
+      });
+    }
+
     return res.status(500).json({
       error: 'Internal server error'
     });

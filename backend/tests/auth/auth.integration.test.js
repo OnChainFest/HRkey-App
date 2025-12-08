@@ -46,19 +46,17 @@ describe('Authentication Integration Tests', () => {
   // =========================================================================
   describe('GET /health', () => {
     test('IT-H1: Should return health status without authentication', async () => {
-      // Mock database check
-      mockSupabaseClient.from().limit.mockResolvedValue(
-        mockDatabaseSuccess([])
-      );
-
+      // Simple health check - no database dependency
       const response = await request(app)
         .get('/health')
         .expect('Content-Type', /json/)
         .expect(200);
 
+      // New simple health check format (status, version, timestamp)
       expect(response.body).toHaveProperty('status');
-      expect(response.body).toHaveProperty('service');
+      expect(response.body).toHaveProperty('version');
       expect(response.body).toHaveProperty('timestamp');
+      expect(response.body.status).toBe('ok');
     });
   });
 
