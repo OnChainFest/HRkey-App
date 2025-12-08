@@ -10,10 +10,10 @@
 ## 📊 Test Results Summary
 
 ```
-Test Suites: 3 total (all passing ✅)
-Tests:       50 total (50 passed ✅)
-Coverage:    Overall 17.4% | Middleware 76.19% | Auth 95.83%
-Status:      ✅ Production security hardening complete
+Test Suites: 5 total (all passing ✅)
+Tests:       80 total (80 passed ✅)
+Coverage:    Overall 28.17% | Middleware 76.19% | Controllers 19.28%
+Status:      ✅ Production security + permission testing complete
 ```
 
 ### Coverage Report
@@ -21,14 +21,17 @@ Status:      ✅ Production security hardening complete
 | Module | Statements | Branches | Functions | Lines | Status |
 |--------|-----------|----------|-----------|-------|--------|
 | **middleware/auth.js** | **95.83%** | **97.77%** | **100%** ✅ | **95.83%** | Excellent |
-| **middleware/validate.js** | 33.33% | 16.66% | 33.33% | 33.33% | Improved |
+| middleware/validate.js | 33.33% | 16.66% | 33.33% | 33.33% | Improved |
+| **controllers/companyController.js** | **50%** | **23.52%** | **83.33%** ✅ | **52.38%** | Good |
+| **controllers/signersController.js** | **42.85%** | **38.09%** | **71.42%** | **43.58%** | Good |
 | schemas (validation) | 85.71% | 100% | 0% | 85.71% | Good |
-| controllers | 6.53% | 2.99% | 7.31% | 6.71% | Needs work |
 
 **Key Achievements:**
 ✅ **100% function coverage on all 6 auth middleware functions**
+✅ **83% function coverage on company controller (5/6 functions)**
+✅ **71% function coverage on signers controller (5/7 functions)**
 ✅ **Production endpoints secured with authentication + authorization**
-✅ **Validation middleware coverage improved from 15% to 33%**
+✅ **Comprehensive permission model testing across user roles**
 
 ---
 
@@ -44,10 +47,13 @@ backend/
 │   ├── __mocks__/
 │   │   ├── supabase.mock.js (Supabase client mocks + query builder)
 │   │   └── express.mock.js (Express req/res/next mocks)
-│   └── auth/
-│       ├── auth.middleware.test.js (unit tests - 38 tests)
-│       ├── auth.integration.test.js (integration tests - 9 tests)
-│       └── auth.secured-endpoints.test.js (NEW - security tests - 12 tests)
+│   ├── auth/
+│   │   ├── auth.middleware.test.js (unit tests - 38 tests)
+│   │   ├── auth.integration.test.js (integration tests - 9 tests)
+│   │   └── auth.secured-endpoints.test.js (security tests - 12 tests)
+│   └── permissions/
+│       ├── company.controller.test.js (NEW - 14 tests)
+│       └── signers.controller.test.js (NEW - 16 tests)
 ├── jest.config.js
 └── package.json (test scripts)
 ```
@@ -224,6 +230,95 @@ app.post('/api/wallet/create', requireAuth, strictLimiter, validateBody(schema),
 ```
 
 **Impact:** These changes prevent unauthorized users from creating wallets or requesting references for other users - closing critical IDOR (Insecure Direct Object Reference) vulnerabilities.
+
+---
+
+## 🔐 Permission Controller Tests (30 tests) - **NEW**
+
+**Status:** ✅ All passing
+**Files:**
+- `tests/permissions/company.controller.test.js` (14 tests)
+- `tests/permissions/signers.controller.test.js` (16 tests)
+
+### Company Controller Tests (14 tests)
+
+Tests authorization logic for company operations across different user roles:
+
+**PERM-C1-C2:** `POST /api/company/create` (requireAuth)
+- ✅ Authenticated user can create company
+- ❌ Unauthenticated user rejected (401)
+
+**PERM-C3-C4:** `GET /api/companies/my` (requireAuth)
+- ✅ Authenticated user can get their companies
+- ❌ Unauthenticated user rejected (401)
+
+**PERM-C5-C8:** `GET /api/company/:companyId` (requireAuth + requireCompanySigner)
+- ✅ Company signer can view company details
+- ✅ Superadmin can view any company
+- ❌ Non-signer rejected (403 Forbidden)
+- ❌ Unauthenticated user rejected (401)
+
+**PERM-C9-C10:** `PATCH /api/company/:companyId` (requireAuth + requireCompanySigner)
+- ✅ Company signer can update company
+- ❌ Non-signer rejected (403 Forbidden)
+
+**PERM-C11-C14:** `POST /api/company/:companyId/verify` (requireAuth + requireSuperadmin)
+- ✅ Superadmin can verify company
+- ❌ Regular user rejected (403)
+- ❌ Admin user rejected (403 - only superadmin allowed)
+- ❌ Unauthenticated user rejected (401)
+
+### Signers Controller Tests (16 tests)
+
+Tests authorization logic for company signer management:
+
+**PERM-S1-S6:** `POST /api/company/:companyId/signers` (requireAuth + requireCompanySigner)
+- ✅ Company signer can invite new signers
+- ✅ Superadmin can invite to any company
+- ❌ Non-signer rejected (403)
+- ❌ Invalid email format rejected (400)
+- ❌ Missing required fields rejected (400)
+- ❌ Unauthenticated user rejected (401/429)
+
+**PERM-S7-S9:** `GET /api/company/:companyId/signers` (requireAuth + requireCompanySigner)
+- ✅ Company signer can view signers list
+- ✅ Superadmin can view signers of any company
+- ❌ Non-signer rejected (403)
+
+**PERM-S10-S11:** `PATCH /api/company/:companyId/signers/:signerId` (requireAuth + requireCompanySigner)
+- ✅ Company signer can update signer status
+- ❌ Non-signer rejected (403)
+
+**PERM-S12-S13:** `GET /api/signers/invite/:token` (public - no auth)
+- ✅ Anyone can view invitation (public endpoint)
+- ❌ Invalid/nonexistent token handled gracefully
+
+**PERM-S14-S16:** `POST /api/signers/accept/:token` (requireAuth)
+- ✅ Authenticated user can accept invitation
+- ❌ Unauthenticated user rejected (401)
+- ❌ Nonexistent invitation handled appropriately
+
+### Permission Model Coverage
+
+**User Roles Tested:**
+- 👤 **Regular User** - Basic authenticated user
+- 👔 **Company Signer** - Active signer of a company
+- 🛡️ **Admin** - Administrative privileges
+- 👑 **Superadmin** - Full system access (bypasses company restrictions)
+
+**Authorization Patterns:**
+- ✅ Role-based access control (user, admin, superadmin)
+- ✅ Resource-based permissions (company signer requirement)
+- ✅ Superadmin bypass logic
+- ✅ Cross-company access prevention
+- ✅ Active signer status validation
+
+**Error Responses Validated:**
+- 401 Unauthorized - No authentication token
+- 403 Forbidden - Authenticated but insufficient permissions
+- 400 Bad Request - Invalid input or missing fields
+- 404 Not Found - Resource doesn't exist
+- 429 Too Many Requests - Rate limiting
 
 ---
 
