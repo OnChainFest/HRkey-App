@@ -27,6 +27,9 @@ import hrkeyScoreService from './hrkeyScoreService.js';
 // Import services
 import * as webhookService from './services/webhookService.js';
 
+// Import logging
+import logger, { requestIdMiddleware } from './logger.js';
+
 // Import middleware
 import {
   requireAuth,
@@ -431,7 +434,7 @@ const corsOptions = {
     if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
       callback(null, true);
     } else {
-      console.warn(`⚠️  CORS blocked origin: ${origin}`);
+      logger.warn('CORS blocked origin', { origin });
       callback(null, true); // Allow anyway for now (can change to false in production)
     }
   },
@@ -442,6 +445,9 @@ const corsOptions = {
 
 // Stripe webhook necesita body RAW; para el resto usamos JSON normal
 app.use(cors(corsOptions));
+
+// Request ID middleware for request correlation
+app.use(requestIdMiddleware);
 
 // Security headers with helmet
 app.use(helmet({
@@ -693,13 +699,17 @@ app.post('/create-payment-intent', requireAuth, authLimiter, validateBody(create
 // Stripe webhook: body RAW
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
+  const reqLogger = logger.withRequest(req);
   let event;
 
   // Step 1: Verify Stripe signature
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
+    reqLogger.error('Webhook signature verification failed', {
+      error: err.message,
+      hasSignature: !!sig
+    });
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
@@ -707,7 +717,10 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     // Step 2: Check idempotency - has this event already been processed?
     const alreadyProcessed = await webhookService.isEventProcessed(event.id);
     if (alreadyProcessed) {
-      console.log(`Event ${event.id} already processed, skipping (idempotency)`);
+      reqLogger.info('Event already processed, skipping (idempotency)', {
+        eventId: event.id,
+        eventType: event.type
+      });
       return res.json({ received: true, idempotent: true });
     }
 
@@ -715,18 +728,29 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object;
-        console.log('Processing payment_intent.succeeded:', paymentIntent.id);
+        reqLogger.info('Processing payment_intent.succeeded', {
+          paymentIntentId: paymentIntent.id,
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+          email: paymentIntent.receipt_email
+        });
 
         const result = await webhookService.processPaymentSuccess(paymentIntent);
 
         if (result.success) {
-          console.log('✅ Payment processed successfully:', {
-            user: result.user?.id,
+          reqLogger.info('Payment processed successfully', {
+            userId: result.user?.id,
+            userEmail: result.user?.email,
             plan: result.user?.plan,
-            transaction: result.transaction?.id
+            transactionId: result.transaction?.id,
+            paymentIntentId: result.paymentIntentId
           });
         } else {
-          console.warn('⚠️ Payment processed with warnings:', result.reason);
+          reqLogger.warn('Payment processed with warnings', {
+            reason: result.reason,
+            paymentIntentId: result.paymentIntentId,
+            email: result.email
+          });
         }
 
         // Step 4: Mark event as processed (idempotency)
@@ -741,7 +765,11 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
       case 'payment_intent.payment_failed': {
         const paymentIntent = event.data.object;
-        console.log('Processing payment_intent.payment_failed:', paymentIntent.id);
+        reqLogger.warn('Processing payment_intent.payment_failed', {
+          paymentIntentId: paymentIntent.id,
+          amount: paymentIntent.amount,
+          email: paymentIntent.receipt_email
+        });
 
         await webhookService.processPaymentFailed(paymentIntent);
         await webhookService.markEventProcessed(event.id, event.type, {
@@ -753,7 +781,10 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
       default:
         // Unsupported event type - just log and mark as processed
-        console.log('Unsupported event type:', event.type);
+        reqLogger.info('Unsupported event type', {
+          eventType: event.type,
+          eventId: event.id
+        });
         await webhookService.markEventProcessed(event.id, event.type, {
           note: 'Event type not explicitly handled'
         });
@@ -761,7 +792,12 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
     res.json({ received: true });
   } catch (error) {
-    console.error('Webhook processing error:', error);
+    reqLogger.error('Webhook processing error', {
+      error: error.message,
+      stack: error.stack,
+      eventId: event?.id,
+      eventType: event?.type
+    });
     // Return 500 so Stripe will retry
     res.status(500).json({ error: 'Webhook processing failed' });
   }
@@ -1047,10 +1083,13 @@ export default app;
    ========================= */
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, async () => {
-    console.log(`🚀 HRKey Backend running on port ${PORT}`);
-    console.log(`   Health (backend): ${new URL('/health', BACKEND_PUBLIC_URL).toString()}`);
-    console.log(`   APP_URL (frontend public): ${APP_URL}`);
-    console.log(`   STRIPE MODE: ${STRIPE_SECRET_KEY.startsWith('sk_live_') ? 'LIVE' : 'TEST'}`);
+    logger.info('HRKey Backend started', {
+      port: PORT,
+      nodeEnv: process.env.NODE_ENV || 'development',
+      healthEndpoint: new URL('/health', BACKEND_PUBLIC_URL).toString(),
+      frontendUrl: APP_URL,
+      stripeMode: STRIPE_SECRET_KEY.startsWith('sk_live_') ? 'LIVE' : 'TEST'
+    });
 
     // Ensure superadmin is configured
     await ensureSuperadmin();
