@@ -10,12 +10,12 @@
 ## 📊 Test Results Summary
 
 ```
-Test Suites: 9 total (9 passing ✅)
-Tests:       153 total (122 passed ✅, 30 skipped, 1 flaky)
+Test Suites: 9 total (8-9 passing ✅, 0-1 flaky)
+Tests:       153 total (138 passed ✅, 14 skipped, 1 flaky)
 Coverage:    Overall 34.39% | Middleware 76.19% | Controllers 26.63%
 Status:      ✅ Critical security testing complete
              ✅ Permission tests complete (30 tests)
-             ⚠️  Revenue GET endpoint tests need mock refinement
+             ✅ Revenue GET endpoint tests fixed and passing (25/25)
 ```
 
 ### Coverage Report
@@ -61,9 +61,9 @@ backend/
 │   │   ├── company.controller.test.js (14 tests)
 │   │   └── signers.controller.test.js (16 tests)
 │   └── revenue/ (NEW)
-│       ├── payment.intent.test.js (NEW - 13 tests)
-│       ├── stripe.webhook.test.js (NEW - 18 tests)
-│       └── revenue.controller.test.js (NEW - 24 tests)
+│       ├── payment.intent.test.js (NEW - 13 tests, 4 skipped)
+│       ├── stripe.webhook.test.js (NEW - 18 tests, 10 skipped)
+│       └── revenue.controller.test.js (NEW - 25 tests, ✅ all passing)
 ├── jest.config.js
 └── package.json (test scripts)
 ```
@@ -423,7 +423,7 @@ Tests authorization logic for company signer management:
 - ✅ Rejects missing/invalid signatures (400 error)
 - ✅ Requires STRIPE_WEBHOOK_SECRET env var
 
-### 📊 Revenue Controller Tests (24 tests)
+### 📊 Revenue Controller Tests (25 tests) - ✅ ALL PASSING
 
 **Routes Tested:**
 1. `GET /api/revenue/balance` (requireAuth)
@@ -432,12 +432,28 @@ Tests authorization logic for company signer management:
 4. `POST /api/revenue/payout/request` (requireAuth)
 5. `GET /api/revenue/summary` (requireAuth)
 
-**Tests Passing (13/24):**
+**Tests Passing (25/25) ✅:**
 
-**Authentication (5 tests ✅):**
-- ✅ AUTH-RC1-5: All endpoints reject unauthenticated requests (401)
+**Balance Endpoint (4 tests ✅):**
+- ✅ AUTH-RC1: Rejects unauthenticated requests (401)
+- ✅ HAPPY-RC1: Returns user balance successfully
+- ✅ HAPPY-RC2: Returns default balance if no record exists
+- ✅ ERROR-RC1: Handles database errors
+
+**Revenue Shares Endpoint (4 tests ✅):**
+- ✅ AUTH-RC2: Rejects unauthenticated requests (401)
+- ✅ HAPPY-RC4: Returns revenue shares with pagination
+- ✅ HAPPY-RC5: Filters shares by status
+- ✅ ERROR-RC2: Handles database errors
+
+**Transaction History Endpoint (4 tests ✅):**
+- ✅ AUTH-RC3: Rejects unauthenticated requests (401)
+- ✅ HAPPY-RC9: Returns transaction history
+- ✅ HAPPY-RC10: Filters transactions by type
+- ✅ ERROR-RC3: Handles database errors
 
 **Payout Logic (8 tests ✅):**
+- ✅ AUTH-RC4: Rejects unauthenticated requests (401)
 - ✅ HAPPY-RC12: Creates payout request successfully
 - ✅ HAPPY-RC13: Creates negative transaction (outgoing money)
 - ✅ HAPPY-RC14: Uses full balance if amount not specified
@@ -447,14 +463,17 @@ Tests authorization logic for company signer management:
 - ✅ ERROR-RC7: Rejects amount < minimum threshold (400)
 - ✅ INCOMPLETE-RC1: Documents missing payout processing
 
-**Tests with Known Issues (11/24):**
-- ⚠️ HAPPY-RC1, RC2: Balance endpoint tests (Supabase mock chaining)
-- ⚠️ HAPPY-RC4, RC5: Revenue shares pagination/filtering
-- ⚠️ HAPPY-RC9, RC10: Transaction history
-- ⚠️ HAPPY-RC15, RC16: Earnings summary
-- ⚠️ ERROR-RC1-3, RC9: Database error handling
+**Earnings Summary Endpoint (4 tests ✅):**
+- ✅ AUTH-RC5: Rejects unauthenticated requests (401)
+- ✅ HAPPY-RC15: Returns comprehensive earnings summary
+- ✅ HAPPY-RC16: Handles missing balance gracefully
+- ✅ ERROR-RC9: Handles database errors
 
-**Issue**: Complex Supabase query mocking for GET endpoints needs refinement. The controller logic is correct but test mocks don't properly simulate the service-key Supabase client's query patterns.
+**Mock Architecture Improvements:**
+- Fixed complex Supabase query mocking with `.mockReturnValueOnce()` pattern
+- Implemented thenable query builders for conditional chaining
+- Proper handling of multiple `.from()` calls per endpoint
+- Accurate simulation of `.maybeSingle()`, `.range()`, and count queries
 
 **Revenue Model Validated:**
 - Users earn from data access requests (revenue_shares)
@@ -685,6 +704,209 @@ describe('GET /api/my-endpoint', () => {
 - [ ] End-to-end tests with real database (test DB)
 - [ ] Performance tests (load testing)
 - [ ] Security tests (penetration testing)
+
+---
+
+## 🔍 Sentry Error Monitoring (Backend)
+
+**Status:** ✅ Fully integrated with backend error tracking and performance monitoring
+
+### What is Sentry?
+
+Sentry is a real-time error tracking and performance monitoring system that helps us:
+- Capture uncaught exceptions and unhandled promise rejections
+- Track Express route errors automatically
+- Monitor performance with distributed tracing
+- Profile CPU and memory usage
+- Correlate errors with user context and request IDs
+
+### When is Sentry Enabled?
+
+Sentry only runs when **BOTH** conditions are met:
+
+1. `NODE_ENV !== "test"` (disabled during Jest tests)
+2. `SENTRY_DSN` environment variable is configured
+
+**This ensures:**
+- ✅ Zero Sentry events during test runs
+- ✅ Zero noise during local development (unless explicitly configured)
+- ✅ Production and staging environments can enable monitoring independently
+
+### Environment Variables
+
+```bash
+# Required - Sentry will not initialize without this
+SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id
+
+# Optional - defaults to NODE_ENV if not set
+SENTRY_ENV=production
+
+# Optional - performance monitoring (0.0 to 1.0)
+# Default: 0 (disabled)
+SENTRY_TRACES_SAMPLE_RATE=0.1  # Sample 10% of transactions
+
+# Optional - profiling (0.0 to 1.0)
+# Default: 0 (disabled)
+SENTRY_PROFILES_SAMPLE_RATE=0.1  # Profile 10% of transactions
+```
+
+### How It Works
+
+**Automatic Error Capture:**
+- Express route errors are automatically captured by Sentry error handler
+- Uncaught exceptions and unhandled promise rejections are caught
+- Each error includes request context (requestId, user, path, method)
+
+**Request Correlation:**
+- Every request gets a unique `requestId` (from Winston logger middleware)
+- Sentry tags each event with this `requestId` for easy debugging
+- User context (id, email, role) is attached when available
+
+**Manual Error Capture:**
+
+Critical endpoints with custom error handling manually capture exceptions:
+
+```javascript
+import * as Sentry from '@sentry/node';
+
+try {
+  // Critical operation
+  await processPayment(req.body);
+} catch (error) {
+  console.error('Payment error:', error);
+
+  // Manual Sentry capture with context
+  if (sentryEnabled) {
+    Sentry.captureException(error, scope => {
+      scope.setTag('controller', 'payment');
+      scope.setTag('route', 'POST /api/payment');
+      scope.setContext('payment', {
+        amount: req.body.amount,
+        userId: req.user.id
+      });
+      return scope;
+    });
+  }
+
+  res.status(500).json({ error: 'Payment failed' });
+}
+```
+
+**Currently Enhanced Controllers:**
+- ✅ **Stripe Webhook Handler** (`server.js`) - Signature verification + processing errors
+- ✅ **Revenue Controller** (`revenueController.js`) - Payout requests + earnings summary
+
+### How to Disable Sentry in Tests
+
+**Sentry is automatically disabled** when:
+```bash
+NODE_ENV=test  # Set by Jest automatically
+```
+
+**Additional safeguard in code:**
+```javascript
+const isTest = process.env.NODE_ENV === 'test';
+const sentryEnabled = !isTest && !!process.env.SENTRY_DSN;
+
+// Sentry only initializes if sentryEnabled is true
+if (sentryEnabled) {
+  Sentry.init({ /* ... */ });
+}
+```
+
+**Manual Sentry captures check this flag:**
+```javascript
+if (sentryEnabled) {
+  Sentry.captureException(error);
+}
+```
+
+### Testing Sentry Integration
+
+**To test Sentry in development:**
+
+1. Get a Sentry DSN from [sentry.io](https://sentry.io)
+2. Set environment variables:
+   ```bash
+   export SENTRY_DSN=https://your-dsn@sentry.io/123456
+   export SENTRY_ENV=development
+   export SENTRY_TRACES_SAMPLE_RATE=1.0  # 100% for testing
+   ```
+3. Start the server (NOT in test mode):
+   ```bash
+   NODE_ENV=development npm start
+   ```
+4. Trigger an error and check Sentry dashboard
+
+**To verify Sentry is disabled in tests:**
+```bash
+npm test  # Should see no Sentry events
+```
+
+### Architecture Integration
+
+**Sentry complements Winston (does NOT replace it):**
+
+| Feature | Winston Logger | Sentry |
+|---------|---------------|--------|
+| **Purpose** | Structured logging for debugging | Error tracking & alerting |
+| **Local Dev** | ✅ Always on | ⚠️ Optional (off by default) |
+| **Test Mode** | ✅ On (captured in tests) | ❌ Off (disabled) |
+| **Production** | ✅ On (logs to console) | ✅ On (sends to Sentry) |
+| **Request Context** | `requestId`, user, method, path | Same + performance traces |
+| **Error Stack Traces** | ✅ Yes | ✅ Yes + source maps |
+| **Alerting** | ❌ No | ✅ Email, Slack, PagerDuty |
+
+**Both systems capture the same errors** - Winston for logs, Sentry for alerts.
+
+### Middleware Order
+
+**Critical: Sentry handlers must be in the correct order:**
+
+```javascript
+// 1. Sentry request handler (FIRST middleware)
+app.use(Sentry.Handlers.requestHandler());
+
+// 2. Sentry tracing handler
+app.use(Sentry.Handlers.tracingHandler());
+
+// 3. Custom middleware (requestId, user context)
+app.use((req, res, next) => {
+  Sentry.setTag('request_id', req.requestId);
+  if (req.user) Sentry.setUser({ id: req.user.id });
+  next();
+});
+
+// 4. All routes...
+app.get('/api/...', handler);
+
+// 5. Sentry error handler (BEFORE other error middleware)
+app.use(Sentry.Handlers.errorHandler());
+
+// 6. Winston error handler (LAST)
+app.use((err, req, res, next) => {
+  logger.error('Unhandled error', { error: err.message });
+  res.status(500).json({ error: 'Internal server error' });
+});
+```
+
+### Troubleshooting
+
+**Sentry not capturing errors?**
+1. Check `SENTRY_DSN` is set
+2. Verify `NODE_ENV !== 'test'`
+3. Check Sentry dashboard for ingestion issues
+4. Look for `sentryEnabled` logs in server startup
+
+**Too many events?**
+1. Reduce `SENTRY_TRACES_SAMPLE_RATE` (e.g., 0.1 = 10%)
+2. Reduce `SENTRY_PROFILES_SAMPLE_RATE`
+3. Add more specific error filters in Sentry dashboard
+
+**Tests failing with Sentry errors?**
+- This should never happen (Sentry is disabled in tests)
+- Check that `NODE_ENV=test` is set
+- Verify no explicit `Sentry.init()` calls in test files
 
 ---
 
