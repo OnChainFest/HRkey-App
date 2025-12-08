@@ -522,46 +522,63 @@ app.use((req, res, next) => {
   return express.json()(req, res, next);
 });
 
-// Health check endpoint with service verification
-app.get('/health', async (req, res) => {
+/* =========================
+   Health Check Endpoints
+   ========================= */
+
+// Simple health check - no authentication, no external dependencies
+// Returns basic server status for quick liveness checks
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    version: '1.0.0',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Deep health check - includes Supabase connectivity check
+// Returns degraded status if external services are unavailable
+app.get('/health/deep', async (req, res) => {
   const healthcheck = {
-    status: 'healthy',
-    service: 'HRKey Backend Service',
+    status: 'ok',
     timestamp: new Date().toISOString(),
+    version: '1.0.0',
     uptime: process.uptime(),
-    services: {}
+    supabase: 'ok',
+    details: null
   };
 
   try {
-    // Check Supabase connection
-    const { data, error } = await supabase
+    // Lightweight Supabase ping with timeout
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Supabase health check timeout')), 5000)
+    );
+
+    const checkPromise = supabase
       .from('users')
       .select('count')
       .limit(1);
 
-    healthcheck.services.database = error ? 'down' : 'up';
+    const { error } = await Promise.race([checkPromise, timeoutPromise]);
+
     if (error) {
       healthcheck.status = 'degraded';
-      healthcheck.services.database_error = error.message;
+      healthcheck.supabase = 'error';
+      healthcheck.details = {
+        supabase_error: error.message
+      };
     }
   } catch (err) {
-    healthcheck.services.database = 'down';
-    healthcheck.services.database_error = err.message;
     healthcheck.status = 'degraded';
+    healthcheck.supabase = 'error';
+    healthcheck.details = {
+      supabase_error: err.message
+    };
   }
 
-  // Check other services configuration
-  healthcheck.services.email = RESEND_API_KEY ? 'configured' : 'not configured';
-  healthcheck.services.stripe = STRIPE_SECRET_KEY && !STRIPE_SECRET_KEY.includes('reemplaza') ? 'configured' : 'not configured';
-  healthcheck.environment = {
-    node_env: process.env.NODE_ENV || 'development',
-    app_url: APP_URL,
-    backend_url: BACKEND_PUBLIC_URL
-  };
-
-  // Return appropriate status code
-  const statusCode = healthcheck.status === 'healthy' ? 200 : 503;
-  res.status(statusCode).json(healthcheck);
+  // Return 200 even if degraded (service is still running)
+  // Monitoring systems can check the status field for degradation
+  res.status(200).json(healthcheck);
 });
 
 /* =========================
