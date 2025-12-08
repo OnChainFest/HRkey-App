@@ -24,6 +24,9 @@ import revenueController from './controllers/revenueController.js';
 import kpiObservationsController from './controllers/kpiObservationsController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 
+// Import services
+import * as webhookService from './services/webhookService.js';
+
 // Import middleware
 import {
   requireAuth,
@@ -642,14 +645,17 @@ app.get('/api/reference/by-token/:token', validateParams(getReferenceByTokenSche
 /* =========================
    Stripe Payments
    ========================= */
-app.post('/create-payment-intent', validateBody(createPaymentIntentSchema), async (req, res) => {
+app.post('/create-payment-intent', requireAuth, authLimiter, validateBody(createPaymentIntentSchema), async (req, res) => {
   try {
     const { amount, email, promoCode } = req.body;
+
+    // Use authenticated user's email if not provided
+    const receiptEmail = email || req.user.email;
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount, // en centavos
       currency: 'usd',
-      receipt_email: email || undefined,
+      receipt_email: receiptEmail,
       metadata: {
         promoCode: promoCode || 'none',
         plan: 'pro-lifetime'
@@ -668,9 +674,11 @@ app.post('/create-payment-intent', validateBody(createPaymentIntentSchema), asyn
 });
 
 // Stripe webhook: body RAW
-app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
+
+  // Step 1: Verify Stripe signature
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
   } catch (err) {
@@ -678,13 +686,68 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === 'payment_intent.succeeded') {
-    const pi = event.data.object;
-    console.log('✅ Payment succeeded:', pi.id, 'email:', pi.receipt_email, 'amount:', pi.amount / 100);
-    // TODO: actualizar plan del usuario en Supabase
-  }
+  try {
+    // Step 2: Check idempotency - has this event already been processed?
+    const alreadyProcessed = await webhookService.isEventProcessed(event.id);
+    if (alreadyProcessed) {
+      console.log(`Event ${event.id} already processed, skipping (idempotency)`);
+      return res.json({ received: true, idempotent: true });
+    }
 
-  res.json({ received: true });
+    // Step 3: Process event based on type
+    switch (event.type) {
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object;
+        console.log('Processing payment_intent.succeeded:', paymentIntent.id);
+
+        const result = await webhookService.processPaymentSuccess(paymentIntent);
+
+        if (result.success) {
+          console.log('✅ Payment processed successfully:', {
+            user: result.user?.id,
+            plan: result.user?.plan,
+            transaction: result.transaction?.id
+          });
+        } else {
+          console.warn('⚠️ Payment processed with warnings:', result.reason);
+        }
+
+        // Step 4: Mark event as processed (idempotency)
+        await webhookService.markEventProcessed(event.id, event.type, {
+          payment_intent_id: paymentIntent.id,
+          amount: paymentIntent.amount,
+          email: paymentIntent.receipt_email
+        });
+
+        break;
+      }
+
+      case 'payment_intent.payment_failed': {
+        const paymentIntent = event.data.object;
+        console.log('Processing payment_intent.payment_failed:', paymentIntent.id);
+
+        await webhookService.processPaymentFailed(paymentIntent);
+        await webhookService.markEventProcessed(event.id, event.type, {
+          payment_intent_id: paymentIntent.id
+        });
+
+        break;
+      }
+
+      default:
+        // Unsupported event type - just log and mark as processed
+        console.log('Unsupported event type:', event.type);
+        await webhookService.markEventProcessed(event.id, event.type, {
+          note: 'Event type not explicitly handled'
+        });
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Webhook processing error:', error);
+    // Return 500 so Stripe will retry
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
 });
 
 /* =========================
