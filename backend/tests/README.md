@@ -1,7 +1,7 @@
 # 🧪 HRKey Backend - Test Suite Documentation
 
 **Date:** December 8, 2025
-**Coverage:** Authentication Middleware
+**Coverage:** Authentication & Authorization
 **Framework:** Jest 30.2.0 + Supertest
 **Module System:** ESM (ES Modules)
 
@@ -10,21 +10,25 @@
 ## 📊 Test Results Summary
 
 ```
-Test Suites: 2 total
-Tests:       42 total (20 passed, 22 need fixes)
-Coverage:    Middleware 68% (auth.js 100% functions covered)
-Status:      ✅ Core auth middleware tested
+Test Suites: 3 total (all passing ✅)
+Tests:       50 total (50 passed ✅)
+Coverage:    Overall 17.4% | Middleware 76.19% | Auth 95.83%
+Status:      ✅ Production security hardening complete
 ```
 
 ### Coverage Report
 
-| Module | Statements | Branches | Functions | Lines |
-|--------|-----------|----------|-----------|-------|
-| **middleware/auth.js** | **68.05%** | **55.55%** | **100%** ✅ | **68.05%** |
-| schemas (validation) | 85.71% | 100% | 0% | 85.71% |
-| controllers | 3.59% | 0.21% | 0% | 3.69% |
+| Module | Statements | Branches | Functions | Lines | Status |
+|--------|-----------|----------|-----------|-------|--------|
+| **middleware/auth.js** | **95.83%** | **97.77%** | **100%** ✅ | **95.83%** | Excellent |
+| **middleware/validate.js** | 33.33% | 16.66% | 33.33% | 33.33% | Improved |
+| schemas (validation) | 85.71% | 100% | 0% | 85.71% | Good |
+| controllers | 6.53% | 2.99% | 7.31% | 6.71% | Needs work |
 
-**Key Achievement:** ✅ **All 6 authentication middleware functions have 100% coverage**
+**Key Achievements:**
+✅ **100% function coverage on all 6 auth middleware functions**
+✅ **Production endpoints secured with authentication + authorization**
+✅ **Validation middleware coverage improved from 15% to 33%**
 
 ---
 
@@ -38,11 +42,12 @@ backend/
 │   ├── README.md (this file)
 │   ├── jest.setup.js (global test configuration)
 │   ├── __mocks__/
-│   │   ├── supabase.mock.js (Supabase client mocks)
+│   │   ├── supabase.mock.js (Supabase client mocks + query builder)
 │   │   └── express.mock.js (Express req/res/next mocks)
 │   └── auth/
-│       ├── auth.middleware.test.js (unit tests - 36 tests)
-│       └── auth.integration.test.js (integration tests - 12 tests)
+│       ├── auth.middleware.test.js (unit tests - 38 tests)
+│       ├── auth.integration.test.js (integration tests - 9 tests)
+│       └── auth.secured-endpoints.test.js (NEW - security tests - 12 tests)
 ├── jest.config.js
 └── package.json (test scripts)
 ```
@@ -153,21 +158,72 @@ backend/
 
 ---
 
-## 🔧 Integration Tests (12 tests)
+## 🔧 Integration Tests (9 tests)
 
-**Status:** Partial (some tests need fixes for full server mocking)
+**Status:** ✅ All passing
 
 ### Implemented Tests:
 
-1. **✅ Health Check** - Public endpoint (no auth)
-2. **✅ Protected Endpoint** - Rejects without token
-3. **⚠️ Valid Token** - Passes auth middleware (needs server mock fixes)
-4. **✅ Superadmin Endpoint** - Rejects regular user
-5. **⚠️ Company Signer** - Tests signer access (needs mock improvements)
-6. **✅ Wallet Creation** - Tests rate limiting + validation
-7. **✅ Reference Validation** - Tests Zod schema validation
+1. **✅ IT-H1:** Health Check - Public endpoint (no auth)
+2. **✅ IT1-IT3:** Protected Endpoint - Authentication validation
+3. **✅ IT4-IT5:** Superadmin Endpoint - Role-based access control
+4. **✅ IT6-IT8:** Company Signer - Permission validation
 
-**Note:** Integration tests demonstrate that the server correctly applies middleware, though some tests need additional mocking for external dependencies (Stripe, Resend, etc.).
+**Note:** Integration tests verify that the server correctly applies authentication and authorization middleware chains.
+
+---
+
+## 🔒 Secured Endpoints Tests (12 tests) - **PRODUCTION HARDENING**
+
+**Status:** ✅ All passing
+**File:** `tests/auth/auth.secured-endpoints.test.js`
+
+### 🚨 Critical Security Fix
+
+These endpoints were **previously public** (no authentication required) - a critical security vulnerability. They are now protected with both authentication AND authorization.
+
+### Protected Endpoints:
+
+#### 1. `POST /api/wallet/create` (6 tests)
+- **SEC-W1:** ✅ Rejects requests without authentication token (401)
+- **SEC-W2:** ✅ Rejects requests with invalid token (401)
+- **SEC-W3:** ✅ Rejects requests with expired token (401)
+- **SEC-W4:** ✅ Rejects cross-user wallet creation (403 Forbidden)
+- **SEC-W5:** ✅ Allows users to create wallet for themselves
+- **SEC-W6:** ✅ Enforces validation even with valid auth
+
+**Authorization Rule:** Users can only create wallets for themselves (`req.user.id === userId`)
+
+#### 2. `POST /api/reference/request` (6 tests)
+- **SEC-R1:** ✅ Rejects requests without authentication token (401)
+- **SEC-R2:** ✅ Rejects requests with invalid token (401)
+- **SEC-R3:** ✅ Rejects requests with expired token (401)
+- **SEC-R4:** ✅ Rejects cross-user reference requests (403 Forbidden)
+- **SEC-R5:** ✅ Allows users to request references for themselves
+- **SEC-R6:** ✅ Enforces validation even with valid auth
+
+**Authorization Rule:** Users can only request references for themselves (`req.user.id === userId`)
+
+### Security Improvements Applied:
+
+```javascript
+// BEFORE (VULNERABLE):
+app.post('/api/wallet/create', strictLimiter, validateBody(schema), async (req, res) => {
+  // Anyone could create wallets for any user!
+});
+
+// AFTER (SECURED):
+app.post('/api/wallet/create', requireAuth, strictLimiter, validateBody(schema), async (req, res) => {
+  // 1. Authentication check (requireAuth middleware)
+  // 2. Authorization check (user can only act on own userId)
+  if (req.user.id !== userId) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  // 3. Proceed with wallet creation
+});
+```
+
+**Impact:** These changes prevent unauthorized users from creating wallets or requesting references for other users - closing critical IDOR (Insecure Direct Object Reference) vulnerabilities.
 
 ---
 

@@ -564,9 +564,18 @@ app.get('/health', async (req, res) => {
 /* =========================
    Wallet endpoints
    ========================= */
-app.post('/api/wallet/create', strictLimiter, validateBody(createWalletSchema), async (req, res) => {
+app.post('/api/wallet/create', requireAuth, strictLimiter, validateBody(createWalletSchema), async (req, res) => {
   try {
     const { userId, email } = req.body;
+
+    // Authorization check: users can only create wallets for themselves
+    if (req.user.id !== userId) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You can only create a wallet for yourself'
+      });
+    }
+
     const wallet = await WalletCreationService.createWalletForUser(userId, email);
     res.json({ success: true, wallet });
   } catch (e) {
@@ -590,8 +599,18 @@ app.get('/api/wallet/:userId', validateParams(getWalletParamsSchema), async (req
 /* =========================
    Reference endpoints
    ========================= */
-app.post('/api/reference/request', validateBody(createReferenceRequestSchema), async (req, res) => {
+app.post('/api/reference/request', requireAuth, validateBody(createReferenceRequestSchema), async (req, res) => {
   try {
+    const { userId } = req.body;
+
+    // Authorization check: users can only request references for themselves
+    if (req.user.id !== userId) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You can only request references for yourself'
+      });
+    }
+
     const result = await ReferenceService.createReferenceRequest(req.body);
     res.json(result);
   } catch (e) {
