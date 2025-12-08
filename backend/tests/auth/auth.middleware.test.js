@@ -14,6 +14,7 @@ import {
 } from '../__mocks__/express.mock.js';
 import {
   createMockSupabaseClient,
+  resetQueryBuilderMocks,
   mockAuthGetUserSuccess,
   mockAuthGetUserError,
   mockDatabaseSuccess,
@@ -24,6 +25,9 @@ import {
 
 // Mock the entire @supabase/supabase-js module
 const mockSupabaseClient = createMockSupabaseClient();
+
+// Store reference to query builder for re-establishing after clearAllMocks()
+const mockQueryBuilder = mockSupabaseClient.from();
 
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
@@ -43,6 +47,12 @@ const {
 describe('Authentication Middleware', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-establish the query builder mock after clearing
+    mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
+
+    // Re-establish all chainable method mocks
+    resetQueryBuilderMocks(mockQueryBuilder);
   });
 
   // =========================================================================
@@ -352,20 +362,18 @@ describe('Authentication Middleware', () => {
       const res = mockResponse();
       const next = mockNext();
 
-      // Mock signer but inactive
-      const inactiveSigner = mockCompanySignerData({
-        is_active: false
-      });
-
+      // When signer is inactive, the query with .eq('is_active', true) returns no results
       mockSupabaseClient.from().single.mockResolvedValue(
-        mockDatabaseSuccess(inactiveSigner)
+        mockDatabaseError('No rows found', 'PGRST116')
       );
 
       await requireCompanySigner(req, res, next);
 
-      // The middleware queries for is_active=true, so this won't be found
-      // But let's test the database would return null/error in this case
       expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Forbidden',
+        message: 'You must be an active signer of this company'
+      });
     });
 
     test('T4.6: Should handle database errors gracefully', async () => {

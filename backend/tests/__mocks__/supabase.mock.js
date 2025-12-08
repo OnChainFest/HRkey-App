@@ -9,15 +9,9 @@ import { jest } from '@jest/globals';
  * Create a mock Supabase client with chainable query methods
  */
 export function createMockSupabaseClient() {
-  const mockClient = {
-    auth: {
-      getUser: jest.fn()
-    },
-    from: jest.fn()
-  };
-
-  // Chainable query builder
-  const createQueryBuilder = () => ({
+  // Create a single persistent query builder that's returned for all .from() calls
+  // This allows tests to set up mocks that work across multiple calls
+  const queryBuilder = {
     select: jest.fn().mockReturnThis(),
     insert: jest.fn().mockReturnThis(),
     update: jest.fn().mockReturnThis(),
@@ -50,11 +44,54 @@ export function createMockSupabaseClient() {
     range: jest.fn().mockReturnThis(),
     single: jest.fn(),
     maybeSingle: jest.fn()
-  });
+  };
 
-  mockClient.from.mockReturnValue(createQueryBuilder());
+  const mockClient = {
+    auth: {
+      getUser: jest.fn()
+    },
+    from: jest.fn().mockReturnValue(queryBuilder)
+  };
 
   return mockClient;
+}
+
+/**
+ * Reset query builder mocks after clearAllMocks()
+ * Call this in beforeEach to restore chainable behavior
+ */
+export function resetQueryBuilderMocks(queryBuilder) {
+  // Re-establish mockReturnThis() for all chainable methods
+  queryBuilder.select.mockReturnThis();
+  queryBuilder.insert.mockReturnThis();
+  queryBuilder.update.mockReturnThis();
+  queryBuilder.delete.mockReturnThis();
+  queryBuilder.eq.mockReturnThis();
+  queryBuilder.neq.mockReturnThis();
+  queryBuilder.gt.mockReturnThis();
+  queryBuilder.lt.mockReturnThis();
+  queryBuilder.gte.mockReturnThis();
+  queryBuilder.lte.mockReturnThis();
+  queryBuilder.like.mockReturnThis();
+  queryBuilder.ilike.mockReturnThis();
+  queryBuilder.is.mockReturnThis();
+  queryBuilder.in.mockReturnThis();
+  queryBuilder.contains.mockReturnThis();
+  queryBuilder.containedBy.mockReturnThis();
+  queryBuilder.rangeLt.mockReturnThis();
+  queryBuilder.rangeGt.mockReturnThis();
+  queryBuilder.rangeGte.mockReturnThis();
+  queryBuilder.rangeLte.mockReturnThis();
+  queryBuilder.rangeAdjacent.mockReturnThis();
+  queryBuilder.overlaps.mockReturnThis();
+  queryBuilder.textSearch.mockReturnThis();
+  queryBuilder.match.mockReturnThis();
+  queryBuilder.not.mockReturnThis();
+  queryBuilder.or.mockReturnThis();
+  queryBuilder.filter.mockReturnThis();
+  queryBuilder.order.mockReturnThis();
+  queryBuilder.limit.mockReturnThis();
+  queryBuilder.range.mockReturnThis();
 }
 
 /**
@@ -151,6 +188,7 @@ export function mockCompanySignerData(overrides = {}) {
 
 export default {
   createMockSupabaseClient,
+  resetQueryBuilderMocks,
   mockAuthGetUserSuccess,
   mockAuthGetUserError,
   mockDatabaseSuccess,
