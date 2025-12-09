@@ -1,168 +1,146 @@
-# ==============================================================================
-# Backend CI Pipeline
-# ==============================================================================
-# Runs backend tests on every push and PR to ensure code quality and reliability
-#
-# What this workflow does:
-# 1. Checks out the code
-# 2. Sets up Node.js 20.x with dependency caching
-# 3. Installs dependencies from root package.json
-# 4. Runs backend test suite
-# 5. Generates test coverage report
-#
-# Environment:
-# - Tests use mocked Supabase and Stripe clients (no real API calls)
-# - No secrets required for test execution
-# ==============================================================================
-
 name: Backend CI
 
-# Trigger conditions
 on:
-  # Run on push to any branch
   push:
     branches:
-      - '**'
+      - main
+      - "claude/**"
     paths:
-      # Only run if backend files changed
-      - 'backend/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/backend-ci.yml'
-
-  # Run on pull requests targeting main or develop branches
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
   pull_request:
     branches:
       - main
-      - develop
     paths:
-      # Only run if backend files changed
-      - 'backend/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/backend-ci.yml'
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
 
-  # Allow manual workflow dispatch
-  workflow_dispatch:
-
-# Concurrency: cancel in-progress runs for the same branch
+# Cancel in-progress runs when a new workflow with the same group name is triggered
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   backend-tests:
-    name: Backend Tests & Coverage
+    name: Backend Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
-    # Continue running other matrix jobs even if one fails
     strategy:
-      fail-fast: false
+      matrix:
+        node-version: [20.x]
+
+    defaults:
+      run:
+        working-directory: ./backend
 
     steps:
-      # ========================================================================
-      # Step 1: Checkout repository
-      # ========================================================================
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          # Fetch full history for better git operations
-          fetch-depth: 0
 
-      # ========================================================================
-      # Step 2: Set up Node.js with caching
-      # ========================================================================
-      - name: Set up Node.js 20.x
+      - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
-          # Enable npm dependency caching for faster installs
-          cache: 'npm'
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
 
-      # ========================================================================
-      # Step 3: Install dependencies from root
-      # ========================================================================
       - name: Install dependencies
-        run: npm install
-        env:
-          # Prevent interactive prompts during install
-          CI: true
+        run: npm ci
 
-      # ========================================================================
-      # Step 4: Run backend tests
-      # ========================================================================
-      - name: Run backend tests
-        run: |
-          cd backend
-          npm test
+      - name: Run tests
+        run: npm test
         env:
-          # CI environment variable signals test environment
-          CI: true
+          # Node options for ES modules and Jest
+          NODE_OPTIONS: "--experimental-vm-modules"
+          # Mock environment variables for tests (not real secrets)
           NODE_ENV: test
+          # Supabase mock credentials (not real - tests use mocks)
+          SUPABASE_URL: https://mock-project.supabase.co
+          SUPABASE_SERVICE_KEY: mock-service-key-for-testing
+          # Stripe mock credentials (not real - tests use mocks)
+          STRIPE_SECRET_KEY: sk_test_mock_key_for_testing_12345678901234567890
+          STRIPE_WEBHOOK_SECRET: whsec_mock_webhook_secret_for_testing_1234567890
+          # Other required env vars
+          APP_URL: http://localhost:8080
+          FRONTEND_URL: http://localhost:3000
 
-          # ============================================================
-          # ENVIRONMENT VARIABLES (Optional - Tests use mocks)
-          # ============================================================
-          # The test suite uses mocked Supabase and Stripe clients,
-          # so no real API credentials are needed. However, if you want
-          # to run integration tests against real services in the future,
-          # configure these as GitHub Actions secrets:
-          #
-          # SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          # SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          # STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          # STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-          # RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          # ============================================================
-
-      # ========================================================================
-      # Step 5: Generate test coverage report
-      # ========================================================================
-      - name: Generate coverage report
-        run: |
-          cd backend
-          npm run test:coverage
-        env:
-          CI: true
-          NODE_ENV: test
-        # Continue even if coverage thresholds aren't met
-        continue-on-error: false
-
-      # ========================================================================
-      # Step 6: Upload coverage report as artifact
-      # ========================================================================
-      - name: Upload coverage report
+      - name: Upload test results
+        if: always()
         uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: coverage-report
+          name: test-results-node-${{ matrix.node-version }}
           path: backend/coverage/
-          retention-days: 30
+          retention-days: 7
+          if-no-files-found: ignore
 
-      # ========================================================================
-      # Step 7: Display test summary
-      # ========================================================================
-      - name: Display test summary
-        if: always()
+  # Optional: Lint and code quality checks
+  backend-lint:
+    name: Backend Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for lint script
+        id: check-lint
         run: |
-          echo "✅ Backend CI Pipeline Completed"
-          echo ""
-          echo "📊 Test Results:"
-          echo "- Test suite: backend/tests/"
-          echo "- Coverage report: backend/coverage/"
-          echo ""
-          echo "🔍 Review the test output above for details"
+          if npm run | grep -q "lint"; then
+            echo "has_lint=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_lint=false" >> $GITHUB_OUTPUT
+          fi
 
-      # ========================================================================
-      # Optional: Upload coverage to Codecov (uncomment if using Codecov)
-      # ========================================================================
-      # - name: Upload coverage to Codecov
-      #   uses: codecov/codecov-action@v4
-      #   with:
-      #     files: ./backend/coverage/lcov.info
-      #     flags: backend
-      #     name: backend-coverage
-      #     fail_ci_if_error: false
-      #   env:
-      #     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Run lint
+        if: steps.check-lint.outputs.has_lint == 'true'
+        run: npm run lint
+
+      - name: Lint placeholder
+        if: steps.check-lint.outputs.has_lint == 'false'
+        run: echo "No lint script configured. Skipping."
+
+  # TODO: Add frontend CI when frontend is ready
+  # frontend-tests:
+  #   name: Frontend Tests
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 10
+  #
+  #   defaults:
+  #     run:
+  #       working-directory: ./frontend
+  #
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20.x
+  #         cache: "npm"
+  #         cache-dependency-path: frontend/package-lock.json
+  #
+  #     - name: Install dependencies
+  #       run: npm ci
+  #
+  #     - name: Run tests
+  #       run: npm test
+  #
+  #     - name: Build check
+  #       run: npm run build

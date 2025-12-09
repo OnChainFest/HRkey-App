@@ -678,24 +678,36 @@ if (sentryEnabled) {
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
+    service: 'hrkey-backend',
     version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    uptime: process.uptime(),
     timestamp: new Date().toISOString()
   });
 });
 
-// Deep health check - includes Supabase connectivity check
-// Returns degraded status if external services are unavailable
+// Deep health check - includes dependency validation
+// Checks Supabase connectivity and Stripe configuration
+// Returns 503 for critical failures, 200 for ok/degraded states
 app.get('/health/deep', async (req, res) => {
+  const startTime = Date.now();
   const healthcheck = {
     status: 'ok',
-    timestamp: new Date().toISOString(),
+    service: 'hrkey-backend',
     version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
     uptime: process.uptime(),
-    supabase: 'ok',
-    details: null
+    timestamp: new Date().toISOString(),
+    checks: {
+      supabase: { status: 'ok' },
+      stripe: { status: 'ok' }
+    }
   };
 
+  // Check Supabase connectivity
   try {
+    const supabaseStartTime = Date.now();
+
     // Lightweight Supabase ping with timeout
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Supabase health check timeout')), 5000)
@@ -708,24 +720,76 @@ app.get('/health/deep', async (req, res) => {
 
     const { error } = await Promise.race([checkPromise, timeoutPromise]);
 
+    const supabaseResponseTime = Date.now() - supabaseStartTime;
+
     if (error) {
       healthcheck.status = 'degraded';
-      healthcheck.supabase = 'error';
-      healthcheck.details = {
-        supabase_error: error.message
+      healthcheck.checks.supabase = {
+        status: 'error',
+        error: error.message,
+        responseTime: supabaseResponseTime
+      };
+    } else {
+      healthcheck.checks.supabase = {
+        status: 'ok',
+        responseTime: supabaseResponseTime
       };
     }
   } catch (err) {
     healthcheck.status = 'degraded';
-    healthcheck.supabase = 'error';
-    healthcheck.details = {
-      supabase_error: err.message
+    healthcheck.checks.supabase = {
+      status: 'error',
+      error: err.message,
+      responseTime: Date.now() - startTime
     };
   }
 
-  // Return 200 even if degraded (service is still running)
-  // Monitoring systems can check the status field for degradation
-  res.status(200).json(healthcheck);
+  // Check Stripe configuration (not connectivity, just config)
+  // Note: Stripe config warnings don't change overall health status from 'ok' to 'degraded'
+  // Only actual errors or Supabase failures cause degraded status
+  try {
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!stripeSecretKey || !stripeWebhookSecret) {
+      healthcheck.checks.stripe = {
+        status: 'warning',
+        configured: false,
+        message: 'Stripe secrets not configured'
+      };
+    } else if (
+      stripeSecretKey === 'your-secret-key' ||
+      stripeWebhookSecret === 'your-webhook-secret' ||
+      stripeSecretKey.length < 20 ||
+      stripeWebhookSecret.length < 20
+    ) {
+      healthcheck.checks.stripe = {
+        status: 'warning',
+        configured: false,
+        message: 'Stripe secrets appear to be invalid or placeholder values'
+      };
+    } else {
+      healthcheck.checks.stripe = {
+        status: 'ok',
+        configured: true
+      };
+    }
+  } catch (err) {
+    // Actual errors in checking Stripe mark overall status as degraded
+    healthcheck.status = healthcheck.status === 'ok' ? 'degraded' : healthcheck.status;
+    healthcheck.checks.stripe = {
+      status: 'error',
+      configured: false,
+      error: err.message
+    };
+  }
+
+  // Determine HTTP status code
+  // 200: ok or degraded (service still functional)
+  // 503: error (critical failure, service not ready)
+  const httpStatus = healthcheck.status === 'error' ? 503 : 200;
+
+  res.status(httpStatus).json(healthcheck);
 });
 
 /* =========================

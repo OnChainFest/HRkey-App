@@ -56,16 +56,23 @@ describe('Health Check Endpoints', () => {
 
       // Verify response structure
       expect(response.body).toHaveProperty('status');
+      expect(response.body).toHaveProperty('service');
       expect(response.body).toHaveProperty('version');
+      expect(response.body).toHaveProperty('environment');
+      expect(response.body).toHaveProperty('uptime');
       expect(response.body).toHaveProperty('timestamp');
 
       // Verify data types
       expect(typeof response.body.status).toBe('string');
+      expect(typeof response.body.service).toBe('string');
       expect(typeof response.body.version).toBe('string');
+      expect(typeof response.body.environment).toBe('string');
+      expect(typeof response.body.uptime).toBe('number');
       expect(typeof response.body.timestamp).toBe('string');
 
       // Verify status value
       expect(response.body.status).toBe('ok');
+      expect(response.body.service).toBe('hrkey-backend');
     });
 
     test('HEALTH-2: Should return valid ISO timestamp', async () => {
@@ -110,12 +117,12 @@ describe('Health Check Endpoints', () => {
       expect(response.body).not.toHaveProperty('database');
       expect(response.body).not.toHaveProperty('supabase');
       expect(response.body).not.toHaveProperty('services');
-      expect(response.body).not.toHaveProperty('environment');
       expect(response.body).not.toHaveProperty('config');
       expect(response.body).not.toHaveProperty('secrets');
+      expect(response.body).not.toHaveProperty('checks');
 
       // Should only have safe fields
-      const allowedFields = ['status', 'version', 'timestamp'];
+      const allowedFields = ['status', 'service', 'version', 'environment', 'uptime', 'timestamp'];
       const actualFields = Object.keys(response.body);
       actualFields.forEach(field => {
         expect(allowedFields).toContain(field);
@@ -140,15 +147,26 @@ describe('Health Check Endpoints', () => {
 
       // Verify response structure
       expect(response.body).toHaveProperty('status');
+      expect(response.body).toHaveProperty('service');
       expect(response.body).toHaveProperty('version');
-      expect(response.body).toHaveProperty('timestamp');
+      expect(response.body).toHaveProperty('environment');
       expect(response.body).toHaveProperty('uptime');
-      expect(response.body).toHaveProperty('supabase');
+      expect(response.body).toHaveProperty('timestamp');
+      expect(response.body).toHaveProperty('checks');
+
+      // Verify checks structure
+      expect(response.body.checks).toHaveProperty('supabase');
+      expect(response.body.checks).toHaveProperty('stripe');
 
       // Verify status when everything is ok
       expect(response.body.status).toBe('ok');
-      expect(response.body.supabase).toBe('ok');
-      expect(response.body.details).toBeNull();
+      expect(response.body.service).toBe('hrkey-backend');
+      expect(response.body.checks.supabase.status).toBe('ok');
+      expect(response.body.checks.supabase).toHaveProperty('responseTime');
+
+      // Stripe status depends on environment configuration
+      // Can be 'ok' (properly configured) or 'warning' (not configured in test env)
+      expect(['ok', 'warning']).toContain(response.body.checks.stripe.status);
     });
 
     test('DEEP-2: Should verify Supabase connectivity', async () => {
@@ -179,9 +197,9 @@ describe('Health Check Endpoints', () => {
 
       // Verify degraded status
       expect(response.body.status).toBe('degraded');
-      expect(response.body.supabase).toBe('error');
-      expect(response.body.details).toBeTruthy();
-      expect(response.body.details.supabase_error).toBe('Connection refused');
+      expect(response.body.checks.supabase.status).toBe('error');
+      expect(response.body.checks.supabase.error).toBe('Connection refused');
+      expect(response.body.checks.supabase).toHaveProperty('responseTime');
     });
 
     test('DEEP-4: Should handle Supabase exceptions gracefully', async () => {
@@ -196,9 +214,9 @@ describe('Health Check Endpoints', () => {
 
       // Verify degraded status with error details
       expect(response.body.status).toBe('degraded');
-      expect(response.body.supabase).toBe('error');
-      expect(response.body.details).toBeTruthy();
-      expect(response.body.details.supabase_error).toContain('Network timeout');
+      expect(response.body.checks.supabase.status).toBe('error');
+      expect(response.body.checks.supabase.error).toContain('Network timeout');
+      expect(response.body.checks.supabase).toHaveProperty('responseTime');
     });
 
     test('DEEP-5: Should include uptime in response', async () => {
@@ -246,12 +264,13 @@ describe('Health Check Endpoints', () => {
       // Response should contain error but not expose full connection strings or keys
       expect(response.body).not.toHaveProperty('SUPABASE_URL');
       expect(response.body).not.toHaveProperty('SUPABASE_KEY');
+      expect(response.body).not.toHaveProperty('STRIPE_SECRET_KEY');
+      expect(response.body).not.toHaveProperty('STRIPE_WEBHOOK_SECRET');
       expect(response.body).not.toHaveProperty('config');
       expect(response.body).not.toHaveProperty('secrets');
 
       // Should only expose sanitized error message
-      expect(response.body.details).toBeTruthy();
-      expect(response.body.details.supabase_error).toBeTruthy();
+      expect(response.body.checks.supabase.error).toBeTruthy();
     });
 
     test('DEEP-8: Should return valid ISO timestamp', async () => {
@@ -289,8 +308,44 @@ describe('Health Check Endpoints', () => {
       // Should timeout and return degraded status within 5 seconds
       expect(duration).toBeLessThan(6000);
       expect(response.body.status).toBe('degraded');
-      expect(response.body.supabase).toBe('error');
-      expect(response.body.details.supabase_error).toContain('timeout');
+      expect(response.body.checks.supabase.status).toBe('error');
+      expect(response.body.checks.supabase.error).toContain('timeout');
+    });
+
+    test('DEEP-10: Should check Stripe configuration', async () => {
+      // Mock successful Supabase query
+      const mockLimit = jest.fn().mockResolvedValue(mockDatabaseSuccess([{ count: 1 }]));
+      const mockSelect = jest.fn().mockReturnValue({ limit: mockLimit });
+      mockSupabaseClient.from.mockReturnValue({ select: mockSelect });
+
+      const response = await request(app)
+        .get('/health/deep')
+        .expect(200);
+
+      // Verify Stripe check is present
+      expect(response.body.checks).toHaveProperty('stripe');
+      expect(response.body.checks.stripe).toHaveProperty('status');
+      expect(response.body.checks.stripe).toHaveProperty('configured');
+
+      // Stripe should be ok if keys are properly configured
+      // (depends on test environment setup)
+      expect(['ok', 'warning']).toContain(response.body.checks.stripe.status);
+    });
+
+    test('DEEP-11: Should return response time metrics for Supabase', async () => {
+      // Mock successful Supabase query
+      const mockLimit = jest.fn().mockResolvedValue(mockDatabaseSuccess([{ count: 1 }]));
+      const mockSelect = jest.fn().mockReturnValue({ limit: mockLimit });
+      mockSupabaseClient.from.mockReturnValue({ select: mockSelect });
+
+      const response = await request(app)
+        .get('/health/deep')
+        .expect(200);
+
+      // Verify response time is included
+      expect(response.body.checks.supabase).toHaveProperty('responseTime');
+      expect(typeof response.body.checks.supabase.responseTime).toBe('number');
+      expect(response.body.checks.supabase.responseTime).toBeGreaterThanOrEqual(0);
     });
   });
 
