@@ -58,11 +58,11 @@ if (sentryEnabled) {
     dsn: process.env.SENTRY_DSN,
     environment: process.env.SENTRY_ENV || process.env.NODE_ENV || 'development',
     enabled: sentryEnabled,
-    integrations: [
-      new Sentry.Integrations.Http({ tracing: true }),
-      new Sentry.Integrations.OnUncaughtException(),
-      new Sentry.Integrations.OnUnhandledRejection(),
-      new SentryProfiling.ProfilingIntegration()
+    // Usamos las integraciones por defecto de @sentry/node v8
+    // y solo añadimos la integración de profiling.
+    integrations: (integrations) => [
+      ...integrations,
+      new SentryProfiling.ProfilingIntegration(),
     ],
     tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0'),
     profilesSampleRate: parseFloat(process.env.SENTRY_PROFILES_SAMPLE_RATE || '0')
