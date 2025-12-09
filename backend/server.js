@@ -1162,23 +1162,32 @@ app.get('/api/hrkey-score/model-info', async (req, res) => {
 // =======================================================
 // Sentry Debug Route — Used only to test Sentry in Render
 // =======================================================
-app.get('/debug-sentry', (req, res) => {
-  const error = new Error('Sentry debug test error from /debug-sentry');
-
-  if (sentryEnabled) {
-    Sentry.captureException(error, scope => {
-      scope.setTag('route', '/debug-sentry');
-      scope.setTag('type', 'sentry_debug');
-      scope.setContext('debug', {
-        message: 'Ruta de prueba ejecutada en Render',
-        url: req.originalUrl
+app.get('/debug-sentry', async (req, res) => {
+  try {
+    // Lanzamos un error intencional
+    throw new Error("Ruta de prueba ejecutada en Render");
+  } catch (error) {
+    // Sentry captura el error
+    if (sentryEnabled) {
+      Sentry.captureException(error, scope => {
+        scope.setTag('route', '/debug-sentry');
+        scope.setTag('type', 'sentry_debug');
+        scope.setContext('debug', {
+          message: 'Ruta de prueba ejecutada en Render',
+          url: req.originalUrl,
+          method: req.method
+        });
+        return scope;
       });
-      return scope;
+    }
+
+    res.status(500).json({
+      message: "Error enviado a Sentry",
+      error: error.message,
+      sentryEnabled: sentryEnabled,
+      timestamp: new Date().toISOString()
     });
   }
-
-  // Throw the error so it also passes through the global Sentry handler
-  throw error;
 });
 
 /* =========================
