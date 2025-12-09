@@ -118,10 +118,28 @@ const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrervcydgdrlcndtjboy.s
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || 'sk_test_reemplaza';
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_reemplaza';
+// SECURITY: Validate Stripe secrets configuration
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
-const stripe = new Stripe(STRIPE_SECRET_KEY);
+// Fail fast in production if Stripe secrets are missing
+if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
+  const message = 'CRITICAL: Stripe secrets not configured';
+  if (process.env.NODE_ENV === 'production') {
+    logger.error(message, {
+      hasSecretKey: !!STRIPE_SECRET_KEY,
+      hasWebhookSecret: !!STRIPE_WEBHOOK_SECRET,
+      environment: process.env.NODE_ENV
+    });
+    throw new Error(`${message}. Cannot start in production without Stripe configuration.`);
+  } else {
+    logger.warn(message + ' - Using test mode', {
+      environment: process.env.NODE_ENV
+    });
+  }
+}
+
+const stripe = new Stripe(STRIPE_SECRET_KEY || 'sk_test_placeholder');
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 /* =========================
@@ -468,10 +486,18 @@ const app = express();
 
 // CORS configuration (dynamic based on environment)
 const FRONTEND_URL = process.env.FRONTEND_URL || APP_URL;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc)
-    if (!origin) return callback(null, true);
+    // Allow requests with no origin (mobile apps, curl, etc) - only in development
+    if (!origin) {
+      if (IS_PRODUCTION) {
+        logger.warn('CORS: Request without origin in production', { path: 'unknown' });
+        return callback(new Error('Origin header required in production'));
+      }
+      return callback(null, true);
+    }
 
     const allowedOrigins = [
       FRONTEND_URL,
@@ -482,11 +508,24 @@ const corsOptions = {
       'https://hrkey.vercel.app'
     ];
 
-    if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+    // Check if origin is allowed
+    const isAllowed = allowedOrigins.some(allowed => origin.startsWith(allowed));
+
+    if (isAllowed) {
       callback(null, true);
     } else {
-      logger.warn('CORS blocked origin', { origin });
-      callback(null, true); // Allow anyway for now (can change to false in production)
+      logger.warn('CORS policy violation', {
+        origin,
+        environment: process.env.NODE_ENV,
+        blocked: IS_PRODUCTION
+      });
+
+      // SECURITY: Block in production, allow in development for testing
+      if (IS_PRODUCTION) {
+        callback(new Error('CORS policy: Origin not allowed'));
+      } else {
+        callback(null, true); // Permissive in development
+      }
     }
   },
   credentials: true,
@@ -574,12 +613,34 @@ const authLimiter = rateLimit({
   legacyHeaders: false
 });
 
+// Token validation rate limiter (for public token endpoints)
+const tokenLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20, // Max 20 token validation attempts per IP per hour
+  message: 'Too many token validation attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // Apply general rate limiting to all API routes
 app.use('/api/', apiLimiter);
 
+// JSON body parsing with size limits (DoS protection)
 app.use((req, res, next) => {
+  // Stripe webhook needs raw body
   if (req.path === '/webhook') return next();
-  return express.json()(req, res, next);
+
+  // SECURITY: Limit payload size to prevent DoS attacks
+  return express.json({
+    limit: '1mb', // Maximum 1MB payload
+    strict: true, // Only accept objects and arrays
+    verify: (req, buf, encoding) => {
+      // Additional verification if needed
+      if (buf.length > 1024 * 1024) {
+        throw new Error('Request entity too large');
+      }
+    }
+  })(req, res, next);
 });
 
 /* =========================
@@ -742,7 +803,8 @@ app.post('/api/reference/request', requireAuth, validateBody(createReferenceRequ
   }
 });
 
-app.post('/api/reference/submit', validateBody(submitReferenceSchema), async (req, res) => {
+// SECURITY: Rate limit public reference submission to prevent abuse
+app.post('/api/reference/submit', tokenLimiter, validateBody(submitReferenceSchema), async (req, res) => {
   try {
     const result = await ReferenceService.submitReference(req.body);
     res.json(result);
@@ -757,7 +819,8 @@ app.post('/api/reference/submit', validateBody(submitReferenceSchema), async (re
   }
 });
 
-app.get('/api/reference/by-token/:token', validateParams(getReferenceByTokenSchema), async (req, res) => {
+// SECURITY: Rate limit token lookups to prevent enumeration attacks
+app.get('/api/reference/by-token/:token', tokenLimiter, validateParams(getReferenceByTokenSchema), async (req, res) => {
   try {
     const result = await ReferenceService.getReferenceByToken(req.params.token);
     res.json(result);
@@ -967,7 +1030,8 @@ app.get('/api/company/:companyId/signers', requireAuth, requireCompanySigner, si
 app.patch('/api/company/:companyId/signers/:signerId', requireAuth, requireCompanySigner, signersController.updateSigner);
 
 // Signer invitation endpoints (special handling)
-app.get('/api/signers/invite/:token', signersController.getInvitationByToken); // Public - no auth
+// SECURITY: Rate limit public signer invitations to prevent token enumeration
+app.get('/api/signers/invite/:token', tokenLimiter, signersController.getInvitationByToken); // Public - no auth
 app.post('/api/signers/accept/:token', requireAuth, signersController.acceptSignerInvitation);
 
 // ===== AUDIT LOG ENDPOINTS =====
@@ -1024,7 +1088,8 @@ app.post('/api/revenue/payout/request', requireAuth, revenueController.requestPa
  *     ]
  *   }'
  */
-app.post('/api/kpi-observations', kpiObservationsController.createKpiObservations);
+// SECURITY: KPI observations require authentication to prevent data poisoning
+app.post('/api/kpi-observations', requireAuth, kpiObservationsController.createKpiObservations);
 
 /**
  * GET /api/kpi-observations
@@ -1042,7 +1107,8 @@ app.post('/api/kpi-observations', kpiObservationsController.createKpiObservation
  * Example:
  * curl http://localhost:3001/api/kpi-observations?subject_wallet=0xABC&limit=50
  */
-app.get('/api/kpi-observations', kpiObservationsController.getKpiObservations);
+// SECURITY: Protect KPI data from unauthorized access
+app.get('/api/kpi-observations', requireAuth, kpiObservationsController.getKpiObservations);
 
 /**
  * GET /api/kpi-observations/summary
@@ -1060,7 +1126,8 @@ app.get('/api/kpi-observations', kpiObservationsController.getKpiObservations);
  * Example:
  * curl http://localhost:3001/api/kpi-observations/summary?role_id=uuid
  */
-app.get('/api/kpi-observations/summary', kpiObservationsController.getKpiObservationsSummary);
+// SECURITY: Protect aggregated KPI data from unauthorized access
+app.get('/api/kpi-observations/summary', requireAuth, kpiObservationsController.getKpiObservationsSummary);
 
 /* =========================
    HRKEY SCORE ENDPOINTS (ML-powered scoring)
@@ -1115,7 +1182,8 @@ app.get('/api/kpi-observations/summary', kpiObservationsController.getKpiObserva
  *     "role_id": "UUID_OF_ROLE"
  *   }'
  */
-app.post('/api/hrkey-score', async (req, res) => {
+// SECURITY: Protect ML model from unauthorized access and model extraction attacks
+app.post('/api/hrkey-score', requireAuth, async (req, res) => {
   try {
     const { subject_wallet, role_id } = req.body;
 
@@ -1208,7 +1276,8 @@ app.post('/api/hrkey-score', async (req, res) => {
  * Example:
  * curl http://localhost:3001/api/hrkey-score/model-info
  */
-app.get('/api/hrkey-score/model-info', async (req, res) => {
+// SECURITY: Protect ML model metadata from unauthorized access
+app.get('/api/hrkey-score/model-info', requireAuth, async (req, res) => {
   try {
     const modelInfo = hrkeyScoreService.getModelInfo();
     return res.json(modelInfo);
@@ -1230,35 +1299,41 @@ app.get('/api/hrkey-score/model-info', async (req, res) => {
    DEBUG ROUTE (Temporary - Remove after Sentry verification)
    ========================= */
 // =======================================================
-// Sentry Debug Route — Used only to test Sentry in Render
+// Sentry Debug Route — ONLY ENABLED IN NON-PRODUCTION
 // =======================================================
-app.get('/debug-sentry', async (req, res) => {
-  try {
-    // Lanzamos un error intencional
-    throw new Error("Ruta de prueba ejecutada en Render");
-  } catch (error) {
-    // Sentry captura el error
-    if (sentryEnabled) {
-      Sentry.captureException(error, scope => {
-        scope.setTag('route', '/debug-sentry');
-        scope.setTag('type', 'sentry_debug');
-        scope.setContext('debug', {
-          message: 'Ruta de prueba ejecutada en Render',
-          url: req.originalUrl,
-          method: req.method
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/debug-sentry', async (req, res) => {
+    try {
+      // Lanzamos un error intencional
+      throw new Error("Ruta de prueba ejecutada en Render");
+    } catch (error) {
+      // Sentry captura el error
+      if (sentryEnabled) {
+        Sentry.captureException(error, scope => {
+          scope.setTag('route', '/debug-sentry');
+          scope.setTag('type', 'sentry_debug');
+          scope.setContext('debug', {
+            message: 'Ruta de prueba ejecutada en Render',
+            url: req.originalUrl,
+            method: req.method
+          });
+          return scope;
         });
-        return scope;
+      }
+
+      res.status(500).json({
+        message: "Error enviado a Sentry",
+        error: error.message,
+        sentryEnabled: sentryEnabled,
+        timestamp: new Date().toISOString()
       });
     }
+  });
 
-    res.status(500).json({
-      message: "Error enviado a Sentry",
-      error: error.message,
-      sentryEnabled: sentryEnabled,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
+  logger.info('Debug route /debug-sentry enabled', {
+    environment: process.env.NODE_ENV
+  });
+}
 
 /* =========================
    Export app for testing
