@@ -14,7 +14,6 @@ import { ethers } from 'ethers';
 import Stripe from 'stripe';
 import { makeRefereeLink as makeRefereeLinkUtil, APP_URL as UTIL_APP_URL } from './utils/appUrl.js';
 import * as Sentry from '@sentry/node';
-import * as SentryProfiling from '@sentry/profiling-node';
 
 // Import new controllers
 import identityController from './controllers/identityController.js';
@@ -59,13 +58,10 @@ if (sentryEnabled) {
     environment: process.env.SENTRY_ENV || process.env.NODE_ENV || 'development',
     enabled: sentryEnabled,
     // Usamos las integraciones por defecto de @sentry/node v8
-    // y solo añadimos la integración de profiling.
     integrations: (integrations) => [
       ...integrations,
-      new SentryProfiling.ProfilingIntegration(),
     ],
-    tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0'),
-    profilesSampleRate: parseFloat(process.env.SENTRY_PROFILES_SAMPLE_RATE || '0')
+    tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0')
   });
 }
 
