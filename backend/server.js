@@ -29,7 +29,7 @@ import hrkeyScoreService from './hrkeyScoreService.js';
 import * as webhookService from './services/webhookService.js';
 
 // Import logging
-import logger, { requestIdMiddleware } from './logger.js';
+import logger, { requestIdMiddleware, requestLoggingMiddleware } from './logger.js';
 
 // Import middleware
 import {
@@ -131,7 +131,9 @@ async function ensureSuperadmin() {
   const superadminEmail = process.env.HRKEY_SUPERADMIN_EMAIL;
 
   if (!superadminEmail) {
-    console.warn('⚠️  HRKEY_SUPERADMIN_EMAIL not set. No superadmin will be assigned.');
+    logger.warn('Superadmin email not configured', {
+      message: 'HRKEY_SUPERADMIN_EMAIL environment variable not set'
+    });
     return;
   }
 
@@ -143,7 +145,10 @@ async function ensureSuperadmin() {
       .single();
 
     if (error || !user) {
-      console.warn(`⚠️  Superadmin email ${superadminEmail} not found in users table.`);
+      logger.warn('Superadmin user not found in database', {
+        email: superadminEmail,
+        error: error?.message
+      });
       return;
     }
 
@@ -153,12 +158,21 @@ async function ensureSuperadmin() {
         .update({ role: 'superadmin' })
         .eq('id', user.id);
 
-      console.log(`✅ User ${superadminEmail} assigned role: superadmin`);
+      logger.info('Superadmin role assigned', {
+        userId: user.id,
+        email: superadminEmail
+      });
     } else {
-      console.log(`✅ Superadmin ${superadminEmail} already configured`);
+      logger.info('Superadmin already configured', {
+        userId: user.id,
+        email: superadminEmail
+      });
     }
   } catch (err) {
-    console.error('❌ Error ensuring superadmin:', err.message);
+    logger.error('Failed to ensure superadmin', {
+      error: err.message,
+      stack: err.stack
+    });
   }
 }
 
@@ -276,7 +290,13 @@ class ReferenceService {
 
     // Construye SIEMPRE con base pública (nunca localhost)
     const verificationUrl = makeRefereeLink(inviteToken);
-    console.log('🧩 EMAIL VERIFICATION LINK:', verificationUrl);
+
+    // Log email sending without exposing the verification token
+    logger.debug('Sending referee invitation email', {
+      refereeEmail: email,
+      requesterId: userId,
+      inviteId: invite.id
+    });
 
     await this.sendRefereeInviteEmail(email, name, applicantData, verificationUrl);
 
@@ -363,7 +383,10 @@ class ReferenceService {
 
   static async sendRefereeInviteEmail(email, name, applicantData, verificationUrl) {
     if (!RESEND_API_KEY) {
-      console.warn('RESEND_API_KEY not configured; skipping email.');
+      logger.warn('Email service not configured', {
+        message: 'RESEND_API_KEY environment variable not set',
+        action: 'skipping_email'
+      });
       return;
     }
     const res = await fetch('https://api.resend.com/emails', {
@@ -394,7 +417,15 @@ class ReferenceService {
         `
       })
     });
-    if (!res.ok) console.error('Resend error:', await res.text());
+    if (!res.ok) {
+      const errorText = await res.text();
+      logger.error('Failed to send referee invitation email', {
+        service: 'resend',
+        statusCode: res.status,
+        error: errorText,
+        recipientEmail: email
+      });
+    }
   }
 
   static async sendReferenceCompletedEmail(userId, reference) {
@@ -468,6 +499,9 @@ app.use(cors(corsOptions));
 
 // Request ID middleware for request correlation
 app.use(requestIdMiddleware);
+
+// HTTP request/response logging with structured data
+app.use(requestLoggingMiddleware);
 
 // Security headers with helmet
 app.use(helmet({
@@ -651,7 +685,13 @@ app.post('/api/wallet/create', requireAuth, strictLimiter, validateBody(createWa
     const wallet = await WalletCreationService.createWalletForUser(userId, email);
     res.json({ success: true, wallet });
   } catch (e) {
-    console.error(e);
+    logger.error('Failed to create wallet', {
+      requestId: req.requestId,
+      userId: req.body.userId,
+      email: req.body.email,
+      error: e.message,
+      stack: e.stack
+    });
     res.status(500).json({ error: e.message });
   }
 });
@@ -663,7 +703,12 @@ app.get('/api/wallet/:userId', validateParams(getWalletParamsSchema), async (req
     if (!wallet) return res.status(404).json({ error: 'Wallet not found' });
     res.json({ success: true, wallet });
   } catch (e) {
-    console.error(e);
+    logger.error('Failed to fetch wallet', {
+      requestId: req.requestId,
+      userId: req.params.userId,
+      error: e.message,
+      stack: e.stack
+    });
     res.status(500).json({ error: e.message });
   }
 });
@@ -686,7 +731,13 @@ app.post('/api/reference/request', requireAuth, validateBody(createReferenceRequ
     const result = await ReferenceService.createReferenceRequest(req.body);
     res.json(result);
   } catch (e) {
-    console.error(e);
+    logger.error('Failed to create reference request', {
+      requestId: req.requestId,
+      userId: req.body.userId,
+      refereeEmail: req.body.email,
+      error: e.message,
+      stack: e.stack
+    });
     res.status(500).json({ success: false, error: e.message });
   }
 });
@@ -696,7 +747,12 @@ app.post('/api/reference/submit', validateBody(submitReferenceSchema), async (re
     const result = await ReferenceService.submitReference(req.body);
     res.json(result);
   } catch (e) {
-    console.error(e);
+    logger.error('Failed to submit reference', {
+      requestId: req.requestId,
+      token: req.body.token,
+      error: e.message,
+      stack: e.stack
+    });
     res.status(500).json({ success: false, error: e.message });
   }
 });
@@ -706,7 +762,12 @@ app.get('/api/reference/by-token/:token', validateParams(getReferenceByTokenSche
     const result = await ReferenceService.getReferenceByToken(req.params.token);
     res.json(result);
   } catch (e) {
-    console.error(e);
+    logger.error('Failed to get reference by token', {
+      requestId: req.requestId,
+      token: req.params.token,
+      error: e.message,
+      stack: e.stack
+    });
     res.status(400).json({ success: false, error: e.message });
   }
 });
@@ -737,7 +798,13 @@ app.post('/create-payment-intent', requireAuth, authLimiter, validateBody(create
       paymentIntentId: paymentIntent.id
     });
   } catch (e) {
-    console.error('Stripe error:', e);
+    logger.error('Failed to create Stripe payment intent', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      amount: req.body.amount,
+      error: e.message,
+      stack: e.stack
+    });
     res.status(500).json({ error: e.message });
   }
 });
@@ -1103,7 +1170,13 @@ app.post('/api/hrkey-score', async (req, res) => {
     return res.json(result);
 
   } catch (err) {
-    console.error('❌ Error en /api/hrkey-score:', err);
+    logger.error('Failed to calculate HRKey Score', {
+      requestId: req.requestId,
+      subjectWallet: req.body.subject_wallet,
+      roleId: req.body.role_id,
+      error: err.message,
+      stack: err.stack
+    });
     return res.status(500).json({
       ok: false,
       error: 'INTERNAL_ERROR',
@@ -1140,7 +1213,11 @@ app.get('/api/hrkey-score/model-info', async (req, res) => {
     const modelInfo = hrkeyScoreService.getModelInfo();
     return res.json(modelInfo);
   } catch (err) {
-    console.error('❌ Error en /api/hrkey-score/model-info:', err);
+    logger.error('Failed to get HRKey Score model info', {
+      requestId: req.requestId,
+      error: err.message,
+      stack: err.stack
+    });
     return res.status(500).json({
       ok: false,
       error: 'INTERNAL_ERROR',

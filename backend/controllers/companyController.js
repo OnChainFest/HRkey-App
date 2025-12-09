@@ -12,6 +12,7 @@ import {
   AuditActionTypes
 } from '../utils/auditLogger.js';
 import { sendCompanyVerificationNotification } from '../utils/emailService.js';
+import logger from '../logger.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -80,7 +81,13 @@ export async function createCompany(req, res) {
       .single();
 
     if (createError) {
-      console.error('Error creating company:', createError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to create company', {
+        userId: req.user?.id,
+        companyName: name,
+        error: createError.message,
+        stack: createError.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to create company'
@@ -101,7 +108,12 @@ export async function createCompany(req, res) {
       }]);
 
     if (signerError) {
-      console.warn('Warning: Could not add creator as signer:', signerError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.warn('Could not add creator as signer', {
+        userId: req.user?.id,
+        companyId: company.id,
+        error: signerError.message
+      });
       // Don't fail the request - company was created successfully
     }
 
@@ -131,7 +143,13 @@ export async function createCompany(req, res) {
       message: 'Company created successfully. Awaiting verification.'
     });
   } catch (error) {
-    console.error('Create company error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to create company', {
+      userId: req.user?.id,
+      companyName: req.body?.name,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error',
       message: 'An error occurred while creating the company'
@@ -201,7 +219,13 @@ export async function getCompany(req, res) {
       }
     });
   } catch (error) {
-    console.error('Get company error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get company', {
+      userId: req.user?.id,
+      companyId: req.params?.companyId,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });
@@ -254,7 +278,14 @@ export async function updateCompany(req, res) {
       .single();
 
     if (updateError) {
-      console.error('Error updating company:', updateError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to update company', {
+        userId: req.user?.id,
+        companyId: companyId,
+        updates: Object.keys(updates),
+        error: updateError.message,
+        stack: updateError.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to update company'
@@ -280,7 +311,13 @@ export async function updateCompany(req, res) {
       message: 'Company updated successfully'
     });
   } catch (error) {
-    console.error('Update company error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to update company', {
+      userId: req.user?.id,
+      companyId: req.params?.companyId,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });
@@ -339,7 +376,14 @@ export async function verifyCompany(req, res) {
       .single();
 
     if (updateError) {
-      console.error('Error verifying company:', updateError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to update verification status', {
+        userId: req.user?.id,
+        companyId: companyId,
+        verified: verified,
+        error: updateError.message,
+        stack: updateError.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to update verification status'
@@ -375,7 +419,13 @@ export async function verifyCompany(req, res) {
           });
         }
       } catch (emailError) {
-        console.error('Error sending verification email:', emailError);
+        const reqLogger = logger.withRequest(req);
+        reqLogger.warn('Failed to send verification email', {
+          userId: req.user?.id,
+          companyId: companyId,
+          recipientEmail: creator?.email,
+          error: emailError.message
+        });
         // Don't fail the request if email fails
       }
     }
@@ -386,7 +436,14 @@ export async function verifyCompany(req, res) {
       message: `Company ${verified ? 'verified' : 'unverified'} successfully`
     });
   } catch (error) {
-    console.error('Verify company error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to verify company', {
+      userId: req.user?.id,
+      companyId: req.params?.companyId,
+      verified: req.body?.verified,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });
@@ -419,7 +476,12 @@ export async function getMyCompanies(req, res) {
       .eq('is_active', true);
 
     if (error) {
-      console.error('Error fetching user companies:', error);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to fetch user companies', {
+        userId: req.user?.id,
+        error: error.message,
+        stack: error.stack
+      });
       return res.status(500).json({
         error: 'Database error'
       });
@@ -436,7 +498,12 @@ export async function getMyCompanies(req, res) {
       companies
     });
   } catch (error) {
-    console.error('Get my companies error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get user companies', {
+      userId: req.user?.id,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });

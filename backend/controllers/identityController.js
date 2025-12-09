@@ -8,6 +8,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { logIdentityVerification } from '../utils/auditLogger.js';
+import logger from '../logger.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -87,7 +88,12 @@ export async function verifyIdentity(req, res) {
       .single();
 
     if (updateError) {
-      console.error('Error updating user:', updateError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to update user verification status', {
+        userId: userId,
+        error: updateError.message,
+        stack: updateError.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to update user verification status'
@@ -122,7 +128,12 @@ export async function verifyIdentity(req, res) {
       message: 'Identity verified successfully'
     });
   } catch (error) {
-    console.error('Identity verification error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Identity verification failed', {
+      userId: req.body?.userId,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error',
       message: 'An error occurred during identity verification'
@@ -175,7 +186,12 @@ export async function getIdentityStatus(req, res) {
       } : null
     });
   } catch (error) {
-    console.error('Get identity status error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get identity status', {
+      userId: req.params?.userId,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });

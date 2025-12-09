@@ -5,6 +5,7 @@
 // ============================================================================
 
 import { createClient } from '@supabase/supabase-js';
+import logger from '../logger.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -50,7 +51,11 @@ export async function requireAuth(req, res, next) {
       .single();
 
     if (userError) {
-      console.error('Error fetching user data:', userError);
+      logger.warn('Failed to fetch user data from users table', {
+        requestId: req.requestId,
+        userId: user.id,
+        error: userError.message
+      });
       // Use basic user data from auth if custom table query fails
       req.user = {
         id: user.id,
@@ -64,7 +69,13 @@ export async function requireAuth(req, res, next) {
 
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
+    logger.error('Authentication middleware failed', {
+      requestId: req.requestId,
+      path: req.path,
+      hasAuthHeader: !!req.headers.authorization,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Authentication error',
       message: 'An error occurred during authentication'
@@ -162,7 +173,14 @@ export async function requireCompanySigner(req, res, next) {
     req.signer = signer;
     next();
   } catch (error) {
-    console.error('Company signer middleware error:', error);
+    logger.error('Company signer authorization failed', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      companyId: req.params.companyId,
+      path: req.path,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Authorization error',
       message: 'An error occurred checking company permissions'
@@ -201,7 +219,13 @@ export async function requireAnySigner(req, res, next) {
 
     next();
   } catch (error) {
-    console.error('Any signer middleware error:', error);
+    logger.error('Signer authorization failed', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      path: req.path,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Authorization error'
     });
@@ -242,7 +266,11 @@ export async function optionalAuth(req, res, next) {
     req.user = userData || { id: user.id, email: user.email, role: 'user' };
     next();
   } catch (error) {
-    console.error('Optional auth error:', error);
+    logger.warn('Optional authentication failed', {
+      requestId: req.requestId,
+      path: req.path,
+      error: error.message
+    });
     req.user = null;
     next();
   }

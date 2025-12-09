@@ -14,6 +14,7 @@ import {
   AuditActionTypes
 } from '../utils/auditLogger.js';
 import { sendSignerInvitation } from '../utils/emailService.js';
+import logger from '../logger.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -73,7 +74,14 @@ export async function inviteSigner(req, res) {
       const emailDomain = email.split('@')[1];
       const companyDomain = company.domain_email.replace('@', '');
       if (emailDomain !== companyDomain) {
-        console.warn(`Email domain ${emailDomain} doesn't match company domain ${companyDomain}`);
+        const reqLogger = logger.withRequest(req);
+        reqLogger.warn('Email domain does not match company domain', {
+          userId: req.user?.id,
+          companyId: companyId,
+          email: email,
+          emailDomain: emailDomain,
+          companyDomain: companyDomain
+        });
         // Don't block - just log warning
       }
     }
@@ -110,7 +118,15 @@ export async function inviteSigner(req, res) {
           .single();
 
         if (updateError) {
-          console.error('Error reactivating signer:', updateError);
+          const reqLogger = logger.withRequest(req);
+          reqLogger.error('Failed to reactivate signer', {
+            userId: req.user?.id,
+            companyId: companyId,
+            signerId: existingSigner.id,
+            email: email,
+            error: updateError.message,
+            stack: updateError.stack
+          });
           return res.status(500).json({
             error: 'Database error',
             message: 'Failed to reactivate signer'
@@ -168,7 +184,15 @@ export async function inviteSigner(req, res) {
       .single();
 
     if (createError) {
-      console.error('Error creating signer:', createError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to create signer invitation', {
+        userId: req.user?.id,
+        companyId: companyId,
+        email: email,
+        role: role,
+        error: createError.message,
+        stack: createError.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to create signer invitation'
@@ -186,7 +210,14 @@ export async function inviteSigner(req, res) {
         inviterName: req.user.email || 'A team member'
       });
     } catch (emailError) {
-      console.error('Error sending invitation email:', emailError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.warn('Failed to send invitation email', {
+        userId: req.user?.id,
+        companyId: companyId,
+        signerId: signer.id,
+        email: email,
+        error: emailError.message
+      });
       // Don't fail the request - signer was created
       return res.json({
         success: true,
@@ -214,7 +245,15 @@ export async function inviteSigner(req, res) {
       emailSent: true
     });
   } catch (error) {
-    console.error('Invite signer error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to invite signer', {
+      userId: req.user?.id,
+      companyId: req.params?.companyId,
+      email: req.body?.email,
+      role: req.body?.role,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error',
       message: 'An error occurred while inviting the signer'
@@ -251,7 +290,13 @@ export async function getSigners(req, res) {
       .order('invited_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching signers:', error);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to fetch signers', {
+        userId: req.user?.id,
+        companyId: companyId,
+        error: error.message,
+        stack: error.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to fetch signers'
@@ -291,7 +336,13 @@ export async function getSigners(req, res) {
       active: enrichedSigners.filter(s => s.isActive).length
     });
   } catch (error) {
-    console.error('Get signers error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get signers', {
+      userId: req.user?.id,
+      companyId: req.params?.companyId,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });
@@ -361,7 +412,15 @@ export async function updateSigner(req, res) {
       .single();
 
     if (updateError) {
-      console.error('Error updating signer:', updateError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to update signer', {
+        userId: req.user?.id,
+        companyId: companyId,
+        signerId: signerId,
+        updates: updates,
+        error: updateError.message,
+        stack: updateError.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to update signer'
@@ -407,7 +466,14 @@ export async function updateSigner(req, res) {
       message: 'Signer updated successfully'
     });
   } catch (error) {
-    console.error('Update signer error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to update signer', {
+      userId: req.user?.id,
+      companyId: req.params?.companyId,
+      signerId: req.params?.signerId,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });
@@ -486,7 +552,15 @@ export async function acceptSignerInvitation(req, res) {
       .single();
 
     if (updateError) {
-      console.error('Error accepting invitation:', updateError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to accept invitation', {
+        userId: req.user?.id,
+        signerId: signer.id,
+        companyId: signer.company_id,
+        email: signer.email,
+        error: updateError.message,
+        stack: updateError.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to accept invitation'
@@ -528,7 +602,13 @@ export async function acceptSignerInvitation(req, res) {
       message: `You've been added as ${signer.role} to ${company?.name || 'the company'}`
     });
   } catch (error) {
-    console.error('Accept invitation error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to accept invitation', {
+      userId: req.user?.id,
+      token: req.params?.token,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error',
       message: 'An error occurred while accepting the invitation'
@@ -599,7 +679,12 @@ export async function getInvitationByToken(req, res) {
       }
     });
   } catch (error) {
-    console.error('Get invitation error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get invitation', {
+      token: req.params?.token,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });

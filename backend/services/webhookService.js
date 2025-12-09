@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import logger from '../logger.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -22,7 +23,12 @@ export async function isEventProcessed(eventId) {
     .maybeSingle();
 
   if (error && error.code !== 'PGRST116') {
-    console.error('Error checking event:', error);
+    logger.error('Failed to check event processing status', {
+      stripeEventId: eventId,
+      errorCode: error.code,
+      errorMessage: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 
@@ -49,7 +55,13 @@ export async function markEventProcessed(eventId, eventType, metadata = {}) {
     .single();
 
   if (error) {
-    console.error('Error marking event as processed:', error);
+    logger.error('Failed to mark event as processed', {
+      stripeEventId: eventId,
+      eventType: eventType,
+      errorCode: error.code,
+      errorMessage: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 
@@ -68,11 +80,12 @@ export async function processPaymentSuccess(paymentIntent) {
   const paymentIntentId = paymentIntent.id;
   const metadata = paymentIntent.metadata || {};
 
-  console.log('Processing payment success:', {
+  logger.info('Processing payment success', {
     email,
     amount: amount / 100,
     paymentIntentId,
-    plan: metadata.plan
+    plan: metadata.plan,
+    currency: paymentIntent.currency
   });
 
   // Step 1: Find user by email
@@ -83,12 +96,24 @@ export async function processPaymentSuccess(paymentIntent) {
     .maybeSingle();
 
   if (userError && userError.code !== 'PGRST116') {
-    console.error('Error finding user:', userError);
+    logger.error('Failed to find user by email', {
+      email,
+      paymentIntentId,
+      errorCode: userError.code,
+      errorMessage: userError.message,
+      stack: userError.stack
+    });
     throw new Error(`Failed to find user: ${userError.message}`);
   }
 
   if (!user) {
-    console.warn(`User not found for email: ${email}. Payment recorded but plan not updated.`);
+    logger.warn('User not found for payment email', {
+      email,
+      paymentIntentId,
+      amount: amount / 100,
+      currency: paymentIntent.currency,
+      action: 'payment_recorded_but_plan_not_updated'
+    });
     return {
       success: false,
       reason: 'user_not_found',
@@ -108,11 +133,29 @@ export async function processPaymentSuccess(paymentIntent) {
     .eq('id', user.id);
 
   if (updateError) {
-    console.error('Error updating user plan:', updateError);
+    logger.error('Failed to update user plan', {
+      userId: user.id,
+      email: user.email,
+      previousPlan: user.plan,
+      newPlan,
+      paymentIntentId,
+      amount: amount / 100,
+      errorCode: updateError.code,
+      errorMessage: updateError.message,
+      stack: updateError.stack
+    });
     throw new Error(`Failed to update user plan: ${updateError.message}`);
   }
 
-  console.log(`✅ Updated user ${user.id} to plan: ${newPlan}`);
+  logger.info('User plan updated successfully', {
+    userId: user.id,
+    email: user.email,
+    previousPlan: user.plan,
+    newPlan,
+    paymentIntentId,
+    amount: amount / 100,
+    currency: paymentIntent.currency
+  });
 
   // Step 3: Create revenue transaction record
   const { data: transaction, error: txError } = await supabaseClient
@@ -136,11 +179,27 @@ export async function processPaymentSuccess(paymentIntent) {
     .single();
 
   if (txError) {
-    console.error('Error creating transaction:', txError);
+    logger.error('Failed to create transaction', {
+      userId: user.id,
+      email: user.email,
+      paymentIntentId,
+      amount: amount / 100,
+      currency: paymentIntent.currency,
+      errorCode: txError.code,
+      errorMessage: txError.message,
+      stack: txError.stack
+    });
     // Don't throw - user already got their plan
     // Log error and continue
   } else {
-    console.log(`✅ Created transaction ${transaction.id} for $${amount / 100}`);
+    logger.info('Transaction created successfully', {
+      transactionId: transaction.id,
+      userId: user.id,
+      email: user.email,
+      paymentIntentId,
+      amount: amount / 100,
+      currency: paymentIntent.currency
+    });
   }
 
   return {
@@ -170,11 +229,13 @@ export async function processPaymentFailed(paymentIntent) {
   const amount = paymentIntent.amount;
   const paymentIntentId = paymentIntent.id;
 
-  console.warn('Payment failed:', {
+  logger.warn('Payment intent failed', {
     email,
     amount: amount / 100,
     paymentIntentId,
-    last_payment_error: paymentIntent.last_payment_error
+    currency: paymentIntent.currency,
+    lastPaymentError: paymentIntent.last_payment_error?.message,
+    lastPaymentErrorCode: paymentIntent.last_payment_error?.code
   });
 
   // TODO: Send email notification to user about failed payment

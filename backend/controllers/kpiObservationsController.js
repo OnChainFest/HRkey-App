@@ -12,6 +12,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import logger from '../logger.js';
 
 dotenv.config();
 
@@ -174,7 +175,15 @@ export async function createKpiObservations(req, res) {
       .select();
 
     if (insertError) {
-      console.error('❌ Error inserting KPI observations:', insertError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to insert KPI observations', {
+        subjectWallet: subject_wallet,
+        observerWallet: observer_wallet,
+        roleId: role_id,
+        observationCount: observations.length,
+        error: insertError.message,
+        stack: insertError.stack
+      });
       return res.status(500).json({
         success: false,
         error: 'Database insertion failed',
@@ -186,10 +195,14 @@ export async function createKpiObservations(req, res) {
     // 5. SUCCESS RESPONSE
     // ========================================
 
-    console.log(`✅ Inserted ${insertedData.length} KPI observations`);
-    console.log(`   Subject: ${subject_wallet}`);
-    console.log(`   Observer: ${observer_wallet}`);
-    console.log(`   Role: ${role_id} (${role_name || 'N/A'})`);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.info('KPI observations created successfully', {
+      subjectWallet: subject_wallet,
+      observerWallet: observer_wallet,
+      roleId: role_id,
+      roleName: role_name || 'N/A',
+      inserted: insertedData.length
+    });
 
     return res.status(201).json({
       success: true,
@@ -198,7 +211,14 @@ export async function createKpiObservations(req, res) {
     });
 
   } catch (error) {
-    console.error('❌ Error in createKpiObservations:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to create KPI observations', {
+      subjectWallet: req.body?.subject_wallet,
+      observerWallet: req.body?.observer_wallet,
+      roleId: req.body?.role_id,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       success: false,
       error: error.message
@@ -289,7 +309,15 @@ export async function getKpiObservations(req, res) {
     const { data, error, count } = await query;
 
     if (error) {
-      console.error('❌ Error fetching KPI observations:', error);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to fetch KPI observations', {
+        subjectWallet: subject_wallet,
+        observerWallet: observer_wallet,
+        roleId: role_id,
+        kpiName: kpi_name,
+        error: error.message,
+        stack: error.stack
+      });
       return res.status(500).json({
         success: false,
         error: 'Database query failed',
@@ -317,7 +345,12 @@ export async function getKpiObservations(req, res) {
     });
 
   } catch (error) {
-    console.error('❌ Error in getKpiObservations:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get KPI observations', {
+      queryParams: req.query,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       success: false,
       error: error.message
@@ -407,7 +440,14 @@ export async function getKpiObservationsSummary(req, res) {
     const { data, error, count } = await query;
 
     if (error) {
-      console.error('❌ Error fetching KPI summary:', error);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to fetch KPI summary', {
+        subjectWallet: subject_wallet,
+        roleId: role_id,
+        kpiName: kpi_name,
+        error: error.message,
+        stack: error.stack
+      });
       return res.status(500).json({
         success: false,
         error: 'Database query failed',
@@ -432,7 +472,12 @@ export async function getKpiObservationsSummary(req, res) {
     });
 
   } catch (error) {
-    console.error('❌ Error in getKpiObservationsSummary:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get KPI observations summary', {
+      queryParams: req.query,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       success: false,
       error: error.message

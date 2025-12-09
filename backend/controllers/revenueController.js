@@ -6,6 +6,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/node';
+import logger from '../logger.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -34,7 +35,12 @@ export async function getUserBalance(req, res) {
       .maybeSingle();
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching balance:', error);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to fetch balance', {
+        userId: req.user?.id,
+        error: error.message,
+        stack: error.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to fetch balance'
@@ -68,7 +74,12 @@ export async function getUserBalance(req, res) {
       }
     });
   } catch (error) {
-    console.error('Get user balance error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get user balance', {
+      userId: req.user?.id,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });
@@ -119,7 +130,15 @@ export async function getRevenueShares(req, res) {
     const { data: shares, error, count } = await query;
 
     if (error) {
-      console.error('Error fetching revenue shares:', error);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to fetch revenue shares', {
+        userId: req.user?.id,
+        status: status,
+        limit: limit,
+        offset: offset,
+        error: error.message,
+        stack: error.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to fetch revenue shares'
@@ -146,7 +165,12 @@ export async function getRevenueShares(req, res) {
       offset: parseInt(offset)
     });
   } catch (error) {
-    console.error('Get revenue shares error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get revenue shares', {
+      userId: req.user?.id,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });
@@ -185,7 +209,15 @@ export async function getTransactionHistory(req, res) {
     const { data: transactions, error, count } = await query;
 
     if (error) {
-      console.error('Error fetching transactions:', error);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to fetch transactions', {
+        userId: req.user?.id,
+        type: type,
+        limit: limit,
+        offset: offset,
+        error: error.message,
+        stack: error.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to fetch transactions'
@@ -211,7 +243,12 @@ export async function getTransactionHistory(req, res) {
       offset: parseInt(offset)
     });
   } catch (error) {
-    console.error('Get transaction history error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get transaction history', {
+      userId: req.user?.id,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });
@@ -303,7 +340,14 @@ export async function requestPayout(req, res) {
       .single();
 
     if (txError) {
-      console.error('Error creating payout transaction:', txError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to create payout transaction', {
+        userId: req.user?.id,
+        amount: requestedAmount,
+        payoutMethod: payoutMethod,
+        error: txError.message,
+        stack: txError.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to create payout request'
@@ -327,7 +371,14 @@ export async function requestPayout(req, res) {
       }
     });
   } catch (error) {
-    console.error('Request payout error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to request payout', {
+      userId: req.user?.id,
+      amount: req.body?.amount,
+      payoutMethod: req.body?.payoutMethod,
+      error: error.message,
+      stack: error.stack
+    });
 
     // Capture payout errors in Sentry (critical - involves money)
     if (sentryEnabled) {
@@ -414,7 +465,12 @@ export async function getEarningsSummary(req, res) {
       }
     });
   } catch (error) {
-    console.error('Get earnings summary error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get earnings summary', {
+      userId: req.user?.id,
+      error: error.message,
+      stack: error.stack
+    });
 
     // Capture earnings summary errors in Sentry
     if (sentryEnabled) {
