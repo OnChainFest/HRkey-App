@@ -11,6 +11,7 @@ import {
   getUserAuditLogs,
   getCompanyAuditLogs
 } from '../utils/auditLogger.js';
+import logger from '../logger.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -146,7 +147,14 @@ export async function getAuditLogs(req, res) {
       });
     }
   } catch (error) {
-    console.error('Get audit logs error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get audit logs', {
+      userId: req.user?.id,
+      queryUserId: req.query?.userId,
+      queryCompanyId: req.query?.companyId,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error',
       message: 'An error occurred while fetching audit logs'
@@ -192,7 +200,13 @@ export async function getRecentActivity(req, res) {
       .limit(10);
 
     if (error) {
-      console.error('Error fetching recent activity:', error);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to fetch recent activity', {
+        userId: req.user?.id,
+        companyIds: companyIds,
+        error: error.message,
+        stack: error.stack
+      });
       return res.status(500).json({
         error: 'Database error'
       });
@@ -203,7 +217,12 @@ export async function getRecentActivity(req, res) {
       activity: logs
     });
   } catch (error) {
-    console.error('Get recent activity error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get recent activity', {
+      userId: req.user?.id,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });

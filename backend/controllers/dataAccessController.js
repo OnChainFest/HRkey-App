@@ -8,6 +8,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { logDataAccessAction, AuditActionTypes } from '../utils/auditLogger.js';
 import { sendDataAccessRequestNotification, sendDataAccessApprovedNotification } from '../utils/emailService.js';
+import logger from '../logger.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -155,7 +156,15 @@ export async function createDataAccessRequest(req, res) {
       .single();
 
     if (createError) {
-      console.error('Error creating data access request:', createError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to create data access request', {
+        userId: req.user?.id,
+        companyId: companyId,
+        targetUserId: targetUserId,
+        dataType: requestedDataType,
+        error: createError.message,
+        stack: createError.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to create data access request'
@@ -194,7 +203,14 @@ export async function createDataAccessRequest(req, res) {
         requestId: request.id
       });
     } catch (emailError) {
-      console.error('Error sending notification email:', emailError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.warn('Failed to send notification email', {
+        userId: req.user?.id,
+        companyId: companyId,
+        targetUserId: targetUserId,
+        recipientEmail: targetUser.email,
+        error: emailError.message
+      });
       // Don't fail the request if email fails
     }
 
@@ -214,7 +230,15 @@ export async function createDataAccessRequest(req, res) {
       message: 'Data access request created. Awaiting user consent.'
     });
   } catch (error) {
-    console.error('Create data access request error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to create data access request', {
+      userId: req.user?.id,
+      companyId: req.body?.companyId,
+      targetUserId: req.body?.targetUserId,
+      dataType: req.body?.requestedDataType,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error',
       message: 'An error occurred while creating the request'
@@ -256,7 +280,12 @@ export async function getPendingRequests(req, res) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching pending requests:', error);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to fetch pending requests', {
+        userId: req.user?.id,
+        error: error.message,
+        stack: error.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to fetch pending requests'
@@ -280,7 +309,12 @@ export async function getPendingRequests(req, res) {
       total: requests.length
     });
   } catch (error) {
-    console.error('Get pending requests error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get pending requests', {
+      userId: req.user?.id,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });
@@ -387,7 +421,14 @@ export async function approveDataAccessRequest(req, res) {
       .single();
 
     if (updateError) {
-      console.error('Error updating request:', updateError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to approve request', {
+        userId: req.user?.id,
+        requestId: requestId,
+        companyId: request.company_id,
+        error: updateError.message,
+        stack: updateError.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to approve request'
@@ -430,7 +471,13 @@ export async function approveDataAccessRequest(req, res) {
         });
       }
     } catch (emailError) {
-      console.error('Error sending approval notification:', emailError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.warn('Failed to send approval notification', {
+        userId: req.user?.id,
+        requestId: requestId,
+        recipientEmail: targetUser?.email,
+        error: emailError.message
+      });
     }
 
     return res.json({
@@ -440,7 +487,13 @@ export async function approveDataAccessRequest(req, res) {
       message: 'Data access request approved successfully'
     });
   } catch (error) {
-    console.error('Approve data access request error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to approve data access request', {
+      userId: req.user?.id,
+      requestId: req.params?.requestId,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });
@@ -501,7 +554,14 @@ export async function rejectDataAccessRequest(req, res) {
       .single();
 
     if (updateError) {
-      console.error('Error updating request:', updateError);
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to reject request', {
+        userId: req.user?.id,
+        requestId: requestId,
+        companyId: request.company_id,
+        error: updateError.message,
+        stack: updateError.stack
+      });
       return res.status(500).json({
         error: 'Database error',
         message: 'Failed to reject request'
@@ -523,7 +583,13 @@ export async function rejectDataAccessRequest(req, res) {
       message: 'Data access request rejected'
     });
   } catch (error) {
-    console.error('Reject data access request error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to reject data access request', {
+      userId: req.user?.id,
+      requestId: req.params?.requestId,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });
@@ -641,7 +707,13 @@ export async function getDataByRequestId(req, res) {
       accessedAt: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Get data by request ID error:', error);
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get data by request ID', {
+      userId: req.user?.id,
+      requestId: req.params?.requestId,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({
       error: 'Internal server error'
     });
@@ -703,7 +775,14 @@ async function createRevenueShare(request, supabaseClient) {
       .single();
 
     if (error) {
-      console.error('Error creating revenue share:', error);
+      logger.error('Failed to create revenue share', {
+        requestId: request.id,
+        companyId: request.company_id,
+        targetUserId: request.target_user_id,
+        totalAmount: totalAmount,
+        error: error.message,
+        stack: error.stack
+      });
       return { success: false, error: 'Failed to create revenue share' };
     }
 
@@ -720,7 +799,11 @@ async function createRevenueShare(request, supabaseClient) {
       revenueShare
     };
   } catch (error) {
-    console.error('Create revenue share error:', error);
+    logger.error('Failed to create revenue share', {
+      requestId: request?.id,
+      error: error.message,
+      stack: error.stack
+    });
     return { success: false, error: error.message };
   }
 }

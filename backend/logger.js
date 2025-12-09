@@ -117,6 +117,61 @@ export function requestIdMiddleware(req, res, next) {
   next();
 }
 
+/**
+ * Express middleware to log HTTP requests and responses
+ * Logs incoming requests and completed responses with duration
+ * Automatically correlates logs using requestId
+ *
+ * @example
+ * app.use(requestLoggingMiddleware);
+ */
+export function requestLoggingMiddleware(req, res, next) {
+  const startTime = Date.now();
+
+  // Skip logging for health checks to reduce noise
+  const skipLogging = req.path === '/health' || req.path === '/health/deep';
+
+  if (!skipLogging) {
+    // Log incoming request
+    logger.http('Incoming request', {
+      requestId: req.requestId,
+      method: req.method,
+      path: req.path,
+      query: Object.keys(req.query).length > 0 ? req.query : undefined,
+      ip: req.ip,
+      userAgent: req.get('user-agent')
+    });
+  }
+
+  // Log response when finished
+  res.on('finish', () => {
+    if (skipLogging) return;
+
+    const duration = Date.now() - startTime;
+
+    // Choose log level based on status code
+    let level = 'http';
+    if (res.statusCode >= 500) {
+      level = 'error';
+    } else if (res.statusCode >= 400) {
+      level = 'warn';
+    } else if (res.statusCode >= 300) {
+      level = 'info';
+    }
+
+    logger[level]('Request completed', {
+      requestId: req.requestId,
+      method: req.method,
+      path: req.path,
+      statusCode: res.statusCode,
+      durationMs: duration,
+      userId: req.user?.id
+    });
+  });
+
+  next();
+}
+
 // Export the logger instance as default
 export default logger;
 

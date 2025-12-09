@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod';
+import logger from '../logger.js';
 
 /**
  * Validate request body against a Zod schema
@@ -28,7 +29,13 @@ export const validateBody = (schema) => {
         });
       }
       // Unexpected error
-      console.error('❌ Validation error:', error);
+      logger.error('Validation middleware failed', {
+        requestId: req.requestId,
+        path: req.path,
+        validationType: 'body',
+        error: error.message,
+        stack: error.stack
+      });
       return res.status(500).json({
         error: 'Internal validation error'
       });
@@ -58,7 +65,13 @@ export const validateParams = (schema) => {
           }))
         });
       }
-      console.error('❌ Params validation error:', error);
+      logger.error('Params validation middleware failed', {
+        requestId: req.requestId,
+        path: req.path,
+        validationType: 'params',
+        error: error.message,
+        stack: error.stack
+      });
       return res.status(500).json({
         error: 'Internal validation error'
       });
@@ -88,7 +101,13 @@ export const validateQuery = (schema) => {
           }))
         });
       }
-      console.error('❌ Query validation error:', error);
+      logger.error('Query validation middleware failed', {
+        requestId: req.requestId,
+        path: req.path,
+        validationType: 'query',
+        error: error.message,
+        stack: error.stack
+      });
       return res.status(500).json({
         error: 'Internal validation error'
       });
