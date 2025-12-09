@@ -1159,12 +1159,27 @@ app.get('/api/hrkey-score/model-info', async (req, res) => {
 /* =========================
    DEBUG ROUTE (Temporary - Remove after Sentry verification)
    ========================= */
-// DEBUG: Ruta temporal para probar Sentry. Eliminar después.
-if (sentryEnabled) {
-  app.get('/debug-sentry', (req, res) => {
-    throw new Error('Sentry debug error – HRKey backend');
-  });
-}
+// =======================================================
+// Sentry Debug Route — Used only to test Sentry in Render
+// =======================================================
+app.get('/debug-sentry', (req, res) => {
+  const error = new Error('Sentry debug test error from /debug-sentry');
+
+  if (sentryEnabled) {
+    Sentry.captureException(error, scope => {
+      scope.setTag('route', '/debug-sentry');
+      scope.setTag('type', 'sentry_debug');
+      scope.setContext('debug', {
+        message: 'Ruta de prueba ejecutada en Render',
+        url: req.originalUrl
+      });
+      return scope;
+    });
+  }
+
+  // Throw the error so it also passes through the global Sentry handler
+  throw error;
+});
 
 /* =========================
    Sentry Error Handler
