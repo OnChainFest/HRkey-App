@@ -549,16 +549,13 @@ app.use((req, res, next) => {
 });
 
 /* =========================
-   Sentry Request & Tracing Handlers
+   Sentry Request Context
    ========================= */
+
 if (sentryEnabled) {
-  // Request handler must be the first middleware on the app
-  app.use(Sentry.Handlers.requestHandler());
-
-  // TracingHandler creates a trace for every incoming request
-  app.use(Sentry.Handlers.tracingHandler());
-
-  // Inject requestId and user context into Sentry scope
+  // Solo añadimos contexto de requestId y user al scope de Sentry.
+  // La captura de errores se hace con captureException y los
+  // handlers globales de Node (uncaughtException, unhandledRejection).
   app.use((req, res, next) => {
     const requestId = req.requestId || res.locals.requestId;
     if (requestId) {
@@ -1185,21 +1182,6 @@ app.get('/debug-sentry', async (req, res) => {
     });
   }
 });
-
-/* =========================
-   Sentry Error Handler
-   ========================= */
-// The Sentry error handler must be registered before any other error middleware
-// and after all controllers
-if (sentryEnabled) {
-  app.use(Sentry.Handlers.errorHandler({
-    shouldHandleError(error) {
-      // Only capture server errors (5xx), not client errors (4xx)
-      const statusCode = error.status || error.statusCode || 500;
-      return statusCode >= 500;
-    }
-  }));
-}
 
 /* =========================
    Export app for testing
