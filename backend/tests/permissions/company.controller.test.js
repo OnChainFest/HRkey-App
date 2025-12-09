@@ -255,6 +255,35 @@ describe('Company Controller - Permission Tests', () => {
 
       expect(response.body.error).toBe('Forbidden');
     });
+
+    test('PERM-C15: Should allow superadmin to update any company', async () => {
+      const userId = '550e8400-e29b-41d4-a716-446655440000';
+      const user = mockUserData({ id: userId, role: 'superadmin' });
+      const updatedCompany = {
+        id: companyId,
+        name: 'Updated Company Name',
+        updated_at: new Date().toISOString()
+      };
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue(
+        mockAuthGetUserSuccess(userId)
+      );
+
+      // First .single() for user lookup in requireAuth
+      // Second .single() for requireCompanySigner (superadmin bypasses)
+      // Third .single() for update operation
+      mockSupabaseClient.from().single
+        .mockResolvedValueOnce(mockDatabaseSuccess(user))
+        .mockResolvedValueOnce(mockDatabaseSuccess(updatedCompany));
+
+      const response = await request(app)
+        .patch(`/api/company/${companyId}`)
+        .set('Authorization', 'Bearer valid-token')
+        .send(updateData);
+
+      expect(response.status).not.toBe(401);
+      expect(response.status).not.toBe(403);
+    });
   });
 
   // =========================================================================
