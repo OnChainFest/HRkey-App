@@ -13,6 +13,7 @@ import {
 } from '../utils/auditLogger.js';
 import { sendCompanyVerificationNotification } from '../utils/emailService.js';
 import logger from '../logger.js';
+import { logEvent, EventTypes } from '../services/analytics/eventTracker.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -128,6 +129,19 @@ export async function createCompany(req, res) {
       },
       req
     );
+
+    // Track analytics event (non-blocking)
+    await logEvent({
+      userId: userId,
+      companyId: company.id,
+      eventType: EventTypes.COMPANY_CREATED,
+      context: {
+        companyName: name,
+        hasTaxId: !!taxId,
+        hasDomainEmail: !!domainEmail
+      },
+      req
+    });
 
     return res.json({
       success: true,

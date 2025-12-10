@@ -119,4 +119,6 @@ export async function getPublicIdentifierForUser(userId) {
 export default {
   getPublicProfile,
   getPublicIdentifierForUser
+export default {
+  getPublicProfile
 };
