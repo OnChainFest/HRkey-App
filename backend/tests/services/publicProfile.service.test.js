@@ -24,6 +24,7 @@ jest.unstable_mockModule('../../services/tokenomicsPreview.service.js', () => ({
 }));
 
 const { getPublicProfile, getPublicIdentifierForUser } = await import('../../services/publicProfile.service.js');
+const { getPublicProfile } = await import('../../services/publicProfile.service.js');
 
 describe('Public Profile Service', () => {
   beforeEach(() => {
@@ -39,6 +40,13 @@ describe('Public Profile Service', () => {
     mockOr.mockReset().mockReturnValue(builder);
     mockSelect.mockReset().mockReturnValue(builder);
     mockSupabaseClient.from.mockReset().mockReturnValue(builder);
+    mockOr.mockReset().mockReturnValue({ select: mockSelect, maybeSingle: mockMaybeSingle });
+    mockSelect.mockReset().mockReturnValue({ or: mockOr, maybeSingle: mockMaybeSingle });
+    mockSupabaseClient.from.mockReset().mockReturnValue({
+      select: mockSelect,
+      or: mockOr,
+      maybeSingle: mockMaybeSingle
+    });
     mockEvaluateCandidateForUser.mockReset();
     mockGetTokenomicsPreviewForUser.mockReset();
   });

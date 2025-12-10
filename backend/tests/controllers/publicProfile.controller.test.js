@@ -7,6 +7,9 @@ const mockGetPublicIdentifierForUser = jest.fn();
 jest.unstable_mockModule('../../services/publicProfile.service.js', () => ({
   getPublicProfile: mockGetPublicProfile,
   getPublicIdentifierForUser: mockGetPublicIdentifierForUser
+
+jest.unstable_mockModule('../../services/publicProfile.service.js', () => ({
+  getPublicProfile: mockGetPublicProfile
 }));
 
 // Auth middleware is not applied to this public route, but other routes import it.
