@@ -159,6 +159,10 @@ export default function CandidateEvaluationPage() {
           fetchJson<CandidateEvaluationResponse>(evaluationUrl),
           fetchJson<TokenomicsPreviewResponse>(tokenomicsUrl),
           fetchJson<PublicIdentifierResponse>(identifierUrl),
+
+        const [evaluationResult, tokenomicsResult] = await Promise.allSettled([
+          fetchJson<CandidateEvaluationResponse>(evaluationUrl),
+          fetchJson<TokenomicsPreviewResponse>(tokenomicsUrl),
         ]);
 
         if (evaluationResult.status === "rejected") {
@@ -179,6 +183,19 @@ export default function CandidateEvaluationPage() {
         } else {
           setIdentifierError(identifierResult.reason?.message || "Public link unavailable.");
         }
+        const url = `${baseUrl}/api/candidates/${userId}/evaluation`;
+
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body?.error || "Unable to load your evaluation right now.");
+        }
+
+        const payload: CandidateEvaluationResponse = await response.json();
+        setEvaluation(payload);
       } catch (err: any) {
         console.error("Failed to load candidate evaluation", err);
         setError(err?.message || "Unexpected error loading evaluation.");
