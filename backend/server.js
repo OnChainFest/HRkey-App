@@ -23,6 +23,7 @@ import auditController from './controllers/auditController.js';
 import dataAccessController from './controllers/dataAccessController.js';
 import revenueController from './controllers/revenueController.js';
 import kpiObservationsController from './controllers/kpiObservationsController.js';
+import candidateEvaluationController from './controllers/candidateEvaluation.controller.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 
 // Import services
@@ -582,45 +583,57 @@ app.use(helmet({
 }));
 
 // Rate limiting configuration
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Max 100 requests per IP per window
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => {
-    // Skip rate limiting for health check
-    return req.path === '/health';
-  }
-});
+const apiLimiter =
+  process.env.NODE_ENV === 'test'
+    ? (req, res, next) => next()
+    : rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 100, // Max 100 requests per IP per window
+      message: 'Too many requests from this IP, please try again later.',
+      standardHeaders: true,
+      legacyHeaders: false,
+      skip: (req) => {
+        // Skip rate limiting for health check
+        return req.path === '/health';
+      }
+    });
 
-// Strict rate limiter for sensitive endpoints
-const strictLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5, // Max 5 requests per IP per hour
-  message: 'Too many attempts, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: true // Only count failed requests
-});
+// Strict rate limiter for sensitive endpoints (disabled in tests to avoid flakiness)
+const strictLimiter =
+  process.env.NODE_ENV === 'test'
+    ? (req, res, next) => next()
+    : rateLimit({
+      windowMs: 60 * 60 * 1000, // 1 hour
+      max: 5, // Max 5 requests per IP per hour
+      message: 'Too many attempts, please try again later.',
+      standardHeaders: true,
+      legacyHeaders: false,
+      skipSuccessfulRequests: true // Only count failed requests
+    });
 
 // Auth-related rate limiter
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Max 10 attempts per IP
-  message: 'Too many authentication attempts, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false
-});
+const authLimiter =
+  process.env.NODE_ENV === 'test'
+    ? (req, res, next) => next()
+    : rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 10, // Max 10 attempts per IP
+      message: 'Too many authentication attempts, please try again later.',
+      standardHeaders: true,
+      legacyHeaders: false
+    });
 
 // Token validation rate limiter (for public token endpoints)
-const tokenLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20, // Max 20 token validation attempts per IP per hour
-  message: 'Too many token validation attempts, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false
-});
+const tokenLimiter =
+  process.env.NODE_ENV === 'test'
+    ? (req, res, next) => next()
+    : rateLimit({
+      windowMs: 60 * 60 * 1000, // 1 hour
+      max: 20, // Max 20 token validation attempts per IP per hour
+      message: 'Too many token validation attempts, please try again later.',
+      standardHeaders: true,
+      legacyHeaders: false
+    });
 
 // Apply general rate limiting to all API routes
 app.use('/api/', apiLimiter);
@@ -821,9 +834,21 @@ app.post('/api/wallet/create', requireAuth, strictLimiter, validateBody(createWa
   }
 });
 
-app.get('/api/wallet/:userId', validateParams(getWalletParamsSchema), async (req, res) => {
+app.get('/api/wallet/:userId', requireAuth, validateParams(getWalletParamsSchema), async (req, res) => {
   try {
     const { userId } = req.params;
+
+    // Authorization: only the wallet owner or a superadmin may view this wallet
+    const isOwner = req.user?.id === userId;
+    const isSuperadmin = req.user?.role === 'superadmin';
+
+    if (!isOwner && !isSuperadmin) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You can only view your own wallet'
+      });
+    }
+
     const wallet = await WalletCreationService.getUserWallet(userId);
     if (!wallet) return res.status(404).json({ error: 'Wallet not found' });
     res.json({ success: true, wallet });
@@ -1080,6 +1105,13 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 // ===== IDENTITY ENDPOINTS =====
 app.post('/api/identity/verify', authLimiter, requireAuth, identityController.verifyIdentity);
 app.get('/api/identity/status/:userId', requireAuth, identityController.getIdentityStatus);
+
+// ===== CANDIDATE EVALUATION ENDPOINT =====
+app.get(
+  '/api/candidates/:userId/evaluation',
+  requireAuth,
+  candidateEvaluationController.getCandidateEvaluation
+);
 
 // ===== COMPANY ENDPOINTS =====
 app.post('/api/company/create', requireAuth, companyController.createCompany);
