@@ -9,6 +9,7 @@ import { createClient } from '@supabase/supabase-js';
 import { logDataAccessAction, AuditActionTypes } from '../utils/auditLogger.js';
 import { sendDataAccessRequestNotification, sendDataAccessApprovedNotification } from '../utils/emailService.js';
 import logger from '../logger.js';
+import { logEvent, EventTypes } from '../services/analytics/eventTracker.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -213,6 +214,21 @@ export async function createDataAccessRequest(req, res) {
       });
       // Don't fail the request if email fails
     }
+
+    // Track analytics event (non-blocking)
+    await logEvent({
+      userId: requestedByUserId,
+      companyId: companyId,
+      eventType: EventTypes.DATA_ACCESS_REQUEST,
+      context: {
+        requestId: request.id,
+        targetUserId: targetUserId,
+        dataType: requestedDataType,
+        price: pricing.price_amount,
+        currency: pricing.currency
+      },
+      req
+    });
 
     return res.json({
       success: true,
@@ -480,6 +496,21 @@ export async function approveDataAccessRequest(req, res) {
       });
     }
 
+    // Track analytics event (non-blocking)
+    await logEvent({
+      userId: userId,
+      companyId: request.company_id,
+      eventType: EventTypes.DATA_ACCESS_APPROVED,
+      context: {
+        requestId: requestId,
+        dataType: request.requested_data_type,
+        price: request.price_amount,
+        currency: request.currency,
+        revenueShareId: revenueShareResult.revenueShareId
+      },
+      req
+    });
+
     return res.json({
       success: true,
       request: updatedRequest,
@@ -576,6 +607,18 @@ export async function rejectDataAccessRequest(req, res) {
       { requestId },
       req
     );
+
+    // Track analytics event (non-blocking)
+    await logEvent({
+      userId: userId,
+      companyId: request.company_id,
+      eventType: EventTypes.DATA_ACCESS_REJECTED,
+      context: {
+        requestId: requestId,
+        dataType: request.requested_data_type
+      },
+      req
+    });
 
     return res.json({
       success: true,
@@ -698,6 +741,20 @@ export async function getDataByRequestId(req, res) {
       { requestId, dataType: request.requested_data_type },
       req
     );
+
+    // Track analytics event - profile view (non-blocking)
+    await logEvent({
+      userId: userId,
+      companyId: request.company_id,
+      eventType: EventTypes.PROFILE_VIEW,
+      context: {
+        candidateId: request.target_user_id,
+        requestId: requestId,
+        dataType: request.requested_data_type,
+        accessCount: request.access_count + 1
+      },
+      req
+    });
 
     return res.json({
       success: true,
