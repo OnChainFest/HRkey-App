@@ -26,10 +26,13 @@ import kpiObservationsController from './controllers/kpiObservationsController.j
 import candidateEvaluationController from './controllers/candidateEvaluation.controller.js';
 import tokenomicsPreviewController from './controllers/tokenomicsPreview.controller.js';
 import publicProfileController from './controllers/publicProfile.controller.js';
+import analyticsController from './controllers/analyticsController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 
 // Import services
 import * as webhookService from './services/webhookService.js';
+import { validateReference as validateReferenceRVL } from './services/validation/index.js';
+import { logEvent, EventTypes } from './services/analytics/eventTracker.js';
 
 // Import logging
 import logger, { requestIdMiddleware, requestLoggingMiddleware } from './logger.js';
@@ -358,10 +361,85 @@ class ReferenceService {
 
     if (refErr) throw refErr;
 
+    // ===== REFERENCE VALIDATION LAYER (RVL) INTEGRATION =====
+    // Process reference through RVL (non-blocking - failures don't block submission)
+    try {
+      logger.info('Processing reference through RVL', { reference_id: reference.id });
+
+      // Fetch previous references for consistency checking
+      const { data: previousRefs } = await supabase
+        .from('references')
+        .select('summary, kpi_ratings, validated_data')
+        .eq('owner_id', invite.requester_id)
+        .neq('id', reference.id)
+        .eq('status', 'active')
+        .limit(10);
+
+      // Validate the reference
+      const validatedData = await validateReferenceRVL({
+        summary: refRow.summary,
+        kpi_ratings: refRow.kpi_ratings,
+        detailed_feedback: refRow.detailed_feedback,
+        owner_id: refRow.owner_id,
+        referrer_email: refRow.referrer_email
+      }, {
+        previousReferences: previousRefs || [],
+        skipEmbeddings: process.env.NODE_ENV === 'test' // Skip embeddings in tests
+      });
+
+      // Update reference with validated data
+      await supabase
+        .from('references')
+        .update({
+          validated_data: validatedData,
+          validation_status: validatedData.validation_status,
+          fraud_score: validatedData.fraud_score,
+          consistency_score: validatedData.consistency_score,
+          validated_at: new Date().toISOString()
+        })
+        .eq('id', reference.id);
+
+      logger.info('RVL processing completed', {
+        reference_id: reference.id,
+        validation_status: validatedData.validation_status,
+        fraud_score: validatedData.fraud_score
+      });
+
+    } catch (rvlError) {
+      // RVL failure is non-fatal - log and continue
+      logger.error('RVL processing failed, reference submitted without validation', {
+        reference_id: reference.id,
+        error: rvlError.message,
+        stack: rvlError.stack
+      });
+
+      // Update reference to indicate validation failed
+      await supabase
+        .from('references')
+        .update({
+          validation_status: 'PENDING',
+          validated_at: new Date().toISOString()
+        })
+        .eq('id', reference.id);
+    }
+    // ===== END RVL INTEGRATION =====
+
     await supabase
       .from('reference_invites')
       .update({ status: 'completed', completed_at: new Date().toISOString() })
       .eq('id', invite.id);
+
+    // Track analytics event (non-blocking)
+    await logEvent({
+      userId: invite.requester_id,
+      eventType: EventTypes.REFERENCE_SUBMITTED,
+      context: {
+        referenceId: reference.id,
+        overallRating: overall,
+        referrerEmail: invite.referee_email,
+        hasDetailedFeedback: !!(comments?.recommendation || comments?.strengths || comments?.improvements)
+      }
+    });
 
     await this.sendReferenceCompletedEmail(invite.requester_id, reference);
 
@@ -1398,6 +1476,116 @@ app.get('/api/hrkey-score/model-info', requireAuth, async (req, res) => {
     });
   }
 });
+
+/* =========================
+   ANALYTICS ENDPOINTS (Superadmin only)
+   ========================= */
+
+/**
+ * GET /api/analytics/dashboard
+ * Get comprehensive analytics dashboard data
+ *
+ * Query params:
+ * - days: Number of days to look back (default: 30)
+ *
+ * Returns aggregated metrics:
+ * - Conversion funnel
+ * - Demand trends
+ * - Top candidates by activity
+ * - Top companies by activity
+ * - Overall event counts
+ *
+ * Example:
+ * curl -H "Authorization: Bearer TOKEN" http://localhost:3001/api/analytics/dashboard?days=30
+ */
+app.get('/api/analytics/dashboard', requireSuperadmin, analyticsController.getAnalyticsDashboardEndpoint);
+
+/**
+ * GET /api/analytics/info
+ * Get analytics layer metadata and capabilities
+ *
+ * Returns:
+ * - Event types and categories
+ * - Available metrics
+ * - Layer version
+ *
+ * Example:
+ * curl -H "Authorization: Bearer TOKEN" http://localhost:3001/api/analytics/info
+ */
+app.get('/api/analytics/info', requireSuperadmin, analyticsController.getAnalyticsInfoEndpoint);
+
+/**
+ * GET /api/analytics/candidates/activity
+ * Get candidate activity metrics
+ *
+ * Query params:
+ * - days: Number of days (default: 30)
+ * - limit: Max results (default: 50)
+ *
+ * Example:
+ * curl -H "Authorization: Bearer TOKEN" http://localhost:3001/api/analytics/candidates/activity?days=30&limit=50
+ */
+app.get('/api/analytics/candidates/activity', requireSuperadmin, analyticsController.getCandidateActivityEndpoint);
+
+/**
+ * GET /api/analytics/companies/activity
+ * Get company activity and behavior metrics
+ *
+ * Query params:
+ * - days: Number of days (default: 30)
+ * - limit: Max results (default: 50)
+ *
+ * Example:
+ * curl -H "Authorization: Bearer TOKEN" http://localhost:3001/api/analytics/companies/activity?days=30&limit=50
+ */
+app.get('/api/analytics/companies/activity', requireSuperadmin, analyticsController.getCompanyActivityEndpoint);
+
+/**
+ * GET /api/analytics/funnel
+ * Get conversion funnel analysis
+ *
+ * Query params:
+ * - days: Number of days (default: 30)
+ *
+ * Returns funnel stages with conversion rates:
+ * - Signups → Companies Created → Data Requests → Approvals → Payments
+ *
+ * Example:
+ * curl -H "Authorization: Bearer TOKEN" http://localhost:3001/api/analytics/funnel?days=30
+ */
+app.get('/api/analytics/funnel', requireSuperadmin, analyticsController.getConversionFunnelEndpoint);
+
+/**
+ * GET /api/analytics/demand-trends
+ * Get market demand trends for skills and locations
+ *
+ * Query params:
+ * - days: Number of days (default: 30)
+ *
+ * Returns:
+ * - Top skills by search volume
+ * - Top locations by search volume
+ * - Active companies searching
+ * - Total searches
+ *
+ * Example:
+ * curl -H "Authorization: Bearer TOKEN" http://localhost:3001/api/analytics/demand-trends?days=30
+ */
+app.get('/api/analytics/demand-trends', requireSuperadmin, analyticsController.getDemandTrendsEndpoint);
+
+/**
+ * GET /api/analytics/skills/trending
+ * Get trending skills analysis
+ *
+ * Query params:
+ * - days: Number of days for recent period (default: 7)
+ *
+ * Returns skills trending up/down compared to previous period
+ *
+ * Example:
+ * curl -H "Authorization: Bearer TOKEN" http://localhost:3001/api/analytics/skills/trending?days=7
+ */
+app.get('/api/analytics/skills/trending', requireSuperadmin, analyticsController.getTrendingSkillsEndpoint);
 
 /* =========================
    DEBUG ROUTE (Temporary - Remove after Sentry verification)

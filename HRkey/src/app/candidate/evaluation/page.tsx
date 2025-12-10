@@ -146,6 +146,19 @@ export default function CandidateEvaluationPage() {
           console.warn("Tokenomics preview unavailable", tokenomicsResult.reason);
           setTokenomicsError(tokenomicsResult.reason?.message || "Tokenomics preview unavailable.");
         }
+        const url = `${baseUrl}/api/candidates/${userId}/evaluation`;
+
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body?.error || "Unable to load your evaluation right now.");
+        }
+
+        const payload: CandidateEvaluationResponse = await response.json();
+        setEvaluation(payload);
       } catch (err: any) {
         console.error("Failed to load candidate evaluation", err);
         setError(err?.message || "Unexpected error loading evaluation.");
