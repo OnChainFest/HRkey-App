@@ -27,6 +27,7 @@ import hrkeyScoreService from './hrkeyScoreService.js';
 
 // Import services
 import * as webhookService from './services/webhookService.js';
+import { validateReference as validateReferenceRVL } from './services/validation/index.js';
 
 // Import logging
 import logger, { requestIdMiddleware, requestLoggingMiddleware } from './logger.js';
@@ -354,6 +355,69 @@ class ReferenceService {
       .single();
 
     if (refErr) throw refErr;
+
+    // ===== REFERENCE VALIDATION LAYER (RVL) INTEGRATION =====
+    // Process reference through RVL (non-blocking - failures don't block submission)
+    try {
+      logger.info('Processing reference through RVL', { reference_id: reference.id });
+
+      // Fetch previous references for consistency checking
+      const { data: previousRefs } = await supabase
+        .from('references')
+        .select('summary, kpi_ratings, validated_data')
+        .eq('owner_id', invite.requester_id)
+        .neq('id', reference.id)
+        .eq('status', 'active')
+        .limit(10);
+
+      // Validate the reference
+      const validatedData = await validateReferenceRVL({
+        summary: refRow.summary,
+        kpi_ratings: refRow.kpi_ratings,
+        detailed_feedback: refRow.detailed_feedback,
+        owner_id: refRow.owner_id,
+        referrer_email: refRow.referrer_email
+      }, {
+        previousReferences: previousRefs || [],
+        skipEmbeddings: process.env.NODE_ENV === 'test' // Skip embeddings in tests
+      });
+
+      // Update reference with validated data
+      await supabase
+        .from('references')
+        .update({
+          validated_data: validatedData,
+          validation_status: validatedData.validation_status,
+          fraud_score: validatedData.fraud_score,
+          consistency_score: validatedData.consistency_score,
+          validated_at: new Date().toISOString()
+        })
+        .eq('id', reference.id);
+
+      logger.info('RVL processing completed', {
+        reference_id: reference.id,
+        validation_status: validatedData.validation_status,
+        fraud_score: validatedData.fraud_score
+      });
+
+    } catch (rvlError) {
+      // RVL failure is non-fatal - log and continue
+      logger.error('RVL processing failed, reference submitted without validation', {
+        reference_id: reference.id,
+        error: rvlError.message,
+        stack: rvlError.stack
+      });
+
+      // Update reference to indicate validation failed
+      await supabase
+        .from('references')
+        .update({
+          validation_status: 'PENDING',
+          validated_at: new Date().toISOString()
+        })
+        .eq('id', reference.id);
+    }
+    // ===== END RVL INTEGRATION =====
 
     await supabase
       .from('reference_invites')
