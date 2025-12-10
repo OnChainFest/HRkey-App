@@ -25,6 +25,7 @@ import revenueController from './controllers/revenueController.js';
 import kpiObservationsController from './controllers/kpiObservationsController.js';
 import candidateEvaluationController from './controllers/candidateEvaluation.controller.js';
 import tokenomicsPreviewController from './controllers/tokenomicsPreview.controller.js';
+import publicProfileController from './controllers/publicProfile.controller.js';
 import analyticsController from './controllers/analyticsController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 
@@ -1196,6 +1197,7 @@ app.get(
   requireAuth,
   tokenomicsPreviewController.getTokenomicsPreview
 );
+app.get('/api/public/candidates/:identifier', publicProfileController.getPublicCandidateProfile);
 
 // ===== COMPANY ENDPOINTS =====
 app.post('/api/company/create', requireAuth, companyController.createCompany);
