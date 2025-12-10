@@ -38,6 +38,34 @@ type CandidateEvaluationResponse = {
   };
 };
 
+type TokenomicsPreviewResponse = {
+  userId: string;
+  priceUsd: number;
+  hrScore: number;
+  hrScoreNormalized: number;
+  tokens: {
+    rawTokens: number;
+    clampedTokens: number;
+  };
+  revenueSplit: {
+    platformUsd: number;
+    referencePoolUsd: number;
+    candidateUsd: number;
+    totalUsd: number;
+    normalizedPcts: {
+      platform: number;
+      referencePool: number;
+      candidate: number;
+    };
+  };
+  stakingPreview: {
+    effectiveApr: number;
+    estimatedRewardsHrk: number;
+    stakeAmountHrk: number;
+    lockMonths: number;
+  };
+};
+
 const ENV_API_BASE =
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
@@ -67,12 +95,15 @@ export default function CandidateEvaluationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [evaluation, setEvaluation] = useState<CandidateEvaluationResponse | null>(null);
+  const [tokenomics, setTokenomics] = useState<TokenomicsPreviewResponse | null>(null);
+  const [tokenomicsError, setTokenomicsError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
         setError(null);
+        setTokenomicsError(null);
 
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         if (sessionError || !sessionData.session || !sessionData.session.user) {
@@ -84,6 +115,37 @@ export default function CandidateEvaluationPage() {
         const accessToken = sessionData.session.access_token;
         const userId = sessionData.session.user.id;
         const baseUrl = resolveApiBase();
+        const headers = { Authorization: `Bearer ${accessToken}` };
+
+        const fetchJson = async <T,>(url: string) => {
+          const res = await fetch(url, { headers });
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body?.error || "Unable to load this data right now.");
+          }
+          return (await res.json()) as T;
+        };
+
+        const evaluationUrl = `${baseUrl}/api/candidates/${userId}/evaluation`;
+        const tokenomicsUrl = `${baseUrl}/api/candidates/${userId}/tokenomics-preview`;
+
+        const [evaluationResult, tokenomicsResult] = await Promise.allSettled([
+          fetchJson<CandidateEvaluationResponse>(evaluationUrl),
+          fetchJson<TokenomicsPreviewResponse>(tokenomicsUrl),
+        ]);
+
+        if (evaluationResult.status === "rejected") {
+          throw evaluationResult.reason;
+        }
+
+        setEvaluation(evaluationResult.value);
+
+        if (tokenomicsResult.status === "fulfilled") {
+          setTokenomics(tokenomicsResult.value);
+        } else {
+          console.warn("Tokenomics preview unavailable", tokenomicsResult.reason);
+          setTokenomicsError(tokenomicsResult.reason?.message || "Tokenomics preview unavailable.");
+        }
         const url = `${baseUrl}/api/candidates/${userId}/evaluation`;
 
         const response = await fetch(url, {
@@ -123,6 +185,12 @@ export default function CandidateEvaluationPage() {
   }, [hrScore]);
 
   const answers = evaluation?.scoring.referenceAnalysis.answers ?? [];
+  const tokenSplit = tokenomics?.revenueSplit;
+  const tokens = tokenomics?.tokens;
+  const staking = tokenomics?.stakingPreview;
+
+  const formatPercent = (value?: number) =>
+    value === undefined ? "—" : `${Math.round(Math.min(100, Math.max(0, value * 100)))}%`;
 
   const renderSignalBar = (label: string, value: number) => (
     <div className="space-y-1">
@@ -179,6 +247,67 @@ export default function CandidateEvaluationPage() {
               <div className="mt-1 text-sm text-slate-600">Based on your references and performance signals.</div>
             </div>
           </div>
+
+          {tokenomicsError && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
+              Tokenomics preview is temporarily unavailable. Your HRScore and USD price are still available.
+            </div>
+          )}
+
+          {tokenomics && (
+            <div className="rounded-xl border bg-white p-5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Tokenomics preview</h2>
+                <span className="text-xs text-slate-500">Illustrative, non-binding preview</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="rounded-lg border bg-slate-50 p-4 shadow-sm">
+                  <div className="text-sm text-slate-600">HRK token equivalent</div>
+                  <div className="mt-2 text-2xl font-bold text-slate-900">
+                    {Math.round(tokens?.clampedTokens ?? 0).toLocaleString("en-US")} HRK
+                  </div>
+                  <p className="mt-1 text-xs text-slate-600">
+                    Based on your suggested price of {formatCurrency(tokenomics.priceUsd)} and internal HRK rate.
+                  </p>
+                </div>
+
+                <div className="rounded-lg border bg-slate-50 p-4 shadow-sm space-y-2">
+                  <div className="text-sm font-semibold text-slate-700">Revenue split (USD)</div>
+                  <div className="text-sm flex items-center justify-between">
+                    <span>Platform</span>
+                    <span className="font-semibold">{formatCurrency(tokenSplit?.platformUsd)}</span>
+                  </div>
+                  <div className="text-xs text-slate-600">{formatPercent(tokenSplit?.normalizedPcts.platform)} share</div>
+                  <div className="text-sm flex items-center justify-between">
+                    <span>Reference providers</span>
+                    <span className="font-semibold">{formatCurrency(tokenSplit?.referencePoolUsd)}</span>
+                  </div>
+                  <div className="text-xs text-slate-600">{formatPercent(tokenSplit?.normalizedPcts.referencePool)} share</div>
+                  <div className="text-sm flex items-center justify-between">
+                    <span>You (candidate)</span>
+                    <span className="font-semibold">{formatCurrency(tokenSplit?.candidateUsd)}</span>
+                  </div>
+                  <div className="text-xs text-slate-600">{formatPercent(tokenSplit?.normalizedPcts.candidate)} share</div>
+                </div>
+
+                <div className="rounded-lg border bg-slate-50 p-4 shadow-sm space-y-2">
+                  <div className="text-sm font-semibold text-slate-700">Potential staking rewards</div>
+                  <div className="text-3xl font-bold text-slate-900">{formatPercent(staking?.effectiveApr)}</div>
+                  <div className="text-sm text-slate-700">
+                    If you staked ~{Math.round(staking?.stakeAmountHrk ?? 0).toLocaleString("en-US")} HRK for
+                    {" "}
+                    {staking?.lockMonths ?? 0} months, estimated rewards could be
+                    {" "}
+                    {Math.round(staking?.estimatedRewardsHrk ?? 0).toLocaleString("en-US")} HRK.
+                  </div>
+                  <div className="text-xs text-slate-600">
+                    This preview is for simulation purposes only; final tokenomics may differ.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="rounded-xl border bg-white p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
