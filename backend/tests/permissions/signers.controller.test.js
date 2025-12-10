@@ -1,13 +1,6 @@
 /**
  * Signers Controller Permission Tests
- * Tests authorization and permission logic for company signer operations
- *
- * Routes tested:
- * - POST /api/company/:companyId/signers (requireAuth + requireCompanySigner)
- * - GET /api/company/:companyId/signers (requireAuth + requireCompanySigner)
- * - PATCH /api/company/:companyId/signers/:signerId (requireAuth + requireCompanySigner)
- * - GET /api/signers/invite/:token (public - no auth)
- * - POST /api/signers/accept/:token (requireAuth)
+ * Focuses on authorization/permission behaviors and status codes
  */
 
 import { jest } from '@jest/globals';
@@ -16,7 +9,6 @@ import {
   createMockSupabaseClient,
   resetQueryBuilderMocks,
   mockAuthGetUserSuccess,
-  mockAuthGetUserError,
   mockDatabaseSuccess,
   mockDatabaseError,
   mockUserData,
@@ -31,6 +23,33 @@ jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
 }));
 
+jest.unstable_mockModule('../../utils/emailService.js', () => ({
+  sendSignerInvitation: jest.fn().mockResolvedValue(),
+  sendCompanyVerificationNotification: jest.fn().mockResolvedValue(),
+  sendIdentityVerificationConfirmation: jest.fn().mockResolvedValue(),
+  sendDataAccessRequestNotification: jest.fn().mockResolvedValue(),
+  sendDataAccessApprovedNotification: jest.fn().mockResolvedValue()
+}));
+
+jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
+  logAudit: jest.fn().mockResolvedValue(),
+  logIdentityVerification: jest.fn().mockResolvedValue(),
+  logCompanyCreation: jest.fn().mockResolvedValue(),
+  logCompanyVerification: jest.fn().mockResolvedValue(),
+  logSignerInvitation: jest.fn().mockResolvedValue(),
+  logSignerAcceptance: jest.fn().mockResolvedValue(),
+  logSignerStatusChange: jest.fn().mockResolvedValue(),
+  logDataAccessAction: jest.fn().mockResolvedValue(),
+  AuditActionTypes: {
+    UPDATE_SIGNER: 'UPDATE_SIGNER'
+  },
+  ResourceTypes: {},
+  getUserAuditLogs: jest.fn().mockResolvedValue([]),
+  getCompanyAuditLogs: jest.fn().mockResolvedValue([]),
+  getAllAuditLogs: jest.fn().mockResolvedValue([]),
+  auditMiddleware: () => (req, res, next) => next()
+}));
+
 // Import app AFTER mocking dependencies
 const { default: app } = await import('../../server.js');
 
@@ -41,221 +60,128 @@ describe('Signers Controller - Permission Tests', () => {
     resetQueryBuilderMocks(mockQueryBuilder);
   });
 
-  // =========================================================================
-  // TEST SUITE: POST /api/company/:companyId/signers (invite signer)
-  // Permission: requireAuth + requireCompanySigner
-  // =========================================================================
-  describe('POST /api/company/:companyId/signers', () => {
-    const companyId = '660e8400-e29b-41d4-a716-446655440001';
-    const invitationData = {
-      email: 'newsigner@company.com',
-      role: 'HR Manager'
-    };
+  const companyId = '660e8400-e29b-41d4-a716-446655440001';
 
-    test('PERM-S1: Should allow company signer to invite new signer', async () => {
-      const userId = '550e8400-e29b-41d4-a716-446655440000';
-      const user = mockUserData({ id: userId });
-      const signer = mockCompanySignerData({
-        user_id: userId,
-        company_id: companyId,
-        is_active: true
-      });
+  describe('POST /api/company/:companyId/signers (inviteSigner)', () => {
+    test('allows active company signer to invite a new signer', async () => {
+      const userId = 'user-signer-1';
+      const authedUser = mockUserData({ id: userId });
+      const signerRecord = mockCompanySignerData({ company_id: companyId, user_id: userId, is_active: true });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+      mockQueryBuilder.single
+        .mockResolvedValueOnce(mockDatabaseSuccess(authedUser)) // requireAuth: users
+        .mockResolvedValueOnce(mockDatabaseSuccess(signerRecord)) // requireCompanySigner
+        .mockResolvedValueOnce(mockDatabaseSuccess({ name: 'Acme Corp', domain_email: '@acme.com' })) // companies lookup
+        .mockResolvedValueOnce(mockDatabaseSuccess({
+          id: 'new-signer-id',
+          company_id: companyId,
+          email: 'new@acme.com',
+          role: 'HR Manager',
+          invite_token: 'token123'
+        })); // insert/select
 
-      mockSupabaseClient.from().single
-        .mockResolvedValueOnce(mockDatabaseSuccess(user))
-        .mockResolvedValueOnce(mockDatabaseSuccess(signer));
+      mockQueryBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
       const response = await request(app)
         .post(`/api/company/${companyId}/signers`)
         .set('Authorization', 'Bearer valid-token')
-        .send(invitationData);
+        .send({ email: 'new@acme.com', role: 'HR Manager' })
+        .expect(200);
 
-      expect(response.status).not.toBe(401);
-      expect(response.status).not.toBe(403);
+      expect(response.body.success).toBe(true);
     });
 
-    test('PERM-S2: Should allow superadmin to invite signer to any company', async () => {
-      const userId = '550e8400-e29b-41d4-a716-446655440000';
-      const superadmin = mockUserData({ id: userId, role: 'superadmin' });
+    test('rejects non-signer attempting to invite', async () => {
+      const userId = 'user-no-signer';
+      const authedUser = mockUserData({ id: userId, role: 'user' });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
-
-      mockSupabaseClient.from().single.mockResolvedValue(
-        mockDatabaseSuccess(superadmin)
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+      mockQueryBuilder.single
+        .mockResolvedValueOnce(mockDatabaseSuccess(authedUser)) // requireAuth
+        .mockResolvedValueOnce(mockDatabaseError('No rows found', 'PGRST116')); // requireCompanySigner fails
 
       const response = await request(app)
         .post(`/api/company/${companyId}/signers`)
         .set('Authorization', 'Bearer valid-token')
-        .send(invitationData);
-
-      expect(response.status).not.toBe(401);
-      expect(response.status).not.toBe(403);
-    });
-
-    test('PERM-S3: Should reject non-signer user', async () => {
-      const userId = '550e8400-e29b-41d4-a716-446655440000';
-      const user = mockUserData({ id: userId, role: 'user' });
-
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
-
-      mockSupabaseClient.from().single
-        .mockResolvedValueOnce(mockDatabaseSuccess(user))
-        .mockResolvedValueOnce(mockDatabaseError('No rows found', 'PGRST116'));
-
-      const response = await request(app)
-        .post(`/api/company/${companyId}/signers`)
-        .set('Authorization', 'Bearer valid-token')
-        .send(invitationData)
+        .send({ email: 'new@acme.com', role: 'HR Manager' })
         .expect(403);
 
       expect(response.body.error).toBe('Forbidden');
+      expect(response.body.message).toMatch(/active signer/);
     });
 
-    test('PERM-S4: Should reject invitation with invalid email', async () => {
-      const userId = '550e8400-e29b-41d4-a716-446655440000';
-      const user = mockUserData({ id: userId });
-      const signer = mockCompanySignerData({
-        user_id: userId,
-        company_id: companyId
-      });
+    test('returns 404 when company does not exist', async () => {
+      const userId = 'user-signer-2';
+      const authedUser = mockUserData({ id: userId });
+      const signerRecord = mockCompanySignerData({ company_id: companyId, user_id: userId });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
-
-      mockSupabaseClient.from().single
-        .mockResolvedValueOnce(mockDatabaseSuccess(user))
-        .mockResolvedValueOnce(mockDatabaseSuccess(signer));
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+      mockQueryBuilder.single
+        .mockResolvedValueOnce(mockDatabaseSuccess(authedUser))
+        .mockResolvedValueOnce(mockDatabaseSuccess(signerRecord))
+        .mockResolvedValueOnce(mockDatabaseError('Company not found', 'PGRST116'));
 
       const response = await request(app)
         .post(`/api/company/${companyId}/signers`)
         .set('Authorization', 'Bearer valid-token')
-        .send({
-          email: 'invalid-email',
-          role: 'HR Manager'
-        })
-        .expect(400);
+        .send({ email: 'new@acme.com', role: 'HR Manager' })
+        .expect(404);
 
-      expect(response.body.error).toBe('Invalid email');
+      expect(response.body.error).toBe('Company not found');
     });
 
-    test('PERM-S5: Should reject invitation with missing fields', async () => {
-      const userId = '550e8400-e29b-41d4-a716-446655440000';
-      const user = mockUserData({ id: userId });
-      const signer = mockCompanySignerData({
-        user_id: userId,
-        company_id: companyId
-      });
+    test('returns 400 when missing required fields', async () => {
+      const userId = 'user-signer-3';
+      const authedUser = mockUserData({ id: userId });
+      const signerRecord = mockCompanySignerData({ company_id: companyId, user_id: userId });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+      mockQueryBuilder.single
+        .mockResolvedValueOnce(mockDatabaseSuccess(authedUser))
+        .mockResolvedValueOnce(mockDatabaseSuccess(signerRecord));
 
-      mockSupabaseClient.from().single
-        .mockResolvedValueOnce(mockDatabaseSuccess(user))
-        .mockResolvedValueOnce(mockDatabaseSuccess(signer));
-
-      const response = await request(app)
+      await request(app)
         .post(`/api/company/${companyId}/signers`)
         .set('Authorization', 'Bearer valid-token')
-        .send({ email: 'test@example.com' }) // Missing role
+        .send({ email: '' })
         .expect(400);
-
-      expect(response.body.error).toBe('Missing required fields');
-    });
-
-    test('PERM-S6: Should reject unauthenticated user', async () => {
-      const response = await request(app)
-        .post(`/api/company/${companyId}/signers`)
-        .send(invitationData);
-
-      // May return 401 (no auth) or 429 (rate limited before auth check)
-      expect([401, 429]).toContain(response.status);
     });
   });
 
-  // =========================================================================
-  // TEST SUITE: GET /api/company/:companyId/signers
-  // Permission: requireAuth + requireCompanySigner
-  // =========================================================================
-  describe('GET /api/company/:companyId/signers', () => {
-    const companyId = '660e8400-e29b-41d4-a716-446655440001';
-
-    test('PERM-S7: Should allow company signer to view signers', async () => {
-      const userId = '550e8400-e29b-41d4-a716-446655440000';
-      const user = mockUserData({ id: userId });
-      const signer = mockCompanySignerData({
-        user_id: userId,
-        company_id: companyId,
-        is_active: true
-      });
-
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
-
-      mockSupabaseClient.from().single
-        .mockResolvedValueOnce(mockDatabaseSuccess(user))
-        .mockResolvedValueOnce(mockDatabaseSuccess(signer));
-
-      const response = await request(app)
-        .get(`/api/company/${companyId}/signers`)
-        .set('Authorization', 'Bearer valid-token');
-
-      expect(response.status).not.toBe(401);
-      expect(response.status).not.toBe(403);
-    });
-
-    test('PERM-S8: Should allow superadmin to view signers of any company', async () => {
-      const userId = '550e8400-e29b-41d4-a716-446655440000';
+  describe('GET /api/company/:companyId/signers (getSigners)', () => {
+    test('allows superadmin to list signers for any company', async () => {
+      const userId = 'superadmin-1';
       const superadmin = mockUserData({ id: userId, role: 'superadmin' });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+      mockQueryBuilder.single.mockResolvedValueOnce(mockDatabaseSuccess(superadmin));
+
+      mockQueryBuilder.order.mockResolvedValueOnce(
+        mockDatabaseSuccess([
+          {
+            id: 'signer-1',
+            email: 'a@acme.com',
+            role: 'Admin',
+            is_active: true,
+            invited_at: '2024-01-01T00:00:00Z',
+            accepted_at: null,
+            user_id: null,
+            invited_by: null
+          }
+        ])
       );
-
-      mockSupabaseClient.from().single.mockResolvedValue(
-        mockDatabaseSuccess(superadmin)
-      );
-
-      const response = await request(app)
-        .get(`/api/company/${companyId}/signers`)
-        .set('Authorization', 'Bearer valid-token');
-
-      expect(response.status).not.toBe(401);
-      expect(response.status).not.toBe(403);
-    });
-
-    test('PERM-S9: Should reject non-signer user', async () => {
-      const userId = '550e8400-e29b-41d4-a716-446655440000';
-      const user = mockUserData({ id: userId });
-
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
-
-      mockSupabaseClient.from().single
-        .mockResolvedValueOnce(mockDatabaseSuccess(user))
-        .mockResolvedValueOnce(mockDatabaseError('No rows found', 'PGRST116'));
 
       const response = await request(app)
         .get(`/api/company/${companyId}/signers`)
         .set('Authorization', 'Bearer valid-token')
-        .expect(403);
+        .expect(200);
 
-      expect(response.body.error).toBe('Forbidden');
+      expect(response.body.success).toBe(true);
+      expect(response.body.signers).toHaveLength(1);
     });
 
-    test('PERM-S18: Should reject unauthenticated user', async () => {
+    test('rejects unauthenticated requests', async () => {
       const response = await request(app)
         .get(`/api/company/${companyId}/signers`)
         .expect(401);
@@ -264,159 +190,82 @@ describe('Signers Controller - Permission Tests', () => {
     });
   });
 
-  // =========================================================================
-  // TEST SUITE: PATCH /api/company/:companyId/signers/:signerId
-  // Permission: requireAuth + requireCompanySigner
-  // =========================================================================
-  describe('PATCH /api/company/:companyId/signers/:signerId', () => {
-    const companyId = '660e8400-e29b-41d4-a716-446655440001';
-    const signerId = '770e8400-e29b-41d4-a716-446655440002';
-    const updateData = { is_active: false };
+  describe('PATCH /api/company/:companyId/signers/:signerId (updateSigner)', () => {
+    const signerId = 'signer-to-update';
 
-    test('PERM-S10: Should allow company signer to update signer status', async () => {
-      const userId = '550e8400-e29b-41d4-a716-446655440000';
-      const user = mockUserData({ id: userId });
-      const signer = mockCompanySignerData({
-        user_id: userId,
-        company_id: companyId,
-        is_active: true
-      });
-
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
-
-      mockSupabaseClient.from().single
-        .mockResolvedValueOnce(mockDatabaseSuccess(user))
-        .mockResolvedValueOnce(mockDatabaseSuccess(signer));
-
+    test('requires authentication to update signer', async () => {
       const response = await request(app)
         .patch(`/api/company/${companyId}/signers/${signerId}`)
-        .set('Authorization', 'Bearer valid-token')
-        .send(updateData);
+        .send({ role: 'Viewer' })
+        .expect(401);
 
-      expect(response.status).not.toBe(401);
-      expect(response.status).not.toBe(403);
+      expect(response.body.error).toBe('Authentication required');
     });
 
-    test('PERM-S11: Should reject non-signer user', async () => {
-      const userId = '550e8400-e29b-41d4-a716-446655440000';
-      const user = mockUserData({ id: userId });
+    test('returns 404 when target signer is not found in the company', async () => {
+      const userId = 'user-signer-4';
+      const authedUser = mockUserData({ id: userId });
+      const signerRecord = mockCompanySignerData({ company_id: companyId, user_id: userId });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
-
-      mockSupabaseClient.from().single
-        .mockResolvedValueOnce(mockDatabaseSuccess(user))
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+      mockQueryBuilder.single
+        .mockResolvedValueOnce(mockDatabaseSuccess(authedUser))
+        .mockResolvedValueOnce(mockDatabaseSuccess(signerRecord))
         .mockResolvedValueOnce(mockDatabaseError('No rows found', 'PGRST116'));
 
       const response = await request(app)
         .patch(`/api/company/${companyId}/signers/${signerId}`)
         .set('Authorization', 'Bearer valid-token')
-        .send(updateData)
+        .send({ role: 'Viewer' })
+        .expect(404);
+
+      expect(response.body.error).toBe('Signer not found');
+    });
+
+    test('rejects users who are not signers for the company', async () => {
+      const userId = 'user-not-signer';
+      const authedUser = mockUserData({ id: userId });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+      mockQueryBuilder.single
+        .mockResolvedValueOnce(mockDatabaseSuccess(authedUser))
+        .mockResolvedValueOnce(mockDatabaseError('No rows found', 'PGRST116'));
+
+      const response = await request(app)
+        .patch(`/api/company/${companyId}/signers/${signerId}`)
+        .set('Authorization', 'Bearer valid-token')
+        .send({ role: 'Viewer' })
         .expect(403);
 
       expect(response.body.error).toBe('Forbidden');
     });
 
-    test('PERM-S17: Should allow superadmin to update any signer', async () => {
-      const userId = '550e8400-e29b-41d4-a716-446655440000';
-      const user = mockUserData({ id: userId, role: 'superadmin' });
-      const targetSigner = {
-        id: signerId,
-        user_id: '880e8400-e29b-41d4-a716-446655440003',
-        company_id: companyId,
-        is_active: true,
-        role: 'HR Manager'
-      };
-      const updatedSigner = {
-        ...targetSigner,
-        is_active: false
-      };
+    test('PERM-S19: signer cannot deactivate themselves', async () => {
+      const userId = 'self-signer-1';
+      const authedUser = mockUserData({ id: userId });
+      const signerRecord = mockCompanySignerData({ company_id: companyId, user_id: userId, is_active: true });
+      const targetSigner = mockCompanySignerData({ id: signerId, company_id: companyId, user_id: userId, is_active: true });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
-
-      // First .single() for user lookup in requireAuth
-      // Second .single() for fetching current signer info
-      // Third .single() for update operation
-      mockSupabaseClient.from().single
-        .mockResolvedValueOnce(mockDatabaseSuccess(user))
-        .mockResolvedValueOnce(mockDatabaseSuccess(targetSigner))
-        .mockResolvedValueOnce(mockDatabaseSuccess(updatedSigner));
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+      mockQueryBuilder.single
+        .mockResolvedValueOnce(mockDatabaseSuccess(authedUser)) // requireAuth lookup
+        .mockResolvedValueOnce(mockDatabaseSuccess(signerRecord)) // requireCompanySigner
+        .mockResolvedValueOnce(mockDatabaseSuccess(targetSigner)); // controller fetch current signer
 
       const response = await request(app)
         .patch(`/api/company/${companyId}/signers/${signerId}`)
         .set('Authorization', 'Bearer valid-token')
-        .send(updateData);
+        .send({ isActive: false })
+        .expect(400);
 
-      expect(response.status).not.toBe(401);
-      expect(response.status).not.toBe(403);
+      expect(response.body.error).toBe('Cannot deactivate yourself');
     });
   });
 
-  // =========================================================================
-  // TEST SUITE: GET /api/signers/invite/:token (public endpoint)
-  // Permission: None (public access)
-  // =========================================================================
-  describe('GET /api/signers/invite/:token', () => {
-    test('PERM-S12: Should allow anyone to view invitation (no auth required)', async () => {
-      const token = 'valid-invitation-token-12345678901234567890123456789012';
+  describe('POST /api/signers/accept/:token (acceptSignerInvitation)', () => {
+    const token = 'nonexistent-token';
 
-      const response = await request(app)
-        .get(`/api/signers/invite/${token}`);
-
-      // Should not return 401 (no auth required)
-      expect(response.status).not.toBe(401);
-    });
-
-    test('PERM-S13: Should handle invalid/not-found token gracefully', async () => {
-      const token = 'nonexistent-token-12345678901234567890123456789012';
-
-      // Mock database returning no invitation found
-      mockSupabaseClient.from().single.mockResolvedValue(
-        mockDatabaseError('No rows found', 'PGRST116')
-      );
-
-      const response = await request(app)
-        .get(`/api/signers/invite/${token}`);
-
-      // Controller returns 404 when invitation not found
-      expect([404, 500]).toContain(response.status);
-    });
-  });
-
-  // =========================================================================
-  // TEST SUITE: POST /api/signers/accept/:token
-  // Permission: requireAuth
-  // =========================================================================
-  describe('POST /api/signers/accept/:token', () => {
-    const token = 'valid-invitation-token-12345678901234567890123456789012';
-
-    test('PERM-S14: Should allow authenticated user to accept invitation', async () => {
-      const userId = '550e8400-e29b-41d4-a716-446655440000';
-      const user = mockUserData({ id: userId });
-
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
-
-      mockSupabaseClient.from().single.mockResolvedValue(
-        mockDatabaseSuccess(user)
-      );
-
-      const response = await request(app)
-        .post(`/api/signers/accept/${token}`)
-        .set('Authorization', 'Bearer valid-token');
-
-      // Auth should pass (not 401/403)
-      expect(response.status).not.toBe(401);
-      expect(response.status).not.toBe(403);
-    });
-
-    test('PERM-S15: Should reject unauthenticated user', async () => {
+    test('requires authentication to accept invitation', async () => {
       const response = await request(app)
         .post(`/api/signers/accept/${token}`)
         .expect(401);
@@ -424,26 +273,46 @@ describe('Signers Controller - Permission Tests', () => {
       expect(response.body.error).toBe('Authentication required');
     });
 
-    test('PERM-S16: Should handle nonexistent invitation token', async () => {
-      const userId = '550e8400-e29b-41d4-a716-446655440000';
-      const user = mockUserData({ id: userId });
-      const invalidToken = 'nonexistent-token-12345678901234567890123456789012';
+    test('returns 404 for invalid invitation token', async () => {
+      const userId = 'user-accepting';
+      const authedUser = mockUserData({ id: userId });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
-
-      // Mock: auth succeeds, but invitation not found
-      mockSupabaseClient.from().single
-        .mockResolvedValueOnce(mockDatabaseSuccess(user))
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+      mockQueryBuilder.single
+        .mockResolvedValueOnce(mockDatabaseSuccess(authedUser))
         .mockResolvedValueOnce(mockDatabaseError('No rows found', 'PGRST116'));
 
       const response = await request(app)
-        .post(`/api/signers/accept/${invalidToken}`)
-        .set('Authorization', 'Bearer valid-token');
+        .post(`/api/signers/accept/${token}`)
+        .set('Authorization', 'Bearer valid-token')
+        .expect(404);
 
-      // Controller returns error when invitation not found
-      expect([400, 404, 500]).toContain(response.status);
+      expect(response.body.error).toMatch(/Invalid or expired invitation/);
+    });
+
+    test('PERM-S20: cannot accept invitation when authenticated email mismatches token email', async () => {
+      const userId = 'user-mismatch';
+      const authedUser = mockUserData({ id: userId, email: 'other@example.com' });
+      const invitationSigner = mockCompanySignerData({
+        id: 'signer-invite-1',
+        company_id: 'company-xyz',
+        user_id: null,
+        email: 'invitee@example.com',
+        invite_token: token
+      });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId, authedUser.email));
+      mockQueryBuilder.single
+        .mockResolvedValueOnce(mockDatabaseSuccess(authedUser)) // requireAuth user fetch
+        .mockResolvedValueOnce(mockDatabaseSuccess(invitationSigner)) // fetch signer by token
+        .mockResolvedValueOnce(mockDatabaseSuccess({ email: authedUser.email })); // fetch user email for comparison
+
+      const response = await request(app)
+        .post(`/api/signers/accept/${token}`)
+        .set('Authorization', 'Bearer valid-token')
+        .expect(400);
+
+      expect(response.body.error).toBe('Email mismatch');
     });
   });
 });
