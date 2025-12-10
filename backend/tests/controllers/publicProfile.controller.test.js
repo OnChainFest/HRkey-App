@@ -2,6 +2,11 @@ import { jest } from '@jest/globals';
 import request from 'supertest';
 
 const mockGetPublicProfile = jest.fn();
+const mockGetPublicIdentifierForUser = jest.fn();
+
+jest.unstable_mockModule('../../services/publicProfile.service.js', () => ({
+  getPublicProfile: mockGetPublicProfile,
+  getPublicIdentifierForUser: mockGetPublicIdentifierForUser
 
 jest.unstable_mockModule('../../services/publicProfile.service.js', () => ({
   getPublicProfile: mockGetPublicProfile

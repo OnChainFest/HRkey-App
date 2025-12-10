@@ -3,6 +3,7 @@ import { jest } from '@jest/globals';
 const mockMaybeSingle = jest.fn();
 const mockOr = jest.fn();
 const mockSelect = jest.fn();
+const mockEq = jest.fn();
 const mockSupabaseClient = {
   from: jest.fn()
 };
@@ -22,11 +23,23 @@ jest.unstable_mockModule('../../services/tokenomicsPreview.service.js', () => ({
   getTokenomicsPreviewForUser: mockGetTokenomicsPreviewForUser
 }));
 
+const { getPublicProfile, getPublicIdentifierForUser } = await import('../../services/publicProfile.service.js');
 const { getPublicProfile } = await import('../../services/publicProfile.service.js');
 
 describe('Public Profile Service', () => {
   beforeEach(() => {
     mockMaybeSingle.mockReset();
+    const builder = {
+      select: mockSelect,
+      or: mockOr,
+      maybeSingle: mockMaybeSingle,
+      eq: mockEq
+    };
+
+    mockEq.mockReset().mockReturnValue(builder);
+    mockOr.mockReset().mockReturnValue(builder);
+    mockSelect.mockReset().mockReturnValue(builder);
+    mockSupabaseClient.from.mockReset().mockReturnValue(builder);
     mockOr.mockReset().mockReturnValue({ select: mockSelect, maybeSingle: mockMaybeSingle });
     mockSelect.mockReset().mockReturnValue({ or: mockOr, maybeSingle: mockMaybeSingle });
     mockSupabaseClient.from.mockReset().mockReturnValue({
@@ -104,5 +117,23 @@ describe('Public Profile Service', () => {
     mockMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
     const missing = await getPublicProfile('missing');
     expect(missing).toBeNull();
+  });
+
+  test('getPublicIdentifierForUser resolves handle or id', async () => {
+    mockMaybeSingle.mockResolvedValueOnce({
+      data: { id: 'user-4', public_handle: 'public-handle', is_public_profile: true },
+      error: null
+    });
+
+    const identifier = await getPublicIdentifierForUser('user-4');
+
+    expect(identifier?.identifier).toBe('public-handle');
+    expect(identifier?.handle).toBe('public-handle');
+    expect(identifier?.isPublicProfile).toBe(true);
+
+    mockMaybeSingle.mockResolvedValueOnce({ data: { id: 'user-5', is_public_profile: false }, error: null });
+    const fallback = await getPublicIdentifierForUser('user-5');
+    expect(fallback?.identifier).toBe('user-5');
+    expect(fallback?.isPublicProfile).toBe(false);
   });
 });

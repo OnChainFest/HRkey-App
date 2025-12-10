@@ -66,11 +66,24 @@ type TokenomicsPreviewResponse = {
   };
 };
 
+type PublicIdentifierResponse = {
+  userId: string;
+  identifier: string;
+  handle: string | null;
+  isPublicProfile: boolean;
+};
+
 const ENV_API_BASE =
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   process.env.NEXT_PUBLIC_BACKEND_PUBLIC_URL ||
+  "";
+
+const ENV_APP_BASE =
+  process.env.NEXT_PUBLIC_APP_BASE_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  process.env.NEXT_PUBLIC_FRONTEND_URL ||
   "";
 
 const normalizeBase = (base: string) => base.replace(/\/$/, "");
@@ -85,6 +98,12 @@ const resolveApiBase = () => {
   return "http://localhost:3001";
 };
 
+const resolveAppBase = () => {
+  if (ENV_APP_BASE) return normalizeBase(ENV_APP_BASE);
+  if (typeof window !== "undefined") return normalizeBase(window.location.origin);
+  return normalizeBase(ENV_API_BASE || "http://localhost:3000");
+};
+
 const formatCurrency = (value: number | undefined) =>
   value === undefined ? "—" : value.toLocaleString("en-US", { style: "currency", currency: "USD" });
 
@@ -97,6 +116,9 @@ export default function CandidateEvaluationPage() {
   const [evaluation, setEvaluation] = useState<CandidateEvaluationResponse | null>(null);
   const [tokenomics, setTokenomics] = useState<TokenomicsPreviewResponse | null>(null);
   const [tokenomicsError, setTokenomicsError] = useState<string | null>(null);
+  const [publicIdentifier, setPublicIdentifier] = useState<string | null>(null);
+  const [identifierError, setIdentifierError] = useState<string | null>(null);
+  const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
 
   useEffect(() => {
     const load = async () => {
@@ -104,6 +126,9 @@ export default function CandidateEvaluationPage() {
         setLoading(true);
         setError(null);
         setTokenomicsError(null);
+        setIdentifierError(null);
+        setPublicIdentifier(null);
+        setCopyState('idle');
 
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         if (sessionError || !sessionData.session || !sessionData.session.user) {
@@ -128,6 +153,12 @@ export default function CandidateEvaluationPage() {
 
         const evaluationUrl = `${baseUrl}/api/candidates/${userId}/evaluation`;
         const tokenomicsUrl = `${baseUrl}/api/candidates/${userId}/tokenomics-preview`;
+        const identifierUrl = `${baseUrl}/api/me/public-identifier`;
+
+        const [evaluationResult, tokenomicsResult, identifierResult] = await Promise.allSettled([
+          fetchJson<CandidateEvaluationResponse>(evaluationUrl),
+          fetchJson<TokenomicsPreviewResponse>(tokenomicsUrl),
+          fetchJson<PublicIdentifierResponse>(identifierUrl),
 
         const [evaluationResult, tokenomicsResult] = await Promise.allSettled([
           fetchJson<CandidateEvaluationResponse>(evaluationUrl),
@@ -145,6 +176,12 @@ export default function CandidateEvaluationPage() {
         } else {
           console.warn("Tokenomics preview unavailable", tokenomicsResult.reason);
           setTokenomicsError(tokenomicsResult.reason?.message || "Tokenomics preview unavailable.");
+        }
+
+        if (identifierResult.status === "fulfilled") {
+          setPublicIdentifier(identifierResult.value.identifier);
+        } else {
+          setIdentifierError(identifierResult.reason?.message || "Public link unavailable.");
         }
         const url = `${baseUrl}/api/candidates/${userId}/evaluation`;
 
@@ -188,9 +225,27 @@ export default function CandidateEvaluationPage() {
   const tokenSplit = tokenomics?.revenueSplit;
   const tokens = tokenomics?.tokens;
   const staking = tokenomics?.stakingPreview;
+  const appBase = useMemo(() => resolveAppBase(), []);
+  const publicProfileUrl = useMemo(() => {
+    const identifier = publicIdentifier || evaluation?.userId;
+    if (!identifier) return "";
+    return `${appBase}/p/${identifier}`;
+  }, [appBase, publicIdentifier, evaluation?.userId]);
 
   const formatPercent = (value?: number) =>
     value === undefined ? "—" : `${Math.round(Math.min(100, Math.max(0, value * 100)))}%`;
+
+  const handleCopyLink = async () => {
+    if (!publicProfileUrl) return;
+    try {
+      await navigator.clipboard.writeText(publicProfileUrl);
+      setCopyState("copied");
+      setTimeout(() => setCopyState("idle"), 2000);
+    } catch (err) {
+      console.error("Failed to copy link", err);
+      setCopyState("idle");
+    }
+  };
 
   const renderSignalBar = (label: string, value: number) => (
     <div className="space-y-1">
@@ -246,6 +301,30 @@ export default function CandidateEvaluationPage() {
               <div className="mt-2 text-3xl font-semibold text-slate-900">{formatCurrency(pricing)}</div>
               <div className="mt-1 text-sm text-slate-600">Based on your references and performance signals.</div>
             </div>
+          </div>
+
+          <div className="rounded-xl border bg-white p-5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Your public HRKey profile</h2>
+                <p className="text-sm text-slate-600">
+                  Share this link on your CV, LinkedIn, or with recruiters to highlight your HRKey Score and value.
+                </p>
+              </div>
+              <button
+                disabled={!publicProfileUrl}
+                onClick={handleCopyLink}
+                className="px-3 py-2 text-sm rounded-lg border bg-indigo-600 text-white shadow-sm disabled:opacity-50"
+              >
+                {copyState === "copied" ? "Copied" : "Copy link"}
+              </button>
+            </div>
+            <div className="rounded-lg border bg-slate-50 px-3 py-2 text-sm text-slate-800 flex items-center justify-between">
+              <span className="truncate mr-3">{publicProfileUrl || 'Public link unavailable'}</span>
+            </div>
+            {identifierError && (
+              <p className="text-xs text-amber-700">{identifierError}</p>
+            )}
           </div>
 
           {tokenomicsError && (

@@ -85,6 +85,40 @@ export async function getPublicProfile(identifier) {
   };
 }
 
+/**
+ * Resolve the preferred public identifier (handle -> id fallback) for a user.
+ * Returns null when the user record is missing.
+ * @param {string} userId
+ * @returns {Promise<{ userId: string, identifier: string, handle: string|null, isPublicProfile: boolean }|null>}
+ */
+export async function getPublicIdentifierForUser(userId) {
+  const normalizedUserId = userId?.trim();
+  if (!normalizedUserId) return null;
+
+  const { data, error } = await supabaseClient
+    .from('users')
+    .select('id, public_handle, is_public_profile')
+    .eq('id', normalizedUserId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const handle = data.public_handle || null;
+  const identifier = handle || data.id;
+  const isPublicProfile = data.is_public_profile !== false;
+
+  return {
+    userId: data.id,
+    identifier,
+    handle,
+    isPublicProfile
+  };
+}
+
+export default {
+  getPublicProfile,
+  getPublicIdentifierForUser
 export default {
   getPublicProfile
 };
