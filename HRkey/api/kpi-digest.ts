@@ -59,7 +59,7 @@ function buildHtml(items:any[]) {
   </div>`;
 }
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   // Opcional: proteger con una secret si quieres (x-cron-secret)
   try {
     const { y, m, d, start, end } = todayRangeLocalTZ('America/Costa_Rica');

@@ -15,6 +15,7 @@ import {
 } from '../utils/auditLogger.js';
 import { sendSignerInvitation } from '../utils/emailService.js';
 import logger from '../logger.js';
+import { logEvent, EventTypes } from '../services/analytics/eventTracker.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -152,6 +153,20 @@ export async function inviteSigner(req, res) {
           req
         );
 
+        // Track analytics event (non-blocking)
+        await logEvent({
+          userId: req.user.id,
+          companyId: companyId,
+          eventType: EventTypes.SIGNER_INVITED,
+          context: {
+            signerId: reactivatedSigner.id,
+            signerEmail: email,
+            signerRole: role,
+            action: 'reactivated'
+          },
+          req
+        });
+
         return res.json({
           success: true,
           signerId: reactivatedSigner.id,
@@ -236,6 +251,20 @@ export async function inviteSigner(req, res) {
       { email, role, invitedBy: req.user.email },
       req
     );
+
+    // Track analytics event (non-blocking)
+    await logEvent({
+      userId: req.user.id,
+      companyId: companyId,
+      eventType: EventTypes.SIGNER_INVITED,
+      context: {
+        signerId: signer.id,
+        signerEmail: email,
+        signerRole: role,
+        action: 'new_invitation'
+      },
+      req
+    });
 
     return res.json({
       success: true,
