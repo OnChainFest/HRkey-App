@@ -8,6 +8,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { logDataAccessAction, AuditActionTypes } from '../utils/auditLogger.js';
 import { sendDataAccessRequestNotification, sendDataAccessApprovedNotification } from '../utils/emailService.js';
+import { evaluateCandidateForUser } from '../services/candidateEvaluation.service.js';
 import logger from '../logger.js';
 import { logEvent, EventTypes } from '../services/analytics/eventTracker.js';
 
@@ -741,6 +742,29 @@ export async function getDataByRequestId(req, res) {
       { requestId, dataType: request.requested_data_type },
       req
     );
+
+    try {
+      const evaluation = await evaluateCandidateForUser(request.target_user_id);
+
+      return res.json({
+        success: true,
+        data: responseData,
+        requestId: request.id,
+        dataType: request.requested_data_type,
+        accessedAt: new Date().toISOString(),
+        evaluation
+      });
+    } catch (evaluationError) {
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to fetch candidate evaluation for data access', {
+        userId: req.user?.id,
+        requestId: req.params?.requestId,
+        targetUserId: request.target_user_id,
+        error: evaluationError.message,
+        stack: evaluationError.stack
+      });
+      return res.status(500).json({ error: 'Failed to fetch candidate evaluation' });
+    }
 
     // Track analytics event - profile view (non-blocking)
     await logEvent({

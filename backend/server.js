@@ -23,6 +23,7 @@ import auditController from './controllers/auditController.js';
 import dataAccessController from './controllers/dataAccessController.js';
 import revenueController from './controllers/revenueController.js';
 import kpiObservationsController from './controllers/kpiObservationsController.js';
+import candidateEvaluationController from './controllers/candidateEvaluation.controller.js';
 import analyticsController from './controllers/analyticsController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 
@@ -1182,6 +1183,13 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 // ===== IDENTITY ENDPOINTS =====
 app.post('/api/identity/verify', authLimiter, requireAuth, identityController.verifyIdentity);
 app.get('/api/identity/status/:userId', requireAuth, identityController.getIdentityStatus);
+
+// ===== CANDIDATE EVALUATION ENDPOINT =====
+app.get(
+  '/api/candidates/:userId/evaluation',
+  requireAuth,
+  candidateEvaluationController.getCandidateEvaluation
+);
 
 // ===== COMPANY ENDPOINTS =====
 app.post('/api/company/create', requireAuth, companyController.createCompany);

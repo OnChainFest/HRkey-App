@@ -17,6 +17,7 @@ import {
 
 const mockSupabaseClient = createMockSupabaseClient();
 const mockQueryBuilder = mockSupabaseClient.from();
+const evaluateCandidateForUser = jest.fn();
 
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
@@ -45,6 +46,10 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
   getCompanyAuditLogs: jest.fn().mockResolvedValue([]),
   getAllAuditLogs: jest.fn().mockResolvedValue([]),
   auditMiddleware: () => (req, res, next) => next()
+}));
+
+jest.unstable_mockModule('../../services/candidateEvaluation.service.js', () => ({
+  evaluateCandidateForUser
 }));
 
 const { default: app } = await import('../../server.js');
@@ -404,6 +409,21 @@ describe('Data Access Controller - Permission Tests', () => {
       const requestsTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(requestRecord)] });
       const companySignersTable = buildTableMock({ maybeSingleResponses: [mockDatabaseSuccess(mockCompanySignerData({ company_id: requestRecord.company_id, user_id: signerUser.id }))] });
       const referencesTable = buildTableMock({ singleResponses: [mockDatabaseSuccess({ id: 'ref-123', overall_rating: 5 })] });
+      const mockEvaluation = {
+        userId: requestRecord.target_user_id,
+        scoring: {
+          referenceAnalysis: {
+            answers: [],
+            aggregatedSignals: {
+              teamImpact: 0.8,
+              reliability: 0.9,
+              communication: 0.85
+            }
+          },
+          hrScoreResult: { normalizedScore: 0.88, hrScore: 88 },
+          pricingResult: { normalizedScore: 0.72, priceUsd: 120 }
+        }
+      };
 
       configureTableMocks({
         users: usersTable,
@@ -413,6 +433,7 @@ describe('Data Access Controller - Permission Tests', () => {
       });
 
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(signerUser.id));
+      evaluateCandidateForUser.mockResolvedValue(mockEvaluation);
 
       const response = await request(app)
         .get(`/api/data-access/${requestId}/data`)
@@ -421,6 +442,9 @@ describe('Data Access Controller - Permission Tests', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.requestId).toBe(requestId);
+      expect(evaluateCandidateForUser).toHaveBeenCalledTimes(1);
+      expect(evaluateCandidateForUser).toHaveBeenCalledWith(requestRecord.target_user_id);
+      expect(response.body.evaluation.scoring.hrScoreResult.hrScore).toBe(88);
     });
 
     test('PERM-D12: forbids access if request is not approved (403)', async () => {
@@ -445,6 +469,7 @@ describe('Data Access Controller - Permission Tests', () => {
         .expect(403);
 
       expect(response.body.error).toBe('Access denied');
+      expect(evaluateCandidateForUser).not.toHaveBeenCalled();
     });
 
     test('PERM-D13: forbids non-company-signer from accessing data (403)', async () => {
@@ -469,6 +494,7 @@ describe('Data Access Controller - Permission Tests', () => {
         .expect(403);
 
       expect(response.body.error).toBe('Permission denied');
+      expect(evaluateCandidateForUser).not.toHaveBeenCalled();
     });
   });
 });
