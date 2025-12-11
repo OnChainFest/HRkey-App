@@ -25,6 +25,9 @@ import revenueController from './controllers/revenueController.js';
 import kpiObservationsController from './controllers/kpiObservationsController.js';
 import candidateEvaluationController from './controllers/candidateEvaluation.controller.js';
 import tokenomicsPreviewController from './controllers/tokenomicsPreview.controller.js';
+import publicProfileController from './controllers/publicProfile.controller.js';
+import publicIdentifierController from './controllers/publicIdentifier.controller.js';
+import adminOverviewController from './controllers/adminOverview.controller.js';
 import analyticsController from './controllers/analyticsController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 
@@ -1196,6 +1199,8 @@ app.get(
   requireAuth,
   tokenomicsPreviewController.getTokenomicsPreview
 );
+app.get('/api/me/public-identifier', requireAuth, publicIdentifierController.getMyPublicIdentifier);
+app.get('/api/public/candidates/:identifier', publicProfileController.getPublicCandidateProfile);
 
 // ===== COMPANY ENDPOINTS =====
 app.post('/api/company/create', requireAuth, companyController.createCompany);
@@ -1217,6 +1222,7 @@ app.post('/api/signers/accept/:token', requireAuth, signersController.acceptSign
 // ===== AUDIT LOG ENDPOINTS =====
 app.get('/api/audit/logs', requireAuth, auditController.getAuditLogs);
 app.get('/api/audit/recent', requireAuth, auditController.getRecentActivity);
+app.get('/api/admin/overview', requireAuth, adminOverviewController.getAdminOverviewHandler);
 
 // ===== DATA ACCESS ENDPOINTS (Pay-per-query) =====
 app.post('/api/data-access/request', requireAuth, dataAccessController.createDataAccessRequest);
