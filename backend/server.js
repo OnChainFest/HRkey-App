@@ -24,12 +24,14 @@ import dataAccessController from './controllers/dataAccessController.js';
 import revenueController from './controllers/revenueController.js';
 import kpiObservationsController from './controllers/kpiObservationsController.js';
 import analyticsController from './controllers/analyticsController.js';
+import hrscoreController from './controllers/hrscoreController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 
 // Import services
 import * as webhookService from './services/webhookService.js';
 import { validateReference as validateReferenceRVL } from './services/validation/index.js';
 import { logEvent, EventTypes } from './services/analytics/eventTracker.js';
+import { onReferenceValidated as hrscoreAutoTrigger } from './services/hrscore/autoTrigger.js';
 
 // Import logging
 import logger, { requestIdMiddleware, requestLoggingMiddleware } from './logger.js';
@@ -420,6 +422,32 @@ class ReferenceService {
         .eq('id', reference.id);
     }
     // ===== END RVL INTEGRATION =====
+
+    // ===== HRSCORE AUTO-TRIGGER =====
+    // Automatically recalculate HRKey Score after reference validation
+    // Non-blocking: failures are logged but don't block reference submission
+    try {
+      logger.info('Triggering HRScore recalculation after reference validation', {
+        reference_id: reference.id,
+        owner_id: invite.requester_id
+      });
+
+      await hrscoreAutoTrigger(reference.id);
+
+      logger.debug('HRScore auto-trigger completed', {
+        reference_id: reference.id
+      });
+    } catch (hrscoreError) {
+      // HRScore failures must NOT block reference submission
+      logger.warn('HRScore auto-trigger failed (non-blocking)', {
+        reference_id: reference.id,
+        owner_id: invite.requester_id,
+        error: hrscoreError.message,
+        stack: hrscoreError.stack
+      });
+      // Continue execution - don't throw
+    }
+    // ===== END HRSCORE AUTO-TRIGGER =====
 
     await supabase
       .from('reference_invites')
@@ -1436,6 +1464,103 @@ app.get('/api/hrkey-score/model-info', requireAuth, async (req, res) => {
     });
   }
 });
+
+/* =========================
+   HRSCORE PERSISTENCE & HISTORY ENDPOINTS
+   ========================= */
+
+/**
+ * GET /api/hrscore/info
+ * Get HRScore Persistence Layer metadata
+ *
+ * Auth: Authenticated users
+ */
+app.get('/api/hrscore/info', requireAuth, hrscoreController.getLayerInfoEndpoint);
+
+/**
+ * GET /api/hrscore/user/:userId/latest?roleId=
+ * Get latest HRKey Score for a user
+ *
+ * Auth: User can view own scores, superadmins can view all
+ *
+ * Example:
+ * curl -H "Authorization: Bearer TOKEN" \
+ *   http://localhost:3001/api/hrscore/user/USER_UUID/latest
+ */
+app.get('/api/hrscore/user/:userId/latest', requireAuth, hrscoreController.getLatestScoreEndpoint);
+
+/**
+ * GET /api/hrscore/user/:userId/history?roleId=&days=90
+ * Get historical HRKey Scores for a user
+ *
+ * Auth: User can view own history, superadmins can view all
+ *
+ * Query params:
+ * - roleId: Optional role filter
+ * - days: Number of days to look back (default: 90)
+ *
+ * Example:
+ * curl -H "Authorization: Bearer TOKEN" \
+ *   http://localhost:3001/api/hrscore/user/USER_UUID/history?days=30
+ */
+app.get('/api/hrscore/user/:userId/history', requireAuth, hrscoreController.getScoreHistoryEndpoint);
+
+/**
+ * GET /api/hrscore/user/:userId/improvement?roleId=&days=30
+ * Calculate score improvement over a period
+ *
+ * Auth: User can view own improvement, superadmins can view all
+ *
+ * Example:
+ * curl -H "Authorization: Bearer TOKEN" \
+ *   http://localhost:3001/api/hrscore/user/USER_UUID/improvement?days=30
+ */
+app.get('/api/hrscore/user/:userId/improvement', requireAuth, hrscoreController.getScoreImprovementEndpoint);
+
+/**
+ * GET /api/hrscore/user/:userId/stats?roleId=&days=90
+ * Get statistical summary of user's scores
+ *
+ * Auth: User can view own stats, superadmins can view all
+ *
+ * Example:
+ * curl -H "Authorization: Bearer TOKEN" \
+ *   http://localhost:3001/api/hrscore/user/USER_UUID/stats
+ */
+app.get('/api/hrscore/user/:userId/stats', requireAuth, hrscoreController.getScoreStatsEndpoint);
+
+/**
+ * GET /api/hrscore/user/:userId/evolution?roleId=&days=90
+ * Get score evolution with rich analytics
+ *
+ * Auth: Superadmin only (contains advanced metrics)
+ *
+ * Example:
+ * curl -H "Authorization: Bearer SUPERADMIN_TOKEN" \
+ *   http://localhost:3001/api/hrscore/user/USER_UUID/evolution
+ */
+app.get('/api/hrscore/user/:userId/evolution', requireSuperadmin, hrscoreController.getScoreEvolutionEndpoint);
+
+/**
+ * POST /api/hrscore/calculate
+ * Manually trigger HRScore calculation
+ *
+ * Auth: Superadmin only
+ *
+ * Body:
+ * {
+ *   userId: "uuid",
+ *   roleId: "uuid" | null,
+ *   triggerSource: "manual" | "api_request"
+ * }
+ *
+ * Example:
+ * curl -X POST http://localhost:3001/api/hrscore/calculate \
+ *   -H "Authorization: Bearer SUPERADMIN_TOKEN" \
+ *   -H "Content-Type: application/json" \
+ *   -d '{"userId": "USER_UUID", "roleId": null}'
+ */
+app.post('/api/hrscore/calculate', requireSuperadmin, hrscoreController.calculateScoreEndpoint);
 
 /* =========================
    ANALYTICS ENDPOINTS (Superadmin only)
