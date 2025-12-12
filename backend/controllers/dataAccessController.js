@@ -766,27 +766,6 @@ export async function getDataByRequestId(req, res) {
       return res.status(500).json({ error: 'Failed to fetch candidate evaluation' });
     }
 
-    // Track analytics event - profile view (non-blocking)
-    await logEvent({
-      userId: userId,
-      companyId: request.company_id,
-      eventType: EventTypes.PROFILE_VIEW,
-      context: {
-        candidateId: request.target_user_id,
-        requestId: requestId,
-        dataType: request.requested_data_type,
-        accessCount: request.access_count + 1
-      },
-      req
-    });
-
-    return res.json({
-      success: true,
-      data: responseData,
-      requestId: request.id,
-      dataType: request.requested_data_type,
-      accessedAt: new Date().toISOString()
-    });
   } catch (error) {
     const reqLogger = logger.withRequest(req);
     reqLogger.error('Failed to get data by request ID', {
