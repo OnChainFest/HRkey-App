@@ -1,9 +1,17 @@
 import logger from '../logger.js';
-import { getPublicIdentifierForUser } from '../services/publicProfile.service.js';
+import { getPublicIdentifierForUser } from '../services/publicProfile/index.js';
 
 /**
  * GET /api/me/public-identifier
  * Returns the preferred public identifier for the authenticated user.
+ *
+ * Uses the Public Profile & Discovery Layer with fail-soft error handling.
+ *
+ * External contract (backwards-compatible):
+ * - Returns 401 if not authenticated
+ * - Returns 404 if user not found
+ * - Returns 200 with identifier data on success
+ * - Returns 500 on server errors
  */
 export async function getMyPublicIdentifier(req, res) {
   try {
