@@ -23,21 +23,26 @@ const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
  * Verify user's identity (Phase 1: simple internal verification)
  *
  * Body: {
- *   userId: string,
  *   fullName: string,
  *   idNumber: string,
  *   selfieUrl?: string (optional, for future use)
  * }
+ *
+ * Note: userId is taken from authenticated user (req.user.id).
+ * Users can only verify their own identity.
  */
 export async function verifyIdentity(req, res) {
   try {
-    const { userId, fullName, idNumber, selfieUrl } = req.body;
+    const { fullName, idNumber, selfieUrl } = req.body;
+
+    // SECURITY: Always use authenticated user's ID - users can only verify themselves
+    const userId = req.user.id;
 
     // Validate required fields
-    if (!userId || !fullName || !idNumber) {
+    if (!fullName || !idNumber) {
       return res.status(400).json({
         error: 'Missing required fields',
-        message: 'Please provide userId, fullName, and idNumber'
+        message: 'Please provide fullName and idNumber'
       });
     }
 
@@ -148,6 +153,8 @@ export async function verifyIdentity(req, res) {
 /**
  * GET /api/identity/status/:userId
  * Get verification status for a user
+ *
+ * Authorization: User can only view their own status, or superadmin can view any.
  */
 export async function getIdentityStatus(req, res) {
   try {
@@ -156,6 +163,17 @@ export async function getIdentityStatus(req, res) {
     if (!userId) {
       return res.status(400).json({
         error: 'Missing userId parameter'
+      });
+    }
+
+    // SECURITY: Only allow users to view their own identity status, or superadmin
+    const isOwner = req.user.id === userId;
+    const isSuperadmin = req.user.role === 'superadmin';
+
+    if (!isOwner && !isSuperadmin) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You can only view your own identity status'
       });
     }
 
