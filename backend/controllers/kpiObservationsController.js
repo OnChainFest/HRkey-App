@@ -25,10 +25,12 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
  *
  * Create one or more KPI observations (batch insert).
  *
+ * SECURITY: observer_wallet is derived from authenticated user's wallet.
+ * Users can only submit KPI observations as themselves (the observer).
+ *
  * Request body:
  * {
  *   "subject_wallet": "0xABC...",
- *   "observer_wallet": "0xDEF...",
  *   "role_id": "uuid-of-role",
  *   "role_name": "Backend Developer",  // Optional, for denormalization
  *   "observations": [
@@ -59,22 +61,53 @@ export async function createKpiObservations(req, res) {
   try {
     const {
       subject_wallet,
-      observer_wallet,
       role_id,
       role_name,
       observations
     } = req.body;
 
     // ========================================
-    // 1. VALIDATION
+    // 1. SECURITY: Get observer wallet from authenticated user
     // ========================================
 
-    // Required fields
-    if (!subject_wallet || !observer_wallet || !role_id || !observations) {
+    // SECURITY: Fetch the authenticated user's wallet address
+    const { data: authUser, error: authError } = await supabase
+      .from('users')
+      .select('id, wallet_address')
+      .eq('id', req.user.id)
+      .single();
+
+    if (authError || !authUser) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: 'Unable to verify user identity'
+      });
+    }
+
+    // SECURITY: User must have a wallet to submit KPI observations
+    if (!authUser.wallet_address) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: 'You must have a linked wallet to submit KPI observations'
+      });
+    }
+
+    // SECURITY: Use authenticated user's wallet as observer (ignore any body value)
+    const observer_wallet = authUser.wallet_address;
+    const observer_user_id = authUser.id;
+
+    // ========================================
+    // 2. VALIDATION
+    // ========================================
+
+    // Required fields (observer_wallet no longer required in body)
+    if (!subject_wallet || !role_id || !observations) {
       return res.status(400).json({
         success: false,
         error: 'Missing required fields',
-        required: ['subject_wallet', 'observer_wallet', 'role_id', 'observations']
+        required: ['subject_wallet', 'role_id', 'observations']
       });
     }
 
@@ -113,11 +146,10 @@ export async function createKpiObservations(req, res) {
     }
 
     // ========================================
-    // 2. RESOLVE USER IDs (if available)
+    // 3. RESOLVE SUBJECT USER ID (if available)
     // ========================================
 
     let subject_user_id = null;
-    let observer_user_id = null;
 
     // Try to find subject by wallet
     const { data: subjectUser } = await supabase
@@ -130,19 +162,10 @@ export async function createKpiObservations(req, res) {
       subject_user_id = subjectUser.id;
     }
 
-    // Try to find observer by wallet
-    const { data: observerUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('wallet_address', observer_wallet)
-      .maybeSingle();
-
-    if (observerUser) {
-      observer_user_id = observerUser.id;
-    }
+    // Note: observer_user_id already set from authenticated user above
 
     // ========================================
-    // 3. PREPARE ROWS FOR INSERTION
+    // 4. PREPARE ROWS FOR INSERTION
     // ========================================
 
     const rows = observations.map(obs => ({
@@ -166,7 +189,7 @@ export async function createKpiObservations(req, res) {
     }));
 
     // ========================================
-    // 4. INSERT INTO DATABASE
+    // 5. INSERT INTO DATABASE
     // ========================================
 
     const { data: insertedData, error: insertError } = await supabase
@@ -192,7 +215,7 @@ export async function createKpiObservations(req, res) {
     }
 
     // ========================================
-    // 5. SUCCESS RESPONSE
+    // 6. SUCCESS RESPONSE
     // ========================================
 
     const reqLogger = logger.withRequest(req);
@@ -231,9 +254,10 @@ export async function createKpiObservations(req, res) {
  *
  * Retrieve KPI observations with optional filters.
  *
+ * SECURITY: Non-superadmin users can only see KPIs where they are
+ * the subject (about them) or the observer (they created).
+ *
  * Query parameters (all optional):
- * - subject_wallet: Filter by subject wallet address
- * - observer_wallet: Filter by observer wallet address
  * - role_id: Filter by role UUID
  * - kpi_name: Filter by KPI name (exact match)
  * - verified: Filter by verification status (true/false)
@@ -251,8 +275,6 @@ export async function createKpiObservations(req, res) {
 export async function getKpiObservations(req, res) {
   try {
     const {
-      subject_wallet,
-      observer_wallet,
       role_id,
       kpi_name,
       verified,
@@ -261,29 +283,51 @@ export async function getKpiObservations(req, res) {
     } = req.query;
 
     // ========================================
-    // 1. VALIDATE QUERY PARAMS
+    // 1. SECURITY: Authorization check
+    // ========================================
+
+    const isSuperadmin = req.user.role === 'superadmin';
+
+    // Fetch authenticated user's wallet address for filtering
+    let userWallet = null;
+    if (!isSuperadmin) {
+      const { data: authUser } = await supabase
+        .from('users')
+        .select('wallet_address')
+        .eq('id', req.user.id)
+        .single();
+
+      userWallet = authUser?.wallet_address;
+    }
+
+    // ========================================
+    // 2. VALIDATE QUERY PARAMS
     // ========================================
 
     const parsedLimit = Math.min(parseInt(limit) || 200, 1000);
     const parsedOffset = parseInt(offset) || 0;
 
     // ========================================
-    // 2. BUILD QUERY WITH FILTERS
+    // 3. BUILD QUERY WITH FILTERS
     // ========================================
 
     let query = supabase
       .from('kpi_observations')
       .select('*', { count: 'exact' });
 
-    // Apply filters
-    if (subject_wallet) {
-      query = query.eq('subject_wallet', subject_wallet);
+    // SECURITY: Non-superadmins can only see their own KPIs
+    if (!isSuperadmin) {
+      // User can see KPIs where they are subject OR observer
+      // Using or() filter for subject_user_id = user.id OR observer_user_id = user.id
+      // Also check by wallet if available
+      if (userWallet) {
+        query = query.or(`subject_user_id.eq.${req.user.id},observer_user_id.eq.${req.user.id},subject_wallet.eq.${userWallet},observer_wallet.eq.${userWallet}`);
+      } else {
+        query = query.or(`subject_user_id.eq.${req.user.id},observer_user_id.eq.${req.user.id}`);
+      }
     }
 
-    if (observer_wallet) {
-      query = query.eq('observer_wallet', observer_wallet);
-    }
-
+    // Apply additional filters
     if (role_id) {
       query = query.eq('role_id', role_id);
     }
@@ -303,7 +347,7 @@ export async function getKpiObservations(req, res) {
       .range(parsedOffset, parsedOffset + parsedLimit - 1);
 
     // ========================================
-    // 3. EXECUTE QUERY
+    // 4. EXECUTE QUERY
     // ========================================
 
     const { data, error, count } = await query;
@@ -311,8 +355,7 @@ export async function getKpiObservations(req, res) {
     if (error) {
       const reqLogger = logger.withRequest(req);
       reqLogger.error('Failed to fetch KPI observations', {
-        subjectWallet: subject_wallet,
-        observerWallet: observer_wallet,
+        userId: req.user.id,
         roleId: role_id,
         kpiName: kpi_name,
         error: error.message,
@@ -326,7 +369,7 @@ export async function getKpiObservations(req, res) {
     }
 
     // ========================================
-    // 4. SUCCESS RESPONSE
+    // 5. SUCCESS RESPONSE
     // ========================================
 
     return res.json({
@@ -334,8 +377,6 @@ export async function getKpiObservations(req, res) {
       count: count || 0,
       observations: data,
       filters: {
-        subject_wallet,
-        observer_wallet,
         role_id,
         kpi_name,
         verified,
@@ -364,8 +405,10 @@ export async function getKpiObservations(req, res) {
  * Get aggregated KPI observation summary (uses the kpi_observations_summary view).
  * This is optimized for analytics/ML consumption.
  *
+ * SECURITY: Non-superadmin users can only see summaries for their own wallet.
+ * Superadmins can see all summaries.
+ *
  * Query parameters (all optional):
- * - subject_wallet: Filter by subject wallet
  * - role_id: Filter by role
  * - kpi_name: Filter by KPI name
  * - limit: Max results (default: 100, max: 1000)
@@ -395,28 +438,56 @@ export async function getKpiObservations(req, res) {
 export async function getKpiObservationsSummary(req, res) {
   try {
     const {
-      subject_wallet,
       role_id,
       kpi_name,
       limit = 100
     } = req.query;
 
     // ========================================
-    // 1. VALIDATE
+    // 1. SECURITY: Authorization check
+    // ========================================
+
+    const isSuperadmin = req.user.role === 'superadmin';
+
+    // Fetch authenticated user's wallet address for filtering
+    let userWallet = null;
+    if (!isSuperadmin) {
+      const { data: authUser } = await supabase
+        .from('users')
+        .select('wallet_address')
+        .eq('id', req.user.id)
+        .single();
+
+      userWallet = authUser?.wallet_address;
+
+      // Non-superadmin users without a wallet can't see any summary data
+      if (!userWallet) {
+        return res.json({
+          success: true,
+          count: 0,
+          summary: [],
+          filters: { role_id, kpi_name, limit: parseInt(limit) || 100 }
+        });
+      }
+    }
+
+    // ========================================
+    // 2. VALIDATE
     // ========================================
 
     const parsedLimit = Math.min(parseInt(limit) || 100, 1000);
 
     // ========================================
-    // 2. BUILD QUERY
+    // 3. BUILD QUERY
     // ========================================
 
     let query = supabase
       .from('kpi_observations_summary')
       .select('*', { count: 'exact' });
 
-    if (subject_wallet) {
-      query = query.eq('subject_wallet', subject_wallet);
+    // SECURITY: Non-superadmins can only see their own summary data
+    if (!isSuperadmin) {
+      query = query.eq('subject_wallet', userWallet);
     }
 
     if (role_id) {
@@ -434,7 +505,7 @@ export async function getKpiObservationsSummary(req, res) {
       .limit(parsedLimit);
 
     // ========================================
-    // 3. EXECUTE
+    // 4. EXECUTE
     // ========================================
 
     const { data, error, count } = await query;
@@ -442,7 +513,7 @@ export async function getKpiObservationsSummary(req, res) {
     if (error) {
       const reqLogger = logger.withRequest(req);
       reqLogger.error('Failed to fetch KPI summary', {
-        subjectWallet: subject_wallet,
+        userId: req.user.id,
         roleId: role_id,
         kpiName: kpi_name,
         error: error.message,
@@ -456,7 +527,7 @@ export async function getKpiObservationsSummary(req, res) {
     }
 
     // ========================================
-    // 4. SUCCESS
+    // 5. SUCCESS
     // ========================================
 
     return res.json({
@@ -464,7 +535,6 @@ export async function getKpiObservationsSummary(req, res) {
       count: count || 0,
       summary: data,
       filters: {
-        subject_wallet,
         role_id,
         kpi_name,
         limit: parsedLimit
