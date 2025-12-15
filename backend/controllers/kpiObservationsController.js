@@ -70,33 +70,13 @@ export async function createKpiObservations(req, res) {
     // 1. SECURITY: Get observer wallet from authenticated user
     // ========================================
 
-    // SECURITY: Fetch the authenticated user's wallet address
-    const { data: authUser, error: authError } = await supabase
-      .from('users')
-      .select('id, wallet_address')
-      .eq('id', req.user.id)
-      .single();
-
-    if (authError || !authUser) {
-      return res.status(403).json({
-        success: false,
-        error: 'Forbidden',
-        message: 'Unable to verify user identity'
-      });
-    }
-
-    // SECURITY: User must have a wallet to submit KPI observations
-    if (!authUser.wallet_address) {
-      return res.status(403).json({
-        success: false,
-        error: 'Forbidden',
-        message: 'You must have a linked wallet to submit KPI observations'
-      });
-    }
+    // Note: Authorization is handled by middleware:
+    // - requireAuth: ensures user is authenticated and populates req.user with wallet_address
+    // - requireWalletLinked: ensures user has a linked wallet
 
     // SECURITY: Use authenticated user's wallet as observer (ignore any body value)
-    const observer_wallet = authUser.wallet_address;
-    const observer_user_id = authUser.id;
+    const observer_wallet = req.user.wallet_address;
+    const observer_user_id = req.user.id;
 
     // ========================================
     // 2. VALIDATION

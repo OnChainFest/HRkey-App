@@ -74,10 +74,10 @@ describe('KPI Observations Security Integration', () => {
     test('KPI-INT-02: should return 403 when user has no wallet (cannot submit KPIs)', async () => {
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-a-id', 'usera@test.com'));
 
-      // User A exists but has no wallet
+      // User A exists but has no wallet - requireAuth middleware populates req.user
+      // requireWalletLinked middleware then checks req.user.wallet_address
       mockQueryBuilder.single
-        .mockResolvedValueOnce(mockDatabaseSuccess(mockUserData({ id: 'user-a-id', role: 'user' })))
-        .mockResolvedValueOnce(mockDatabaseSuccess({ id: 'user-a-id', wallet_address: null }));
+        .mockResolvedValueOnce(mockDatabaseSuccess(mockUserData({ id: 'user-a-id', role: 'user', wallet_address: null })));
 
       const res = await request(app)
         .post('/api/kpi-observations')
@@ -95,18 +95,17 @@ describe('KPI Observations Security Integration', () => {
 
     test('KPI-INT-03: observer_wallet from body is IGNORED - controller uses auth user wallet', async () => {
       // This test verifies that observer_wallet in body doesn't control anything
-      // The security is enforced by using req.user.id to look up the wallet
+      // The security is enforced by using req.user.wallet_address from middleware
       // We test this by verifying:
-      // 1. Auth passes (user A authenticated)
-      // 2. Wallet lookup uses req.user.id (not body observer_wallet)
-      // 3. The request proceeds to validation (doesn't fail at auth)
+      // 1. Auth passes (user A authenticated with wallet)
+      // 2. The request proceeds to validation (doesn't fail at auth)
+      // 3. observer_wallet from body is ignored
 
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-a-id', 'usera@test.com'));
 
-      // User A has wallet 0xUSER_A_WALLET
+      // User A has wallet 0xUSER_A_WALLET - single mock for requireAuth middleware
       mockQueryBuilder.single
-        .mockResolvedValueOnce(mockDatabaseSuccess(mockUserData({ id: 'user-a-id', role: 'user' })))
-        .mockResolvedValueOnce(mockDatabaseSuccess({ id: 'user-a-id', wallet_address: '0xUSER_A_WALLET' }));
+        .mockResolvedValueOnce(mockDatabaseSuccess(mockUserData({ id: 'user-a-id', role: 'user', wallet_address: '0xUSER_A_WALLET' })));
 
       // Incomplete request (no subject_wallet) will fail validation,
       // but AFTER the security check passes - proving observer_wallet is ignored
@@ -131,10 +130,9 @@ describe('KPI Observations Security Integration', () => {
       // and reaches the validation stage
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-own-id', 'own@test.com'));
 
-      // User has wallet
+      // User has wallet - single mock for requireAuth middleware
       mockQueryBuilder.single
-        .mockResolvedValueOnce(mockDatabaseSuccess(mockUserData({ id: 'user-own-id', role: 'user' })))
-        .mockResolvedValueOnce(mockDatabaseSuccess({ id: 'user-own-id', wallet_address: '0xOWN_WALLET' }));
+        .mockResolvedValueOnce(mockDatabaseSuccess(mockUserData({ id: 'user-own-id', role: 'user', wallet_address: '0xOWN_WALLET' })));
 
       // Send incomplete request to trigger validation error (proves security passed)
       const res = await request(app)
@@ -154,9 +152,9 @@ describe('KPI Observations Security Integration', () => {
     test('KPI-INT-05: should return 400 for missing required fields', async () => {
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-id', 'user@test.com'));
 
+      // Single mock for requireAuth middleware - user has wallet
       mockQueryBuilder.single
-        .mockResolvedValueOnce(mockDatabaseSuccess(mockUserData({ id: 'user-id' })))
-        .mockResolvedValueOnce(mockDatabaseSuccess({ id: 'user-id', wallet_address: '0xWALLET' }));
+        .mockResolvedValueOnce(mockDatabaseSuccess(mockUserData({ id: 'user-id', wallet_address: '0xWALLET' })));
 
       const res = await request(app)
         .post('/api/kpi-observations')
