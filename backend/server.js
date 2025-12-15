@@ -1266,7 +1266,8 @@ app.get('/api/revenue/balance', requireAuth, revenueController.getUserBalance);
 app.get('/api/revenue/shares', requireAuth, revenueController.getRevenueShares);
 app.get('/api/revenue/transactions', requireAuth, revenueController.getTransactionHistory);
 app.get('/api/revenue/summary', requireAuth, revenueController.getEarningsSummary);
-app.post('/api/revenue/payout/request', requireAuth, revenueController.requestPayout);
+// SECURITY: Payout requires wallet since default method is 'wallet'
+app.post('/api/revenue/payout/request', requireAuth, requireWalletLinked({ message: 'You must have a linked wallet to request payouts' }), revenueController.requestPayout);
 
 /* =========================
    KPI OBSERVATIONS ENDPOINTS (Proof of Correlation MVP)
