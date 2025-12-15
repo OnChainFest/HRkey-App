@@ -233,6 +233,86 @@ export async function requireAnySigner(req, res, next) {
 }
 
 // ============================================================================
+// RESOURCE-SCOPED AUTHORIZATION MIDDLEWARE
+// ============================================================================
+
+/**
+ * Requires user to be the resource owner or a superadmin
+ * Factory function that returns middleware checking req.user.id === req.params[paramName]
+ *
+ * @param {string} paramName - The route parameter name containing the user ID (default: 'userId')
+ * @param {Object} options - Optional configuration
+ * @param {string} options.message - Custom error message for 403 response
+ * @returns {Function} Express middleware
+ *
+ * Usage:
+ *   app.get('/api/identity/status/:userId', requireAuth, requireSelfOrSuperadmin('userId'), controller)
+ *   app.get('/api/user/:id/profile', requireAuth, requireSelfOrSuperadmin('id', { message: 'Custom message' }), controller)
+ */
+export function requireSelfOrSuperadmin(paramName = 'userId', options = {}) {
+  const errorMessage = options.message || 'You can only access your own resources';
+
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const targetUserId = req.params[paramName];
+
+    if (!targetUserId) {
+      return res.status(400).json({
+        error: 'Bad request',
+        message: `Missing required parameter: ${paramName}`
+      });
+    }
+
+    const isOwner = req.user.id === targetUserId;
+    const isSuperadmin = req.user.role === 'superadmin';
+
+    if (!isOwner && !isSuperadmin) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: errorMessage
+      });
+    }
+
+    next();
+  };
+}
+
+/**
+ * Factory function that creates middleware requiring a linked wallet address
+ * Returns 403 if req.user.wallet_address is missing or null
+ *
+ * @param {Object} options - Optional configuration
+ * @param {string} options.message - Custom error message for 403 response
+ * @returns {Function} Express middleware
+ *
+ * Usage:
+ *   app.post('/api/kpi-observations', requireAuth, requireWalletLinked(), controller)
+ *   app.post('/api/endpoint', requireAuth, requireWalletLinked({ message: 'Custom message' }), controller)
+ */
+export function requireWalletLinked(options = {}) {
+  const errorMessage = options.message || 'You must have a linked wallet to access this resource';
+
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (!req.user.wallet_address) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: errorMessage
+      });
+    }
+
+    next();
+  };
+}
+
+// ============================================================================
 // OPTIONAL AUTH (for public/semi-public endpoints)
 // ============================================================================
 
@@ -286,5 +366,7 @@ export default {
   requireAdmin,
   requireCompanySigner,
   requireAnySigner,
+  requireSelfOrSuperadmin,
+  requireWalletLinked,
   optionalAuth
 };

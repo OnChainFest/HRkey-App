@@ -154,28 +154,15 @@ export async function verifyIdentity(req, res) {
  * GET /api/identity/status/:userId
  * Get verification status for a user
  *
- * Authorization: User can only view their own status, or superadmin can view any.
+ * Authorization: Handled by requireSelfOrSuperadmin middleware in routes.
+ * User can only view their own status, or superadmin can view any.
  */
 export async function getIdentityStatus(req, res) {
   try {
     const { userId } = req.params;
 
-    if (!userId) {
-      return res.status(400).json({
-        error: 'Missing userId parameter'
-      });
-    }
-
-    // SECURITY: Only allow users to view their own identity status, or superadmin
-    const isOwner = req.user.id === userId;
-    const isSuperadmin = req.user.role === 'superadmin';
-
-    if (!isOwner && !isSuperadmin) {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'You can only view your own identity status'
-      });
-    }
+    // Note: Authorization is now handled by requireSelfOrSuperadmin middleware
+    // The middleware validates userId param exists and checks ownership/superadmin
 
     const { data: user, error } = await supabaseClient
       .from('users')

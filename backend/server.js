@@ -45,7 +45,9 @@ import logger, { requestIdMiddleware, requestLoggingMiddleware } from './logger.
 import {
   requireAuth,
   requireSuperadmin,
-  requireCompanySigner
+  requireCompanySigner,
+  requireSelfOrSuperadmin,
+  requireWalletLinked
 } from './middleware/auth.js';
 import { validateBody, validateParams } from './middleware/validate.js';
 
@@ -1214,7 +1216,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
 // ===== IDENTITY ENDPOINTS =====
 app.post('/api/identity/verify', authLimiter, requireAuth, identityController.verifyIdentity);
-app.get('/api/identity/status/:userId', requireAuth, identityController.getIdentityStatus);
+app.get('/api/identity/status/:userId', requireAuth, requireSelfOrSuperadmin('userId', { message: 'You can only view your own identity status' }), identityController.getIdentityStatus);
 
 // ===== CANDIDATE EVALUATION ENDPOINT =====
 app.get(
@@ -1264,7 +1266,8 @@ app.get('/api/revenue/balance', requireAuth, revenueController.getUserBalance);
 app.get('/api/revenue/shares', requireAuth, revenueController.getRevenueShares);
 app.get('/api/revenue/transactions', requireAuth, revenueController.getTransactionHistory);
 app.get('/api/revenue/summary', requireAuth, revenueController.getEarningsSummary);
-app.post('/api/revenue/payout/request', requireAuth, revenueController.requestPayout);
+// SECURITY: Payout requires wallet since default method is 'wallet'
+app.post('/api/revenue/payout/request', requireAuth, requireWalletLinked({ message: 'You must have a linked wallet to request payouts' }), revenueController.requestPayout);
 
 /* =========================
    KPI OBSERVATIONS ENDPOINTS (Proof of Correlation MVP)
@@ -1302,8 +1305,8 @@ app.post('/api/revenue/payout/request', requireAuth, revenueController.requestPa
  *     ]
  *   }'
  */
-// SECURITY: KPI observations require authentication to prevent data poisoning
-app.post('/api/kpi-observations', requireAuth, kpiObservationsController.createKpiObservations);
+// SECURITY: KPI observations require authentication and linked wallet to prevent data poisoning
+app.post('/api/kpi-observations', requireAuth, requireWalletLinked({ message: 'You must have a linked wallet to submit KPI observations' }), kpiObservationsController.createKpiObservations);
 
 /**
  * GET /api/kpi-observations
