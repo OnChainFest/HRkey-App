@@ -320,8 +320,12 @@ describe('HRScore Integration Tests', () => {
       expect(response.body).toHaveProperty('error');
     });
 
-    test('INT-HR8: authenticated user can get model info (placeholder)', async () => {
-      const user = mockUserData({ id: 'user-1', email: 'test@example.com' });
+    test('INT-HR8: regular user gets 403 - superadmin only endpoint', async () => {
+      const user = mockUserData({
+        id: 'user-1',
+        email: 'test@example.com',
+        role: 'user'  // Regular user, not superadmin
+      });
       const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
       configureTableMocks({ users: usersTable });
       mockSupabaseClient.auth.getUser.mockResolvedValue({
@@ -333,20 +337,38 @@ describe('HRScore Integration Tests', () => {
         .get('/api/hrkey-score/model-info')
         .set('Authorization', 'Bearer mock-token');
 
-      // Model info might not be available in test environment
+      // Model info is restricted to superadmins to prevent model extraction attacks
+      expect(response.status).toBe(403);
+      expect(response.body).toHaveProperty('error', 'Forbidden');
+      expect(response.body).toHaveProperty('message', 'Superadmin access required');
+    });
+
+    test('INT-HR8b: superadmin can access model info', async () => {
+      const superadmin = mockUserData({
+        id: 'admin-1',
+        email: 'admin@example.com',
+        role: 'superadmin'
+      });
+      const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(superadmin)] });
+      configureTableMocks({ users: usersTable });
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: superadmin.id, email: superadmin.email } },
+        error: null
+      });
+
+      const response = await request(app)
+        .get('/api/hrkey-score/model-info')
+        .set('Authorization', 'Bearer mock-token');
+
+      // Model info might not be available in test environment (500)
+      // But authorization should pass (not 403)
       expect([200, 500]).toContain(response.status);
+      expect(response.status).not.toBe(403);
 
       if (response.status === 200) {
         expect(response.body).toHaveProperty('ok', true);
-        // Model info should contain metadata
-        // Exact structure depends on hrkeyScoreService implementation
       }
     });
-
-    // NOTE: Model info endpoint currently allows any authenticated user to access model metadata
-    // This could enable model extraction attacks (low risk)
-    // Consider restricting to superadmin if model details are sensitive
-    // See PERMISSION_SYSTEM_AUDIT_REPORT.md - Security Gap #3
   });
 
   // --------------------------------------------------------------------------
@@ -379,37 +401,30 @@ describe('HRScore Integration Tests', () => {
 // ============================================================================
 
 /*
- * CRITICAL GAPS TO ADDRESS:
+ * SECURITY HARDENING COMPLETED:
  *
- * 1. Resource-Scoped Permission Check (HIGH PRIORITY)
- *    - Currently ANY authenticated user can calculate score for ANY wallet
- *    - Should restrict to: self, approved data access, or superadmin
- *    - See PERMISSION_SYSTEM_AUDIT_REPORT.md - Fix #2
+ * ✅ 1. Resource-Scoped Permission Check (FIXED)
+ *    - POST /api/hrkey-score: Users can only calculate score for their own wallet
+ *    - Uses requireOwnWallet middleware for clean, reusable authorization
+ *    - Superadmins bypass for administrative purposes
+ *    - Tests: INT-HR4 (cross-user denied), INT-HR5 (no wallet denied)
  *
- * 2. Model Configuration in Tests
+ * ✅ 2. Model Info Endpoint Locked Down (FIXED)
+ *    - GET /api/hrkey-score/model-info: Superadmin only
+ *    - Prevents model extraction attacks
+ *    - Tests: INT-HR8 (user denied), INT-HR8b (superadmin allowed)
+ *
+ * REMAINING ITEMS:
+ *
+ * 3. Model Configuration in Tests
  *    - HRScore service requires trained model (ml/output/hrkey_model_config_global.json)
- *    - Tests may need to mock hrkeyScoreService or provide test model
+ *    - Tests accept 422/500/503 as valid when model unavailable
  *
- * 3. KPI Observations Setup
+ * 4. KPI Observations Setup
  *    - HRScore calculation requires KPI observations in database
- *    - Integration tests should set up test data or mock service layer
+ *    - Integration tests focus on authorization, not score calculation
  *
- * 4. Analytics Integration
- *    - Verify HRSCORE_CALCULATED events are logged (fail-soft)
- *    - Should not block score calculation on analytics failures
- *
- * 5. Test Data Setup
- *    - Consider using database fixtures or factories
- *    - Ensure tests are isolated and don't depend on external state
- *
- * 6. Error Scenarios
+ * 5. Error Scenarios
  *    - Test all error paths: NOT_ENOUGH_DATA, NO_VALID_KPIS, MODEL_NOT_CONFIGURED
  *    - Verify appropriate HTTP status codes and error messages
- *
- * NEXT STEPS:
- * 1. Implement resource-scoped permission check in server.js
- * 2. Add comprehensive test for unauthorized access
- * 3. Mock or configure HRScore service for testing
- * 4. Add tests for all error scenarios
- * 5. Verify fail-soft analytics integration
  */
