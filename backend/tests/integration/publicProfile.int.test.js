@@ -250,8 +250,9 @@ describe('Public Profile Integration Tests', () => {
     });
 
     test('INT-PP4: returns 400 for empty identifier', async () => {
+      // URL-encoded space (%20) ensures Express matches the route
       const response = await request(app)
-        .get('/api/public/candidates/ '); // Empty/whitespace identifier
+        .get('/api/public/candidates/%20'); // Empty/whitespace identifier
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error');
@@ -376,7 +377,11 @@ describe('Public Profile Integration Tests', () => {
       });
 
       configureTableMocks({ users: usersTable });
-      mockAuthGetUserSuccess(mockSupabaseClient, user);
+      // Fix: mockAuthGetUserSuccess returns an object, set it on the mock
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: user.id, email: user.email } },
+        error: null
+      });
 
       const response = await request(app)
         .get('/api/me/public-identifier')
@@ -405,7 +410,11 @@ describe('Public Profile Integration Tests', () => {
       });
 
       configureTableMocks({ users: usersTable });
-      mockAuthGetUserSuccess(mockSupabaseClient, user);
+      // Fix: mockAuthGetUserSuccess returns an object, set it on the mock
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: user.id, email: user.email } },
+        error: null
+      });
 
       const response = await request(app)
         .get('/api/me/public-identifier')
@@ -425,7 +434,11 @@ describe('Public Profile Integration Tests', () => {
       });
 
       configureTableMocks({ users: usersTable });
-      mockAuthGetUserSuccess(mockSupabaseClient, user);
+      // Fix: mockAuthGetUserSuccess returns an object, set it on the mock
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: user.id, email: user.email } },
+        error: null
+      });
 
       const response = await request(app)
         .get('/api/me/public-identifier')
