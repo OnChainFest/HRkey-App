@@ -60,7 +60,7 @@ export async function getLatestScoreEndpoint(req, res) {
       });
     }
 
-    const isSuperadmin = req.user.is_superadmin === true;
+    const isSuperadmin = req.user.role === 'superadmin';
     const isOwnScore = req.user.id === userId;
 
     if (!isSuperadmin && !isOwnScore) {
@@ -155,7 +155,7 @@ export async function getScoreHistoryEndpoint(req, res) {
       });
     }
 
-    const isSuperadmin = req.user.is_superadmin === true;
+    const isSuperadmin = req.user.role === 'superadmin';
     const isOwnScore = req.user.id === userId;
 
     if (!isSuperadmin && !isOwnScore) {
@@ -224,7 +224,7 @@ export async function getScoreEvolutionEndpoint(req, res) {
     });
 
     // Authorization: Superadmin only for detailed analytics
-    if (!req.user || !req.user.is_superadmin) {
+    if (!req.user || req.user.role !== 'superadmin') {
       return res.status(403).json({
         success: false,
         error: 'Permission denied',
@@ -293,7 +293,7 @@ export async function getScoreImprovementEndpoint(req, res) {
       });
     }
 
-    const isSuperadmin = req.user.is_superadmin === true;
+    const isSuperadmin = req.user.role === 'superadmin';
     const isOwnScore = req.user.id === userId;
 
     if (!isSuperadmin && !isOwnScore) {
@@ -362,7 +362,7 @@ export async function getScoreStatsEndpoint(req, res) {
       });
     }
 
-    const isSuperadmin = req.user.is_superadmin === true;
+    const isSuperadmin = req.user.role === 'superadmin';
     const isOwnScore = req.user.id === userId;
 
     if (!isSuperadmin && !isOwnScore) {
@@ -434,7 +434,7 @@ export async function calculateScoreEndpoint(req, res) {
     });
 
     // Authorization: Superadmin only
-    if (!req.user || !req.user.is_superadmin) {
+    if (!req.user || req.user.role !== 'superadmin') {
       return res.status(403).json({
         success: false,
         error: 'Permission denied',
