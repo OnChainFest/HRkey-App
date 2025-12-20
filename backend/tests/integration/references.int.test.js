@@ -43,6 +43,38 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
   auditMiddleware: () => (req, res, next) => next()
 }));
 
+// Mock analytics
+jest.unstable_mockModule('../../services/analytics/eventTracker.js', () => ({
+  logEvent: jest.fn().mockResolvedValue({ id: 'mock-event-id' }),
+  logEventBatch: jest.fn().mockResolvedValue([]),
+  EventTypes: {
+    REFERENCE_SUBMITTED: 'REFERENCE_SUBMITTED'
+  },
+  EventCategories: {}
+}));
+
+// Mock RVL (Reference Validation Layer)
+jest.unstable_mockModule('../../services/validation/index.js', () => ({
+  validateReference: jest.fn().mockResolvedValue({
+    validation_status: 'VALID',
+    fraud_score: 0.1,
+    consistency_score: 0.9
+  })
+}));
+
+// Mock HRScore auto-trigger
+jest.unstable_mockModule('../../services/hrscore/autoTrigger.js', () => ({
+  onReferenceValidated: jest.fn().mockResolvedValue()
+}));
+
+// Import app after mocking
+const { default: app } = await import('../../server.js');
+
+// ============================================================================
+// TEST SUITE
+// ============================================================================
+
+describe('References Integration Tests', () => {
 const { default: app } = await import('../../server.js');
 
 describe('References Workflow MVP Integration', () => {

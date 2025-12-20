@@ -30,6 +30,7 @@ import publicIdentifierController from './controllers/publicIdentifier.controlle
 import adminOverviewController from './controllers/adminOverview.controller.js';
 import analyticsController from './controllers/analyticsController.js';
 import hrscoreController from './controllers/hrscoreController.js';
+import referencesController from './controllers/referencesController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 import referencesController from './controllers/references.controller.js';
 
@@ -764,6 +765,7 @@ app.post('/api/reference/request', requireAuth, validateBody(createReferenceRequ
 });
 
 // SECURITY: Rate limit public reference submission to prevent abuse
+// Token validation enforces: valid format, not expired, single-use
 app.post('/api/reference/submit', tokenLimiter, validateBody(submitReferenceSchema), async (req, res) => {
   try {
     const result = await ReferenceService.submitReference(req.body);
@@ -794,6 +796,30 @@ app.get('/api/reference/by-token/:token', tokenLimiter, validateParams(getRefere
     res.status(400).json({ success: false, error: e.message });
   }
 });
+
+/**
+ * GET /api/references/me
+ * Get all references for the authenticated user (self-only)
+ *
+ * Auth: Authenticated users, returns only own references
+ */
+app.get('/api/references/me', requireAuth, referencesController.getMyReferences);
+
+/**
+ * GET /api/references/pending
+ * Get pending reference invites for the authenticated user (self-only)
+ *
+ * Auth: Authenticated users, returns only own pending invites
+ */
+app.get('/api/references/pending', requireAuth, referencesController.getMyPendingInvites);
+
+/**
+ * GET /api/references/candidate/:candidateId
+ * Get references for a specific candidate (superadmin only for now)
+ *
+ * Auth: Superadmin can view all; companies require approved data-access (TODO)
+ */
+app.get('/api/references/candidate/:candidateId', requireAuth, referencesController.getCandidateReferences);
 
 /* =========================
    References workflow MVP
