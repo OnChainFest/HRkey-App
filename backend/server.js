@@ -31,12 +31,11 @@ import adminOverviewController from './controllers/adminOverview.controller.js';
 import analyticsController from './controllers/analyticsController.js';
 import hrscoreController from './controllers/hrscoreController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
+import referencesController from './controllers/references.controller.js';
 
 // Import services
 import * as webhookService from './services/webhookService.js';
-import { validateReference as validateReferenceRVL } from './services/validation/index.js';
-import { logEvent, EventTypes } from './services/analytics/eventTracker.js';
-import { onReferenceValidated as hrscoreAutoTrigger } from './services/hrscore/autoTrigger.js';
+import { ReferenceService, hashInviteToken } from './services/references.service.js';
 
 // Import logging
 import logger, { requestIdMiddleware, requestLoggingMiddleware } from './logger.js';
@@ -47,13 +46,21 @@ import {
   requireSuperadmin,
   requireCompanySigner,
   requireSelfOrSuperadmin,
-  requireWalletLinked
+  requireWalletLinked,
+  optionalAuth
 } from './middleware/auth.js';
-import { validateBody, validateParams } from './middleware/validate.js';
+import { validateBody, validateBody422, validateParams } from './middleware/validate.js';
 
 // Import validation schemas
 import { createWalletSchema, getWalletParamsSchema } from './schemas/wallet.schema.js';
-import { createReferenceRequestSchema, submitReferenceSchema, getReferenceByTokenSchema } from './schemas/reference.schema.js';
+import {
+  createReferenceRequestSchema,
+  submitReferenceSchema,
+  getReferenceByTokenSchema,
+  createReferenceInviteSchema,
+  respondReferenceSchema,
+  getCandidateReferencesParamsSchema
+} from './schemas/reference.schema.js';
 import { createPaymentIntentSchema } from './schemas/payment.schema.js';
 
 dotenv.config();
@@ -295,302 +302,7 @@ class WalletCreationService {
   }
 }
 
-class ReferenceService {
-  static async createReferenceRequest({ userId, email, name, applicantData }) {
-    const inviteToken = crypto.randomBytes(32).toString('hex');
 
-    const inviteRow = {
-      requester_id: userId,
-      referee_email: email,
-      referee_name: name,
-      invite_token: inviteToken,
-      status: 'pending',
-      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      created_at: new Date().toISOString(),
-      metadata: applicantData || null
-    };
-
-    const { data: invite, error } = await supabase
-      .from('reference_invites')
-      .insert([inviteRow])
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // Construye SIEMPRE con base pública (nunca localhost)
-    const verificationUrl = makeRefereeLink(inviteToken);
-
-    // Log email sending without exposing the verification token
-    logger.debug('Sending referee invitation email', {
-      refereeEmail: email,
-      requesterId: userId,
-      inviteId: invite.id
-    });
-
-    await this.sendRefereeInviteEmail(email, name, applicantData, verificationUrl);
-
-    return { success: true, reference_id: invite.id, token: inviteToken, verification_url: verificationUrl };
-  }
-
-  static async submitReference({ token, refereeData, ratings, comments }) {
-    const { data: invite, error: invErr } = await supabase
-      .from('reference_invites')
-      .select('*')
-      .eq('invite_token', token)
-      .single();
-
-    if (invErr || !invite) throw new Error('Invalid or expired invitation token');
-    if (invite.status === 'completed') throw new Error('This reference has already been submitted');
-
-    const overall = this.calculateOverallRating(ratings);
-
-    const refRow = {
-      owner_id: invite.requester_id,
-      referrer_name: invite.referee_name,
-      referrer_email: invite.referee_email,
-      relationship: invite.metadata?.relationship || 'colleague',
-      summary: comments?.recommendation || '',
-      overall_rating: overall,
-      kpi_ratings: ratings,
-      detailed_feedback: comments || {},
-      status: 'active',
-      created_at: new Date().toISOString(),
-      invite_id: invite.id
-    };
-
-    const { data: reference, error: refErr } = await supabase
-      .from('references')
-      .insert([refRow])
-      .select()
-      .single();
-
-    if (refErr) throw refErr;
-
-    // ===== REFERENCE VALIDATION LAYER (RVL) INTEGRATION =====
-    // Process reference through RVL (non-blocking - failures don't block submission)
-    try {
-      logger.info('Processing reference through RVL', { reference_id: reference.id });
-
-      // Fetch previous references for consistency checking
-      const { data: previousRefs } = await supabase
-        .from('references')
-        .select('summary, kpi_ratings, validated_data')
-        .eq('owner_id', invite.requester_id)
-        .neq('id', reference.id)
-        .eq('status', 'active')
-        .limit(10);
-
-      // Validate the reference
-      const validatedData = await validateReferenceRVL({
-        summary: refRow.summary,
-        kpi_ratings: refRow.kpi_ratings,
-        detailed_feedback: refRow.detailed_feedback,
-        owner_id: refRow.owner_id,
-        referrer_email: refRow.referrer_email
-      }, {
-        previousReferences: previousRefs || [],
-        skipEmbeddings: process.env.NODE_ENV === 'test' // Skip embeddings in tests
-      });
-
-      // Update reference with validated data
-      await supabase
-        .from('references')
-        .update({
-          validated_data: validatedData,
-          validation_status: validatedData.validation_status,
-          fraud_score: validatedData.fraud_score,
-          consistency_score: validatedData.consistency_score,
-          validated_at: new Date().toISOString()
-        })
-        .eq('id', reference.id);
-
-      logger.info('RVL processing completed', {
-        reference_id: reference.id,
-        validation_status: validatedData.validation_status,
-        fraud_score: validatedData.fraud_score
-      });
-
-    } catch (rvlError) {
-      // RVL failure is non-fatal - log and continue
-      logger.error('RVL processing failed, reference submitted without validation', {
-        reference_id: reference.id,
-        error: rvlError.message,
-        stack: rvlError.stack
-      });
-
-      // Update reference to indicate validation failed
-      await supabase
-        .from('references')
-        .update({
-          validation_status: 'PENDING',
-          validated_at: new Date().toISOString()
-        })
-        .eq('id', reference.id);
-    }
-    // ===== END RVL INTEGRATION =====
-
-    // ===== HRSCORE AUTO-TRIGGER =====
-    // Automatically recalculate HRKey Score after reference validation
-    // Non-blocking: failures are logged but don't block reference submission
-    try {
-      logger.info('Triggering HRScore recalculation after reference validation', {
-        reference_id: reference.id,
-        owner_id: invite.requester_id
-      });
-
-      await hrscoreAutoTrigger(reference.id);
-
-      logger.debug('HRScore auto-trigger completed', {
-        reference_id: reference.id
-      });
-    } catch (hrscoreError) {
-      // HRScore failures must NOT block reference submission
-      logger.warn('HRScore auto-trigger failed (non-blocking)', {
-        reference_id: reference.id,
-        owner_id: invite.requester_id,
-        error: hrscoreError.message,
-        stack: hrscoreError.stack
-      });
-      // Continue execution - don't throw
-    }
-    // ===== END HRSCORE AUTO-TRIGGER =====
-
-    await supabase
-      .from('reference_invites')
-      .update({ status: 'completed', completed_at: new Date().toISOString() })
-      .eq('id', invite.id);
-
-    // Track analytics event (non-blocking)
-    await logEvent({
-      userId: invite.requester_id,
-      eventType: EventTypes.REFERENCE_SUBMITTED,
-      context: {
-        referenceId: reference.id,
-        overallRating: overall,
-        referrerEmail: invite.referee_email,
-        hasDetailedFeedback: !!(comments?.recommendation || comments?.strengths || comments?.improvements)
-      }
-    });
-
-    await this.sendReferenceCompletedEmail(invite.requester_id, reference);
-
-    return { success: true, reference_id: reference.id };
-  }
-
-  static async getReferenceByToken(token) {
-    const { data: invite, error } = await supabase
-      .from('reference_invites')
-      .select('*')
-      .eq('invite_token', token)
-      .single();
-
-    if (error || !invite) throw new Error('Invalid invitation token');
-
-    if (invite.status === 'completed') {
-      return { success: false, message: 'This reference has already been completed', status: 'completed' };
-    }
-    if (new Date(invite.expires_at) < new Date()) {
-      return { success: false, message: 'This invitation has expired', status: 'expired' };
-    }
-
-    return {
-      success: true,
-      invite: {
-        referee_name: invite.referee_name,
-        referee_email: invite.referee_email,
-        applicant_data: invite.metadata,
-        expires_at: invite.expires_at
-      }
-    };
-  }
-
-  static calculateOverallRating(ratings) {
-    const vals = Object.values(ratings || {});
-    if (!vals.length) return 0;
-    const sum = vals.reduce((a, b) => a + Number(b || 0), 0);
-    return Math.round((sum / vals.length) * 10) / 10;
-  }
-
-  static async sendRefereeInviteEmail(email, name, applicantData, verificationUrl) {
-    if (!RESEND_API_KEY) {
-      logger.warn('Email service not configured', {
-        message: 'RESEND_API_KEY environment variable not set',
-        action: 'skipping_email'
-      });
-      return;
-    }
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: 'HRKey <noreply@hrkey.com>',
-        to: email,
-        subject: `Reference Request${applicantData?.applicantPosition ? ` - ${applicantData.applicantPosition}` : ''}`,
-        html: `
-          <div style="font-family:Rubik,Arial,sans-serif;line-height:1.5;color:#0f172a">
-            <h2 style="margin:0 0 8px">You've been asked to provide a professional reference</h2>
-            <p>Hi ${name || ''},</p>
-            <p>Someone has requested a reference from you${applicantData?.applicantCompany ? ` for their role at ${applicantData.applicantCompany}` : ''}.</p>
-            <p><strong>Click here to complete the reference:</strong></p>
-            <p>
-              <a href="${verificationUrl}" style="background:#00C4C7;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block;">
-                Complete Reference
-              </a>
-            </p>
-            <p>This link will expire in 30 days.</p>
-            <p style="font-size:12px;color:#64748b">If the button doesn't work, copy and paste this link:<br>${verificationUrl}</p>
-            <p>Best regards,<br/>The HRKey Team</p>
-          </div>
-        `
-      })
-    });
-    if (!res.ok) {
-      const errorText = await res.text();
-      logger.error('Failed to send referee invitation email', {
-        service: 'resend',
-        statusCode: res.status,
-        error: errorText,
-        recipientEmail: email
-      });
-    }
-  }
-
-  static async sendReferenceCompletedEmail(userId, reference) {
-    if (!RESEND_API_KEY) return;
-    const { data: userRes } = await supabase.auth.admin.getUserById(userId);
-    const userEmail = userRes?.user?.email || userRes?.email;
-    if (!userEmail) return;
-
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: 'HRKey <noreply@hrkey.com>',
-        to: userEmail,
-        subject: 'Your reference has been completed!',
-        html: `
-          <div style="font-family:Rubik,Arial,sans-serif;line-height:1.5;color:#0f172a">
-            <h2 style="margin:0 0 8px">Great news! Your reference is ready</h2>
-            <p>${reference.referrer_name} has completed your professional reference.</p>
-            <p><strong>Overall Rating:</strong> ${reference.overall_rating}/5 ⭐</p>
-            <p>
-              <a href="${APP_URL}/app.html" style="background:#00C4C7;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block;">
-                View Reference
-              </a>
-            </p>
-          </div>
-        `
-      })
-    });
-  }
-}
 
 /* =========================
    App & Middleware
@@ -1012,11 +724,11 @@ app.post('/api/reference/submit', tokenLimiter, validateBody(submitReferenceSche
   } catch (e) {
     logger.error('Failed to submit reference', {
       requestId: req.requestId,
-      token: req.body.token,
+      tokenHashPrefix: req.body.token ? hashInviteToken(req.body.token).slice(0, 12) : undefined,
       error: e.message,
       stack: e.stack
     });
-    res.status(500).json({ success: false, error: e.message });
+    res.status(e.status || 500).json({ success: false, error: e.message });
   }
 });
 
@@ -1028,13 +740,43 @@ app.get('/api/reference/by-token/:token', tokenLimiter, validateParams(getRefere
   } catch (e) {
     logger.error('Failed to get reference by token', {
       requestId: req.requestId,
-      token: req.params.token,
+      tokenHashPrefix: req.params.token ? hashInviteToken(req.params.token).slice(0, 12) : undefined,
       error: e.message,
       stack: e.stack
     });
     res.status(400).json({ success: false, error: e.message });
   }
 });
+
+/* =========================
+   References workflow MVP
+   ========================= */
+app.post(
+  '/api/references/request',
+  requireAuth,
+  validateBody422(createReferenceInviteSchema),
+  referencesController.requestReferenceInvite
+);
+
+// SECURITY: Rate limit public reference submission to prevent abuse
+app.post(
+  '/api/references/respond/:token',
+  tokenLimiter,
+  optionalAuth,
+  validateParams(getReferenceByTokenSchema),
+  validateBody422(respondReferenceSchema),
+  referencesController.respondToReferenceInvite
+);
+
+app.get('/api/references/me', requireAuth, referencesController.getMyReferences);
+
+app.get(
+  '/api/references/candidate/:candidateId',
+  requireAuth,
+  requireSuperadmin,
+  validateParams(getCandidateReferencesParamsSchema),
+  referencesController.getCandidateReferences
+);
 
 /* =========================
    Stripe Payments
