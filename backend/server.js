@@ -30,6 +30,7 @@ import publicIdentifierController from './controllers/publicIdentifier.controlle
 import adminOverviewController from './controllers/adminOverview.controller.js';
 import analyticsController from './controllers/analyticsController.js';
 import hrscoreController from './controllers/hrscoreController.js';
+import referencesController from './controllers/referencesController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 
 // Import services
@@ -335,14 +336,42 @@ class ReferenceService {
   }
 
   static async submitReference({ token, refereeData, ratings, comments }) {
+    // Validate token format
+    if (!token || typeof token !== 'string' || token.length < 32) {
+      const err = new Error('Invalid token format');
+      err.code = 'INVALID_TOKEN';
+      err.statusCode = 400;
+      throw err;
+    }
+
     const { data: invite, error: invErr } = await supabase
       .from('reference_invites')
       .select('*')
       .eq('invite_token', token)
       .single();
 
-    if (invErr || !invite) throw new Error('Invalid or expired invitation token');
-    if (invite.status === 'completed') throw new Error('This reference has already been submitted');
+    if (invErr || !invite) {
+      const err = new Error('Invalid or expired invitation token');
+      err.code = 'TOKEN_NOT_FOUND';
+      err.statusCode = 404;
+      throw err;
+    }
+
+    // Check if already completed (single-use enforcement)
+    if (invite.status === 'completed') {
+      const err = new Error('This reference has already been submitted');
+      err.code = 'TOKEN_ALREADY_USED';
+      err.statusCode = 409;
+      throw err;
+    }
+
+    // Check if token has expired
+    if (new Date(invite.expires_at) < new Date()) {
+      const err = new Error('This invitation has expired');
+      err.code = 'TOKEN_EXPIRED';
+      err.statusCode = 410;
+      throw err;
+    }
 
     const overall = this.calculateOverallRating(ratings);
 
@@ -1006,18 +1035,35 @@ app.post('/api/reference/request', requireAuth, validateBody(createReferenceRequ
 });
 
 // SECURITY: Rate limit public reference submission to prevent abuse
+// Token validation enforces: valid format, not expired, single-use
 app.post('/api/reference/submit', tokenLimiter, validateBody(submitReferenceSchema), async (req, res) => {
   try {
     const result = await ReferenceService.submitReference(req.body);
     res.json(result);
   } catch (e) {
-    logger.error('Failed to submit reference', {
-      requestId: req.requestId,
-      token: req.body.token,
-      error: e.message,
-      stack: e.stack
+    const statusCode = e.statusCode || 500;
+    const errorCode = e.code || 'INTERNAL_ERROR';
+
+    // Only log stack trace for unexpected errors
+    if (statusCode >= 500) {
+      logger.error('Failed to submit reference', {
+        requestId: req.requestId,
+        error: e.message,
+        stack: e.stack
+      });
+    } else {
+      logger.warn('Reference submission rejected', {
+        requestId: req.requestId,
+        code: errorCode,
+        message: e.message
+      });
+    }
+
+    res.status(statusCode).json({
+      success: false,
+      error: errorCode,
+      message: e.message
     });
-    res.status(500).json({ success: false, error: e.message });
   }
 });
 
@@ -1036,6 +1082,30 @@ app.get('/api/reference/by-token/:token', tokenLimiter, validateParams(getRefere
     res.status(400).json({ success: false, error: e.message });
   }
 });
+
+/**
+ * GET /api/references/me
+ * Get all references for the authenticated user (self-only)
+ *
+ * Auth: Authenticated users, returns only own references
+ */
+app.get('/api/references/me', requireAuth, referencesController.getMyReferences);
+
+/**
+ * GET /api/references/pending
+ * Get pending reference invites for the authenticated user (self-only)
+ *
+ * Auth: Authenticated users, returns only own pending invites
+ */
+app.get('/api/references/pending', requireAuth, referencesController.getMyPendingInvites);
+
+/**
+ * GET /api/references/candidate/:candidateId
+ * Get references for a specific candidate (superadmin only for now)
+ *
+ * Auth: Superadmin can view all; companies require approved data-access (TODO)
+ */
+app.get('/api/references/candidate/:candidateId', requireAuth, referencesController.getCandidateReferences);
 
 /* =========================
    Stripe Payments
