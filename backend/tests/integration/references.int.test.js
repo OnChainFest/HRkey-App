@@ -1,81 +1,23 @@
-/**
- * References Integration Tests
- *
- * Tests for References endpoints:
- * - GET /api/references/me (self-only)
- * - GET /api/references/pending (self-only)
- * - GET /api/references/candidate/:candidateId (superadmin only)
- * - POST /api/reference/submit (token-based, single-use, expiration)
- *
- * Permission model:
- * - Candidate: can only view own references
- * - Company: requires approved data-access (TODO - currently denied)
- * - Superadmin: full access
- * - Referee: submit via valid token only
- */
-
 import { jest } from '@jest/globals';
 import request from 'supertest';
+import crypto from 'crypto';
 import {
   createMockSupabaseClient,
   resetQueryBuilderMocks,
+  mockAuthGetUserSuccess,
+  mockAuthGetUserError,
   mockDatabaseSuccess,
+  mockDatabaseError,
   mockUserData
 } from '../__mocks__/supabase.mock.js';
-
-// ============================================================================
-// MOCK SETUP
-// ============================================================================
 
 const mockSupabaseClient = createMockSupabaseClient();
 const mockQueryBuilder = mockSupabaseClient.from();
 
-function buildTableMock({
-  singleResponses = [],
-  maybeSingleResponses = [],
-  rangeResponse = null,
-  selectResponse = null
-} = {}) {
-  const builder = {
-    select: jest.fn(),
-    insert: jest.fn().mockReturnThis(),
-    update: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    neq: jest.fn().mockReturnThis(),
-    in: jest.fn().mockReturnThis(),
-    or: jest.fn().mockReturnThis(),
-    order: jest.fn().mockReturnThis(),
-    range: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockReturnThis(),
-    single: jest.fn(),
-    maybeSingle: jest.fn()
-  };
-
-  builder.single.mockImplementation(() =>
-    Promise.resolve(singleResponses.length ? singleResponses.shift() : mockDatabaseSuccess({}))
-  );
-
-  builder.maybeSingle.mockImplementation(() =>
-    Promise.resolve(maybeSingleResponses.length ? maybeSingleResponses.shift() : { data: null, error: null })
-  );
-
-  builder.select.mockImplementation(() => (selectResponse ? Promise.resolve(selectResponse) : builder));
-  builder.range.mockImplementation(() => (rangeResponse ? Promise.resolve(rangeResponse) : builder));
-  builder.limit.mockImplementation(() => (selectResponse ? Promise.resolve(selectResponse) : builder));
-
-  return builder;
-}
-
-function configureTableMocks(tableMocks) {
-  mockSupabaseClient.from.mockImplementation((table) => tableMocks[table] || mockQueryBuilder);
-}
-
-// Mock Supabase
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
 }));
 
-// Mock email service
 jest.unstable_mockModule('../../utils/emailService.js', () => ({
   sendSignerInvitation: jest.fn().mockResolvedValue(),
   sendCompanyVerificationNotification: jest.fn().mockResolvedValue(),
@@ -84,7 +26,6 @@ jest.unstable_mockModule('../../utils/emailService.js', () => ({
   sendDataAccessApprovedNotification: jest.fn().mockResolvedValue()
 }));
 
-// Mock audit logger
 jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
   logAudit: jest.fn().mockResolvedValue(),
   logIdentityVerification: jest.fn().mockResolvedValue(),
@@ -134,552 +75,236 @@ const { default: app } = await import('../../server.js');
 // ============================================================================
 
 describe('References Integration Tests', () => {
+const { default: app } = await import('../../server.js');
+
+describe('References Workflow MVP Integration', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
     resetQueryBuilderMocks(mockQueryBuilder);
   });
 
-  // --------------------------------------------------------------------------
-  // SMOKE TESTS
-  // --------------------------------------------------------------------------
+  test('REF-INT-01: should return 401 for unauthenticated /api/references/me', async () => {
+    const res = await request(app).get('/api/references/me');
 
-  describe('Smoke Tests', () => {
-    test('SMOKE-REF1: test framework is working', () => {
-      expect(true).toBe(true);
-    });
-
-    test('SMOKE-REF2: app is defined', () => {
-      expect(app).toBeDefined();
-    });
-
-    test('SMOKE-REF3: mock Supabase client is working', () => {
-      expect(mockSupabaseClient).toBeDefined();
-      expect(mockSupabaseClient.auth).toBeDefined();
-      expect(mockSupabaseClient.from).toBeDefined();
-    });
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe('Authentication required');
   });
 
-  // --------------------------------------------------------------------------
-  // GET /api/references/me - Self-Only Access Tests
-  // --------------------------------------------------------------------------
-
-  describe('GET /api/references/me', () => {
-    test('REF-INT-01: requires authentication', async () => {
-      const response = await request(app)
-        .get('/api/references/me');
-
-      expect(response.status).toBe(401);
-      expect(response.body).toHaveProperty('error');
-    });
-
-    test('REF-INT-02: authenticated user can get own references', async () => {
-      const user = mockUserData({
-        id: 'user-123',
-        email: 'test@example.com',
-        role: 'user'
+  test('REF-INT-02: should return 401 for unauthenticated /api/references/request', async () => {
+    const res = await request(app)
+      .post('/api/references/request')
+      .send({
+        candidate_id: '11111111-1111-4111-8111-111111111111',
+        referee_email: 'referee@example.com'
       });
 
-      const mockReferences = [
-        {
-          id: 'ref-1',
-          referrer_name: 'John Doe',
-          referrer_email: 'john@example.com',
-          overall_rating: 4.5,
-          status: 'active'
-        }
-      ];
-
-      // Build chainable mocks for each table
-      const usersBuilder = buildTableMock({
-        singleResponses: [mockDatabaseSuccess(user)]
-      });
-
-      const referencesBuilder = buildTableMock({
-        selectResponse: mockDatabaseSuccess(mockReferences)
-      });
-
-      mockSupabaseClient.from.mockImplementation((table) => {
-        if (table === 'users') return usersBuilder;
-        if (table === 'references') return referencesBuilder;
-        return mockQueryBuilder;
-      });
-
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: user.id, email: user.email } },
-        error: null
-      });
-
-      const response = await request(app)
-        .get('/api/references/me')
-        .set('Authorization', 'Bearer mock-token');
-
-      // Accept 200 or 500 - complex mocking may cause failures
-      // Key test: authorization passes (not 401/403)
-      expect([200, 500]).toContain(response.status);
-      if (response.status === 200) {
-        expect(response.body).toHaveProperty('ok', true);
-        expect(response.body).toHaveProperty('references');
-      }
-    });
-
-    test('REF-INT-03: returns empty array when user has no references', async () => {
-      const user = mockUserData({ id: 'user-no-refs', role: 'user' });
-
-      const usersBuilder = buildTableMock({
-        singleResponses: [mockDatabaseSuccess(user)]
-      });
-
-      const referencesBuilder = buildTableMock({
-        selectResponse: mockDatabaseSuccess([])
-      });
-
-      mockSupabaseClient.from.mockImplementation((table) => {
-        if (table === 'users') return usersBuilder;
-        if (table === 'references') return referencesBuilder;
-        return mockQueryBuilder;
-      });
-
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: user.id, email: user.email } },
-        error: null
-      });
-
-      const response = await request(app)
-        .get('/api/references/me')
-        .set('Authorization', 'Bearer mock-token');
-
-      // Accept 200 or 500 - key test is authorization
-      expect([200, 500]).toContain(response.status);
-      if (response.status === 200) {
-        expect(response.body.references).toEqual([]);
-        expect(response.body.count).toBe(0);
-      }
-    });
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe('Authentication required');
   });
 
-  // --------------------------------------------------------------------------
-  // GET /api/references/candidate/:candidateId - Authorization Tests
-  // --------------------------------------------------------------------------
+  test('REF-INT-03: should return 404 for invalid token on respond', async () => {
+    mockQueryBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
-  describe('GET /api/references/candidate/:candidateId', () => {
-    test('REF-INT-04: requires authentication', async () => {
-      const response = await request(app)
-        .get('/api/references/candidate/some-user-id');
-
-      expect(response.status).toBe(401);
-      expect(response.body).toHaveProperty('error');
-    });
-
-    test('REF-INT-05: regular user cannot access other user references (403)', async () => {
-      const userA = mockUserData({
-        id: 'user-a',
-        email: 'usera@example.com',
-        role: 'user'
+    const res = await request(app)
+      .post('/api/references/respond/invalid-token-000000000000000000000000')
+      .send({
+        ratings: { professionalism: 4 }
       });
 
-      const usersTable = buildTableMock({
-        singleResponses: [mockDatabaseSuccess(userA)]
-      });
-
-      configureTableMocks({ users: usersTable });
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: userA.id, email: userA.email } },
-        error: null
-      });
-
-      // User A tries to access User B's references
-      const response = await request(app)
-        .get('/api/references/candidate/user-b')
-        .set('Authorization', 'Bearer mock-token');
-
-      expect(response.status).toBe(403);
-      expect(response.body).toHaveProperty('error', 'FORBIDDEN');
-    });
-
-    test('REF-INT-06: user cannot access own references via candidate endpoint (use /me instead)', async () => {
-      const user = mockUserData({
-        id: 'user-self',
-        email: 'self@example.com',
-        role: 'user'
-      });
-
-      const usersTable = buildTableMock({
-        singleResponses: [mockDatabaseSuccess(user)]
-      });
-
-      configureTableMocks({ users: usersTable });
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: user.id, email: user.email } },
-        error: null
-      });
-
-      const response = await request(app)
-        .get('/api/references/candidate/user-self')
-        .set('Authorization', 'Bearer mock-token');
-
-      expect(response.status).toBe(403);
-      expect(response.body.message).toContain('/api/references/me');
-    });
-
-    test('REF-INT-07: superadmin can access any candidate references', async () => {
-      const superadmin = mockUserData({
-        id: 'admin-1',
-        email: 'admin@example.com',
-        role: 'superadmin'
-      });
-
-      const mockReferences = [
-        {
-          id: 'ref-1',
-          owner_id: 'target-user',
-          referrer_name: 'Referee One',
-          overall_rating: 4.0,
-          status: 'active'
-        }
-      ];
-
-      const usersBuilder = buildTableMock({
-        singleResponses: [mockDatabaseSuccess(superadmin)]
-      });
-
-      const referencesBuilder = buildTableMock({
-        selectResponse: mockDatabaseSuccess(mockReferences)
-      });
-
-      mockSupabaseClient.from.mockImplementation((table) => {
-        if (table === 'users') return usersBuilder;
-        if (table === 'references') return referencesBuilder;
-        return mockQueryBuilder;
-      });
-
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: superadmin.id, email: superadmin.email } },
-        error: null
-      });
-
-      const response = await request(app)
-        .get('/api/references/candidate/target-user')
-        .set('Authorization', 'Bearer mock-token');
-
-      // Accept 200 or 500 - key test: superadmin not blocked (not 403)
-      expect([200, 500]).toContain(response.status);
-      expect(response.status).not.toBe(403);
-      if (response.status === 200) {
-        expect(response.body).toHaveProperty('ok', true);
-        expect(response.body).toHaveProperty('accessLevel', 'superadmin');
-      }
-    });
-
-    test('REF-INT-08: returns 400 for empty candidateId', async () => {
-      const superadmin = mockUserData({
-        id: 'admin-1',
-        email: 'admin@example.com',
-        role: 'superadmin'
-      });
-
-      const usersTable = buildTableMock({
-        singleResponses: [mockDatabaseSuccess(superadmin)]
-      });
-
-      configureTableMocks({ users: usersTable });
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: superadmin.id, email: superadmin.email } },
-        error: null
-      });
-
-      const response = await request(app)
-        .get('/api/references/candidate/%20')  // Whitespace
-        .set('Authorization', 'Bearer mock-token');
-
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty('error', 'INVALID_CANDIDATE_ID');
-    });
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('Invitation not found');
   });
 
-  // --------------------------------------------------------------------------
-  // POST /api/reference/submit - Token Validation Tests
-  // --------------------------------------------------------------------------
-
-  describe('POST /api/reference/submit', () => {
-    const validToken = 'a'.repeat(64);  // 64 char hex token
-
-    test('REF-INT-09: rejects invalid token format (too short)', async () => {
-      const response = await request(app)
-        .post('/api/reference/submit')
-        .send({
-          token: 'short',
-          ratings: { skill1: 4 }
-        });
-
-      // Zod validation should reject
-      expect([400, 422]).toContain(response.status);
-    });
-
-    test('REF-INT-10: rejects non-existent token (404)', async () => {
-      const invitesBuilder = buildTableMock({
-        singleResponses: [{ data: null, error: { message: 'Not found' } }]
-      });
-
-      mockSupabaseClient.from.mockImplementation((table) => {
-        if (table === 'reference_invites') return invitesBuilder;
-        return mockQueryBuilder;
-      });
-
-      const response = await request(app)
-        .post('/api/reference/submit')
-        .send({
-          token: validToken,
-          ratings: { skill1: 4 }
-        });
-
-      // Token lookup fails -> 404 or 400 (depending on error handling)
-      expect([400, 404, 500]).toContain(response.status);
-    });
-
-    test('REF-INT-11: rejects already-used token (409 single-use)', async () => {
-      const completedInvite = {
+  test('REF-INT-04: should return 422 for expired token', async () => {
+    mockQueryBuilder.maybeSingle.mockResolvedValueOnce(
+      mockDatabaseSuccess({
         id: 'invite-1',
-        invite_token: validToken,
+        status: 'pending',
+        expires_at: '2000-01-01T00:00:00Z'
+      })
+    );
+
+    const res = await request(app)
+      .post('/api/references/respond/expired-token-000000000000000000000')
+      .send({
+        ratings: { professionalism: 4 }
+      });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toBe('Invitation expired');
+  });
+
+  test('REF-INT-05: should reject already used token', async () => {
+    mockQueryBuilder.maybeSingle.mockResolvedValueOnce(
+      mockDatabaseSuccess({
+        id: 'invite-2',
         status: 'completed',
-        requester_id: 'user-123',
-        referee_name: 'John',
-        referee_email: 'john@example.com',
-        expires_at: new Date(Date.now() + 86400000).toISOString()
-      };
+        expires_at: '2099-01-01T00:00:00Z'
+      })
+    );
 
-      const invitesBuilder = buildTableMock({
-        singleResponses: [mockDatabaseSuccess(completedInvite)]
+    const res = await request(app)
+      .post('/api/references/respond/used-token-0000000000000000000000000')
+      .send({
+        ratings: { professionalism: 4 }
       });
 
-      mockSupabaseClient.from.mockImplementation((table) => {
-        if (table === 'reference_invites') return invitesBuilder;
-        return mockQueryBuilder;
-      });
-
-      const response = await request(app)
-        .post('/api/reference/submit')
-        .send({
-          token: validToken,
-          ratings: { skill1: 4 }
-        });
-
-      // Already used -> 409 or error
-      expect([400, 409, 500]).toContain(response.status);
-    });
-
-    test('REF-INT-12: rejects expired token (410)', async () => {
-      const expiredInvite = {
-        id: 'invite-expired',
-        invite_token: validToken,
-        status: 'pending',
-        requester_id: 'user-123',
-        referee_name: 'Jane',
-        referee_email: 'jane@example.com',
-        expires_at: new Date(Date.now() - 86400000).toISOString()  // Expired yesterday
-      };
-
-      const invitesBuilder = buildTableMock({
-        singleResponses: [mockDatabaseSuccess(expiredInvite)]
-      });
-
-      mockSupabaseClient.from.mockImplementation((table) => {
-        if (table === 'reference_invites') return invitesBuilder;
-        return mockQueryBuilder;
-      });
-
-      const response = await request(app)
-        .post('/api/reference/submit')
-        .send({
-          token: validToken,
-          ratings: { skill1: 4 }
-        });
-
-      // Expired -> 410 or error
-      expect([400, 410, 500]).toContain(response.status);
-    });
-
-    test('REF-INT-13: accepts valid token and creates reference', async () => {
-      const validInvite = {
-        id: 'invite-valid',
-        invite_token: validToken,
-        status: 'pending',
-        requester_id: 'user-123',
-        referee_name: 'Valid Referee',
-        referee_email: 'valid@example.com',
-        expires_at: new Date(Date.now() + 86400000).toISOString(),
-        metadata: { relationship: 'manager' }
-      };
-
-      const createdReference = {
-        id: 'ref-new',
-        owner_id: 'user-123',
-        referrer_name: 'Valid Referee',
-        overall_rating: 4.0,
-        status: 'active'
-      };
-
-      const invitesBuilder = buildTableMock({
-        singleResponses: [mockDatabaseSuccess(validInvite)]
-      });
-
-      const referencesBuilder = buildTableMock({
-        singleResponses: [mockDatabaseSuccess(createdReference)],
-        selectResponse: mockDatabaseSuccess([])
-      });
-
-      mockSupabaseClient.from.mockImplementation((table) => {
-        if (table === 'reference_invites') return {
-          ...invitesBuilder,
-          update: jest.fn().mockReturnThis(),
-          eq: jest.fn().mockResolvedValue({ data: null, error: null })
-        };
-        if (table === 'references') return referencesBuilder;
-        return mockQueryBuilder;
-      });
-
-      mockSupabaseClient.auth = {
-        ...mockSupabaseClient.auth,
-        admin: {
-          getUserById: jest.fn().mockResolvedValue({
-            data: { user: { email: 'user@example.com' } }
-          })
-        }
-      };
-
-      const response = await request(app)
-        .post('/api/reference/submit')
-        .send({
-          token: validToken,
-          ratings: { communication: 4, leadership: 5, teamwork: 4 },
-          comments: { recommendation: 'Highly recommended!' }
-        });
-
-      // Complex mocking - accept success or graceful error
-      // Key: not blocked by validation (not 400 from Zod)
-      expect([200, 400, 500]).toContain(response.status);
-    });
+    expect(res.status).toBe(422);
+    expect(res.body.error).toBe('Reference already submitted');
   });
 
-  // --------------------------------------------------------------------------
-  // GET /api/references/pending - Self-Only Access
-  // --------------------------------------------------------------------------
+  test('REF-INT-06: should forbid company signer without approved access', async () => {
+    mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-1'));
+    mockQueryBuilder.single.mockResolvedValueOnce(
+      mockDatabaseSuccess(mockUserData({ id: 'user-1' }))
+    );
+    mockQueryBuilder.order.mockResolvedValueOnce(
+      mockDatabaseSuccess([{ company_id: 'company-1' }])
+    );
+    mockQueryBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
-  describe('GET /api/references/pending', () => {
-    test('REF-INT-14: requires authentication', async () => {
-      const response = await request(app)
-        .get('/api/references/pending');
-
-      expect(response.status).toBe(401);
-    });
-
-    test('REF-INT-15: returns pending invites for authenticated user', async () => {
-      const user = mockUserData({ id: 'user-pending', role: 'user' });
-
-      const pendingInvites = [
-        {
-          id: 'inv-1',
-          referee_name: 'Pending Referee',
-          referee_email: 'pending@example.com',
-          status: 'pending',
-          expires_at: new Date(Date.now() + 86400000).toISOString()
-        }
-      ];
-
-      const usersBuilder = buildTableMock({
-        singleResponses: [mockDatabaseSuccess(user)]
+    const res = await request(app)
+      .post('/api/references/request')
+      .set('Authorization', 'Bearer valid-token')
+      .send({
+        candidate_id: '22222222-2222-4222-8222-222222222222',
+        referee_email: 'referee@example.com'
       });
 
-      const invitesBuilder = buildTableMock({
-        selectResponse: mockDatabaseSuccess(pendingInvites)
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe('Forbidden');
+  });
+
+  test('REF-INT-07: should allow company signer with approved access to request reference', async () => {
+    mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-2'));
+    mockQueryBuilder.single
+      .mockResolvedValueOnce(mockDatabaseSuccess(mockUserData({ id: 'user-2' })))
+      .mockResolvedValueOnce(mockDatabaseSuccess({ id: 'invite-1' }));
+    mockQueryBuilder.order.mockResolvedValueOnce(
+      mockDatabaseSuccess([{ company_id: 'company-1' }])
+    );
+    mockQueryBuilder.maybeSingle.mockResolvedValueOnce(
+      mockDatabaseSuccess({
+        id: 'request-1',
+        company_id: 'company-1',
+        target_user_id: '22222222-2222-4222-8222-222222222222',
+        status: 'APPROVED',
+        requested_data_type: 'reference'
+      })
+    );
+
+    const res = await request(app)
+      .post('/api/references/request')
+      .set('Authorization', 'Bearer valid-token')
+      .send({
+        candidate_id: '22222222-2222-4222-8222-222222222222',
+        referee_email: 'referee@example.com'
       });
 
-      mockSupabaseClient.from.mockImplementation((table) => {
-        if (table === 'users') return usersBuilder;
-        if (table === 'reference_invites') return invitesBuilder;
-        return mockQueryBuilder;
-      });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: user.id, email: user.email } },
-        error: null
-      });
-
-      const response = await request(app)
-        .get('/api/references/pending')
-        .set('Authorization', 'Bearer mock-token');
-
-      // Accept 200 or 500 - key is auth passes (not 401/403)
-      expect([200, 500]).toContain(response.status);
-      if (response.status === 200) {
-        expect(response.body).toHaveProperty('ok', true);
-        expect(response.body).toHaveProperty('invites');
+  test('REF-INT-08: should allow superadmin to fetch candidate references', async () => {
+  test('REF-INT-07: should allow superadmin to fetch candidate references', async () => {
+    mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('admin-1'));
+    mockQueryBuilder.single.mockResolvedValueOnce(
+      mockDatabaseSuccess(mockUserData({ id: 'admin-1', role: 'superadmin' }))
+    );
+    const references = [
+      {
+        id: 'ref-1',
+        owner_id: 'candidate-1',
+        referrer_name: 'Ref A',
+        overall_rating: 4,
+        status: 'active',
+        created_at: '2024-01-01T00:00:00Z'
       }
-    });
+    ];
+    mockQueryBuilder.order.mockResolvedValueOnce(mockDatabaseSuccess(references));
+
+    const res = await request(app)
+      .get('/api/references/candidate/33333333-3333-4333-8333-333333333333')
+      .set('Authorization', 'Bearer admin-token');
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.references).toHaveLength(1);
   });
 
-  // --------------------------------------------------------------------------
-  // IDOR Prevention Tests
-  // --------------------------------------------------------------------------
+  test('REF-INT-09: should not return referrer_email for /api/references/me', async () => {
+    mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-3'));
+    mockQueryBuilder.single.mockResolvedValueOnce(
+      mockDatabaseSuccess(mockUserData({ id: 'user-3' }))
+    );
+    mockQueryBuilder.order.mockResolvedValueOnce(
+      mockDatabaseSuccess([
+        {
+          id: 'ref-2',
+          referrer_name: 'Ref B',
+          referrer_email: 'secret@example.com',
+          overall_rating: 5,
+          status: 'active',
+          created_at: '2024-01-02T00:00:00Z'
+        }
+      ])
+    );
 
-  describe('IDOR Prevention', () => {
-    test('REF-INT-16: /me endpoint always uses authenticated user ID (no injection)', async () => {
-      const user = mockUserData({ id: 'real-user-id', role: 'user' });
+    const res = await request(app)
+      .get('/api/references/me')
+      .set('Authorization', 'Bearer valid-token');
 
-      const usersBuilder = buildTableMock({
-        singleResponses: [mockDatabaseSuccess(user)]
-      });
+    expect(res.status).toBe(200);
+    const selectCalls = mockQueryBuilder.select.mock.calls.map((call) => call[0]);
+    expect(selectCalls.some((value) => typeof value === 'string' && value.includes('referrer_email'))).toBe(false);
+  });
 
-      const referencesBuilder = buildTableMock({
-        selectResponse: mockDatabaseSuccess([])
-      });
+  test('REF-INT-10: public token lookup should not expose internal IDs', async () => {
+    mockQueryBuilder.maybeSingle.mockResolvedValueOnce(
+      mockDatabaseSuccess({
+        id: 'invite-5',
+        requester_id: 'user-999',
+        referee_name: 'Ref C',
+        referee_email: 'referee@example.com',
+        metadata: { applicantCompany: 'Acme' },
+        expires_at: '2099-01-01T00:00:00Z',
+        status: 'pending'
+      })
+    );
 
-      mockSupabaseClient.from.mockImplementation((table) => {
-        if (table === 'users') return usersBuilder;
-        if (table === 'references') return referencesBuilder;
-        return mockQueryBuilder;
-      });
+    const res = await request(app)
+      .get('/api/reference/by-token/legacy-token-000000000000000000000000');
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: user.id, email: user.email } },
-        error: null
-      });
+    expect(res.status).toBe(200);
+    expect(res.body.invite?.requester_id).toBeUndefined();
+    expect(res.body.invite?.id).toBeUndefined();
+  });
 
-      // Try to inject via query param (should be ignored)
-      const response = await request(app)
-        .get('/api/references/me?userId=attacker-id')
-        .set('Authorization', 'Bearer mock-token');
+  test('REF-INT-11: token lookup should hash when flag enabled', async () => {
+    const token = 'hashed-token-000000000000000000000000';
+    const hashed = crypto.createHash('sha256').update(token).digest('hex');
+    process.env.USE_HASHED_REFERENCE_TOKENS = 'true';
 
-      // Accept 200 or 500 - key is no IDOR
-      // The query param should be completely ignored
-      expect([200, 500]).toContain(response.status);
-    });
+    try {
+      mockQueryBuilder.maybeSingle.mockResolvedValueOnce(
+        mockDatabaseSuccess({
+          id: 'invite-6',
+          referee_name: 'Ref D',
+          referee_email: 'referee@example.com',
+          metadata: null,
+          expires_at: '2099-01-01T00:00:00Z',
+          status: 'pending'
+        })
+      );
+
+      const res = await request(app)
+        .get(`/api/reference/by-token/${token}`);
+
+      expect(res.status).toBe(200);
+      expect(mockQueryBuilder.eq).toHaveBeenCalledWith('invite_token', hashed);
+    } finally {
+      delete process.env.USE_HASHED_REFERENCE_TOKENS;
+    }
   });
 });
-
-// ============================================================================
-// PERMISSIONS MATRIX
-// ============================================================================
-
-/*
- * REFERENCES PERMISSION MATRIX:
- *
- * Endpoint                              | Unauth | User  | Company | Superadmin
- * --------------------------------------|--------|-------|---------|------------
- * GET /api/references/me                | 401    | 200*  | 200*    | 200*
- * GET /api/references/pending           | 401    | 200*  | 200*    | 200*
- * GET /api/references/candidate/:id     | 401    | 403** | TODO*** | 200
- * POST /api/reference/submit            | varies | n/a   | n/a     | n/a
- * POST /api/reference/request           | 401    | 200*  | 200*    | 200*
- *
- * * = Self-only (returns only own data)
- * ** = Cannot access others' references; use /me for own
- * *** = Company access requires approved data-access request (TODO)
- *
- * TOKEN VALIDATION (POST /api/reference/submit):
- * - 400: Invalid token format (too short)
- * - 404: Token not found
- * - 409: Token already used (single-use enforcement)
- * - 410: Token expired
- * - 200: Success (token valid, not expired, not used)
- */
