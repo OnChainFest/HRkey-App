@@ -48,13 +48,21 @@ import {
   requireCompanySigner,
   requireSelfOrSuperadmin,
   requireWalletLinked,
+  optionalAuth
   requireOwnWallet
 } from './middleware/auth.js';
-import { validateBody, validateParams } from './middleware/validate.js';
+import { validateBody, validateBody422, validateParams } from './middleware/validate.js';
 
 // Import validation schemas
 import { createWalletSchema, getWalletParamsSchema } from './schemas/wallet.schema.js';
-import { createReferenceRequestSchema, submitReferenceSchema, getReferenceByTokenSchema } from './schemas/reference.schema.js';
+import {
+  createReferenceRequestSchema,
+  submitReferenceSchema,
+  getReferenceByTokenSchema,
+  createReferenceInviteSchema,
+  respondReferenceSchema,
+  getCandidateReferencesParamsSchema
+} from './schemas/reference.schema.js';
 import { createPaymentIntentSchema } from './schemas/payment.schema.js';
 
 dotenv.config();
@@ -297,8 +305,9 @@ class WalletCreationService {
 }
 
 class ReferenceService {
-  static async createReferenceRequest({ userId, email, name, applicantData }) {
+  static async createReferenceRequest({ userId, email, name, applicantData, expiresInDays = 7 }) {
     const inviteToken = crypto.randomBytes(32).toString('hex');
+    // TODO: Store a hashed token once reference_invites supports hashed tokens.
 
     const inviteRow = {
       requester_id: userId,
@@ -306,7 +315,7 @@ class ReferenceService {
       referee_name: name,
       invite_token: inviteToken,
       status: 'pending',
-      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      expires_at: new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString(),
       created_at: new Date().toISOString(),
       metadata: applicantData || null
     };
@@ -334,30 +343,52 @@ class ReferenceService {
     return { success: true, reference_id: invite.id, token: inviteToken, verification_url: verificationUrl };
   }
 
-  static async submitReference({ token, refereeData, ratings, comments }) {
-    const { data: invite, error: invErr } = await supabase
-      .from('reference_invites')
-      .select('*')
-      .eq('invite_token', token)
-      .single();
+  static async submitReference({ token, invite, refereeData, ratings, comments }) {
+    let inviteRecord = invite;
 
-    if (invErr || !invite) throw new Error('Invalid or expired invitation token');
-    if (invite.status === 'completed') throw new Error('This reference has already been submitted');
+    if (!inviteRecord) {
+      const { data: inviteData, error: invErr } = await supabase
+        .from('reference_invites')
+        .select('*')
+        .eq('invite_token', token)
+        .single();
+
+      if (invErr || !inviteData) {
+        const notFoundError = new Error('Invalid invitation token');
+        notFoundError.status = 404;
+        throw notFoundError;
+      }
+
+      inviteRecord = inviteData;
+    }
+
+    if (inviteRecord.status === 'completed') {
+      const usedError = new Error('This reference has already been submitted');
+      usedError.status = 422;
+      throw usedError;
+    }
+
+    if (inviteRecord.expires_at && new Date(inviteRecord.expires_at) < new Date()) {
+      const expiredError = new Error('This invitation has expired');
+      expiredError.status = 422;
+      throw expiredError;
+    }
 
     const overall = this.calculateOverallRating(ratings);
 
     const refRow = {
-      owner_id: invite.requester_id,
-      referrer_name: invite.referee_name,
-      referrer_email: invite.referee_email,
-      relationship: invite.metadata?.relationship || 'colleague',
+      owner_id: inviteRecord.requester_id,
+      referrer_name: inviteRecord.referee_name,
+      referrer_email: inviteRecord.referee_email,
+      relationship: inviteRecord.metadata?.relationship || 'colleague',
+      role_id: inviteRecord.metadata?.role_id || null,
       summary: comments?.recommendation || '',
       overall_rating: overall,
       kpi_ratings: ratings,
       detailed_feedback: comments || {},
       status: 'active',
       created_at: new Date().toISOString(),
-      invite_id: invite.id
+      invite_id: inviteRecord.id
     };
 
     const { data: reference, error: refErr } = await supabase
@@ -377,7 +408,7 @@ class ReferenceService {
       const { data: previousRefs } = await supabase
         .from('references')
         .select('summary, kpi_ratings, validated_data')
-        .eq('owner_id', invite.requester_id)
+        .eq('owner_id', inviteRecord.requester_id)
         .neq('id', reference.id)
         .eq('status', 'active')
         .limit(10);
@@ -437,7 +468,7 @@ class ReferenceService {
     try {
       logger.info('Triggering HRScore recalculation after reference validation', {
         reference_id: reference.id,
-        owner_id: invite.requester_id
+        owner_id: inviteRecord.requester_id
       });
 
       await hrscoreAutoTrigger(reference.id);
@@ -449,7 +480,7 @@ class ReferenceService {
       // HRScore failures must NOT block reference submission
       logger.warn('HRScore auto-trigger failed (non-blocking)', {
         reference_id: reference.id,
-        owner_id: invite.requester_id,
+        owner_id: inviteRecord.requester_id,
         error: hrscoreError.message,
         stack: hrscoreError.stack
       });
@@ -460,21 +491,21 @@ class ReferenceService {
     await supabase
       .from('reference_invites')
       .update({ status: 'completed', completed_at: new Date().toISOString() })
-      .eq('id', invite.id);
+      .eq('id', inviteRecord.id);
 
     // Track analytics event (non-blocking)
     await logEvent({
-      userId: invite.requester_id,
+      userId: inviteRecord.requester_id,
       eventType: EventTypes.REFERENCE_SUBMITTED,
       context: {
         referenceId: reference.id,
         overallRating: overall,
-        referrerEmail: invite.referee_email,
+        referrerEmail: inviteRecord.referee_email,
         hasDetailedFeedback: !!(comments?.recommendation || comments?.strengths || comments?.improvements)
       }
     });
 
-    await this.sendReferenceCompletedEmail(invite.requester_id, reference);
+    await this.sendReferenceCompletedEmail(inviteRecord.requester_id, reference);
 
     return { success: true, reference_id: reference.id };
   }
@@ -542,7 +573,7 @@ class ReferenceService {
                 Complete Reference
               </a>
             </p>
-            <p>This link will expire in 30 days.</p>
+            <p>This link will expire in 7 days.</p>
             <p style="font-size:12px;color:#64748b">If the button doesn't work, copy and paste this link:<br>${verificationUrl}</p>
             <p>Best regards,<br/>The HRKey Team</p>
           </div>
@@ -747,6 +778,53 @@ const tokenLimiter =
       standardHeaders: true,
       legacyHeaders: false
     });
+
+async function resolveCandidateId({ candidateId, candidateWallet }) {
+  if (candidateId) return candidateId;
+  if (!candidateWallet) return null;
+
+  const { data: userByWallet, error: userError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('wallet_address', candidateWallet)
+    .single();
+
+  if (!userError && userByWallet?.id) return userByWallet.id;
+
+  const { data: walletRow, error: walletError } = await supabase
+    .from('user_wallets')
+    .select('user_id')
+    .eq('address', candidateWallet)
+    .eq('is_active', true)
+    .single();
+
+  if (!walletError && walletRow?.user_id) return walletRow.user_id;
+  return null;
+}
+
+async function hasApprovedReferenceAccess(requesterId, candidateId) {
+  if (!requesterId || !candidateId) return false;
+
+  const { data, error } = await supabase
+    .from('data_access_requests')
+    .select('id, status, requested_data_type')
+    .eq('requested_by_user_id', requesterId)
+    .eq('target_user_id', candidateId)
+    .eq('status', 'APPROVED')
+    .in('requested_data_type', ['reference', 'profile', 'full_data'])
+    .maybeSingle();
+
+  if (error) {
+    logger.warn('Failed to check data access approval', {
+      requesterId,
+      candidateId,
+      error: error.message
+    });
+    return false;
+  }
+
+  return !!data;
+}
 
 // Apply general rate limiting to all API routes
 app.use('/api/', apiLimiter);
@@ -1017,7 +1095,7 @@ app.post('/api/reference/submit', tokenLimiter, validateBody(submitReferenceSche
       error: e.message,
       stack: e.stack
     });
-    res.status(500).json({ success: false, error: e.message });
+    res.status(e.status || 500).json({ success: false, error: e.message });
   }
 });
 
@@ -1036,6 +1114,210 @@ app.get('/api/reference/by-token/:token', tokenLimiter, validateParams(getRefere
     res.status(400).json({ success: false, error: e.message });
   }
 });
+
+/* =========================
+   References workflow MVP
+   ========================= */
+app.post('/api/references/request', requireAuth, validateBody422(createReferenceInviteSchema), async (req, res) => {
+  try {
+    const { candidate_id, candidate_wallet, referee_email, role_id, message } = req.body;
+    const candidateId = await resolveCandidateId({
+      candidateId: candidate_id,
+      candidateWallet: candidate_wallet
+    });
+
+    if (!candidateId) {
+      return res.status(404).json({
+        error: 'Not found',
+        message: 'Candidate not found'
+      });
+    }
+
+    const isSuperadmin = req.user?.role === 'superadmin';
+    const isSelf = req.user?.id === candidateId;
+
+    if (!isSelf && !isSuperadmin) {
+      const { data: signer } = await supabase
+        .from('company_signers')
+        .select('id, company_id')
+        .eq('user_id', req.user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!signer) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'Company signer access required'
+        });
+      }
+
+      const hasAccess = await hasApprovedReferenceAccess(req.user?.id, candidateId);
+      if (!hasAccess) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'Approved data access required'
+        });
+      }
+    }
+
+    const result = await ReferenceService.createReferenceRequest({
+      userId: candidateId,
+      email: referee_email,
+      name: null,
+      applicantData: {
+        role_id: role_id || null,
+        message: message || null,
+        requested_by: req.user?.id || null
+      },
+      expiresInDays: 7
+    });
+
+    return res.json({
+      ok: true,
+      reference_id: result.reference_id
+    });
+  } catch (e) {
+    logger.error('Failed to create reference invite', {
+      requestId: req.requestId,
+      requesterId: req.user?.id,
+      candidateId: req.body.candidate_id,
+      refereeEmail: req.body.referee_email,
+      error: e.message,
+      stack: e.stack
+    });
+    return res.status(500).json({ ok: false, error: 'Failed to create reference request' });
+  }
+});
+
+// SECURITY: Rate limit public reference submission to prevent abuse
+app.post(
+  '/api/references/respond/:token',
+  tokenLimiter,
+  optionalAuth,
+  validateParams(getReferenceByTokenSchema),
+  validateBody422(respondReferenceSchema),
+  async (req, res) => {
+    try {
+      const { token } = req.params;
+      const { ratings, comments } = req.body;
+
+      const { data: invite, error: inviteError } = await supabase
+        .from('reference_invites')
+        .select('*')
+        .eq('invite_token', token)
+        .single();
+
+      if (inviteError || !invite) {
+        return res.status(404).json({
+          ok: false,
+          error: 'Invitation not found'
+        });
+      }
+
+      if (invite.status === 'completed') {
+        return res.status(422).json({
+          ok: false,
+          error: 'Reference already submitted'
+        });
+      }
+
+      if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+        return res.status(422).json({
+          ok: false,
+          error: 'Invitation expired'
+        });
+      }
+
+      await ReferenceService.submitReference({
+        token,
+        invite,
+        ratings,
+        comments
+      });
+
+      return res.json({ ok: true });
+    } catch (e) {
+      logger.error('Failed to submit reference response', {
+        requestId: req.requestId,
+        token: req.params.token,
+        error: e.message,
+        stack: e.stack
+      });
+      return res.status(e.status || 500).json({
+        ok: false,
+        error: e.status ? e.message : 'Failed to submit reference'
+      });
+    }
+  }
+);
+
+app.get('/api/references/me', requireAuth, async (req, res) => {
+  try {
+    const { data: references, error } = await supabase
+      .from('references')
+      .select('id, referrer_name, relationship, summary, overall_rating, kpi_ratings, status, created_at, validation_status, role_id')
+      .eq('owner_id', req.user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return res.status(500).json({
+        error: 'Database error',
+        message: error.message
+      });
+    }
+
+    return res.json({
+      ok: true,
+      references: references || []
+    });
+  } catch (e) {
+    logger.error('Failed to fetch self references', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      error: e.message,
+      stack: e.stack
+    });
+    return res.status(500).json({ error: 'Failed to fetch references' });
+  }
+});
+
+app.get(
+  '/api/references/candidate/:candidateId',
+  requireAuth,
+  requireSuperadmin,
+  validateParams(getCandidateReferencesParamsSchema),
+  async (req, res) => {
+    try {
+      const { candidateId } = req.params;
+      const { data: references, error } = await supabase
+        .from('references')
+        .select('id, owner_id, referrer_name, referrer_email, relationship, summary, overall_rating, kpi_ratings, status, created_at, validation_status, role_id')
+        .eq('owner_id', candidateId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        return res.status(500).json({
+          error: 'Database error',
+          message: error.message
+        });
+      }
+
+      return res.json({
+        ok: true,
+        references: references || []
+      });
+    } catch (e) {
+      logger.error('Failed to fetch candidate references', {
+        requestId: req.requestId,
+        candidateId: req.params.candidateId,
+        error: e.message,
+        stack: e.stack
+      });
+      return res.status(500).json({ error: 'Failed to fetch references' });
+    }
+  }
+);
 
 /* =========================
    Stripe Payments

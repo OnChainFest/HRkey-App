@@ -24,7 +24,7 @@ export const submitReferenceSchema = z.object({
     name: z.string().optional(),
     email: z.string().email().optional()
   }).optional(),
-  ratings: z.record(z.number().min(0).max(5)).refine(
+  ratings: z.record(z.string(), z.number().min(0).max(5)).refine(
     (ratings) => Object.keys(ratings).length > 0,
     'At least one rating is required'
   ),
@@ -40,8 +40,40 @@ export const getReferenceByTokenSchema = z.object({
   token: z.string().min(32, 'Invalid token format')
 });
 
+// Reference invite request schema (references workflow MVP)
+export const createReferenceInviteSchema = z.object({
+  candidate_id: z.string().uuid('Invalid candidate ID').optional(),
+  candidate_wallet: z.string().min(6, 'Invalid candidate wallet').optional(),
+  referee_email: z.string().email('Invalid email format').max(255),
+  role_id: z.string().uuid('Invalid role ID').optional(),
+  message: z.string().max(2000, 'Message too long').optional()
+}).refine(
+  (data) => Boolean(data.candidate_id || data.candidate_wallet),
+  { message: 'candidate_id or candidate_wallet is required' }
+);
+
+// Reference response schema (public)
+export const respondReferenceSchema = z.object({
+  ratings: z.record(z.string(), z.number().min(0).max(5)).refine(
+    (ratings) => Object.keys(ratings).length > 0,
+    'At least one rating is required'
+  ),
+  comments: z.object({
+    recommendation: z.string().optional(),
+    strengths: z.string().optional(),
+    improvements: z.string().optional()
+  }).optional()
+});
+
+export const getCandidateReferencesParamsSchema = z.object({
+  candidateId: z.string().uuid('Invalid candidate ID')
+});
+
 export default {
   createReferenceRequestSchema,
   submitReferenceSchema,
-  getReferenceByTokenSchema
+  getReferenceByTokenSchema,
+  createReferenceInviteSchema,
+  respondReferenceSchema,
+  getCandidateReferencesParamsSchema
 };
