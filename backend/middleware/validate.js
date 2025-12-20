@@ -19,9 +19,10 @@ export const validateBody = (schema) => {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
+        const issues = error.errors || error.issues || [];
         return res.status(400).json({
           error: 'Validation failed',
-          details: error.errors.map(err => ({
+          details: issues.map(err => ({
             field: err.path.join('.'),
             message: err.message,
             code: err.code
@@ -29,6 +30,43 @@ export const validateBody = (schema) => {
         });
       }
       // Unexpected error
+      logger.error('Validation middleware failed', {
+        requestId: req.requestId,
+        path: req.path,
+        validationType: 'body',
+        error: error.message,
+        stack: error.stack
+      });
+      return res.status(500).json({
+        error: 'Internal validation error'
+      });
+    }
+  };
+};
+
+/**
+ * Validate request body against a Zod schema (422 on validation errors)
+ * @param {z.ZodSchema} schema - Zod schema to validate against
+ * @returns {Function} Express middleware function
+ */
+export const validateBody422 = (schema) => {
+  return (req, res, next) => {
+    try {
+      const validated = schema.parse(req.body);
+      req.body = validated;
+      next();
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const issues = error.errors || error.issues || [];
+        return res.status(422).json({
+          error: 'Validation failed',
+          details: issues.map(err => ({
+            field: err.path.join('.'),
+            message: err.message,
+            code: err.code
+          }))
+        });
+      }
       logger.error('Validation middleware failed', {
         requestId: req.requestId,
         path: req.path,
@@ -56,9 +94,10 @@ export const validateParams = (schema) => {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
+        const issues = error.errors || error.issues || [];
         return res.status(400).json({
           error: 'Invalid request parameters',
-          details: error.errors.map(err => ({
+          details: issues.map(err => ({
             field: err.path.join('.'),
             message: err.message,
             code: err.code
@@ -92,9 +131,10 @@ export const validateQuery = (schema) => {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
+        const issues = error.errors || error.issues || [];
         return res.status(400).json({
           error: 'Invalid query parameters',
-          details: error.errors.map(err => ({
+          details: issues.map(err => ({
             field: err.path.join('.'),
             message: err.message,
             code: err.code
@@ -117,6 +157,7 @@ export const validateQuery = (schema) => {
 
 export default {
   validateBody,
+  validateBody422,
   validateParams,
   validateQuery
 };
