@@ -122,12 +122,10 @@ describe('References Workflow MVP Integration', () => {
   });
 
   test('REF-INT-06: should forbid company signer without approved access', async () => {
+  test('REF-INT-06: should forbid cross-user reference requests without signer access', async () => {
     mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-1'));
     mockQueryBuilder.single.mockResolvedValueOnce(
       mockDatabaseSuccess(mockUserData({ id: 'user-1' }))
-    );
-    mockQueryBuilder.order.mockResolvedValueOnce(
-      mockDatabaseSuccess([{ company_id: 'company-1' }])
     );
     mockQueryBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
@@ -174,6 +172,7 @@ describe('References Workflow MVP Integration', () => {
   });
 
   test('REF-INT-08: should allow superadmin to fetch candidate references', async () => {
+  test('REF-INT-07: should allow superadmin to fetch candidate references', async () => {
     mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('admin-1'));
     mockQueryBuilder.single.mockResolvedValueOnce(
       mockDatabaseSuccess(mockUserData({ id: 'admin-1', role: 'superadmin' }))
