@@ -459,6 +459,53 @@ const tokenLimiter =
       legacyHeaders: false
     });
 
+async function resolveCandidateId({ candidateId, candidateWallet }) {
+  if (candidateId) return candidateId;
+  if (!candidateWallet) return null;
+
+  const { data: userByWallet, error: userError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('wallet_address', candidateWallet)
+    .single();
+
+  if (!userError && userByWallet?.id) return userByWallet.id;
+
+  const { data: walletRow, error: walletError } = await supabase
+    .from('user_wallets')
+    .select('user_id')
+    .eq('address', candidateWallet)
+    .eq('is_active', true)
+    .single();
+
+  if (!walletError && walletRow?.user_id) return walletRow.user_id;
+  return null;
+}
+
+async function hasApprovedReferenceAccess(requesterId, candidateId) {
+  if (!requesterId || !candidateId) return false;
+
+  const { data, error } = await supabase
+    .from('data_access_requests')
+    .select('id, status, requested_data_type')
+    .eq('requested_by_user_id', requesterId)
+    .eq('target_user_id', candidateId)
+    .eq('status', 'APPROVED')
+    .in('requested_data_type', ['reference', 'profile', 'full_data'])
+    .maybeSingle();
+
+  if (error) {
+    logger.warn('Failed to check data access approval', {
+      requesterId,
+      candidateId,
+      error: error.message
+    });
+    return false;
+  }
+
+  return !!data;
+}
+
 // Apply general rate limiting to all API routes
 app.use('/api/', apiLimiter);
 
@@ -1143,7 +1190,11 @@ app.get('/api/kpi-observations/summary', requireAuth, kpiObservationsController.
  */
 // SECURITY: Protect ML model from unauthorized access and model extraction attacks
 // Authorization: Users can only calculate score for their own wallet, superadmins can calculate for any
-app.post('/api/hrkey-score', requireAuth, async (req, res) => {
+// Uses requireOwnWallet middleware for wallet-scoped authorization
+app.post('/api/hrkey-score', requireAuth, requireOwnWallet('subject_wallet', {
+  noWalletMessage: 'You must have a linked wallet to calculate scores',
+  mismatchMessage: 'You can only calculate HRKey Score for your own wallet'
+}), async (req, res) => {
   try {
     const { subject_wallet, role_id } = req.body;
 
@@ -1155,33 +1206,6 @@ app.post('/api/hrkey-score', requireAuth, async (req, res) => {
         message: 'Se requieren subject_wallet y role_id.',
         required: ['subject_wallet', 'role_id']
       });
-    }
-
-    // ========================================
-    // SECURITY: Resource-scoped authorization
-    // Non-superadmins can only calculate score for their own wallet
-    // ========================================
-    const isSuperadmin = req.user.role === 'superadmin';
-    const userWallet = req.user.wallet_address;
-
-    if (!isSuperadmin) {
-      // User must have a wallet to use this endpoint
-      if (!userWallet) {
-        return res.status(403).json({
-          ok: false,
-          error: 'FORBIDDEN',
-          message: 'You must have a linked wallet to calculate scores'
-        });
-      }
-
-      // User can only calculate score for their own wallet
-      if (userWallet.toLowerCase() !== subject_wallet.toLowerCase()) {
-        return res.status(403).json({
-          ok: false,
-          error: 'FORBIDDEN',
-          message: 'You can only calculate HRKey Score for your own wallet'
-        });
-      }
     }
 
     // Calcular HRKey Score
@@ -1263,8 +1287,8 @@ app.post('/api/hrkey-score', requireAuth, async (req, res) => {
  * Example:
  * curl http://localhost:3001/api/hrkey-score/model-info
  */
-// SECURITY: Protect ML model metadata from unauthorized access
-app.get('/api/hrkey-score/model-info', requireAuth, async (req, res) => {
+// SECURITY: Protect ML model metadata - superadmin only to prevent model extraction attacks
+app.get('/api/hrkey-score/model-info', requireAuth, requireSuperadmin, async (req, res) => {
   try {
     const modelInfo = hrkeyScoreService.getModelInfo();
     return res.json(modelInfo);

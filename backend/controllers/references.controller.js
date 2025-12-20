@@ -8,6 +8,7 @@ import {
   fetchSelfReferences,
   fetchCandidateReferences,
   hashInviteToken
+  fetchCandidateReferences
 } from '../services/references.service.js';
 
 export async function requestReferenceInvite(req, res) {

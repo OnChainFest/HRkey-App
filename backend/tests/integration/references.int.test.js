@@ -175,6 +175,7 @@ describe('References Workflow MVP Integration', () => {
   });
 
   test('REF-INT-08: should allow superadmin to fetch candidate references', async () => {
+  test('REF-INT-07: should allow superadmin to fetch candidate references', async () => {
     mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('admin-1'));
     mockQueryBuilder.single.mockResolvedValueOnce(
       mockDatabaseSuccess(mockUserData({ id: 'admin-1', role: 'superadmin' }))
