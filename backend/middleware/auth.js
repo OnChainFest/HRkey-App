@@ -313,6 +313,64 @@ export function requireWalletLinked(options = {}) {
 }
 
 // ============================================================================
+// WALLET-SCOPED AUTHORIZATION MIDDLEWARE
+// ============================================================================
+
+/**
+ * Factory function that creates middleware requiring user's wallet to match a target wallet.
+ * Superadmins bypass this check.
+ *
+ * The target wallet is extracted from the request body using the specified field name.
+ *
+ * @param {string} walletField - The request body field containing the target wallet (default: 'subject_wallet')
+ * @param {Object} options - Optional configuration
+ * @param {string} options.noWalletMessage - Error message when user has no wallet
+ * @param {string} options.mismatchMessage - Error message when wallets don't match
+ * @returns {Function} Express middleware
+ *
+ * Usage:
+ *   app.post('/api/hrkey-score', requireAuth, requireOwnWallet('subject_wallet'), controller)
+ */
+export function requireOwnWallet(walletField = 'subject_wallet', options = {}) {
+  const noWalletMessage = options.noWalletMessage || 'You must have a linked wallet to access this resource';
+  const mismatchMessage = options.mismatchMessage || 'You can only access your own wallet resources';
+
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Superadmins bypass wallet check
+    if (req.user.role === 'superadmin') {
+      return next();
+    }
+
+    // Non-superadmins must have a linked wallet
+    if (!req.user.wallet_address) {
+      return res.status(403).json({
+        ok: false,
+        error: 'FORBIDDEN',
+        message: noWalletMessage
+      });
+    }
+
+    // Get target wallet from request body
+    const targetWallet = req.body[walletField];
+
+    // If target wallet is provided, it must match user's wallet (case-insensitive)
+    if (targetWallet && req.user.wallet_address.toLowerCase() !== targetWallet.toLowerCase()) {
+      return res.status(403).json({
+        ok: false,
+        error: 'FORBIDDEN',
+        message: mismatchMessage
+      });
+    }
+
+    next();
+  };
+}
+
+// ============================================================================
 // OPTIONAL AUTH (for public/semi-public endpoints)
 // ============================================================================
 
@@ -368,5 +426,6 @@ export default {
   requireAnySigner,
   requireSelfOrSuperadmin,
   requireWalletLinked,
+  requireOwnWallet,
   optionalAuth
 };
