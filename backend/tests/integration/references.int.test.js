@@ -121,6 +121,7 @@ describe('References Workflow MVP Integration', () => {
     expect(res.body.error).toBe('Reference already submitted');
   });
 
+  test('REF-INT-06: should forbid company signer without approved access', async () => {
   test('REF-INT-06: should forbid cross-user reference requests without signer access', async () => {
     mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-1'));
     mockQueryBuilder.single.mockResolvedValueOnce(
@@ -140,6 +141,37 @@ describe('References Workflow MVP Integration', () => {
     expect(res.body.error).toBe('Forbidden');
   });
 
+  test('REF-INT-07: should allow company signer with approved access to request reference', async () => {
+    mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-2'));
+    mockQueryBuilder.single
+      .mockResolvedValueOnce(mockDatabaseSuccess(mockUserData({ id: 'user-2' })))
+      .mockResolvedValueOnce(mockDatabaseSuccess({ id: 'invite-1' }));
+    mockQueryBuilder.order.mockResolvedValueOnce(
+      mockDatabaseSuccess([{ company_id: 'company-1' }])
+    );
+    mockQueryBuilder.maybeSingle.mockResolvedValueOnce(
+      mockDatabaseSuccess({
+        id: 'request-1',
+        company_id: 'company-1',
+        target_user_id: '22222222-2222-4222-8222-222222222222',
+        status: 'APPROVED',
+        requested_data_type: 'reference'
+      })
+    );
+
+    const res = await request(app)
+      .post('/api/references/request')
+      .set('Authorization', 'Bearer valid-token')
+      .send({
+        candidate_id: '22222222-2222-4222-8222-222222222222',
+        referee_email: 'referee@example.com'
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
+
+  test('REF-INT-08: should allow superadmin to fetch candidate references', async () => {
   test('REF-INT-07: should allow superadmin to fetch candidate references', async () => {
     mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('admin-1'));
     mockQueryBuilder.single.mockResolvedValueOnce(
