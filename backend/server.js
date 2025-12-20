@@ -35,7 +35,7 @@ import referencesController from './controllers/references.controller.js';
 
 // Import services
 import * as webhookService from './services/webhookService.js';
-import { ReferenceService } from './services/references.service.js';
+import { ReferenceService, hashInviteToken } from './services/references.service.js';
 
 // Import logging
 import logger, { requestIdMiddleware, requestLoggingMiddleware } from './logger.js';
@@ -48,7 +48,6 @@ import {
   requireSelfOrSuperadmin,
   requireWalletLinked,
   optionalAuth
-  requireOwnWallet
 } from './middleware/auth.js';
 import { validateBody, validateBody422, validateParams } from './middleware/validate.js';
 
@@ -772,7 +771,7 @@ app.post('/api/reference/submit', tokenLimiter, validateBody(submitReferenceSche
   } catch (e) {
     logger.error('Failed to submit reference', {
       requestId: req.requestId,
-      token: req.body.token,
+      tokenHashPrefix: req.body.token ? hashInviteToken(req.body.token).slice(0, 12) : undefined,
       error: e.message,
       stack: e.stack
     });
@@ -788,7 +787,7 @@ app.get('/api/reference/by-token/:token', tokenLimiter, validateParams(getRefere
   } catch (e) {
     logger.error('Failed to get reference by token', {
       requestId: req.requestId,
-      token: req.params.token,
+      tokenHashPrefix: req.params.token ? hashInviteToken(req.params.token).slice(0, 12) : undefined,
       error: e.message,
       stack: e.stack
     });

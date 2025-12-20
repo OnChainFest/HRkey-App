@@ -6,6 +6,8 @@ import {
   hasApprovedReferenceAccess,
   fetchInviteByToken,
   fetchSelfReferences,
+  fetchCandidateReferences,
+  hashInviteToken
   fetchCandidateReferences
 } from '../services/references.service.js';
 
@@ -114,7 +116,7 @@ export async function respondToReferenceInvite(req, res) {
   } catch (e) {
     logger.error('Failed to submit reference response', {
       requestId: req.requestId,
-      token: req.params.token,
+      tokenHashPrefix: req.params.token ? hashInviteToken(req.params.token).slice(0, 12) : undefined,
       error: e.message,
       stack: e.stack
     });

@@ -11,6 +11,13 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+function useHashedReferenceTokens() {
+  return process.env.USE_HASHED_REFERENCE_TOKENS === 'true';
+}
+
+export function hashInviteToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 export async function resolveCandidateId({ candidateId, candidateWallet }) {
   if (candidateId) return candidateId;
@@ -80,12 +87,28 @@ export async function hasApprovedReferenceAccess({ candidateId, companyIds }) {
   return !!data;
 }
 
-export async function fetchInviteByToken(token) {
+async function findInviteByTokenValue(tokenValue) {
   return supabase
     .from('reference_invites')
     .select('*')
-    .eq('invite_token', token)
-    .single();
+    .eq('invite_token', tokenValue)
+    .maybeSingle();
+}
+
+export async function fetchInviteByToken(token) {
+  if (!token) {
+    return { data: null, error: null };
+  }
+
+  if (useHashedReferenceTokens()) {
+    const hashedToken = hashInviteToken(token);
+    const hashedResult = await findInviteByTokenValue(hashedToken);
+    if (hashedResult.data) {
+      return hashedResult;
+    }
+  }
+
+  return findInviteByTokenValue(token);
 }
 
 export async function fetchSelfReferences(userId) {
@@ -108,13 +131,14 @@ export async function fetchCandidateReferences(candidateId) {
 export class ReferenceService {
   static async createReferenceRequest({ userId, email, name, applicantData, expiresInDays = 7 }) {
     const inviteToken = crypto.randomBytes(32).toString('hex');
-    // TODO: Store a hashed token once reference_invites supports hashed tokens.
+    const storedToken = useHashedReferenceTokens() ? hashInviteToken(inviteToken) : inviteToken;
+    // TODO: Default to hashed tokens once legacy raw tokens are fully migrated.
 
     const inviteRow = {
       requester_id: userId,
       referee_email: email,
       referee_name: name,
-      invite_token: inviteToken,
+      invite_token: storedToken,
       status: 'pending',
       expires_at: new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString(),
       created_at: new Date().toISOString(),
@@ -146,11 +170,7 @@ export class ReferenceService {
     let inviteRecord = invite;
 
     if (!inviteRecord) {
-      const { data: inviteData, error: invErr } = await supabase
-        .from('reference_invites')
-        .select('*')
-        .eq('invite_token', token)
-        .single();
+      const { data: inviteData, error: invErr } = await fetchInviteByToken(token);
 
       if (invErr || !inviteData) {
         const notFoundError = new Error('Invalid invitation token');
@@ -295,11 +315,7 @@ export class ReferenceService {
   }
 
   static async getReferenceByToken(token) {
-    const { data: invite, error } = await supabase
-      .from('reference_invites')
-      .select('*')
-      .eq('invite_token', token)
-      .single();
+    const { data: invite, error } = await fetchInviteByToken(token);
 
     if (error || !invite) throw new Error('Invalid invitation token');
 

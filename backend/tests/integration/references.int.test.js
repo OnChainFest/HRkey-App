@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import request from 'supertest';
+import crypto from 'crypto';
 import {
   createMockSupabaseClient,
   resetQueryBuilderMocks,
@@ -71,7 +72,7 @@ describe('References Workflow MVP Integration', () => {
   });
 
   test('REF-INT-03: should return 404 for invalid token on respond', async () => {
-    mockQueryBuilder.single.mockResolvedValueOnce(mockDatabaseError('Invalid token'));
+    mockQueryBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
     const res = await request(app)
       .post('/api/references/respond/invalid-token-000000000000000000000000')
@@ -84,7 +85,7 @@ describe('References Workflow MVP Integration', () => {
   });
 
   test('REF-INT-04: should return 422 for expired token', async () => {
-    mockQueryBuilder.single.mockResolvedValueOnce(
+    mockQueryBuilder.maybeSingle.mockResolvedValueOnce(
       mockDatabaseSuccess({
         id: 'invite-1',
         status: 'pending',
@@ -103,7 +104,7 @@ describe('References Workflow MVP Integration', () => {
   });
 
   test('REF-INT-05: should reject already used token', async () => {
-    mockQueryBuilder.single.mockResolvedValueOnce(
+    mockQueryBuilder.maybeSingle.mockResolvedValueOnce(
       mockDatabaseSuccess({
         id: 'invite-2',
         status: 'completed',
@@ -122,10 +123,12 @@ describe('References Workflow MVP Integration', () => {
   });
 
   test('REF-INT-06: should forbid company signer without approved access', async () => {
-  test('REF-INT-06: should forbid cross-user reference requests without signer access', async () => {
     mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-1'));
     mockQueryBuilder.single.mockResolvedValueOnce(
       mockDatabaseSuccess(mockUserData({ id: 'user-1' }))
+    );
+    mockQueryBuilder.order.mockResolvedValueOnce(
+      mockDatabaseSuccess([{ company_id: 'company-1' }])
     );
     mockQueryBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
@@ -196,5 +199,80 @@ describe('References Workflow MVP Integration', () => {
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     expect(res.body.references).toHaveLength(1);
+  });
+
+  test('REF-INT-09: should not return referrer_email for /api/references/me', async () => {
+    mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-3'));
+    mockQueryBuilder.single.mockResolvedValueOnce(
+      mockDatabaseSuccess(mockUserData({ id: 'user-3' }))
+    );
+    mockQueryBuilder.order.mockResolvedValueOnce(
+      mockDatabaseSuccess([
+        {
+          id: 'ref-2',
+          referrer_name: 'Ref B',
+          referrer_email: 'secret@example.com',
+          overall_rating: 5,
+          status: 'active',
+          created_at: '2024-01-02T00:00:00Z'
+        }
+      ])
+    );
+
+    const res = await request(app)
+      .get('/api/references/me')
+      .set('Authorization', 'Bearer valid-token');
+
+    expect(res.status).toBe(200);
+    const selectCalls = mockQueryBuilder.select.mock.calls.map((call) => call[0]);
+    expect(selectCalls.some((value) => typeof value === 'string' && value.includes('referrer_email'))).toBe(false);
+  });
+
+  test('REF-INT-10: public token lookup should not expose internal IDs', async () => {
+    mockQueryBuilder.maybeSingle.mockResolvedValueOnce(
+      mockDatabaseSuccess({
+        id: 'invite-5',
+        requester_id: 'user-999',
+        referee_name: 'Ref C',
+        referee_email: 'referee@example.com',
+        metadata: { applicantCompany: 'Acme' },
+        expires_at: '2099-01-01T00:00:00Z',
+        status: 'pending'
+      })
+    );
+
+    const res = await request(app)
+      .get('/api/reference/by-token/legacy-token-000000000000000000000000');
+
+    expect(res.status).toBe(200);
+    expect(res.body.invite?.requester_id).toBeUndefined();
+    expect(res.body.invite?.id).toBeUndefined();
+  });
+
+  test('REF-INT-11: token lookup should hash when flag enabled', async () => {
+    const token = 'hashed-token-000000000000000000000000';
+    const hashed = crypto.createHash('sha256').update(token).digest('hex');
+    process.env.USE_HASHED_REFERENCE_TOKENS = 'true';
+
+    try {
+      mockQueryBuilder.maybeSingle.mockResolvedValueOnce(
+        mockDatabaseSuccess({
+          id: 'invite-6',
+          referee_name: 'Ref D',
+          referee_email: 'referee@example.com',
+          metadata: null,
+          expires_at: '2099-01-01T00:00:00Z',
+          status: 'pending'
+        })
+      );
+
+      const res = await request(app)
+        .get(`/api/reference/by-token/${token}`);
+
+      expect(res.status).toBe(200);
+      expect(mockQueryBuilder.eq).toHaveBeenCalledWith('invite_token', hashed);
+    } finally {
+      delete process.env.USE_HASHED_REFERENCE_TOKENS;
+    }
   });
 });
