@@ -308,6 +308,292 @@ describe('HRScore Integration Tests', () => {
   });
 
   // --------------------------------------------------------------------------
+  // GET /api/hrkey-score/history - Permission Tests
+  // --------------------------------------------------------------------------
+
+  describe('GET /api/hrkey-score/history', () => {
+    test('INT-HR-HIST-1: user sees own history', async () => {
+      const user = mockUserData({
+        id: 'user-1',
+        email: 'user1@example.com',
+        role: 'user'
+      });
+
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(user)]
+      });
+
+      const snapshots = [
+        {
+          id: 'snapshot-1',
+          user_id: user.id,
+          score: 88.4,
+          breakdown: { n_observations: 10 },
+          trigger_source: 'manual',
+          created_at: '2025-01-01T00:00:00Z'
+        }
+      ];
+
+      const snapshotsTable = buildTableMock();
+      snapshotsTable.limit.mockResolvedValue(mockDatabaseSuccess(snapshots));
+
+      configureTableMocks({
+        users: usersTable,
+        hrscore_snapshots: snapshotsTable
+      });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: user.id, email: user.email } },
+        error: null
+      });
+
+      const response = await request(app)
+        .get('/api/hrkey-score/history?limit=10')
+        .set('Authorization', 'Bearer mock-token');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body.history).toHaveLength(1);
+      expect(response.body.history[0]).toHaveProperty('id', 'snapshot-1');
+    });
+
+    test('INT-HR-HIST-2: user cannot see others', async () => {
+      const user = mockUserData({
+        id: 'user-2',
+        email: 'user2@example.com',
+        role: 'user'
+      });
+
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(user)]
+      });
+
+      configureTableMocks({ users: usersTable });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: user.id, email: user.email } },
+        error: null
+      });
+
+      const response = await request(app)
+        .get('/api/hrkey-score/history?user_id=other-user')
+        .set('Authorization', 'Bearer mock-token');
+
+      expect(response.status).toBe(403);
+      expect(response.body).toHaveProperty('success', false);
+    });
+
+    test('INT-HR-HIST-3: superadmin can see any user history', async () => {
+      const superadmin = mockUserData({
+        id: 'admin-1',
+        email: 'admin@example.com',
+        role: 'superadmin'
+      });
+
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(superadmin)]
+      });
+
+      const snapshots = [
+        {
+          id: 'snapshot-2',
+          user_id: 'target-user',
+          score: 91.2,
+          breakdown: null,
+          trigger_source: 'kpi',
+          created_at: '2025-02-01T00:00:00Z'
+        }
+      ];
+
+      const snapshotsTable = buildTableMock();
+      snapshotsTable.limit.mockResolvedValue(mockDatabaseSuccess(snapshots));
+
+      configureTableMocks({
+        users: usersTable,
+        hrscore_snapshots: snapshotsTable
+      });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: superadmin.id, email: superadmin.email } },
+        error: null
+      });
+
+      const response = await request(app)
+        .get('/api/hrkey-score/history?user_id=target-user&limit=5')
+        .set('Authorization', 'Bearer mock-token');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body.history).toHaveLength(1);
+      expect(response.body.history[0]).toHaveProperty('user_id', 'target-user');
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // GET /api/hrkey-score/export - Permission Tests
+  // --------------------------------------------------------------------------
+
+  describe('GET /api/hrkey-score/export', () => {
+    test('INT-HR-EXP-1: user can export own data (json)', async () => {
+      const user = mockUserData({
+        id: 'user-export-1',
+        email: 'userexport1@example.com',
+        role: 'user'
+      });
+
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(user)]
+      });
+
+      const scoresTable = buildTableMock({
+        maybeSingleResponses: [
+          mockDatabaseSuccess({
+            score: 77.5,
+            created_at: '2025-02-01T00:00:00Z'
+          })
+        ]
+      });
+
+      configureTableMocks({
+        users: usersTable,
+        hrkey_scores: scoresTable
+      });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: user.id, email: user.email } },
+        error: null
+      });
+
+      const response = await request(app)
+        .get('/api/hrkey-score/export')
+        .set('Authorization', 'Bearer mock-token');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('current_score', 77.5);
+      expect(response.body).toHaveProperty('last_calculated_at', '2025-02-01T00:00:00Z');
+    });
+
+    test('INT-HR-EXP-2: user cannot export other users', async () => {
+      const user = mockUserData({
+        id: 'user-export-2',
+        email: 'userexport2@example.com',
+        role: 'user'
+      });
+
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(user)]
+      });
+
+      configureTableMocks({ users: usersTable });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: user.id, email: user.email } },
+        error: null
+      });
+
+      const response = await request(app)
+        .get('/api/hrkey-score/export?user_id=other-user')
+        .set('Authorization', 'Bearer mock-token');
+
+      expect(response.status).toBe(403);
+      expect(response.body).toHaveProperty('success', false);
+    });
+
+    test('INT-HR-EXP-3: superadmin can export any user', async () => {
+      const superadmin = mockUserData({
+        id: 'admin-export-1',
+        email: 'adminexport1@example.com',
+        role: 'superadmin'
+      });
+
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(superadmin)]
+      });
+
+      const scoresTable = buildTableMock({
+        maybeSingleResponses: [
+          mockDatabaseSuccess({
+            score: 85.25,
+            created_at: '2025-03-01T00:00:00Z'
+          })
+        ]
+      });
+
+      configureTableMocks({
+        users: usersTable,
+        hrkey_scores: scoresTable
+      });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: superadmin.id, email: superadmin.email } },
+        error: null
+      });
+
+      const response = await request(app)
+        .get('/api/hrkey-score/export?user_id=target-user')
+        .set('Authorization', 'Bearer mock-token');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('current_score', 85.25);
+    });
+
+    test('INT-HR-EXP-4: csv export returns correct headers and content-type', async () => {
+      const user = mockUserData({
+        id: 'user-export-3',
+        email: 'userexport3@example.com',
+        role: 'user'
+      });
+
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(user)]
+      });
+
+      const scoresTable = buildTableMock({
+        maybeSingleResponses: [
+          mockDatabaseSuccess({
+            score: 90.1,
+            created_at: '2025-04-01T00:00:00Z'
+          })
+        ]
+      });
+
+      const snapshots = [
+        {
+          user_id: user.id,
+          score: 90.1,
+          trigger_source: 'manual',
+          created_at: '2025-04-01T00:00:00Z'
+        }
+      ];
+
+      const snapshotsTable = buildTableMock();
+      snapshotsTable.limit.mockResolvedValue(mockDatabaseSuccess(snapshots));
+
+      configureTableMocks({
+        users: usersTable,
+        hrkey_scores: scoresTable,
+        hrscore_snapshots: snapshotsTable
+      });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: user.id, email: user.email } },
+        error: null
+      });
+
+      const response = await request(app)
+        .get('/api/hrkey-score/export?format=csv&include_history=true')
+        .set('Authorization', 'Bearer mock-token');
+
+      expect(response.status).toBe(200);
+      expect(response.headers['content-type']).toContain('text/csv');
+      expect(response.text).toContain('user_id,score,trigger_source,created_at');
+      expect(response.text).toContain(`${user.id},90.1,manual,2025-04-01T00:00:00Z`);
+    });
+  });
+
+  // --------------------------------------------------------------------------
   // GET /api/hrkey-score/model-info - Permission Tests
   // --------------------------------------------------------------------------
 

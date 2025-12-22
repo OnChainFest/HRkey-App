@@ -32,6 +32,7 @@ import analyticsController from './controllers/analyticsController.js';
 import hrscoreController from './controllers/hrscoreController.js';
 import referencesController from './controllers/referencesController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
+import { getScoreSnapshots } from './services/hrscore/scoreSnapshots.js';
 
 // Import services
 import * as webhookService from './services/webhookService.js';
@@ -1277,6 +1278,199 @@ app.post('/api/hrkey-score', requireAuth, requireOwnWallet('subject_wallet', {
       error: 'INTERNAL_ERROR',
       message: 'Error inesperado calculando HRKey Score.',
       details: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/hrkey-score/history?limit=10&user_id=
+ * Get HRScore snapshot history for a user.
+ *
+ * Auth: User can view own history, superadmins can view any user
+ *
+ * Query params:
+ * - limit: Max results (default: 10, max: 50)
+ * - user_id: Optional user id (superadmin only)
+ */
+app.get('/api/hrkey-score/history', requireAuth, async (req, res) => {
+  try {
+    const rawLimit = parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(rawLimit)
+      ? Math.min(Math.max(rawLimit, 1), 50)
+      : 10;
+
+    const requestedUserId = req.query.user_id || req.user.id;
+    const isSuperadmin = req.user.role === 'superadmin';
+
+    if (!isSuperadmin && requestedUserId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        error: 'Permission denied',
+        message: 'You can only view your own history'
+      });
+    }
+
+    const history = await getScoreSnapshots({
+      userId: requestedUserId,
+      limit
+    });
+
+    return res.json({
+      success: true,
+      history,
+      count: history.length,
+      limit
+    });
+  } catch (err) {
+    logger.error('Failed to get HRScore snapshot history', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      error: err.message,
+      stack: err.stack
+    });
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to fetch HRScore history'
+    });
+  }
+});
+
+/**
+ * GET /api/hrkey-score/export?format=json&include_history=false&user_id=
+ * Export HRScore data for a user.
+ *
+ * Auth: User can export own data, superadmins can export any user
+ *
+ * Query params:
+ * - format: json | csv (default: json)
+ * - include_history: boolean (default: false)
+ * - user_id: Optional user id (superadmin only)
+ */
+app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
+  try {
+    const format = (req.query.format || 'json').toString().toLowerCase();
+    const includeHistoryRaw = req.query.include_history;
+    const includeHistory = ['true', '1', 'yes'].includes(
+      (includeHistoryRaw ?? 'false').toString().toLowerCase()
+    );
+
+    if (!['json', 'csv'].includes(format)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid format',
+        message: 'format must be json or csv'
+      });
+    }
+
+    const requestedUserId = req.query.user_id || req.user.id;
+    const isSuperadmin = req.user.role === 'superadmin';
+
+    if (!isSuperadmin && requestedUserId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        error: 'Permission denied',
+        message: 'You can only export your own HRScore data'
+      });
+    }
+
+    const { data: latestScore, error: latestScoreError } = await supabase
+      .from('hrkey_scores')
+      .select('score, created_at')
+      .eq('user_id', requestedUserId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (latestScoreError) {
+      logger.error('Failed to fetch latest HRScore for export', {
+        requestId: req.requestId,
+        userId: requestedUserId,
+        error: latestScoreError.message
+      });
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: 'Failed to export HRScore'
+      });
+    }
+
+    const exportPayload = {
+      current_score: latestScore?.score ?? null,
+      last_calculated_at: latestScore?.created_at ?? null
+    };
+
+    const fetchSnapshots = includeHistory || format === 'csv';
+    let snapshots = [];
+
+    if (fetchSnapshots) {
+      const { data: snapshotData, error: snapshotError } = await supabase
+        .from('hrscore_snapshots')
+        .select('user_id, score, trigger_source, created_at')
+        .eq('user_id', requestedUserId)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (snapshotError) {
+        logger.error('Failed to fetch HRScore snapshots for export', {
+          requestId: req.requestId,
+          userId: requestedUserId,
+          error: snapshotError.message
+        });
+        return res.status(500).json({
+          success: false,
+          error: 'Internal server error',
+          message: 'Failed to export HRScore'
+        });
+      }
+
+      snapshots = snapshotData || [];
+    }
+
+    if (format === 'csv') {
+      const escapeCsvValue = (value) => {
+        if (value === null || value === undefined) return '';
+        const stringValue = String(value);
+        if (/[",\n]/.test(stringValue)) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      };
+
+      const header = ['user_id', 'score', 'trigger_source', 'created_at'].join(',');
+      const rows = snapshots.map((snapshot) => ([
+        escapeCsvValue(snapshot.user_id),
+        escapeCsvValue(snapshot.score),
+        escapeCsvValue(snapshot.trigger_source),
+        escapeCsvValue(snapshot.created_at)
+      ].join(',')));
+      const csvBody = [header, ...rows].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('X-Current-Score', exportPayload.current_score ?? '');
+      res.setHeader('X-Last-Calculated-At', exportPayload.last_calculated_at ?? '');
+      return res.status(200).send(csvBody);
+    }
+
+    if (includeHistory) {
+      exportPayload.history = snapshots;
+    }
+
+    return res.json({
+      success: true,
+      ...exportPayload
+    });
+  } catch (err) {
+    logger.error('Failed to export HRScore', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      error: err.message,
+      stack: err.stack
+    });
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to export HRScore'
     });
   }
 });
