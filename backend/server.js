@@ -32,7 +32,6 @@ import analyticsController from './controllers/analyticsController.js';
 import hrscoreController from './controllers/hrscoreController.js';
 import referencesController from './controllers/referencesController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
-import referencesController from './controllers/references.controller.js';
 
 // Import services
 import * as webhookService from './services/webhookService.js';
@@ -48,6 +47,7 @@ import {
   requireCompanySigner,
   requireSelfOrSuperadmin,
   requireWalletLinked,
+  requireOwnWallet,
   optionalAuth
 } from './middleware/auth.js';
 import { validateBody, validateBody422, validateParams } from './middleware/validate.js';
@@ -839,16 +839,6 @@ app.post(
   validateParams(getReferenceByTokenSchema),
   validateBody422(respondReferenceSchema),
   referencesController.respondToReferenceInvite
-);
-
-app.get('/api/references/me', requireAuth, referencesController.getMyReferences);
-
-app.get(
-  '/api/references/candidate/:candidateId',
-  requireAuth,
-  requireSuperadmin,
-  validateParams(getCandidateReferencesParamsSchema),
-  referencesController.getCandidateReferences
 );
 
 /* =========================
