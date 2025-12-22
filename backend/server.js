@@ -8,7 +8,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from './middleware/rateLimit.js';
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
 import Stripe from 'stripe';
@@ -408,57 +408,39 @@ app.use(helmet({
 }));
 
 // Rate limiting configuration
-const apiLimiter =
-  process.env.NODE_ENV === 'test'
-    ? (req, res, next) => next()
-    : rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 100, // Max 100 requests per IP per window
-      message: 'Too many requests from this IP, please try again later.',
-      standardHeaders: true,
-      legacyHeaders: false,
-      skip: (req) => {
-        // Skip rate limiting for health check
-        return req.path === '/health';
-      }
-    });
+const rateLimitWindowMs = Number.parseInt(
+  process.env.RATE_LIMIT_WINDOW_MS || '60000',
+  10
+);
+const apiLimiter = createRateLimiter({
+  windowMs: rateLimitWindowMs,
+  max: Number.parseInt(process.env.RATE_LIMIT_API_MAX || '300', 10),
+  keyPrefix: 'api'
+});
 
-// Strict rate limiter for sensitive endpoints (disabled in tests to avoid flakiness)
-const strictLimiter =
-  process.env.NODE_ENV === 'test'
-    ? (req, res, next) => next()
-    : rateLimit({
-      windowMs: 60 * 60 * 1000, // 1 hour
-      max: 5, // Max 5 requests per IP per hour
-      message: 'Too many attempts, please try again later.',
-      standardHeaders: true,
-      legacyHeaders: false,
-      skipSuccessfulRequests: true // Only count failed requests
-    });
+const strictLimiter = createRateLimiter({
+  windowMs: rateLimitWindowMs,
+  max: Number.parseInt(process.env.RATE_LIMIT_STRICT_MAX || '10', 10),
+  keyPrefix: 'strict'
+});
 
-// Auth-related rate limiter
-const authLimiter =
-  process.env.NODE_ENV === 'test'
-    ? (req, res, next) => next()
-    : rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 10, // Max 10 attempts per IP
-      message: 'Too many authentication attempts, please try again later.',
-      standardHeaders: true,
-      legacyHeaders: false
-    });
+const authLimiter = createRateLimiter({
+  windowMs: rateLimitWindowMs,
+  max: Number.parseInt(process.env.RATE_LIMIT_AUTH_MAX || '20', 10),
+  keyPrefix: 'auth'
+});
 
-// Token validation rate limiter (for public token endpoints)
-const tokenLimiter =
-  process.env.NODE_ENV === 'test'
-    ? (req, res, next) => next()
-    : rateLimit({
-      windowMs: 60 * 60 * 1000, // 1 hour
-      max: 20, // Max 20 token validation attempts per IP per hour
-      message: 'Too many token validation attempts, please try again later.',
-      standardHeaders: true,
-      legacyHeaders: false
-    });
+const tokenLimiter = createRateLimiter({
+  windowMs: rateLimitWindowMs,
+  max: Number.parseInt(process.env.RATE_LIMIT_TOKEN_MAX || '30', 10),
+  keyPrefix: 'token'
+});
+
+const hrscoreLimiter = createRateLimiter({
+  windowMs: rateLimitWindowMs,
+  max: Number.parseInt(process.env.RATE_LIMIT_HRSCORE_MAX || '60', 10),
+  keyPrefix: 'hrscore'
+});
 
 async function resolveCandidateId({ candidateId, candidateWallet }) {
   if (candidateId) return candidateId;
@@ -509,6 +491,13 @@ async function hasApprovedReferenceAccess(requesterId, candidateId) {
 
 // Apply general rate limiting to all API routes
 app.use('/api/', apiLimiter);
+
+// Apply auth rate limiting
+app.use('/api/auth', authLimiter);
+
+// Apply HRScore rate limiting
+app.use('/api/hrkey-score', hrscoreLimiter);
+app.use('/api/hrscore', hrscoreLimiter);
 
 // JSON body parsing with size limits (DoS protection)
 app.use((req, res, next) => {
