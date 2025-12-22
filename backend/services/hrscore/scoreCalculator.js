@@ -109,9 +109,11 @@ export async function calculateAndPersistScore({
     // ========================================
     // 3. Compute HRKey Score using existing service
     // ========================================
+    // SECURITY: Do not log wallet addresses
     logger.debug('Calling computeHrkeyScore', {
-      subjectWallet: user.wallet_address,
-      roleId
+      userId,
+      roleId,
+      hasWallet: !!user.wallet_address
     });
 
     const scoreResult = await computeHrkeyScore({
@@ -189,7 +191,42 @@ export async function calculateAndPersistScore({
     });
 
     // ========================================
-    // 5. Emit analytics event (non-blocking)
+    // 5. Insert snapshot (non-blocking)
+    // ========================================
+    try {
+      const snapshotRecord = {
+        user_id: userId,
+        score: scoreResult.score,
+        breakdown: {
+          used_kpis: scoreResult.used_kpis || [],
+          kpi_averages: scoreResult.debug?.kpi_averages || {},
+          confidence: scoreResult.confidence,
+          n_observations: scoreResult.n_observations
+        },
+        trigger_source: triggerSource
+      };
+
+      const { error: snapshotError } = await supabase
+        .from('hrscore_snapshots')
+        .insert([snapshotRecord]);
+
+      if (snapshotError) {
+        logger.warn('Failed to insert HRScore snapshot', {
+          userId,
+          scoreId: inserted.id,
+          error: snapshotError.message
+        });
+      }
+    } catch (snapshotError) {
+      logger.warn('Failed to insert HRScore snapshot', {
+        userId,
+        scoreId: inserted.id,
+        error: snapshotError.message
+      });
+    }
+
+    // ========================================
+    // 6. Emit analytics event (non-blocking)
     // ========================================
     try {
       await logEvent({
@@ -248,7 +285,7 @@ export async function calculateAndPersistScore({
     }
 
     // ========================================
-    // 6. Return persisted score
+    // 7. Return persisted score
     // ========================================
     return inserted;
 
