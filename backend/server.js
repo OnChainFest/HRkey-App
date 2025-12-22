@@ -8,7 +8,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from './middleware/rateLimit.js';
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
 import Stripe from 'stripe';
@@ -32,6 +32,7 @@ import analyticsController from './controllers/analyticsController.js';
 import hrscoreController from './controllers/hrscoreController.js';
 import referencesController from './controllers/referencesController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
+import { getScoreSnapshots } from './services/hrscore/scoreSnapshots.js';
 
 // Import services
 import * as webhookService from './services/webhookService.js';
@@ -408,57 +409,39 @@ app.use(helmet({
 }));
 
 // Rate limiting configuration
-const apiLimiter =
-  process.env.NODE_ENV === 'test'
-    ? (req, res, next) => next()
-    : rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 100, // Max 100 requests per IP per window
-      message: 'Too many requests from this IP, please try again later.',
-      standardHeaders: true,
-      legacyHeaders: false,
-      skip: (req) => {
-        // Skip rate limiting for health check
-        return req.path === '/health';
-      }
-    });
+const rateLimitWindowMs = Number.parseInt(
+  process.env.RATE_LIMIT_WINDOW_MS || '60000',
+  10
+);
+const apiLimiter = createRateLimiter({
+  windowMs: rateLimitWindowMs,
+  max: Number.parseInt(process.env.RATE_LIMIT_API_MAX || '300', 10),
+  keyPrefix: 'api'
+});
 
-// Strict rate limiter for sensitive endpoints (disabled in tests to avoid flakiness)
-const strictLimiter =
-  process.env.NODE_ENV === 'test'
-    ? (req, res, next) => next()
-    : rateLimit({
-      windowMs: 60 * 60 * 1000, // 1 hour
-      max: 5, // Max 5 requests per IP per hour
-      message: 'Too many attempts, please try again later.',
-      standardHeaders: true,
-      legacyHeaders: false,
-      skipSuccessfulRequests: true // Only count failed requests
-    });
+const strictLimiter = createRateLimiter({
+  windowMs: rateLimitWindowMs,
+  max: Number.parseInt(process.env.RATE_LIMIT_STRICT_MAX || '10', 10),
+  keyPrefix: 'strict'
+});
 
-// Auth-related rate limiter
-const authLimiter =
-  process.env.NODE_ENV === 'test'
-    ? (req, res, next) => next()
-    : rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 10, // Max 10 attempts per IP
-      message: 'Too many authentication attempts, please try again later.',
-      standardHeaders: true,
-      legacyHeaders: false
-    });
+const authLimiter = createRateLimiter({
+  windowMs: rateLimitWindowMs,
+  max: Number.parseInt(process.env.RATE_LIMIT_AUTH_MAX || '20', 10),
+  keyPrefix: 'auth'
+});
 
-// Token validation rate limiter (for public token endpoints)
-const tokenLimiter =
-  process.env.NODE_ENV === 'test'
-    ? (req, res, next) => next()
-    : rateLimit({
-      windowMs: 60 * 60 * 1000, // 1 hour
-      max: 20, // Max 20 token validation attempts per IP per hour
-      message: 'Too many token validation attempts, please try again later.',
-      standardHeaders: true,
-      legacyHeaders: false
-    });
+const tokenLimiter = createRateLimiter({
+  windowMs: rateLimitWindowMs,
+  max: Number.parseInt(process.env.RATE_LIMIT_TOKEN_MAX || '30', 10),
+  keyPrefix: 'token'
+});
+
+const hrscoreLimiter = createRateLimiter({
+  windowMs: rateLimitWindowMs,
+  max: Number.parseInt(process.env.RATE_LIMIT_HRSCORE_MAX || '60', 10),
+  keyPrefix: 'hrscore'
+});
 
 async function resolveCandidateId({ candidateId, candidateWallet }) {
   if (candidateId) return candidateId;
@@ -509,6 +492,13 @@ async function hasApprovedReferenceAccess(requesterId, candidateId) {
 
 // Apply general rate limiting to all API routes
 app.use('/api/', apiLimiter);
+
+// Apply auth rate limiting
+app.use('/api/auth', authLimiter);
+
+// Apply HRScore rate limiting
+app.use('/api/hrkey-score', hrscoreLimiter);
+app.use('/api/hrscore', hrscoreLimiter);
 
 // JSON body parsing with size limits (DoS protection)
 app.use((req, res, next) => {
@@ -1277,6 +1267,199 @@ app.post('/api/hrkey-score', requireAuth, requireOwnWallet('subject_wallet', {
       error: 'INTERNAL_ERROR',
       message: 'Error inesperado calculando HRKey Score.',
       details: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/hrkey-score/history?limit=10&user_id=
+ * Get HRScore snapshot history for a user.
+ *
+ * Auth: User can view own history, superadmins can view any user
+ *
+ * Query params:
+ * - limit: Max results (default: 10, max: 50)
+ * - user_id: Optional user id (superadmin only)
+ */
+app.get('/api/hrkey-score/history', requireAuth, async (req, res) => {
+  try {
+    const rawLimit = parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(rawLimit)
+      ? Math.min(Math.max(rawLimit, 1), 50)
+      : 10;
+
+    const requestedUserId = req.query.user_id || req.user.id;
+    const isSuperadmin = req.user.role === 'superadmin';
+
+    if (!isSuperadmin && requestedUserId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        error: 'Permission denied',
+        message: 'You can only view your own history'
+      });
+    }
+
+    const history = await getScoreSnapshots({
+      userId: requestedUserId,
+      limit
+    });
+
+    return res.json({
+      success: true,
+      history,
+      count: history.length,
+      limit
+    });
+  } catch (err) {
+    logger.error('Failed to get HRScore snapshot history', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      error: err.message,
+      stack: err.stack
+    });
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to fetch HRScore history'
+    });
+  }
+});
+
+/**
+ * GET /api/hrkey-score/export?format=json&include_history=false&user_id=
+ * Export HRScore data for a user.
+ *
+ * Auth: User can export own data, superadmins can export any user
+ *
+ * Query params:
+ * - format: json | csv (default: json)
+ * - include_history: boolean (default: false)
+ * - user_id: Optional user id (superadmin only)
+ */
+app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
+  try {
+    const format = (req.query.format || 'json').toString().toLowerCase();
+    const includeHistoryRaw = req.query.include_history;
+    const includeHistory = ['true', '1', 'yes'].includes(
+      (includeHistoryRaw ?? 'false').toString().toLowerCase()
+    );
+
+    if (!['json', 'csv'].includes(format)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid format',
+        message: 'format must be json or csv'
+      });
+    }
+
+    const requestedUserId = req.query.user_id || req.user.id;
+    const isSuperadmin = req.user.role === 'superadmin';
+
+    if (!isSuperadmin && requestedUserId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        error: 'Permission denied',
+        message: 'You can only export your own HRScore data'
+      });
+    }
+
+    const { data: latestScore, error: latestScoreError } = await supabase
+      .from('hrkey_scores')
+      .select('score, created_at')
+      .eq('user_id', requestedUserId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (latestScoreError) {
+      logger.error('Failed to fetch latest HRScore for export', {
+        requestId: req.requestId,
+        userId: requestedUserId,
+        error: latestScoreError.message
+      });
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: 'Failed to export HRScore'
+      });
+    }
+
+    const exportPayload = {
+      current_score: latestScore?.score ?? null,
+      last_calculated_at: latestScore?.created_at ?? null
+    };
+
+    const fetchSnapshots = includeHistory || format === 'csv';
+    let snapshots = [];
+
+    if (fetchSnapshots) {
+      const { data: snapshotData, error: snapshotError } = await supabase
+        .from('hrscore_snapshots')
+        .select('user_id, score, trigger_source, created_at')
+        .eq('user_id', requestedUserId)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (snapshotError) {
+        logger.error('Failed to fetch HRScore snapshots for export', {
+          requestId: req.requestId,
+          userId: requestedUserId,
+          error: snapshotError.message
+        });
+        return res.status(500).json({
+          success: false,
+          error: 'Internal server error',
+          message: 'Failed to export HRScore'
+        });
+      }
+
+      snapshots = snapshotData || [];
+    }
+
+    if (format === 'csv') {
+      const escapeCsvValue = (value) => {
+        if (value === null || value === undefined) return '';
+        const stringValue = String(value);
+        if (/[",\n]/.test(stringValue)) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      };
+
+      const header = ['user_id', 'score', 'trigger_source', 'created_at'].join(',');
+      const rows = snapshots.map((snapshot) => ([
+        escapeCsvValue(snapshot.user_id),
+        escapeCsvValue(snapshot.score),
+        escapeCsvValue(snapshot.trigger_source),
+        escapeCsvValue(snapshot.created_at)
+      ].join(',')));
+      const csvBody = [header, ...rows].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('X-Current-Score', exportPayload.current_score ?? '');
+      res.setHeader('X-Last-Calculated-At', exportPayload.last_calculated_at ?? '');
+      return res.status(200).send(csvBody);
+    }
+
+    if (includeHistory) {
+      exportPayload.history = snapshots;
+    }
+
+    return res.json({
+      success: true,
+      ...exportPayload
+    });
+  } catch (err) {
+    logger.error('Failed to export HRScore', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      error: err.message,
+      stack: err.stack
+    });
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to export HRScore'
     });
   }
 });
