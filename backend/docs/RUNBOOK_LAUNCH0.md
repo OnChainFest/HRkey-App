@@ -52,6 +52,15 @@ node backend/scripts/smoke.mjs
 **Optional env vars**
 - `SMOKE_TIMEOUT_MS` (default: 15000)
 
+**Copy/paste setup (recommended)**
+```bash
+cp backend/.env.staging.example backend/.env.staging
+# Fill in placeholders inside backend/.env.staging
+set -a
+source backend/.env.staging
+set +a
+```
+
 **Command**
 ```bash
 BASE_URL="https://staging-api.example.com" \
@@ -65,6 +74,10 @@ node backend/scripts/smoke-staging.mjs
 - Use a dedicated staging test user with minimal privileges.
 - Rotate `TEST_USER_JWT` regularly (weekly or after any exposure).
 - Never paste full JWTs into tickets or logs. Redact as `****abcd`.
+
+**Redaction rules**
+- Do not paste JWTs, tokens, or secrets into tickets or logs.
+- Use redaction like `Authorization: Bearer ****abcd`.
 
 ---
 
