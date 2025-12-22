@@ -136,14 +136,17 @@ export async function getLatestScoreEndpoint(req, res) {
 export async function getScoreHistoryEndpoint(req, res) {
   try {
     const { userId } = req.params;
-    const { roleId, days } = req.query;
+    const { roleId, days, limit } = req.query;
 
     const daysNum = days ? parseInt(days, 10) : 90;
+    // Pagination: default 10, max 50
+    const limitNum = Math.min(Math.max(1, parseInt(limit, 10) || 10), 50);
 
     logger.debug('Fetching HRScore history', {
       userId,
       roleId,
       days: daysNum,
+      limit: limitNum,
       requestedBy: req.user?.id
     });
 
@@ -166,11 +169,12 @@ export async function getScoreHistoryEndpoint(req, res) {
       });
     }
 
-    // Fetch history
+    // Fetch history with pagination
     const history = await getScoreHistory({
       userId,
       roleId: roleId || null,
-      days: daysNum
+      days: daysNum,
+      limit: limitNum
     });
 
     return res.json({
