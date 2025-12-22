@@ -41,6 +41,33 @@ node backend/scripts/smoke.mjs
 
 ---
 
+## 2a) Staging Smoke (automated)
+
+**Required env vars**
+- `BASE_URL`
+- `TEST_USER_JWT`
+- `TEST_USER_ID`
+- `TEST_OTHER_USER_ID`
+
+**Optional env vars**
+- `SMOKE_TIMEOUT_MS` (default: 15000)
+
+**Command**
+```bash
+BASE_URL="https://staging-api.example.com" \
+TEST_USER_JWT="eyJhbGciOi..." \
+TEST_USER_ID="user-uuid" \
+TEST_OTHER_USER_ID="other-user-uuid" \
+node backend/scripts/smoke-staging.mjs
+```
+
+**JWT rotation guidance**
+- Use a dedicated staging test user with minimal privileges.
+- Rotate `TEST_USER_JWT` regularly (weekly or after any exposure).
+- Never paste full JWTs into tickets or logs. Redact as `****abcd`.
+
+---
+
 ## 3) Interpreting Failures
 
 ### `npm test -- tests/integration/ --runInBand` fails
