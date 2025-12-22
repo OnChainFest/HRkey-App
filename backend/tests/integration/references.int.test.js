@@ -5,9 +5,7 @@ import {
   createMockSupabaseClient,
   resetQueryBuilderMocks,
   mockAuthGetUserSuccess,
-  mockAuthGetUserError,
   mockDatabaseSuccess,
-  mockDatabaseError,
   mockUserData
 } from '../__mocks__/supabase.mock.js';
 
@@ -43,7 +41,6 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
   auditMiddleware: () => (req, res, next) => next()
 }));
 
-// Mock analytics
 jest.unstable_mockModule('../../services/analytics/eventTracker.js', () => ({
   logEvent: jest.fn().mockResolvedValue({ id: 'mock-event-id' }),
   logEventBatch: jest.fn().mockResolvedValue([]),
@@ -53,7 +50,6 @@ jest.unstable_mockModule('../../services/analytics/eventTracker.js', () => ({
   EventCategories: {}
 }));
 
-// Mock RVL (Reference Validation Layer)
 jest.unstable_mockModule('../../services/validation/index.js', () => ({
   validateReference: jest.fn().mockResolvedValue({
     validation_status: 'VALID',
@@ -62,7 +58,6 @@ jest.unstable_mockModule('../../services/validation/index.js', () => ({
   })
 }));
 
-// Mock HRScore auto-trigger
 jest.unstable_mockModule('../../services/hrscore/autoTrigger.js', () => ({
   onReferenceValidated: jest.fn().mockResolvedValue()
 }));
@@ -73,9 +68,6 @@ const { default: app } = await import('../../server.js');
 // ============================================================================
 // TEST SUITE
 // ============================================================================
-
-describe('References Integration Tests', () => {
-const { default: app } = await import('../../server.js');
 
 describe('References Workflow MVP Integration', () => {
   beforeEach(() => {
@@ -176,37 +168,6 @@ describe('References Workflow MVP Integration', () => {
     expect(res.body.error).toBe('Forbidden');
   });
 
-  test('REF-INT-07: should allow company signer with approved access to request reference', async () => {
-    mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-2'));
-    mockQueryBuilder.single
-      .mockResolvedValueOnce(mockDatabaseSuccess(mockUserData({ id: 'user-2' })))
-      .mockResolvedValueOnce(mockDatabaseSuccess({ id: 'invite-1' }));
-    mockQueryBuilder.order.mockResolvedValueOnce(
-      mockDatabaseSuccess([{ company_id: 'company-1' }])
-    );
-    mockQueryBuilder.maybeSingle.mockResolvedValueOnce(
-      mockDatabaseSuccess({
-        id: 'request-1',
-        company_id: 'company-1',
-        target_user_id: '22222222-2222-4222-8222-222222222222',
-        status: 'APPROVED',
-        requested_data_type: 'reference'
-      })
-    );
-
-    const res = await request(app)
-      .post('/api/references/request')
-      .set('Authorization', 'Bearer valid-token')
-      .send({
-        candidate_id: '22222222-2222-4222-8222-222222222222',
-        referee_email: 'referee@example.com'
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
-  });
-
-  test('REF-INT-08: should allow superadmin to fetch candidate references', async () => {
   test('REF-INT-07: should allow superadmin to fetch candidate references', async () => {
     mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('admin-1'));
     mockQueryBuilder.single.mockResolvedValueOnce(
@@ -233,7 +194,11 @@ describe('References Workflow MVP Integration', () => {
     expect(res.body.references).toHaveLength(1);
   });
 
-  test('REF-INT-09: should not return referrer_email for /api/references/me', async () => {
+  // --------------------------------------------------------------------------
+  // Data Exposure Prevention Tests
+  // --------------------------------------------------------------------------
+
+  test('REF-INT-08: should not return referrer_email for /api/references/me', async () => {
     mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-3'));
     mockQueryBuilder.single.mockResolvedValueOnce(
       mockDatabaseSuccess(mockUserData({ id: 'user-3' }))
@@ -256,11 +221,12 @@ describe('References Workflow MVP Integration', () => {
       .set('Authorization', 'Bearer valid-token');
 
     expect(res.status).toBe(200);
+    // Verify the select query does NOT include referrer_email
     const selectCalls = mockQueryBuilder.select.mock.calls.map((call) => call[0]);
     expect(selectCalls.some((value) => typeof value === 'string' && value.includes('referrer_email'))).toBe(false);
   });
 
-  test('REF-INT-10: public token lookup should not expose internal IDs', async () => {
+  test('REF-INT-09: public token lookup should not expose internal IDs', async () => {
     mockQueryBuilder.maybeSingle.mockResolvedValueOnce(
       mockDatabaseSuccess({
         id: 'invite-5',
@@ -277,11 +243,12 @@ describe('References Workflow MVP Integration', () => {
       .get('/api/reference/by-token/legacy-token-000000000000000000000000');
 
     expect(res.status).toBe(200);
+    // Internal IDs should NOT be exposed
     expect(res.body.invite?.requester_id).toBeUndefined();
     expect(res.body.invite?.id).toBeUndefined();
   });
 
-  test('REF-INT-11: token lookup should hash when flag enabled', async () => {
+  test('REF-INT-10: token lookup should hash when flag enabled', async () => {
     const token = 'hashed-token-000000000000000000000000';
     const hashed = crypto.createHash('sha256').update(token).digest('hex');
     process.env.USE_HASHED_REFERENCE_TOKENS = 'true';

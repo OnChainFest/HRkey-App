@@ -9,6 +9,14 @@
 
 import { createClient } from '@supabase/supabase-js';
 import logger from '../logger.js';
+import {
+  ReferenceService,
+  resolveCandidateId,
+  getActiveSignerCompanyIds,
+  hasApprovedReferenceAccess,
+  fetchInviteByToken,
+  hashInviteToken
+} from '../services/references.service.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -33,12 +41,12 @@ export async function getMyReferences(req, res) {
     }
 
     // Fetch references where user is the owner
+    // SECURITY: Do NOT include referrer_email - only superadmins can see emails
     const { data: references, error } = await supabase
       .from('references')
       .select(`
         id,
         referrer_name,
-        referrer_email,
         relationship,
         summary,
         overall_rating,
@@ -282,8 +290,143 @@ export async function getMyPendingInvites(req, res) {
   }
 }
 
+/**
+ * POST /api/references/request
+ * Create a reference invite for a candidate
+ *
+ * Authorization:
+ * - Self (candidate requesting reference for themselves)
+ * - Superadmin (can request for any candidate)
+ * - Company signer with approved data access
+ */
+export async function requestReferenceInvite(req, res) {
+  try {
+    const { candidate_id, candidate_wallet, referee_email, role_id, message } = req.body;
+    const candidateId = await resolveCandidateId({
+      candidateId: candidate_id,
+      candidateWallet: candidate_wallet
+    });
+
+    if (!candidateId) {
+      return res.status(404).json({
+        error: 'Not found',
+        message: 'Candidate not found'
+      });
+    }
+
+    const isSuperadmin = req.user?.role === 'superadmin';
+    const isSelf = req.user?.id === candidateId;
+
+    if (!isSelf && !isSuperadmin) {
+      const companyIds = await getActiveSignerCompanyIds(req.user?.id);
+
+      if (!companyIds.length) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'Company signer access required'
+        });
+      }
+
+      const hasAccess = await hasApprovedReferenceAccess({ candidateId, companyIds });
+      if (!hasAccess) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'Approved data access required'
+        });
+      }
+    }
+
+    const result = await ReferenceService.createReferenceRequest({
+      userId: candidateId,
+      email: referee_email,
+      name: null,
+      applicantData: {
+        role_id: role_id || null,
+        message: message || null,
+        requested_by: req.user?.id || null
+      },
+      expiresInDays: 7
+    });
+
+    return res.json({
+      ok: true,
+      reference_id: result.reference_id
+    });
+  } catch (e) {
+    logger.error('Failed to create reference invite', {
+      requestId: req.requestId,
+      requesterId: req.user?.id,
+      candidateId: req.body.candidate_id,
+      refereeEmail: req.body.referee_email,
+      error: e.message,
+      stack: e.stack
+    });
+    return res.status(500).json({ ok: false, error: 'Failed to create reference request' });
+  }
+}
+
+/**
+ * POST /api/references/respond/:token
+ * Submit a reference response using a valid invitation token
+ *
+ * Authorization: Public (token-based)
+ * Security: Token validation (format, expiry, single-use)
+ */
+export async function respondToReferenceInvite(req, res) {
+  try {
+    const { token } = req.params;
+    const { ratings, comments } = req.body;
+
+    const { data: invite, error: inviteError } = await fetchInviteByToken(token);
+
+    if (inviteError || !invite) {
+      return res.status(404).json({
+        ok: false,
+        error: 'Invitation not found'
+      });
+    }
+
+    if (invite.status === 'completed') {
+      return res.status(422).json({
+        ok: false,
+        error: 'Reference already submitted'
+      });
+    }
+
+    if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+      return res.status(422).json({
+        ok: false,
+        error: 'Invitation expired'
+      });
+    }
+
+    await ReferenceService.submitReference({
+      token,
+      invite,
+      ratings,
+      comments
+    });
+
+    return res.json({ ok: true });
+  } catch (e) {
+    // SECURITY: Never log raw tokens - use hash prefix only
+    logger.error('Failed to submit reference response', {
+      requestId: req.requestId,
+      tokenHashPrefix: req.params.token ? hashInviteToken(req.params.token).slice(0, 12) : undefined,
+      error: e.message,
+      stack: e.stack
+    });
+    return res.status(e.status || 500).json({
+      ok: false,
+      error: e.status ? e.message : 'Failed to submit reference'
+    });
+  }
+}
+
 export default {
   getMyReferences,
   getCandidateReferences,
-  getMyPendingInvites
+  getMyPendingInvites,
+  requestReferenceInvite,
+  respondToReferenceInvite
 };
