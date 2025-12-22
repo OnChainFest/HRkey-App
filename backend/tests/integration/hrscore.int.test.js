@@ -308,6 +308,128 @@ describe('HRScore Integration Tests', () => {
   });
 
   // --------------------------------------------------------------------------
+  // GET /api/hrkey-score/history - Permission Tests
+  // --------------------------------------------------------------------------
+
+  describe('GET /api/hrkey-score/history', () => {
+    test('INT-HR-HIST-1: user sees own history', async () => {
+      const user = mockUserData({
+        id: 'user-1',
+        email: 'user1@example.com',
+        role: 'user'
+      });
+
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(user)]
+      });
+
+      const snapshots = [
+        {
+          id: 'snapshot-1',
+          user_id: user.id,
+          score: 88.4,
+          breakdown: { n_observations: 10 },
+          trigger_source: 'manual',
+          created_at: '2025-01-01T00:00:00Z'
+        }
+      ];
+
+      const snapshotsTable = buildTableMock();
+      snapshotsTable.limit.mockResolvedValue(mockDatabaseSuccess(snapshots));
+
+      configureTableMocks({
+        users: usersTable,
+        hrscore_snapshots: snapshotsTable
+      });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: user.id, email: user.email } },
+        error: null
+      });
+
+      const response = await request(app)
+        .get('/api/hrkey-score/history?limit=10')
+        .set('Authorization', 'Bearer mock-token');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body.history).toHaveLength(1);
+      expect(response.body.history[0]).toHaveProperty('id', 'snapshot-1');
+    });
+
+    test('INT-HR-HIST-2: user cannot see others', async () => {
+      const user = mockUserData({
+        id: 'user-2',
+        email: 'user2@example.com',
+        role: 'user'
+      });
+
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(user)]
+      });
+
+      configureTableMocks({ users: usersTable });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: user.id, email: user.email } },
+        error: null
+      });
+
+      const response = await request(app)
+        .get('/api/hrkey-score/history?user_id=other-user')
+        .set('Authorization', 'Bearer mock-token');
+
+      expect(response.status).toBe(403);
+      expect(response.body).toHaveProperty('success', false);
+    });
+
+    test('INT-HR-HIST-3: superadmin can see any user history', async () => {
+      const superadmin = mockUserData({
+        id: 'admin-1',
+        email: 'admin@example.com',
+        role: 'superadmin'
+      });
+
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(superadmin)]
+      });
+
+      const snapshots = [
+        {
+          id: 'snapshot-2',
+          user_id: 'target-user',
+          score: 91.2,
+          breakdown: null,
+          trigger_source: 'kpi',
+          created_at: '2025-02-01T00:00:00Z'
+        }
+      ];
+
+      const snapshotsTable = buildTableMock();
+      snapshotsTable.limit.mockResolvedValue(mockDatabaseSuccess(snapshots));
+
+      configureTableMocks({
+        users: usersTable,
+        hrscore_snapshots: snapshotsTable
+      });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: { id: superadmin.id, email: superadmin.email } },
+        error: null
+      });
+
+      const response = await request(app)
+        .get('/api/hrkey-score/history?user_id=target-user&limit=5')
+        .set('Authorization', 'Bearer mock-token');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body.history).toHaveLength(1);
+      expect(response.body.history[0]).toHaveProperty('user_id', 'target-user');
+    });
+  });
+
+  // --------------------------------------------------------------------------
   // GET /api/hrkey-score/model-info - Permission Tests
   // --------------------------------------------------------------------------
 
