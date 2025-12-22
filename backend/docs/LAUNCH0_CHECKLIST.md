@@ -1,5 +1,7 @@
 # Launch-0 Preflight + Smoke Checklist
 
+> See **RUNBOOK_LAUNCH0.md** for the full Launch-0 runbook and Go/No-Go checklist.
+
 ## Overview
 This checklist provides a lightweight preflight validation and smoke test runner
 for Launch-0 readiness. These scripts are intended to run against a deployed
