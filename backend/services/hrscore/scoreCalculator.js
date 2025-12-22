@@ -109,9 +109,11 @@ export async function calculateAndPersistScore({
     // ========================================
     // 3. Compute HRKey Score using existing service
     // ========================================
+    // SECURITY: Do not log wallet addresses
     logger.debug('Calling computeHrkeyScore', {
-      subjectWallet: user.wallet_address,
-      roleId
+      userId,
+      roleId,
+      hasWallet: !!user.wallet_address
     });
 
     const scoreResult = await computeHrkeyScore({
