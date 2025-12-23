@@ -32,7 +32,6 @@ import analyticsController from './controllers/analyticsController.js';
 import hrscoreController from './controllers/hrscoreController.js';
 import referencesController from './controllers/referencesController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
-import { getScoreSnapshots } from './services/hrscore/scoreSnapshots.js';
 
 // Import services
 import * as webhookService from './services/webhookService.js';
@@ -1287,54 +1286,9 @@ app.post('/api/hrkey-score', requireAuth, requireOwnWallet('subject_wallet', {
  * Get HRScore snapshot history for a user.
  *
  * Auth: User can view own history, superadmins can view any user
- *
- * Query params:
- * - limit: Max results (default: 10, max: 50)
- * - user_id: Optional user id (superadmin only)
+ * Query params: limit (default 10, max 50), user_id (superadmin only)
  */
-app.get('/api/hrkey-score/history', requireAuth, async (req, res) => {
-  try {
-    const rawLimit = parseInt(req.query.limit, 10);
-    const limit = Number.isFinite(rawLimit)
-      ? Math.min(Math.max(rawLimit, 1), 50)
-      : 10;
-
-    const requestedUserId = req.query.user_id || req.user.id;
-    const isSuperadmin = req.user.role === 'superadmin';
-
-    if (!isSuperadmin && requestedUserId !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        error: 'Permission denied',
-        message: 'You can only view your own history'
-      });
-    }
-
-    const history = await getScoreSnapshots({
-      userId: requestedUserId,
-      limit
-    });
-
-    return res.json({
-      success: true,
-      history,
-      count: history.length,
-      limit
-    });
-  } catch (err) {
-    logger.error('Failed to get HRScore snapshot history', {
-      requestId: req.requestId,
-      userId: req.user?.id,
-      error: err.message,
-      stack: err.stack
-    });
-    return res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-      message: 'Failed to fetch HRScore history'
-    });
-  }
-});
+app.get('/api/hrkey-score/history', requireAuth, hrscoreController.getSnapshotHistoryEndpoint);
 
 /**
  * GET /api/hrkey-score/model-info

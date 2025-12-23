@@ -14,6 +14,7 @@ import {
   getScoreStats,
   getHRScoreLayerInfo
 } from '../services/hrscore/index.js';
+import { getScoreSnapshots } from '../services/hrscore/scoreSnapshots.js';
 import logger from '../logger.js';
 
 // ============================================================================
@@ -523,6 +524,64 @@ export async function getLayerInfoEndpoint(req, res) {
 }
 
 // ============================================================================
+// GET SNAPSHOT HISTORY (hrscore_snapshots table)
+// ============================================================================
+
+/**
+ * GET /api/hrkey-score/history?limit=10&user_id=
+ * Get HRScore snapshot history for a user.
+ *
+ * Auth: User can view own history, superadmins can view any user
+ *
+ * Query params:
+ * - limit: Max results (default: 10, max: 50)
+ * - user_id: Optional user id (superadmin only)
+ */
+export async function getSnapshotHistoryEndpoint(req, res) {
+  try {
+    const rawLimit = parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(rawLimit)
+      ? Math.min(Math.max(rawLimit, 1), 50)
+      : 10;
+
+    const requestedUserId = req.query.user_id || req.user.id;
+    const isSuperadmin = req.user.role === 'superadmin';
+
+    if (!isSuperadmin && requestedUserId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        error: 'Permission denied',
+        message: 'You can only view your own history'
+      });
+    }
+
+    const history = await getScoreSnapshots({
+      userId: requestedUserId,
+      limit
+    });
+
+    return res.json({
+      success: true,
+      history,
+      count: history.length,
+      limit
+    });
+  } catch (err) {
+    const reqLogger = logger.withRequest ? logger.withRequest(req) : logger;
+    reqLogger.error('Failed to get HRScore snapshot history', {
+      userId: req.user?.id,
+      error: err.message,
+      stack: err.stack
+    });
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to fetch HRScore history'
+    });
+  }
+}
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 
@@ -533,5 +592,6 @@ export default {
   getScoreImprovementEndpoint,
   getScoreStatsEndpoint,
   calculateScoreEndpoint,
-  getLayerInfoEndpoint
+  getLayerInfoEndpoint,
+  getSnapshotHistoryEndpoint
 };
