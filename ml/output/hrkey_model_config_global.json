@@ -1,54 +1,54 @@
 {
   "model_type": "ridge",
   "version": "1.0.0",
-  "trained_at": "2025-11-24T15:12:37.791837Z",
+  "trained_at": "2025-12-27T17:37:31.745267Z",
   "role_scope": "global",
-  "intercept": 88.47531958565203,
+  "intercept": 103.70148737603941,
   "features": [
     {
-      "name": "code_quality",
-      "coef": 4.83648050459342,
-      "abs_coef": 4.83648050459342
+      "name": "api_response_time",
+      "coef": 3.378414340961845,
+      "abs_coef": 3.378414340961845
     },
     {
       "name": "test_coverage",
-      "coef": 3.8828963662716514,
-      "abs_coef": 3.8828963662716514
-    },
-    {
-      "name": "deployment_frequency",
-      "coef": 3.3512624212293725,
-      "abs_coef": 3.3512624212293725
+      "coef": 3.3033360310079445,
+      "abs_coef": 3.3033360310079445
     },
     {
       "name": "bug_resolution_time",
-      "coef": 2.7206426708212263,
-      "abs_coef": 2.7206426708212263
+      "coef": 3.122599324624235,
+      "abs_coef": 3.122599324624235
     },
     {
-      "name": "api_response_time",
-      "coef": -1.8140190525300486,
-      "abs_coef": 1.8140190525300486
+      "name": "deployment_frequency",
+      "coef": 3.1151692949468694,
+      "abs_coef": 3.1151692949468694
+    },
+    {
+      "name": "code_quality",
+      "coef": 2.4708145891680013,
+      "abs_coef": 2.4708145891680013
     },
     {
       "name": "documentation_quality",
-      "coef": 1.0319045501809414,
-      "abs_coef": 1.0319045501809414
+      "coef": 2.1749507403724655,
+      "abs_coef": 2.1749507403724655
     }
   ],
   "target_stats": {
-    "min": 97.68857142857144,
-    "max": 151.26500000000001,
-    "mean": 128.51456626984125,
-    "std": 13.057787734089448
+    "min": 106.30833333333334,
+    "max": 193.506,
+    "mean": 164.60966815240315,
+    "std": 17.649973082746463
   },
   "train_info": {
     "n_features": 6,
     "n_samples": null,
     "metrics": {
-      "mae": 12.436382851888773,
-      "rmse": 15.464497032548515,
-      "r2": -2.6716522857681446
+      "mae": 9.775162262630262,
+      "rmse": 12.079592571669235,
+      "r2": 0.5034420005447384
     }
   },
   "scoring_config": {

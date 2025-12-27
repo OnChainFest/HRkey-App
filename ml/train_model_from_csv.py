@@ -30,7 +30,7 @@ import joblib
 # ============================================================================
 
 BASE_DIR = Path(__file__).parent
-CSV_FILE = BASE_DIR / "data" / "synthetic_kpi_observations.csv"
+CSV_FILE = BASE_DIR / "data" / "realistic_kpi_observations.csv"
 MODELS_DIR = BASE_DIR / "models"
 OUTPUT_DIR = BASE_DIR / "output"
 
