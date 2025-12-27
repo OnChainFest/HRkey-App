@@ -16,21 +16,64 @@ Hardening Features:
 - Gaming/adversarial subjects
 - Time-based evaluation safety
 
+Two Modes:
+- DEMO: Moderate hardening for learnable MVP (target R² ~ 0.15-0.30)
+- STRESS: Harsh hardening for robustness testing (R² can be low)
+
 Author: HRKey ML Team
-Date: 2025-12-23 (Hardened)
+Date: 2025-12-27 (Two-mode hardening)
 """
 
 import csv
 import random
 import numpy as np
+import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
 # ============================================================================
-# CONFIGURATION
+# HARDENING CONFIGURATION
 # ============================================================================
 
-OUTPUT_FILE = Path(__file__).parent / "realistic_kpi_observations.csv"
+# Get hardening level from environment (default: demo)
+HARDENING_LEVEL = os.getenv('HARDENING_LEVEL', 'demo').lower()
+
+if HARDENING_LEVEL not in ['demo', 'stress']:
+    print(f"⚠️  Invalid HARDENING_LEVEL='{HARDENING_LEVEL}'. Using 'demo'.")
+    HARDENING_LEVEL = 'demo'
+
+# Hardening parameters by mode
+HARDENING_CONFIG = {
+    'demo': {
+        'missing_rate': 0.20,           # 20% random dropout (was 30%)
+        'cold_start_pct': 0.06,         # 6% cold start subjects (was 10%)
+        'label_noise_std': 0.10,        # 10% outcome noise (was 20%)
+        'team_env_effect': 8.0,         # ±8 points from team (was ±15)
+        'gaming_subjects_pct': 0.04,    # 4% gaming subjects (was 7%)
+        'gaming_penalty': 0.12,         # 12% performance penalty (was 25%)
+        'rater_drift_scale': 0.0005,    # 50% reduction in drift (was 0.001)
+        'description': 'Learnable MVP mode (target R² ~ 0.15-0.30)'
+    },
+    'stress': {
+        'missing_rate': 0.35,           # 35% random dropout
+        'cold_start_pct': 0.12,         # 12% cold start subjects
+        'label_noise_std': 0.22,        # 22% outcome noise
+        'team_env_effect': 18.0,        # ±18 points from team
+        'gaming_subjects_pct': 0.09,    # 9% gaming subjects
+        'gaming_penalty': 0.30,         # 30% performance penalty
+        'rater_drift_scale': 0.0012,    # Increased drift
+        'description': 'Robustness testing mode (low R² expected)'
+    }
+}
+
+# Active configuration
+CONFIG = HARDENING_CONFIG[HARDENING_LEVEL]
+
+# Output files (both modes)
+OUTPUT_DIR = Path(__file__).parent
+OUTPUT_FILE_DEMO = OUTPUT_DIR / "realistic_kpi_observations_demo.csv"
+OUTPUT_FILE_STRESS = OUTPUT_DIR / "realistic_kpi_observations_stress.csv"
+OUTPUT_FILE = OUTPUT_FILE_DEMO if HARDENING_LEVEL == 'demo' else OUTPUT_FILE_STRESS
 
 # Role definitions (5 distinct roles)
 ROLES = [
@@ -63,11 +106,6 @@ OBSERVERS = [f"0xOBSERVER_{str(i).zfill(3)}" for i in range(1, NUM_OBSERVERS + 1
 START_DATE = datetime.now() - timedelta(days=365)
 END_DATE = datetime.now()
 
-# Hardening parameters
-MISSING_RATE = 0.30  # 30% of KPI ratings dropped
-GAMING_SUBJECTS_PCT = 0.07  # 7% of subjects game the system
-LABEL_NOISE_STD = 0.20  # 20% noise in outcomes
-
 
 # ============================================================================
 # LATENT VARIABLES & OBSERVER BIAS
@@ -94,7 +132,7 @@ def generate_observer_profile(observer_id):
         'observer_id': observer_id,
         'mean_bias': np.random.normal(0, 0.4),  # Some raters consistently rate higher/lower
         'variance': np.random.uniform(0.3, 0.8),  # Rating consistency
-        'drift_rate': np.random.normal(0, 0.001)  # Calibration drift (ratings slowly change)
+        'drift_rate': np.random.normal(0, CONFIG['rater_drift_scale'])  # Calibration drift
     }
 
 
@@ -118,8 +156,8 @@ def generate_employee_profile(subject_id):
     # LATENT: Team environment quality (confounding factor)
     team_environment = np.random.normal(0, 1)  # Can be negative (bad team) or positive (good team)
 
-    # LATENT: Gaming behavior (7% of subjects optimize KPIs but underperform)
-    is_gaming = random.random() < GAMING_SUBJECTS_PCT
+    # LATENT: Gaming behavior (configurable % of subjects optimize KPIs but underperform)
+    is_gaming = random.random() < CONFIG['gaming_subjects_pct']
 
     # KPI-specific strengths (small modifiers)
     kpi_strengths = {}
@@ -130,7 +168,7 @@ def generate_employee_profile(subject_id):
     if is_gaming:
         for kpi in ["code_quality", "test_coverage", "documentation_quality"]:
             kpi_strengths[kpi] += 0.5  # Game these KPIs
-        true_skill *= 0.75  # But actual performance is worse
+        true_skill *= (1 - CONFIG['gaming_penalty'])  # Reduce actual performance
 
     return {
         'subject_id': subject_id,
@@ -193,8 +231,8 @@ def should_drop_observation(kpi_name, role_name, subject_profile):
     Returns:
         bool: True if observation should be dropped
     """
-    # Base missing rate
-    if random.random() < MISSING_RATE:
+    # Base missing rate (configurable)
+    if random.random() < CONFIG['missing_rate']:
         return True
 
     # Systematic missingness: some KPIs underreported for certain roles
@@ -322,8 +360,8 @@ def calculate_job_performance_outcome(employee_profile, kpi_ratings_dict, role_n
 
         kpi_contribution += contribution * weight
 
-    # CONFOUNDING: Team environment (latent variable affects outcome)
-    team_effect = employee_profile['team_environment'] * 15  # ±15 points from team
+    # CONFOUNDING: Team environment (latent variable affects outcome - configurable)
+    team_effect = employee_profile['team_environment'] * CONFIG['team_env_effect']
 
     # INTERACTION: Good employees on bad teams still do okay
     if true_skill > 0.7 and team_effect < 0:
@@ -332,8 +370,8 @@ def calculate_job_performance_outcome(employee_profile, kpi_ratings_dict, role_n
     # Combine all effects
     outcome = base_outcome + kpi_contribution + team_effect
 
-    # LABEL NOISE: Random shocks (economic conditions, project luck, etc.)
-    label_noise = np.random.normal(0, outcome * LABEL_NOISE_STD)
+    # LABEL NOISE: Random shocks (economic conditions, project luck, etc. - configurable)
+    label_noise = np.random.normal(0, outcome * CONFIG['label_noise_std'])
     outcome += label_noise
 
     # Clamp to valid range (50-200)
@@ -348,6 +386,7 @@ def generate_realistic_dataset():
     """Generate hardened synthetic KPI observations."""
 
     print(f"🔧 Generating HARDENED synthetic training data...")
+    print(f"   Mode: {HARDENING_LEVEL.upper()} - {CONFIG['description']}")
     print(f"   Subjects: {NUM_SUBJECTS}")
     print(f"   Target observations: ~3600+ (before missingness)")
     print(f"   Hardening: latent vars, rater bias, missing data, non-linear, noise")
@@ -365,8 +404,8 @@ def generate_realistic_dataset():
 
     observations = []
 
-    # Track subjects with very few observations (cold start)
-    cold_start_subjects = set(random.sample(SUBJECTS, k=int(NUM_SUBJECTS * 0.1)))  # 10% cold start
+    # Track subjects with very few observations (cold start - configurable)
+    cold_start_subjects = set(random.sample(SUBJECTS, k=int(NUM_SUBJECTS * CONFIG['cold_start_pct'])))
 
     # Generate observations
     for subject in SUBJECTS:
@@ -453,15 +492,18 @@ def generate_realistic_dataset():
     # Sort by time (for time-based evaluation)
     observations.sort(key=lambda x: x['observed_at'])
 
-    print(f"✅ Generated {len(observations)} observations (after {int(MISSING_RATE*100)}% missingness)")
+    print(f"✅ Generated {len(observations)} observations (after {int(CONFIG['missing_rate']*100)}% missingness)")
 
     # Count gaming subjects in data
     gaming_count = sum(1 for s in SUBJECTS if employee_profiles[s]['is_gaming'])
     cold_start_count = len(cold_start_subjects)
 
-    print(f"\n🔬 Hardening Statistics:")
+    print(f"\n🔬 Hardening Statistics ({HARDENING_LEVEL.upper()} mode):")
+    print(f"   Missing rate: {CONFIG['missing_rate']*100:.0f}%")
     print(f"   Gaming subjects: {gaming_count} ({gaming_count/len(SUBJECTS)*100:.1f}%)")
     print(f"   Cold start subjects: {cold_start_count} ({cold_start_count/len(SUBJECTS)*100:.1f}%)")
+    print(f"   Label noise: {CONFIG['label_noise_std']*100:.0f}%")
+    print(f"   Team effect: ±{CONFIG['team_env_effect']:.0f} points")
     print(f"   Avg observations per subject: {len(observations)/len(SUBJECTS):.1f}")
 
     # Write to CSV (same schema as before)
@@ -494,7 +536,114 @@ def generate_realistic_dataset():
     print(f"✅ Ready for model training!")
 
 
-if __name__ == "__main__":
-    random.seed(42)  # For reproducibility
+def evaluate_with_groupkfold(csv_file, mode_name):
+    """
+    Evaluate model performance using GroupKFold by subject.
+
+    This prevents data leakage - all observations from a subject
+    stay together in train or test.
+    """
+    try:
+        import pandas as pd
+        from sklearn.model_selection import GroupKFold
+        from sklearn.linear_model import Ridge
+        from sklearn.metrics import r2_score, mean_absolute_error
+    except ImportError:
+        print(f"⚠️  Skipping evaluation (missing sklearn/pandas)")
+        return
+
+    print(f"\n📊 GroupKFold Evaluation ({mode_name} mode):")
+    print(f"   Loading: {csv_file}")
+
+    # Load data
+    df = pd.read_csv(csv_file)
+
+    # Build ML dataset (pivot KPIs)
+    ml_data = df.pivot_table(
+        index=['subject_wallet', 'role_id'],
+        columns='kpi_name',
+        values='rating_value',
+        aggfunc='mean'
+    ).reset_index()
+
+    # Get outcomes
+    outcomes = df.groupby(['subject_wallet', 'role_id'])['outcome_value'].mean().reset_index()
+    ml_data = ml_data.merge(outcomes, on=['subject_wallet', 'role_id'])
+
+    # Prepare features and target
+    feature_cols = ['api_response_time', 'bug_resolution_time', 'code_quality',
+                    'deployment_frequency', 'documentation_quality', 'test_coverage']
+
+    X = ml_data[feature_cols].fillna(0)
+    y = ml_data['outcome_value']
+    groups = ml_data['subject_wallet']  # Group by subject
+
+    # GroupKFold cross-validation
+    gkf = GroupKFold(n_splits=5)
+    r2_scores = []
+    mae_scores = []
+
+    for train_idx, test_idx in gkf.split(X, y, groups):
+        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
+        model = Ridge(alpha=1.0)
+        model.fit(X_train, y_train)
+
+        y_pred = model.predict(X_test)
+        r2_scores.append(r2_score(y_test, y_pred))
+        mae_scores.append(mean_absolute_error(y_test, y_pred))
+
+    print(f"   ✅ GroupKFold Results (5 folds, grouped by subject):")
+    print(f"      R² mean: {np.mean(r2_scores):.4f} ± {np.std(r2_scores):.4f}")
+    print(f"      R² range: [{np.min(r2_scores):.4f}, {np.max(r2_scores):.4f}]")
+    print(f"      MAE mean: {np.mean(mae_scores):.2f} ± {np.std(mae_scores):.2f}")
+
+
+def generate_both_datasets():
+    """Generate both DEMO and STRESS datasets."""
+    global HARDENING_LEVEL, CONFIG, OUTPUT_FILE
+
+    print("="*80)
+    print("GENERATING BOTH DEMO AND STRESS DATASETS")
+    print("="*80)
+
+    # Generate DEMO dataset
+    print("\n" + "="*80)
+    print("MODE 1: DEMO (Learnable MVP)")
+    print("="*80)
+
+    random.seed(42)
     np.random.seed(42)
+    HARDENING_LEVEL = 'demo'
+    CONFIG = HARDENING_CONFIG['demo']
+    OUTPUT_FILE = OUTPUT_FILE_DEMO
+
     generate_realistic_dataset()
+    evaluate_with_groupkfold(OUTPUT_FILE_DEMO, 'DEMO')
+
+    # Generate STRESS dataset
+    print("\n" + "="*80)
+    print("MODE 2: STRESS (Robustness Testing)")
+    print("="*80)
+
+    random.seed(43)  # Different seed
+    np.random.seed(43)
+    HARDENING_LEVEL = 'stress'
+    CONFIG = HARDENING_CONFIG['stress']
+    OUTPUT_FILE = OUTPUT_FILE_STRESS
+
+    generate_realistic_dataset()
+    evaluate_with_groupkfold(OUTPUT_FILE_STRESS, 'STRESS')
+
+    print("\n" + "="*80)
+    print("✅ BOTH DATASETS GENERATED")
+    print("="*80)
+    print(f"   DEMO (learnable MVP): {OUTPUT_FILE_DEMO}")
+    print(f"   STRESS (robustness):  {OUTPUT_FILE_STRESS}")
+    print(f"\n   Default for training: DEMO mode")
+    print("="*80)
+
+
+if __name__ == "__main__":
+    generate_both_datasets()

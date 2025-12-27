@@ -4,10 +4,13 @@ Train HRKey ML Model from CSV
 ==============================
 
 Trains Ridge regression model using synthetic CSV data.
-Simplified version for environments without Supabase access.
+Uses DEMO dataset by default (learnable MVP mode).
+
+Environment Variables:
+- DATASET_MODE: 'demo' (default) or 'stress'
 
 Author: HRKey ML Team
-Date: 2025-11-24
+Date: 2025-12-27
 """
 
 import os
@@ -30,7 +33,15 @@ import joblib
 # ============================================================================
 
 BASE_DIR = Path(__file__).parent
-CSV_FILE = BASE_DIR / "data" / "realistic_kpi_observations.csv"
+
+# Use DEMO dataset by default (learnable MVP mode)
+# Set DATASET_MODE=stress environment variable to use stress test dataset
+DATASET_MODE = os.getenv('DATASET_MODE', 'demo').lower()
+if DATASET_MODE == 'stress':
+    CSV_FILE = BASE_DIR / "data" / "realistic_kpi_observations_stress.csv"
+else:
+    CSV_FILE = BASE_DIR / "data" / "realistic_kpi_observations_demo.csv"
+
 MODELS_DIR = BASE_DIR / "models"
 OUTPUT_DIR = BASE_DIR / "output"
 
@@ -304,6 +315,11 @@ def main():
     print("="*80)
     print("HRKEY ML MODEL TRAINING (CSV MODE)")
     print("="*80)
+    print(f"Dataset mode: {DATASET_MODE.upper()}")
+    if DATASET_MODE == 'demo':
+        print("Using DEMO dataset (learnable MVP, target R² ~ 0.15-0.30)")
+    else:
+        print("Using STRESS dataset (robustness testing, R² may be low)")
     print()
 
     try:
