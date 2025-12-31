@@ -1047,7 +1047,7 @@ app.post('/api/signers/accept/:token', requireAuth, signersController.acceptSign
 // ===== AUDIT LOG ENDPOINTS =====
 app.get('/api/audit/logs', requireAuth, auditController.getAuditLogs);
 app.get('/api/audit/recent', requireAuth, auditController.getRecentActivity);
-app.get('/api/admin/overview', requireAuth, adminOverviewController.getAdminOverviewHandler);
+app.get('/api/admin/overview', requireAuth, requireSuperadmin, adminOverviewController.getAdminOverviewHandler);
 
 // ===== DATA ACCESS ENDPOINTS (Pay-per-query) =====
 app.post('/api/data-access/request', requireAuth, dataAccessController.createDataAccessRequest);
