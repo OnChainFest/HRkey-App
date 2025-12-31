@@ -143,6 +143,9 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
+// ✅ Admin key (para rutas /api/admin/* sin Supabase JWT)
+const HRKEY_ADMIN_KEY = process.env.HRKEY_ADMIN_KEY;
+
 // Fail fast in production if Stripe secrets are missing
 if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
   const message = 'CRITICAL: Stripe secrets not configured';
@@ -162,6 +165,66 @@ if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
 
 const stripe = new Stripe(STRIPE_SECRET_KEY || 'sk_test_placeholder');
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+/* =========================
+   Admin Key Middleware (NO JWT)
+   ========================= */
+/**
+ * Permite auth para endpoints admin SIN depender de Supabase JWT.
+ *
+ * Uso:
+ *  - Query string: ?admin_key=...
+ *  - Header: x-admin-key: ...
+ *
+ * Si quieres máxima seguridad: rota HRKEY_ADMIN_KEY en Render env vars.
+ */
+function requireAdminKey(req, res, next) {
+  // En test, permitimos si no está configurada (opcional).
+  if (process.env.NODE_ENV === 'test' && !HRKEY_ADMIN_KEY) return next();
+
+  if (!HRKEY_ADMIN_KEY || HRKEY_ADMIN_KEY.length < 16) {
+    logger.error('Admin key not configured or too short', {
+      hasAdminKey: !!HRKEY_ADMIN_KEY,
+      length: HRKEY_ADMIN_KEY?.length
+    });
+    return res.status(503).json({
+      error: 'Admin auth not configured',
+      message: 'HRKEY_ADMIN_KEY is not configured on server'
+    });
+  }
+
+  const provided =
+    (req.query?.admin_key ? String(req.query.admin_key) : null) ||
+    (req.headers['x-admin-key'] ? String(req.headers['x-admin-key']) : null);
+
+  if (!provided) {
+    return res.status(401).json({
+      error: 'Authentication required',
+      message: 'Please provide admin_key query param or x-admin-key header'
+    });
+  }
+
+  try {
+    const a = Buffer.from(provided);
+    const b = Buffer.from(HRKEY_ADMIN_KEY);
+
+    // timing safe compare requires same length
+    if (a.length !== b.length) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Invalid admin key' });
+    }
+
+    const ok = crypto.timingSafeEqual(a, b);
+    if (!ok) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Invalid admin key' });
+    }
+
+    // Tag request as admin for logs/observability
+    req.isAdminKeyAuth = true;
+    return next();
+  } catch (e) {
+    return res.status(403).json({ error: 'Forbidden', message: 'Invalid admin key' });
+  }
+}
 
 /* =========================
    Superadmin Auto-Assignment
@@ -304,8 +367,6 @@ class WalletCreationService {
   }
 }
 
-
-
 /* =========================
    App & Middleware
    ========================= */
@@ -318,11 +379,11 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, curl, etc) - only in development
-   if (!origin) {
-  // Allow requests without Origin (health checks, curl, direct browser navigation)
-  // These are not browser XHR/fetch calls, so this does not weaken CORS security.
-  return callback(null, true);
-}
+    if (!origin) {
+      // Allow requests without Origin (health checks, curl, direct browser navigation)
+      // These are not browser XHR/fetch calls, so this does not weaken CORS security.
+      return callback(null, true);
+    }
     const allowedOrigins = [
       FRONTEND_URL,
       'http://localhost:8000',
@@ -354,7 +415,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key']
 };
 
 // Stripe webhook necesita body RAW; para el resto usamos JSON normal
@@ -1044,7 +1105,11 @@ app.post('/api/signers/accept/:token', requireAuth, signersController.acceptSign
 // ===== AUDIT LOG ENDPOINTS =====
 app.get('/api/audit/logs', requireAuth, auditController.getAuditLogs);
 app.get('/api/audit/recent', requireAuth, auditController.getRecentActivity);
-app.get('/api/admin/overview', requireAuth, requireSuperadmin, adminOverviewController.getAdminOverviewHandler);
+
+// ✅ ADMIN OVERVIEW (NO JWT) - usa admin_key / x-admin-key
+// Ejemplo:
+//   https://hrkey-backend.onrender.com/api/admin/overview?admin_key=...   (OJO: ? no :)
+app.get('/api/admin/overview', requireAdminKey, adminOverviewController.getAdminOverviewHandler);
 
 // ===== DATA ACCESS ENDPOINTS (Pay-per-query) =====
 app.post('/api/data-access/request', requireAuth, dataAccessController.createDataAccessRequest);
