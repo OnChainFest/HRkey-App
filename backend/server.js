@@ -12,7 +12,7 @@ import { createRateLimiter } from './middleware/rateLimit.js';
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
 import Stripe from 'stripe';
-import { makeRefereeLink as makeRefereeLinkUtil, APP_URL as UTIL_APP_URL } from './utils/appUrl.js';
+import { makeRefereeLink as makeRefereeLinkUtil, getFrontendBaseURL } from './utils/appUrl.js';
 import * as Sentry from '@sentry/node';
 
 // Import new controllers
@@ -106,7 +106,7 @@ function getPublicBaseURL() {
 }
 
 // URL pública del frontend (UNIFICADA para construir links que verán usuarios)
-const APP_URL = UTIL_APP_URL || getPublicBaseURL();
+const APP_URL = getFrontendBaseURL() || getPublicBaseURL();
 
 /** Wrapper seguro: si el util existe, úsalo; si no, construye aquí. */
 function makeRefereeLink(token) {
