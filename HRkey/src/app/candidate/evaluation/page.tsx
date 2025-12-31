@@ -92,7 +92,8 @@ const resolveApiBase = () => {
   if (ENV_API_BASE) return normalizeBase(ENV_API_BASE);
   if (typeof window !== "undefined") {
     const origin = window.location.origin;
-    const isLocal = origin.includes("localhost:3000") || origin.includes("127.0.0.1:3000");
+    const isLocal =
+      origin.includes("localhost:3000") || origin.includes("127.0.0.1:3000");
     return normalizeBase(isLocal ? "http://localhost:3001" : origin);
   }
   return "http://localhost:3001";
@@ -105,7 +106,9 @@ const resolveAppBase = () => {
 };
 
 const formatCurrency = (value: number | undefined) =>
-  value === undefined ? "—" : value.toLocaleString("en-US", { style: "currency", currency: "USD" });
+  value === undefined
+    ? "—"
+    : value.toLocaleString("en-US", { style: "currency", currency: "USD" });
 
 const truncateText = (text: string, max = 160) =>
   text.length > max ? `${text.slice(0, max - 1)}…` : text;
@@ -113,12 +116,16 @@ const truncateText = (text: string, max = 160) =>
 export default function CandidateEvaluationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [evaluation, setEvaluation] = useState<CandidateEvaluationResponse | null>(null);
-  const [tokenomics, setTokenomics] = useState<TokenomicsPreviewResponse | null>(null);
+  const [evaluation, setEvaluation] = useState<CandidateEvaluationResponse | null>(
+    null
+  );
+  const [tokenomics, setTokenomics] = useState<TokenomicsPreviewResponse | null>(
+    null
+  );
   const [tokenomicsError, setTokenomicsError] = useState<string | null>(null);
   const [publicIdentifier, setPublicIdentifier] = useState<string | null>(null);
   const [identifierError, setIdentifierError] = useState<string | null>(null);
-  const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
+  const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
 
   useEffect(() => {
     const load = async () => {
@@ -128,9 +135,10 @@ export default function CandidateEvaluationPage() {
         setTokenomicsError(null);
         setIdentifierError(null);
         setPublicIdentifier(null);
-        setCopyState('idle');
+        setCopyState("idle");
 
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
         if (sessionError || !sessionData.session || !sessionData.session.user) {
           setError("Please sign in to view your evaluation.");
           setLoading(false);
@@ -155,18 +163,12 @@ export default function CandidateEvaluationPage() {
         const tokenomicsUrl = `${baseUrl}/api/candidates/${userId}/tokenomics-preview`;
         const identifierUrl = `${baseUrl}/api/me/public-identifier`;
 
-        const [evaluationResult, tokenomicsResult, identifierResult] = await Promise.allSettled([
-          fetchJson<CandidateEvaluationResponse>(evaluationUrl),
-          fetchJson<TokenomicsPreviewResponse>(tokenomicsUrl),
-          fetchJson<PublicIdentifierResponse>(identifierUrl),
-const [evaluationResult, tokenomicsResult, identifierResult] =
-  await Promise.allSettled([
-    fetchJson<CandidateEvaluationResponse>(evaluationUrl),
-    fetchJson<TokenomicsPreviewResponse>(tokenomicsUrl),
-    fetchJsonPublicIdentifierResponse(identifierUrl),
-  ]);
-
-        ]);
+        const [evaluationResult, tokenomicsResult, identifierResult] =
+          await Promise.allSettled([
+            fetchJson<CandidateEvaluationResponse>(evaluationUrl),
+            fetchJson<TokenomicsPreviewResponse>(tokenomicsUrl),
+            fetchJson<PublicIdentifierResponse>(identifierUrl),
+          ]);
 
         if (evaluationResult.status === "rejected") {
           throw evaluationResult.reason;
@@ -178,27 +180,20 @@ const [evaluationResult, tokenomicsResult, identifierResult] =
           setTokenomics(tokenomicsResult.value);
         } else {
           console.warn("Tokenomics preview unavailable", tokenomicsResult.reason);
-          setTokenomicsError(tokenomicsResult.reason?.message || "Tokenomics preview unavailable.");
+          setTokenomicsError(
+            (tokenomicsResult as PromiseRejectedResult)?.reason?.message ||
+              "Tokenomics preview unavailable."
+          );
         }
 
         if (identifierResult.status === "fulfilled") {
           setPublicIdentifier(identifierResult.value.identifier);
         } else {
-          setIdentifierError(identifierResult.reason?.message || "Public link unavailable.");
+          setIdentifierError(
+            (identifierResult as PromiseRejectedResult)?.reason?.message ||
+              "Public link unavailable."
+          );
         }
-const url = `${baseUrl}/api/candidates/${userId}/evaluation`;
-
-const response = await fetch(url, {
-  headers: { Authorization: `Bearer ${accessToken}` },
-});
-
-if (!response.ok) {
-  const body = await response.json().catch(() => ({}));
-  throw new Error(body?.error || "Unable to load your evaluation right now.");
-}
-
-const payload: CandidateEvaluationResponse = await response.json();
-setEvaluation(payload);
       } catch (err: any) {
         console.error("Failed to load candidate evaluation", err);
         setError(err?.message || "Unexpected error loading evaluation.");
@@ -236,7 +231,9 @@ setEvaluation(payload);
   }, [appBase, publicIdentifier, evaluation?.userId]);
 
   const formatPercent = (value?: number) =>
-    value === undefined ? "—" : `${Math.round(Math.min(100, Math.max(0, value * 100)))}%`;
+    value === undefined
+      ? "—"
+      : `${Math.round(Math.min(100, Math.max(0, value * 100)))}%`;
 
   const handleCopyLink = async () => {
     if (!publicProfileUrl) return;
@@ -257,7 +254,10 @@ setEvaluation(payload);
         <span className="font-semibold">{Math.round(value * 100)}%</span>
       </div>
       <div className="h-2 rounded bg-slate-200">
-        <div className="h-2 rounded bg-indigo-500" style={{ width: `${Math.min(100, Math.max(0, value * 100))}%` }} />
+        <div
+          className="h-2 rounded bg-indigo-500"
+          style={{ width: `${Math.min(100, Math.max(0, value * 100))}%` }}
+        />
       </div>
     </div>
   );
@@ -280,7 +280,9 @@ setEvaluation(payload);
       </div>
 
       {loading && (
-        <div className="rounded-lg border p-4 bg-white shadow-sm">Loading your evaluation…</div>
+        <div className="rounded-lg border p-4 bg-white shadow-sm">
+          Loading your evaluation…
+        </div>
       )}
 
       {error && !loading && (
@@ -294,15 +296,21 @@ setEvaluation(payload);
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="rounded-xl border bg-white p-5 shadow-sm">
               <div className="text-sm text-slate-600">HRKey Score</div>
-              <div className="mt-2 text-4xl font-bold text-slate-900">{Math.round(hrScore)}</div>
+              <div className="mt-2 text-4xl font-bold text-slate-900">
+                {Math.round(hrScore)}
+              </div>
               <div className="mt-1 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700">
                 {profileLabel}
               </div>
             </div>
             <div className="rounded-xl border bg-white p-5 shadow-sm">
               <div className="text-sm text-slate-600">Suggested access price</div>
-              <div className="mt-2 text-3xl font-semibold text-slate-900">{formatCurrency(pricing)}</div>
-              <div className="mt-1 text-sm text-slate-600">Based on your references and performance signals.</div>
+              <div className="mt-2 text-3xl font-semibold text-slate-900">
+                {formatCurrency(pricing)}
+              </div>
+              <div className="mt-1 text-sm text-slate-600">
+                Based on your references and performance signals.
+              </div>
             </div>
           </div>
 
@@ -311,7 +319,8 @@ setEvaluation(payload);
               <div>
                 <h2 className="text-lg font-semibold">Your public HRKey profile</h2>
                 <p className="text-sm text-slate-600">
-                  Share this link on your CV, LinkedIn, or with recruiters to highlight your HRKey Score and value.
+                  Share this link on your CV, LinkedIn, or with recruiters to
+                  highlight your HRKey Score and value.
                 </p>
               </div>
               <button
@@ -323,7 +332,9 @@ setEvaluation(payload);
               </button>
             </div>
             <div className="rounded-lg border bg-slate-50 px-3 py-2 text-sm text-slate-800 flex items-center justify-between">
-              <span className="truncate mr-3">{publicProfileUrl || 'Public link unavailable'}</span>
+              <span className="truncate mr-3">
+                {publicProfileUrl || "Public link unavailable"}
+              </span>
             </div>
             {identifierError && (
               <p className="text-xs text-amber-700">{identifierError}</p>
@@ -332,7 +343,8 @@ setEvaluation(payload);
 
           {tokenomicsError && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
-              Tokenomics preview is temporarily unavailable. Your HRScore and USD price are still available.
+              Tokenomics preview is temporarily unavailable. Your HRScore and USD
+              price are still available.
             </div>
           )}
 
@@ -340,51 +352,75 @@ setEvaluation(payload);
             <div className="rounded-xl border bg-white p-5 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Tokenomics preview</h2>
-                <span className="text-xs text-slate-500">Illustrative, non-binding preview</span>
+                <span className="text-xs text-slate-500">
+                  Illustrative, non-binding preview
+                </span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="rounded-lg border bg-slate-50 p-4 shadow-sm">
                   <div className="text-sm text-slate-600">HRK token equivalent</div>
                   <div className="mt-2 text-2xl font-bold text-slate-900">
-                    {Math.round(tokens?.clampedTokens ?? 0).toLocaleString("en-US")} HRK
+                    {Math.round(tokens?.clampedTokens ?? 0).toLocaleString("en-US")}{" "}
+                    HRK
                   </div>
                   <p className="mt-1 text-xs text-slate-600">
-                    Based on your suggested price of {formatCurrency(tokenomics.priceUsd)} and internal HRK rate.
+                    Based on your suggested price of{" "}
+                    {formatCurrency(tokenomics.priceUsd)} and internal HRK rate.
                   </p>
                 </div>
 
                 <div className="rounded-lg border bg-slate-50 p-4 shadow-sm space-y-2">
-                  <div className="text-sm font-semibold text-slate-700">Revenue split (USD)</div>
+                  <div className="text-sm font-semibold text-slate-700">
+                    Revenue split (USD)
+                  </div>
                   <div className="text-sm flex items-center justify-between">
                     <span>Platform</span>
-                    <span className="font-semibold">{formatCurrency(tokenSplit?.platformUsd)}</span>
+                    <span className="font-semibold">
+                      {formatCurrency(tokenSplit?.platformUsd)}
+                    </span>
                   </div>
-                  <div className="text-xs text-slate-600">{formatPercent(tokenSplit?.normalizedPcts.platform)} share</div>
+                  <div className="text-xs text-slate-600">
+                    {formatPercent(tokenSplit?.normalizedPcts.platform)} share
+                  </div>
                   <div className="text-sm flex items-center justify-between">
                     <span>Reference providers</span>
-                    <span className="font-semibold">{formatCurrency(tokenSplit?.referencePoolUsd)}</span>
+                    <span className="font-semibold">
+                      {formatCurrency(tokenSplit?.referencePoolUsd)}
+                    </span>
                   </div>
-                  <div className="text-xs text-slate-600">{formatPercent(tokenSplit?.normalizedPcts.referencePool)} share</div>
+                  <div className="text-xs text-slate-600">
+                    {formatPercent(tokenSplit?.normalizedPcts.referencePool)} share
+                  </div>
                   <div className="text-sm flex items-center justify-between">
                     <span>You (candidate)</span>
-                    <span className="font-semibold">{formatCurrency(tokenSplit?.candidateUsd)}</span>
+                    <span className="font-semibold">
+                      {formatCurrency(tokenSplit?.candidateUsd)}
+                    </span>
                   </div>
-                  <div className="text-xs text-slate-600">{formatPercent(tokenSplit?.normalizedPcts.candidate)} share</div>
+                  <div className="text-xs text-slate-600">
+                    {formatPercent(tokenSplit?.normalizedPcts.candidate)} share
+                  </div>
                 </div>
 
                 <div className="rounded-lg border bg-slate-50 p-4 shadow-sm space-y-2">
-                  <div className="text-sm font-semibold text-slate-700">Potential staking rewards</div>
-                  <div className="text-3xl font-bold text-slate-900">{formatPercent(staking?.effectiveApr)}</div>
+                  <div className="text-sm font-semibold text-slate-700">
+                    Potential staking rewards
+                  </div>
+                  <div className="text-3xl font-bold text-slate-900">
+                    {formatPercent(staking?.effectiveApr)}
+                  </div>
                   <div className="text-sm text-slate-700">
-                    If you staked ~{Math.round(staking?.stakeAmountHrk ?? 0).toLocaleString("en-US")} HRK for
-                    {" "}
-                    {staking?.lockMonths ?? 0} months, estimated rewards could be
-                    {" "}
-                    {Math.round(staking?.estimatedRewardsHrk ?? 0).toLocaleString("en-US")} HRK.
+                    If you staked ~
+                    {Math.round(staking?.stakeAmountHrk ?? 0).toLocaleString("en-US")}{" "}
+                    HRK for {staking?.lockMonths ?? 0} months, estimated rewards
+                    could be{" "}
+                    {Math.round(staking?.estimatedRewardsHrk ?? 0).toLocaleString("en-US")}{" "}
+                    HRK.
                   </div>
                   <div className="text-xs text-slate-600">
-                    This preview is for simulation purposes only; final tokenomics may differ.
+                    This preview is for simulation purposes only; final tokenomics
+                    may differ.
                   </div>
                 </div>
               </div>
@@ -406,29 +442,44 @@ setEvaluation(payload);
           <div className="rounded-xl border bg-white p-5 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Reference summaries</h2>
-              <span className="text-sm text-slate-600">{answers.length} reference{answers.length === 1 ? "" : "s"}</span>
+              <span className="text-sm text-slate-600">
+                {answers.length} reference{answers.length === 1 ? "" : "s"}
+              </span>
             </div>
 
-            {answers.length === 0 && <p className="text-sm text-slate-600">No references available yet.</p>}
+            {answers.length === 0 && (
+              <p className="text-sm text-slate-600">No references available yet.</p>
+            )}
 
             <div className="space-y-3">
               {answers.map((answer, index) => (
-                <div key={`${answer.questionId}-${index}`} className="rounded-lg border p-4 bg-slate-50">
+                <div
+                  key={`${answer.questionId}-${index}`}
+                  className="rounded-lg border p-4 bg-slate-50"
+                >
                   <div className="flex items-center justify-between text-sm text-slate-700">
-                    <span className="font-semibold">{answer.questionId || `Reference #${index + 1}`}</span>
+                    <span className="font-semibold">
+                      {answer.questionId || `Reference #${index + 1}`}
+                    </span>
                   </div>
                   <p className="mt-2 text-sm text-slate-800 leading-relaxed">
                     {truncateText(answer.cleanedText || "(No response)")}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2 text-xs">
                     {answer.positivityFlag && (
-                      <span className="rounded-full bg-green-100 text-green-700 px-3 py-1">Positive</span>
+                      <span className="rounded-full bg-green-100 text-green-700 px-3 py-1">
+                        Positive
+                      </span>
                     )}
                     {answer.negativityFlag && (
-                      <span className="rounded-full bg-amber-100 text-amber-700 px-3 py-1">Contains concerns</span>
+                      <span className="rounded-full bg-amber-100 text-amber-700 px-3 py-1">
+                        Contains concerns
+                      </span>
                     )}
                     {answer.exaggerationFlag && (
-                      <span className="rounded-full bg-sky-100 text-sky-700 px-3 py-1">Exaggerated tone</span>
+                      <span className="rounded-full bg-sky-100 text-sky-700 px-3 py-1">
+                        Exaggerated tone
+                      </span>
                     )}
                   </div>
                 </div>
