@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import logger from '../logger.js';
-import { makeRefereeLink, APP_URL } from '../utils/appUrl.js';
+import { makeRefereeLink, getFrontendBaseURL } from '../utils/appUrl.js';
 import { validateReference as validateReferenceRVL } from './validation/index.js';
 import { logEvent, EventTypes } from './analytics/eventTracker.js';
 import { onReferenceValidated as hrscoreAutoTrigger } from './hrscore/autoTrigger.js';
@@ -421,7 +421,7 @@ export class ReferenceService {
             <p>${reference.referrer_name} has completed your professional reference.</p>
             <p><strong>Overall Rating:</strong> ${reference.overall_rating}/5 ⭐</p>
             <p>
-              <a href="${APP_URL}/app.html" style="background:#00C4C7;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block;">
+              <a href="${getFrontendBaseURL()}/app.html" style="background:#00C4C7;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block;">
                 View Reference
               </a>
             </p>
