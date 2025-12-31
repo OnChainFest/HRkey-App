@@ -35,3 +35,14 @@ Thumbs.db
 
 # TypeScript build
 *.tsbuildinfo
+
+# --- local junk (windows / node / accidental artifacts) ---
+nul
+**/nul
+**/nodemon
+**/hrkey-backend@1.0.0
+/WebDapp/
+!/HRkey/public/WebDapp/
+backend/env.js
+backend/utils/appUrl.js
+backend/utils/supabaseClient.js

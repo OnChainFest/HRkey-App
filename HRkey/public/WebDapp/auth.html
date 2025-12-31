@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
+  <!-- MARKER_AUTH: HRKEY_PUBLIC_WEBDAPP_AUTH_V1_2025-12-30_1655 -->
+
 <head>
   <base href="/WebDapp/">
   <meta charset="UTF-8">
@@ -8,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <script>
+    // Supabase (frontend-safe): URL + ANON key (public)
     window.__SUPABASE_URL__ = "https://wrervcydgdrlcndtjboy.supabase.co";
     window.__SUPABASE_ANON_KEY__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXJ2Y3lkZ2RybGNuZHRqYm95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NzYxNTYsImV4cCI6MjA3MzU1MjE1Nn0.63M53sZW4LEYMOaxScvtLhQr_6VUj7rOaaGtlR745IM";
   </script>
@@ -95,8 +98,11 @@
     .benefit-item { display:flex; align-items:center; margin-bottom:15px; font-size:14px; color:#64748b; }
     .benefit-icon { font-size:20px; margin-right:12px; }
     .footer-note { text-align:center; margin-top:25px; font-size:12px; color:#94a3b8; }
+
+    .tiny-note { margin-top: 10px; font-size: 12px; color: #64748b; line-height: 1.4; }
   </style>
 </head>
+
 <body>
   <div class="container">
     <div class="header">
@@ -123,6 +129,10 @@
         </div>
 
         <button type="submit" class="btn-primary" id="submitBtn">🚀 Create Free Account</button>
+
+        <div class="tiny-note">
+          We’ll send a magic link to your email to sign in securely (no password required).
+        </div>
       </form>
 
       <div class="divider">OR</div>
@@ -130,9 +140,7 @@
       <button class="btn-google" id="googleBtn">🔐 Continue with Google</button>
 
       <button class="btn-wallet" id="metamaskBtn">🦊 Connect with MetaMask</button>
-
       <button class="btn-wallet" id="coinbaseBtn">🔵 Connect with Coinbase Wallet</button>
-
       <button class="btn-wallet" id="walletconnectBtn">🔗 Connect with WalletConnect</button>
 
       <div class="benefits">
@@ -149,6 +157,7 @@
     </div>
   </div>
 
+  <!-- wallet-auth can stay -->
   <script type="module" src="js/wallet-auth.js"></script>
 
   <script type="module">
@@ -156,7 +165,23 @@
 
     const SUPABASE_URL = window.__SUPABASE_URL__;
     const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__;
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    <script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+  const SUPABASE_URL = window.__SUPABASE_URL__;
+  const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__;
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window.supabase = supabase;
+
+  console.log("✅ supabase ready", {
+    hasSupabase: !!window.supabase,
+    url: SUPABASE_URL,
+    anonKeyLen: (SUPABASE_ANON_KEY || "").length
+  });
+</script>
+
 
     const url = new URL(window.location.href);
 
@@ -172,47 +197,70 @@
       } catch {}
     }
 
-    // ===== SUPABASE CALLBACK =====
+    // ===== CALLBACK HANDLING (OAuth + Magic Link) =====
+    // If Supabase returns with ?code=..., exchange it for a session
     const code = url.searchParams.get("code");
     const errorDesc = url.searchParams.get("error_description");
     if (errorDesc) console.error("Auth error:", errorDesc);
 
     if (code) {
       try {
-        const { error } = await supabase.auth.exchangeCodeForSession({ code });
+        // In supabase-js v2 this reads the code from the URL.
+        const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
         if (error) {
           console.error("exchangeCodeForSession error:", error);
         } else {
           const next = url.searchParams.get("next") || "/WebDapp/app.html";
-          history.replaceState({}, document.title, "/auth");
+
+          // Clean the URL but keep the correct path
+          const cleanUrl = `${window.location.origin}/WebDapp/auth.html`;
+          history.replaceState({}, document.title, cleanUrl);
+
+          // Debug: show token in console
+          const { data } = await supabase.auth.getSession();
+          console.log("✅ session after exchange:", data?.session);
+          console.log("✅ access_token:", data?.session?.access_token);
+
           window.location.replace(next);
         }
       } catch (e) {
         console.error("Exchange failed:", e);
       }
     } else {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) window.location.replace("/WebDapp/app.html");
+      // If already logged in, go to app
+      const { data } = await supabase.auth.getSession();
+      if (data?.session) {
+        console.log("Already logged in:", data.session.user?.email);
+        window.location.replace("/WebDapp/app.html");
+      }
     }
 
-    // ===== FORM HANDLER =====
+    // ===== FORM HANDLER (Magic Link) =====
     const form = document.getElementById("authForm");
     const submitBtn = document.getElementById("submitBtn");
 
     if (form && submitBtn) {
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        submitBtn.disabled = true;
-        const old = submitBtn.textContent;
-        submitBtn.textContent = "⏳ Creating account...";
 
         const name = document.getElementById("name")?.value?.trim() || "";
         const email = document.getElementById("email")?.value?.trim() || "";
+
+        if (!name || !email) {
+          alert("Please enter your name and email.");
+          return;
+        }
+
+        submitBtn.disabled = true;
+        const old = submitBtn.textContent;
+        submitBtn.textContent = "⏳ Sending magic link...";
+
+        // Keep your local “profile” seed
         const userData = {
           name,
           email,
           wallet: "0x" + Math.random().toString(16).slice(2).padEnd(40, "0"),
-          authenticated: true,
+          authenticated: false,
           loginDate: new Date().toISOString(),
           source: refereeInfo ? "referee_conversion" : "direct_signup"
         };
@@ -223,8 +271,26 @@
           usage: { referencesUsed: 0 }
         }));
 
-        window.location.replace("/WebDapp/app.html");
-        submitBtn.textContent = old;
+        try {
+          // Send magic link (creates/uses a Supabase user identity)
+          const redirectTo = `${window.location.origin}/WebDapp/auth.html?next=/WebDapp/app.html`;
+
+          const { error } = await supabase.auth.signInWithOtp({
+            email,
+            options: { emailRedirectTo: redirectTo }
+          });
+
+          if (error) throw error;
+
+          alert("✅ Check your email for the magic link to finish signing in.");
+          submitBtn.textContent = old;
+        } catch (err) {
+          console.error("Magic link error:", err);
+          alert("Error sending magic link: " + (err?.message || "Unknown error"));
+          submitBtn.textContent = old;
+        } finally {
+          submitBtn.disabled = false;
+        }
       });
     }
 
@@ -241,11 +307,9 @@
           params.set("next", "/WebDapp/app.html");
           const finalRedirect = params.toString() ? `${redirectTo}?${params.toString()}` : redirectTo;
 
-          const { data, error } = await supabase.auth.signInWithOAuth({
+          const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: {
-              redirectTo: finalRedirect
-            }
+            options: { redirectTo: finalRedirect }
           });
 
           if (error) {
@@ -264,11 +328,9 @@
     }
 
     // ===== WALLET AUTHENTICATION =====
-    // Import wallet authentication dynamically
     import("./js/wallet-connector.js").then(module => {
       const { connectMetaMask, connectCoinbaseWallet, connectWalletConnect } = module;
 
-      // MetaMask button
       const metamaskBtn = document.getElementById("metamaskBtn");
       if (metamaskBtn) {
         metamaskBtn.addEventListener("click", async () => {
@@ -285,7 +347,6 @@
         });
       }
 
-      // Coinbase Wallet button
       const coinbaseBtn = document.getElementById("coinbaseBtn");
       if (coinbaseBtn) {
         coinbaseBtn.addEventListener("click", async () => {
@@ -302,7 +363,6 @@
         });
       }
 
-      // WalletConnect button
       const walletconnectBtn = document.getElementById("walletconnectBtn");
       if (walletconnectBtn) {
         walletconnectBtn.addEventListener("click", async () => {
