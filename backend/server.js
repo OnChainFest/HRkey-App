@@ -318,14 +318,11 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, curl, etc) - only in development
-    if (!origin) {
-      if (IS_PRODUCTION) {
-        logger.warn('CORS: Request without origin in production', { path: 'unknown' });
-        return callback(new Error('Origin header required in production'));
-      }
-      return callback(null, true);
-    }
-
+   if (!origin) {
+  // Allow requests without Origin (health checks, curl, direct browser navigation)
+  // These are not browser XHR/fetch calls, so this does not weaken CORS security.
+  return callback(null, true);
+}
     const allowedOrigins = [
       FRONTEND_URL,
       'http://localhost:8000',
