@@ -78,10 +78,7 @@ if (sentryEnabled) {
     dsn: process.env.SENTRY_DSN,
     environment: process.env.SENTRY_ENV || process.env.NODE_ENV || 'development',
     enabled: sentryEnabled,
-    // Usamos las integraciones por defecto de @sentry/node v8
-    integrations: (integrations) => [
-      ...integrations,
-    ],
+    integrations: (integrations) => [...integrations],
     tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0')
   });
 }
@@ -93,11 +90,11 @@ const PROD_URL = 'https://hrkey.xyz';
 
 function getPublicBaseURL() {
   const fromEnv =
-    process.env.PUBLIC_BASE_URL ||     // recomendado (unificado)
-    process.env.BASE_URL ||            // alias común
-    process.env.FRONTEND_URL ||        // a veces ya lo tienes así en Vercel
-    process.env.PUBLIC_APP_URL ||      // variantes históricas
-    process.env.APP_URL ||             // si lo usas para front
+    process.env.PUBLIC_BASE_URL || // recomendado (unificado)
+    process.env.BASE_URL || // alias común
+    process.env.FRONTEND_URL || // a veces ya lo tienes así en Vercel
+    process.env.PUBLIC_APP_URL || // variantes históricas
+    process.env.APP_URL || // si lo usas para front
     null;
 
   if (fromEnv && /^https?:\/\//i.test(fromEnv)) return fromEnv;
@@ -115,7 +112,9 @@ function makeRefereeLink(token) {
       const url = makeRefereeLinkUtil(token);
       if (url && /^https?:\/\//i.test(url)) return url;
     }
-  } catch (_) { /* fall back */ }
+  } catch (_) {
+    /* fall back */
+  }
 
   const url = new URL('/referee-evaluation-page.html', APP_URL);
   url.searchParams.set('ref', token);
@@ -157,7 +156,7 @@ if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
     });
     throw new Error(`${message}. Cannot start in production without Stripe configuration.`);
   } else {
-    logger.warn(message + ' - Using test mode', {
+    logger.warn(`${message} - Using test mode`, {
       environment: process.env.NODE_ENV
     });
   }
@@ -195,8 +194,7 @@ function requireAdminKey(req, res, next) {
 
   const provided =
     (req.query?.admin_key ? String(req.query.admin_key) : null) ||
-    (req.headers['x-admin-key'] ? String(req.headers['x-admin-key']) : null) ||
-    (req.headers['x-admin-key'.toUpperCase()] ? String(req.headers['x-admin-key'.toUpperCase()]) : null);
+    (req.headers['x-admin-key'] ? String(req.headers['x-admin-key']) : null);
 
   if (!provided) {
     return res.status(401).json({
@@ -256,10 +254,7 @@ async function ensureSuperadmin() {
     }
 
     if (user.role !== 'superadmin') {
-      await supabase
-        .from('users')
-        .update({ role: 'superadmin' })
-        .eq('id', user.id);
+      await supabase.from('users').update({ role: 'superadmin' }).eq('id', user.id);
 
       logger.info('Superadmin role assigned', {
         userId: user.id,
@@ -332,7 +327,7 @@ class WalletCreationService {
     const cipher = crypto.createCipheriv(algorithm, key, iv);
     let encrypted = cipher.update(privateKey, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    return iv.toString('hex') + ':' + encrypted;
+    return `${iv.toString('hex')}:${encrypted}`;
   }
 
   static async initializeUserPlan(userId, walletAddress) {
@@ -391,7 +386,7 @@ const corsOptions = {
       'http://localhost:3000',
       'http://127.0.0.1:8000',
       'https://hrkey.xyz',
-      'https://www.hrkey.xyz',     // ✅ FIX: allow www
+      'https://www.hrkey.xyz', // ✅ allow www
       'https://hrkey.vercel.app'
     ];
 
@@ -416,18 +411,13 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  // ✅ FIX: allow x-admin-key header and common headers used by browsers
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'x-admin-key',
-    'X-Admin-Key'
-  ]
+  // ✅ allow common headers + admin header
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key']
 };
 
 // Stripe webhook necesita body RAW; para el resto usamos JSON normal
 app.use(cors(corsOptions));
-// ✅ FIX: handle preflight for all routes
+// ✅ handle preflight for all routes
 app.options('*', cors(corsOptions));
 
 // Request ID middleware for request correlation
@@ -437,49 +427,45 @@ app.use(requestIdMiddleware);
 app.use(requestLoggingMiddleware);
 
 // Security headers with helmet
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.coinbase.com", "https://js.stripe.com"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: [
-        "'self'",
-        "https://mainnet.base.org",
-        "https://sepolia.base.org",
-        "https://*.supabase.co",
-        "https://api.stripe.com"
-      ],
-      frameSrc: ["'self'", "https://js.stripe.com"],
-      fontSrc: ["'self'", "data:", "https:"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      workerSrc: ["'self'", "blob:"]
-    }
-  },
-  crossOriginEmbedderPolicy: false, // Required for Base SDK compatibility
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  },
-  frameguard: {
-    action: 'deny'
-  },
-  noSniff: true,
-  xssFilter: true,
-  referrerPolicy: {
-    policy: 'strict-origin-when-cross-origin'
-  }
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.coinbase.com', 'https://js.stripe.com'],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+        connectSrc: [
+          "'self'",
+          'https://mainnet.base.org',
+          'https://sepolia.base.org',
+          'https://*.supabase.co',
+          'https://api.stripe.com'
+        ],
+        frameSrc: ["'self'", 'https://js.stripe.com'],
+        fontSrc: ["'self'", 'data:', 'https:'],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        workerSrc: ["'self'", 'blob:']
+      }
+    },
+    crossOriginEmbedderPolicy: false, // Required for Base SDK compatibility
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true
+    },
+    frameguard: { action: 'deny' },
+    noSniff: true,
+    xssFilter: true,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+  })
+);
 
 // Rate limiting configuration
-const rateLimitWindowMs = Number.parseInt(
-  process.env.RATE_LIMIT_WINDOW_MS || '60000',
-  10
-);
+const rateLimitWindowMs = Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10);
+
 const apiLimiter = createRateLimiter({
   windowMs: rateLimitWindowMs,
   max: Number.parseInt(process.env.RATE_LIMIT_API_MAX || '300', 10),
@@ -572,12 +558,10 @@ app.use((req, res, next) => {
   // Stripe webhook needs raw body
   if (req.path === '/webhook') return next();
 
-  // SECURITY: Limit payload size to prevent DoS attacks
   return express.json({
-    limit: '1mb', // Maximum 1MB payload
-    strict: true, // Only accept objects and arrays
-    verify: (req, buf, encoding) => {
-      // Additional verification if needed
+    limit: '1mb',
+    strict: true,
+    verify: (req, buf) => {
       if (buf.length > 1024 * 1024) {
         throw new Error('Request entity too large');
       }
@@ -588,16 +572,10 @@ app.use((req, res, next) => {
 /* =========================
    Sentry Request Context
    ========================= */
-
 if (sentryEnabled) {
-  // Solo añadimos contexto de requestId y user al scope de Sentry.
-  // La captura de errores se hace con captureException y los
-  // handlers globales de Node (uncaughtException, unhandledRejection).
   app.use((req, res, next) => {
     const requestId = req.requestId || res.locals.requestId;
-    if (requestId) {
-      Sentry.setTag('request_id', requestId);
-    }
+    if (requestId) Sentry.setTag('request_id', requestId);
 
     if (req.user) {
       Sentry.setUser({
@@ -616,7 +594,6 @@ if (sentryEnabled) {
    ========================= */
 
 // Simple health check - no authentication, no external dependencies
-// Returns basic server status for quick liveness checks
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
@@ -629,8 +606,6 @@ app.get('/health', (req, res) => {
 });
 
 // Deep health check - includes dependency validation
-// Checks Supabase connectivity and Stripe configuration
-// Returns 503 for critical failures, 200 for ok/degraded states
 app.get('/health/deep', async (req, res) => {
   const startTime = Date.now();
   const healthcheck = {
@@ -650,15 +625,11 @@ app.get('/health/deep', async (req, res) => {
   try {
     const supabaseStartTime = Date.now();
 
-    // Lightweight Supabase ping with timeout
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Supabase health check timeout')), 5000)
     );
 
-    const checkPromise = supabase
-      .from('users')
-      .select('count')
-      .limit(1);
+    const checkPromise = supabase.from('users').select('count').limit(1);
 
     const { error } = await Promise.race([checkPromise, timeoutPromise]);
 
@@ -672,10 +643,7 @@ app.get('/health/deep', async (req, res) => {
         responseTime: supabaseResponseTime
       };
     } else {
-      healthcheck.checks.supabase = {
-        status: 'ok',
-        responseTime: supabaseResponseTime
-      };
+      healthcheck.checks.supabase = { status: 'ok', responseTime: supabaseResponseTime };
     }
   } catch (err) {
     healthcheck.status = 'degraded';
@@ -687,8 +655,6 @@ app.get('/health/deep', async (req, res) => {
   }
 
   // Check Stripe configuration (not connectivity, just config)
-  // Note: Stripe config warnings don't change overall health status from 'ok' to 'degraded'
-  // Only actual errors or Supabase failures cause degraded status
   try {
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -711,13 +677,9 @@ app.get('/health/deep', async (req, res) => {
         message: 'Stripe secrets appear to be invalid or placeholder values'
       };
     } else {
-      healthcheck.checks.stripe = {
-        status: 'ok',
-        configured: true
-      };
+      healthcheck.checks.stripe = { status: 'ok', configured: true };
     }
   } catch (err) {
-    // Actual errors in checking Stripe mark overall status as degraded
     healthcheck.status = healthcheck.status === 'ok' ? 'degraded' : healthcheck.status;
     healthcheck.checks.stripe = {
       status: 'error',
@@ -726,48 +688,48 @@ app.get('/health/deep', async (req, res) => {
     };
   }
 
-  // Determine HTTP status code
-  // 200: ok or degraded (service still functional)
-  // 503: error (critical failure, service not ready)
   const httpStatus = healthcheck.status === 'error' ? 503 : 200;
-
   res.status(httpStatus).json(healthcheck);
 });
 
 /* =========================
    Wallet endpoints
    ========================= */
-app.post('/api/wallet/create', requireAuth, strictLimiter, validateBody(createWalletSchema), async (req, res) => {
-  try {
-    const { userId, email } = req.body;
+app.post(
+  '/api/wallet/create',
+  requireAuth,
+  strictLimiter,
+  validateBody(createWalletSchema),
+  async (req, res) => {
+    try {
+      const { userId, email } = req.body;
 
-    // Authorization check: users can only create wallets for themselves
-    if (req.user.id !== userId) {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'You can only create a wallet for yourself'
+      if (req.user.id !== userId) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'You can only create a wallet for yourself'
+        });
+      }
+
+      const wallet = await WalletCreationService.createWalletForUser(userId, email);
+      res.json({ success: true, wallet });
+    } catch (e) {
+      logger.error('Failed to create wallet', {
+        requestId: req.requestId,
+        userId: req.body.userId,
+        email: req.body.email,
+        error: e.message,
+        stack: e.stack
       });
+      res.status(500).json({ error: e.message });
     }
-
-    const wallet = await WalletCreationService.createWalletForUser(userId, email);
-    res.json({ success: true, wallet });
-  } catch (e) {
-    logger.error('Failed to create wallet', {
-      requestId: req.requestId,
-      userId: req.body.userId,
-      email: req.body.email,
-      error: e.message,
-      stack: e.stack
-    });
-    res.status(500).json({ error: e.message });
   }
-});
+);
 
 app.get('/api/wallet/:userId', requireAuth, validateParams(getWalletParamsSchema), async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // Authorization: only the wallet owner or a superadmin may view this wallet
     const isOwner = req.user?.id === userId;
     const isSuperadmin = req.user?.role === 'superadmin';
 
@@ -799,7 +761,6 @@ app.post('/api/reference/request', requireAuth, validateBody(createReferenceRequ
   try {
     const { userId } = req.body;
 
-    // Authorization check: users can only request references for themselves
     if (req.user.id !== userId) {
       return res.status(403).json({
         error: 'Forbidden',
@@ -821,8 +782,6 @@ app.post('/api/reference/request', requireAuth, validateBody(createReferenceRequ
   }
 });
 
-// SECURITY: Rate limit public reference submission to prevent abuse
-// Token validation enforces: valid format, not expired, single-use
 app.post('/api/reference/submit', tokenLimiter, validateBody(submitReferenceSchema), async (req, res) => {
   try {
     const result = await ReferenceService.submitReference(req.body);
@@ -838,43 +797,38 @@ app.post('/api/reference/submit', tokenLimiter, validateBody(submitReferenceSche
   }
 });
 
-// SECURITY: Rate limit token lookups to prevent enumeration attacks
-app.get('/api/reference/by-token/:token', tokenLimiter, validateParams(getReferenceByTokenSchema), async (req, res) => {
-  try {
-    const result = await ReferenceService.getReferenceByToken(req.params.token);
-    res.json(result);
-  } catch (e) {
-    logger.error('Failed to get reference by token', {
-      requestId: req.requestId,
-      tokenHashPrefix: req.params.token ? hashInviteToken(req.params.token).slice(0, 12) : undefined,
-      error: e.message,
-      stack: e.stack
-    });
-    res.status(400).json({ success: false, error: e.message });
+app.get(
+  '/api/reference/by-token/:token',
+  tokenLimiter,
+  validateParams(getReferenceByTokenSchema),
+  async (req, res) => {
+    try {
+      const result = await ReferenceService.getReferenceByToken(req.params.token);
+      res.json(result);
+    } catch (e) {
+      logger.error('Failed to get reference by token', {
+        requestId: req.requestId,
+        tokenHashPrefix: req.params.token ? hashInviteToken(req.params.token).slice(0, 12) : undefined,
+        error: e.message,
+        stack: e.stack
+      });
+      res.status(400).json({ success: false, error: e.message });
+    }
   }
-});
+);
 
 /**
  * GET /api/references/me
- * Get all references for the authenticated user (self-only)
- *
- * Auth: Authenticated users, returns only own references
  */
 app.get('/api/references/me', requireAuth, referencesController.getMyReferences);
 
 /**
  * GET /api/references/pending
- * Get pending reference invites for the authenticated user (self-only)
- *
- * Auth: Authenticated users, returns only own pending invites
  */
 app.get('/api/references/pending', requireAuth, referencesController.getMyPendingInvites);
 
 /**
  * GET /api/references/candidate/:candidateId
- * Get references for a specific candidate (superadmin only for now)
- *
- * Auth: Superadmin can view all; companies require approved data-access (TODO)
  */
 app.get('/api/references/candidate/:candidateId', requireAuth, referencesController.getCandidateReferences);
 
@@ -888,7 +842,6 @@ app.post(
   referencesController.requestReferenceInvite
 );
 
-// SECURITY: Rate limit public reference submission to prevent abuse
 app.post(
   '/api/references/respond/:token',
   tokenLimiter,
@@ -901,39 +854,41 @@ app.post(
 /* =========================
    Stripe Payments
    ========================= */
-app.post('/create-payment-intent', requireAuth, authLimiter, validateBody(createPaymentIntentSchema), async (req, res) => {
-  try {
-    const { amount, email, promoCode } = req.body;
+app.post(
+  '/create-payment-intent',
+  requireAuth,
+  authLimiter,
+  validateBody(createPaymentIntentSchema),
+  async (req, res) => {
+    try {
+      const { amount, email, promoCode } = req.body;
 
-    // Use authenticated user's email if not provided
-    const receiptEmail = email || req.user.email;
+      const receiptEmail = email || req.user.email;
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount, // en centavos
-      currency: 'usd',
-      receipt_email: receiptEmail,
-      metadata: {
-        promoCode: promoCode || 'none',
-        plan: 'pro-lifetime'
-      },
-      description: 'HRKey PRO - Lifetime Access'
-    });
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency: 'usd',
+        receipt_email: receiptEmail,
+        metadata: { promoCode: promoCode || 'none', plan: 'pro-lifetime' },
+        description: 'HRKey PRO - Lifetime Access'
+      });
 
-    res.json({
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id
-    });
-  } catch (e) {
-    logger.error('Failed to create Stripe payment intent', {
-      requestId: req.requestId,
-      userId: req.user?.id,
-      amount: req.body.amount,
-      error: e.message,
-      stack: e.stack
-    });
-    res.status(500).json({ error: e.message });
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id
+      });
+    } catch (e) {
+      logger.error('Failed to create Stripe payment intent', {
+        requestId: req.requestId,
+        userId: req.user?.id,
+        amount: req.body.amount,
+        error: e.message,
+        stack: e.stack
+      });
+      res.status(500).json({ error: e.message });
+    }
   }
-});
+);
 
 // Stripe webhook: body RAW
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -941,7 +896,6 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   const reqLogger = logger.withRequest(req);
   let event;
 
-  // Step 1: Verify Stripe signature
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
   } catch (err) {
@@ -950,16 +904,12 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       hasSignature: !!sig
     });
 
-    // Capture signature verification failures in Sentry
     if (sentryEnabled) {
-      Sentry.captureException(err, scope => {
+      Sentry.captureException(err, (scope) => {
         scope.setTag('controller', 'webhook');
         scope.setTag('route', 'POST /webhook');
         scope.setTag('error_type', 'signature_verification');
-        scope.setContext('webhook', {
-          hasSignature: !!sig,
-          path: req.path
-        });
+        scope.setContext('webhook', { hasSignature: !!sig, path: req.path });
         return scope;
       });
     }
@@ -968,7 +918,6 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   }
 
   try {
-    // Step 2: Check idempotency - has this event already been processed?
     const alreadyProcessed = await webhookService.isEventProcessed(event.id);
     if (alreadyProcessed) {
       reqLogger.info('Event already processed, skipping (idempotency)', {
@@ -978,7 +927,6 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       return res.json({ received: true, idempotent: true });
     }
 
-    // Step 3: Process event based on type
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object;
@@ -1007,7 +955,6 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
           });
         }
 
-        // Step 4: Mark event as processed (idempotency)
         await webhookService.markEventProcessed(event.id, event.type, {
           payment_intent_id: paymentIntent.id,
           amount: paymentIntent.amount,
@@ -1034,11 +981,11 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       }
 
       default:
-        // Unsupported event type - just log and mark as processed
         reqLogger.info('Unsupported event type', {
           eventType: event.type,
           eventId: event.id
         });
+
         await webhookService.markEventProcessed(event.id, event.type, {
           note: 'Event type not explicitly handled'
         });
@@ -1053,21 +1000,16 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       eventType: event?.type
     });
 
-    // Capture webhook processing errors in Sentry
     if (sentryEnabled) {
-      Sentry.captureException(error, scope => {
+      Sentry.captureException(error, (scope) => {
         scope.setTag('controller', 'webhook');
         scope.setTag('route', 'POST /webhook');
         scope.setTag('error_type', 'processing_error');
-        scope.setContext('webhook', {
-          eventId: event?.id,
-          eventType: event?.type
-        });
+        scope.setContext('webhook', { eventId: event?.id, eventType: event?.type });
         return scope;
       });
     }
 
-    // Return 500 so Stripe will retry
     res.status(500).json({ error: 'Webhook processing failed' });
   }
 });
@@ -1078,14 +1020,15 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
 // ===== IDENTITY ENDPOINTS =====
 app.post('/api/identity/verify', authLimiter, requireAuth, identityController.verifyIdentity);
-app.get('/api/identity/status/:userId', requireAuth, requireSelfOrSuperadmin('userId', { message: 'You can only view your own identity status' }), identityController.getIdentityStatus);
+app.get(
+  '/api/identity/status/:userId',
+  requireAuth,
+  requireSelfOrSuperadmin('userId', { message: 'You can only view your own identity status' }),
+  identityController.getIdentityStatus
+);
 
 // ===== CANDIDATE EVALUATION ENDPOINT =====
-app.get(
-  '/api/candidates/:userId/evaluation',
-  requireAuth,
-  candidateEvaluationController.getCandidateEvaluation
-);
+app.get('/api/candidates/:userId/evaluation', requireAuth, candidateEvaluationController.getCandidateEvaluation);
 app.get(
   '/api/candidates/:userId/tokenomics-preview',
   requireAuth,
@@ -1104,11 +1047,15 @@ app.post('/api/company/:companyId/verify', requireAuth, requireSuperadmin, compa
 // ===== COMPANY SIGNERS ENDPOINTS =====
 app.post('/api/company/:companyId/signers', strictLimiter, requireAuth, requireCompanySigner, signersController.inviteSigner);
 app.get('/api/company/:companyId/signers', requireAuth, requireCompanySigner, signersController.getSigners);
-app.patch('/api/company/:companyId/signers/:signerId', requireAuth, requireCompanySigner, signersController.updateSigner);
+app.patch(
+  '/api/company/:companyId/signers/:signerId',
+  requireAuth,
+  requireCompanySigner,
+  signersController.updateSigner
+);
 
-// Signer invitation endpoints (special handling)
-// SECURITY: Rate limit public signer invitations to prevent token enumeration
-app.get('/api/signers/invite/:token', tokenLimiter, signersController.getInvitationByToken); // Public - no auth
+// Signer invitation endpoints
+app.get('/api/signers/invite/:token', tokenLimiter, signersController.getInvitationByToken);
 app.post('/api/signers/accept/:token', requireAuth, signersController.acceptSignerInvitation);
 
 // ===== AUDIT LOG ENDPOINTS =====
@@ -1116,8 +1063,6 @@ app.get('/api/audit/logs', requireAuth, auditController.getAuditLogs);
 app.get('/api/audit/recent', requireAuth, auditController.getRecentActivity);
 
 // ✅ ADMIN OVERVIEW (NO JWT) - usa admin_key / x-admin-key
-// Ejemplo:
-//   https://hrkey-backend.onrender.com/api/admin/overview?admin_key=...   (OJO: ? no :)
 app.get('/api/admin/overview', requireAdminKey, adminOverviewController.getAdminOverviewHandler);
 
 // ===== DATA ACCESS ENDPOINTS (Pay-per-query) =====
@@ -1132,85 +1077,93 @@ app.get('/api/revenue/balance', requireAuth, revenueController.getUserBalance);
 app.get('/api/revenue/shares', requireAuth, revenueController.getRevenueShares);
 app.get('/api/revenue/transactions', requireAuth, revenueController.getTransactionHistory);
 app.get('/api/revenue/summary', requireAuth, revenueController.getEarningsSummary);
-// SECURITY: Payout requires wallet since default method is 'wallet'
-app.post('/api/revenue/payout/request', requireAuth, requireWalletLinked({ message: 'You must have a linked wallet to request payouts' }), revenueController.requestPayout);
+app.post(
+  '/api/revenue/payout/request',
+  requireAuth,
+  requireWalletLinked({ message: 'You must have a linked wallet to request payouts' }),
+  revenueController.requestPayout
+);
 
 /* =========================
    KPI OBSERVATIONS ENDPOINTS (Proof of Correlation MVP)
    ========================= */
-
-// ===== KPI OBSERVATIONS - Data Capture for ML Correlation Engine =====
-app.post('/api/kpi-observations', requireAuth, requireWalletLinked({ message: 'You must have a linked wallet to submit KPI observations' }), kpiObservationsController.createKpiObservations);
+app.post(
+  '/api/kpi-observations',
+  requireAuth,
+  requireWalletLinked({ message: 'You must have a linked wallet to submit KPI observations' }),
+  kpiObservationsController.createKpiObservations
+);
 app.get('/api/kpi-observations', requireAuth, kpiObservationsController.getKpiObservations);
 app.get('/api/kpi-observations/summary', requireAuth, kpiObservationsController.getKpiObservationsSummary);
 
 /* =========================
    HRKEY SCORE ENDPOINTS (ML-powered scoring)
    ========================= */
+app.post(
+  '/api/hrkey-score',
+  requireAuth,
+  requireOwnWallet('subject_wallet', {
+    noWalletMessage: 'You must have a linked wallet to calculate scores',
+    mismatchMessage: 'You can only calculate HRKey Score for your own wallet'
+  }),
+  async (req, res) => {
+    try {
+      const { subject_wallet, role_id } = req.body;
 
-app.post('/api/hrkey-score', requireAuth, requireOwnWallet('subject_wallet', {
-  noWalletMessage: 'You must have a linked wallet to calculate scores',
-  mismatchMessage: 'You can only calculate HRKey Score for your own wallet'
-}), async (req, res) => {
-  try {
-    const { subject_wallet, role_id } = req.body;
-
-    if (!subject_wallet || !role_id) {
-      return res.status(400).json({
-        ok: false,
-        error: 'MISSING_FIELDS',
-        message: 'Se requieren subject_wallet y role_id.',
-        required: ['subject_wallet', 'role_id']
-      });
-    }
-
-    const result = await hrkeyScoreService.computeHrkeyScore({
-      subjectWallet: subject_wallet,
-      roleId: role_id
-    });
-
-    if (!result.ok) {
-      if (result.reason === 'NOT_ENOUGH_DATA') return res.status(422).json(result);
-      if (result.reason === 'NO_VALID_KPIS') return res.status(422).json(result);
-
-      if (result.reason === 'INTERNAL_ERROR') {
-        return res.status(503).json({
+      if (!subject_wallet || !role_id) {
+        return res.status(400).json({
           ok: false,
-          error: 'MODEL_NOT_AVAILABLE',
-          message: 'El modelo de scoring no está configurado. Contacta al administrador.',
-          details: result.message
+          error: 'MISSING_FIELDS',
+          message: 'Se requieren subject_wallet y role_id.',
+          required: ['subject_wallet', 'role_id']
         });
       }
 
-      if (result.reason === 'ROLE_MISMATCH') return res.status(400).json(result);
-      return res.status(500).json(result);
+      const result = await hrkeyScoreService.computeHrkeyScore({
+        subjectWallet: subject_wallet,
+        roleId: role_id
+      });
+
+      if (!result.ok) {
+        if (result.reason === 'NOT_ENOUGH_DATA') return res.status(422).json(result);
+        if (result.reason === 'NO_VALID_KPIS') return res.status(422).json(result);
+
+        if (result.reason === 'INTERNAL_ERROR') {
+          return res.status(503).json({
+            ok: false,
+            error: 'MODEL_NOT_AVAILABLE',
+            message: 'El modelo de scoring no está configurado. Contacta al administrador.',
+            details: result.message
+          });
+        }
+
+        if (result.reason === 'ROLE_MISMATCH') return res.status(400).json(result);
+        return res.status(500).json(result);
+      }
+
+      return res.json(result);
+    } catch (err) {
+      logger.error('Failed to calculate HRKey Score', {
+        requestId: req.requestId,
+        subjectWallet: req.body.subject_wallet,
+        roleId: req.body.role_id,
+        error: err.message,
+        stack: err.stack
+      });
+      return res.status(500).json({
+        ok: false,
+        error: 'INTERNAL_ERROR',
+        message: 'Error inesperado calculando HRKey Score.',
+        details: err.message
+      });
     }
-
-    return res.json(result);
-
-  } catch (err) {
-    logger.error('Failed to calculate HRKey Score', {
-      requestId: req.requestId,
-      subjectWallet: req.body.subject_wallet,
-      roleId: req.body.role_id,
-      error: err.message,
-      stack: err.stack
-    });
-    return res.status(500).json({
-      ok: false,
-      error: 'INTERNAL_ERROR',
-      message: 'Error inesperado calculando HRKey Score.',
-      details: err.message
-    });
   }
-});
+);
 
 app.get('/api/hrkey-score/history', requireAuth, async (req, res) => {
   try {
     const rawLimit = parseInt(req.query.limit, 10);
-    const limit = Number.isFinite(rawLimit)
-      ? Math.min(Math.max(rawLimit, 1), 50)
-      : 10;
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 50) : 10;
 
     const requestedUserId = req.query.user_id || req.user.id;
     const isSuperadmin = req.user.role === 'superadmin';
@@ -1253,9 +1206,7 @@ app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
   try {
     const format = (req.query.format || 'json').toString().toLowerCase();
     const includeHistoryRaw = req.query.include_history;
-    const includeHistory = ['true', '1', 'yes'].includes(
-      (includeHistoryRaw ?? 'false').toString().toLowerCase()
-    );
+    const includeHistory = ['true', '1', 'yes'].includes((includeHistoryRaw ?? 'false').toString().toLowerCase());
 
     if (!['json', 'csv'].includes(format)) {
       return res.status(400).json({
@@ -1292,7 +1243,7 @@ app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
       });
       return res.status(500).json({
         success: false,
-       error: 'Internal server error',
+        error: 'Internal server error',
         message: 'Failed to export HRScore'
       });
     }
@@ -1340,12 +1291,9 @@ app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
       };
 
       const header = ['user_id', 'score', 'trigger_source', 'created_at'].join(',');
-      const rows = snapshots.map((snapshot) => ([
-        escapeCsvValue(snapshot.user_id),
-        escapeCsvValue(snapshot.score),
-        escapeCsvValue(snapshot.trigger_source),
-        escapeCsvValue(snapshot.created_at)
-      ].join(',')));
+      const rows = snapshots.map((snapshot) =>
+        [escapeCsvValue(snapshot.user_id), escapeCsvValue(snapshot.score), escapeCsvValue(snapshot.trigger_source), escapeCsvValue(snapshot.created_at)].join(',')
+      );
       const csvBody = [header, ...rows].join('\n');
 
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -1354,9 +1302,7 @@ app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
       return res.status(200).send(csvBody);
     }
 
-    if (includeHistory) {
-      exportPayload.history = snapshots;
-    }
+    if (includeHistory) exportPayload.history = snapshots;
 
     return res.json({
       success: true,
@@ -1410,7 +1356,6 @@ app.post('/api/hrscore/calculate', requireSuperadmin, hrscoreController.calculat
 /* =========================
    ANALYTICS ENDPOINTS (Superadmin only)
    ========================= */
-
 app.get('/api/analytics/dashboard', requireSuperadmin, analyticsController.getAnalyticsDashboardEndpoint);
 app.get('/api/analytics/info', requireSuperadmin, analyticsController.getAnalyticsInfoEndpoint);
 app.get('/api/analytics/candidates/activity', requireSuperadmin, analyticsController.getCandidateActivityEndpoint);
@@ -1425,10 +1370,10 @@ app.get('/api/analytics/skills/trending', requireSuperadmin, analyticsController
 if (process.env.NODE_ENV !== 'production') {
   app.get('/debug-sentry', async (req, res) => {
     try {
-      throw new Error("Ruta de prueba ejecutada en Render");
+      throw new Error('Ruta de prueba ejecutada en Render');
     } catch (error) {
       if (sentryEnabled) {
-        Sentry.captureException(error, scope => {
+        Sentry.captureException(error, (scope) => {
           scope.setTag('route', '/debug-sentry');
           scope.setTag('type', 'sentry_debug');
           scope.setContext('debug', {
@@ -1441,9 +1386,9 @@ if (process.env.NODE_ENV !== 'production') {
       }
 
       res.status(500).json({
-        message: "Error enviado a Sentry",
+        message: 'Error enviado a Sentry',
         error: error.message,
-        sentryEnabled: sentryEnabled,
+        sentryEnabled,
         timestamp: new Date().toISOString()
       });
     }
@@ -1469,10 +1414,9 @@ if (process.env.NODE_ENV !== 'test') {
       nodeEnv: process.env.NODE_ENV || 'development',
       healthEndpoint: new URL('/health', BACKEND_PUBLIC_URL).toString(),
       frontendUrl: APP_URL,
-      stripeMode: STRIPE_SECRET_KEY.startsWith('sk_live_') ? 'LIVE' : 'TEST'
+      stripeMode: STRIPE_SECRET_KEY?.startsWith('sk_live_') ? 'LIVE' : 'TEST'
     });
 
-    // Ensure superadmin is configured
     await ensureSuperadmin();
   });
 }
