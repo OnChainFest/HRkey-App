@@ -144,7 +144,7 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
 // ✅ Admin key (para rutas /api/admin/* sin Supabase JWT)
-const HRKEY_ADMIN_KEY = process.env.HRKEY_ADMIN_KEY;
+const HRKEY_ADMIN_KEY = process.env.HRKEY_ADMIN_KEY || process.env.ADMIN_KEY;
 
 // Fail fast in production if Stripe secrets are missing
 if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
