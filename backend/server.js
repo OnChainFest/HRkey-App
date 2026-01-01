@@ -195,7 +195,8 @@ function requireAdminKey(req, res, next) {
 
   const provided =
     (req.query?.admin_key ? String(req.query.admin_key) : null) ||
-    (req.headers['x-admin-key'] ? String(req.headers['x-admin-key']) : null);
+    (req.headers['x-admin-key'] ? String(req.headers['x-admin-key']) : null) ||
+    (req.headers['x-admin-key'.toUpperCase()] ? String(req.headers['x-admin-key'.toUpperCase()]) : null);
 
   if (!provided) {
     return res.status(401).json({
@@ -378,23 +379,23 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc) - only in development
+    // Allow requests with no origin (mobile apps, curl, etc)
     if (!origin) {
-      // Allow requests without Origin (health checks, curl, direct browser navigation)
       // These are not browser XHR/fetch calls, so this does not weaken CORS security.
       return callback(null, true);
     }
+
     const allowedOrigins = [
       FRONTEND_URL,
       'http://localhost:8000',
       'http://localhost:3000',
       'http://127.0.0.1:8000',
       'https://hrkey.xyz',
+      'https://www.hrkey.xyz',     // ✅ FIX: allow www
       'https://hrkey.vercel.app'
     ];
 
-    // Check if origin is allowed
-    const isAllowed = allowedOrigins.some(allowed => origin.startsWith(allowed));
+    const isAllowed = allowedOrigins.some((allowed) => origin.startsWith(allowed));
 
     if (isAllowed) {
       callback(null, true);
@@ -415,11 +416,19 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key']
+  // ✅ FIX: allow x-admin-key header and common headers used by browsers
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'x-admin-key',
+    'X-Admin-Key'
+  ]
 };
 
 // Stripe webhook necesita body RAW; para el resto usamos JSON normal
 app.use(cors(corsOptions));
+// ✅ FIX: handle preflight for all routes
+app.options('*', cors(corsOptions));
 
 // Request ID middleware for request correlation
 app.use(requestIdMiddleware);
@@ -1131,134 +1140,14 @@ app.post('/api/revenue/payout/request', requireAuth, requireWalletLinked({ messa
    ========================= */
 
 // ===== KPI OBSERVATIONS - Data Capture for ML Correlation Engine =====
-// These endpoints capture structured KPI evaluations that will be used by the Python
-// correlation engine to measure relationships between KPIs and job outcomes.
-
-/**
- * POST /api/kpi-observations
- * Create one or more KPI observations (batch insert)
- *
- * Example curl:
- * curl -X POST http://localhost:3001/api/kpi-observations \
- *   -H "Content-Type: application/json" \
- *   -d '{
- *     "subject_wallet": "0xSUBJECT_ADDRESS",
- *     "observer_wallet": "0xOBSERVER_ADDRESS",
- *     "role_id": "uuid-of-role",
- *     "role_name": "Backend Developer",
- *     "observations": [
- *       {
- *         "kpi_name": "deployment_frequency",
- *         "rating_value": 4,
- *         "outcome_value": 120,
- *         "context_notes": "Deployed 120 times in Q1 2024",
- *         "observation_period": "Q1 2024"
- *       },
- *       {
- *         "kpi_name": "code_quality",
- *         "rating_value": 5,
- *         "context_notes": "Excellent code reviews"
- *       }
- *     ]
- *   }'
- */
-// SECURITY: KPI observations require authentication and linked wallet to prevent data poisoning
 app.post('/api/kpi-observations', requireAuth, requireWalletLinked({ message: 'You must have a linked wallet to submit KPI observations' }), kpiObservationsController.createKpiObservations);
-
-/**
- * GET /api/kpi-observations
- * Retrieve KPI observations with filters
- *
- * Query params:
- * - subject_wallet: Filter by subject
- * - observer_wallet: Filter by observer
- * - role_id: Filter by role
- * - kpi_name: Filter by KPI name
- * - verified: Filter by verification status (true/false)
- * - limit: Max results (default: 200, max: 1000)
- * - offset: Pagination offset
- *
- * Example:
- * curl http://localhost:3001/api/kpi-observations?subject_wallet=0xABC&limit=50
- */
-// SECURITY: Protect KPI data from unauthorized access
 app.get('/api/kpi-observations', requireAuth, kpiObservationsController.getKpiObservations);
-
-/**
- * GET /api/kpi-observations/summary
- * Get aggregated KPI summary (for analytics/Python ML)
- *
- * This endpoint uses the kpi_observations_summary VIEW which aggregates
- * observations by (subject, role, kpi) - perfect for feeding into pandas/scikit-learn.
- *
- * Query params:
- * - subject_wallet: Filter by subject
- * - role_id: Filter by role
- * - kpi_name: Filter by KPI
- * - limit: Max results (default: 100, max: 1000)
- *
- * Example:
- * curl http://localhost:3001/api/kpi-observations/summary?role_id=uuid
- */
-// SECURITY: Protect aggregated KPI data from unauthorized access
 app.get('/api/kpi-observations/summary', requireAuth, kpiObservationsController.getKpiObservationsSummary);
 
 /* =========================
    HRKEY SCORE ENDPOINTS (ML-powered scoring)
    ========================= */
 
-// ===== HRKEY SCORE - ML-powered professional scoring =====
-// This endpoint calculates a professional score (0-100) based on KPI observations
-// using a trained Ridge regression model.
-
-/**
- * POST /api/hrkey-score
- * Calculate HRKey Score for a subject+role
- *
- * Request body:
- * {
- *   "subject_wallet": "0xSUBJECT_ADDRESS",
- *   "role_id": "uuid-of-role"
- * }
- *
- * Response (success):
- * {
- *   "ok": true,
- *   "subject_wallet": "0xSUBJECT",
- *   "role_id": "uuid",
- *   "score": 78.45,              // HRKey Score (0-100)
- *   "raw_prediction": 125432.50, // Raw prediction in outcome_value scale
- *   "confidence": 0.8944,        // Confidence level (0-1)
- *   "confidence_percentage": 89.44,
- *   "n_observations": 16,        // Number of KPI observations used
- *   "used_kpis": ["kpi_1", "kpi_2", ...],
- *   "model_info": {
- *     "model_type": "ridge",
- *     "trained_at": "2025-11-22T...",
- *     "role_scope": "global",
- *     "metrics": { "mae": 8234.56, "rmse": 10567.89, "r2": 0.7456 }
- *   }
- * }
- *
- * Response (not enough data):
- * {
- *   "ok": false,
- *   "reason": "NOT_ENOUGH_DATA",
- *   "message": "Se requieren al menos 3 observaciones...",
- *   "n_observations": 2
- * }
- *
- * Example curl:
- * curl -X POST http://localhost:3001/api/hrkey-score \
- *   -H "Content-Type: application/json" \
- *   -d '{
- *     "subject_wallet": "0xSUBJECT_ADDRESS",
- *     "role_id": "UUID_OF_ROLE"
- *   }'
- */
-// SECURITY: Protect ML model from unauthorized access and model extraction attacks
-// Authorization: Users can only calculate score for their own wallet, superadmins can calculate for any
-// Uses requireOwnWallet middleware for wallet-scoped authorization
 app.post('/api/hrkey-score', requireAuth, requireOwnWallet('subject_wallet', {
   noWalletMessage: 'You must have a linked wallet to calculate scores',
   mismatchMessage: 'You can only calculate HRKey Score for your own wallet'
@@ -1266,7 +1155,6 @@ app.post('/api/hrkey-score', requireAuth, requireOwnWallet('subject_wallet', {
   try {
     const { subject_wallet, role_id } = req.body;
 
-    // Validar campos requeridos
     if (!subject_wallet || !role_id) {
       return res.status(400).json({
         ok: false,
@@ -1276,25 +1164,15 @@ app.post('/api/hrkey-score', requireAuth, requireOwnWallet('subject_wallet', {
       });
     }
 
-    // Calcular HRKey Score
     const result = await hrkeyScoreService.computeHrkeyScore({
       subjectWallet: subject_wallet,
       roleId: role_id
     });
 
-    // Manejar casos de error específicos
     if (!result.ok) {
-      // NOT_ENOUGH_DATA → 422 Unprocessable Entity
-      if (result.reason === 'NOT_ENOUGH_DATA') {
-        return res.status(422).json(result);
-      }
+      if (result.reason === 'NOT_ENOUGH_DATA') return res.status(422).json(result);
+      if (result.reason === 'NO_VALID_KPIS') return res.status(422).json(result);
 
-      // NO_VALID_KPIS → 422 Unprocessable Entity
-      if (result.reason === 'NO_VALID_KPIS') {
-        return res.status(422).json(result);
-      }
-
-      // MODEL_NOT_CONFIGURED → 503 Service Unavailable
       if (result.reason === 'INTERNAL_ERROR') {
         return res.status(503).json({
           ok: false,
@@ -1304,16 +1182,10 @@ app.post('/api/hrkey-score', requireAuth, requireOwnWallet('subject_wallet', {
         });
       }
 
-      // ROLE_MISMATCH → 400 Bad Request
-      if (result.reason === 'ROLE_MISMATCH') {
-        return res.status(400).json(result);
-      }
-
-      // Otros errores → 500 Internal Server Error
+      if (result.reason === 'ROLE_MISMATCH') return res.status(400).json(result);
       return res.status(500).json(result);
     }
 
-    // Éxito → 200 OK
     return res.json(result);
 
   } catch (err) {
@@ -1333,16 +1205,6 @@ app.post('/api/hrkey-score', requireAuth, requireOwnWallet('subject_wallet', {
   }
 });
 
-/**
- * GET /api/hrkey-score/history?limit=10&user_id=
- * Get HRScore snapshot history for a user.
- *
- * Auth: User can view own history, superadmins can view any user
- *
- * Query params:
- * - limit: Max results (default: 10, max: 50)
- * - user_id: Optional user id (superadmin only)
- */
 app.get('/api/hrkey-score/history', requireAuth, async (req, res) => {
   try {
     const rawLimit = parseInt(req.query.limit, 10);
@@ -1387,17 +1249,6 @@ app.get('/api/hrkey-score/history', requireAuth, async (req, res) => {
   }
 });
 
-/**
- * GET /api/hrkey-score/export?format=json&include_history=false&user_id=
- * Export HRScore data for a user.
- *
- * Auth: User can export own data, superadmins can export any user
- *
- * Query params:
- * - format: json | csv (default: json)
- * - include_history: boolean (default: false)
- * - user_id: Optional user id (superadmin only)
- */
 app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
   try {
     const format = (req.query.format || 'json').toString().toLowerCase();
@@ -1441,7 +1292,7 @@ app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
       });
       return res.status(500).json({
         success: false,
-        error: 'Internal server error',
+       error: 'Internal server error',
         message: 'Failed to export HRScore'
       });
     }
@@ -1526,29 +1377,6 @@ app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
   }
 });
 
-/**
- * GET /api/hrkey-score/model-info
- * Get information about the loaded ML model
- *
- * Response:
- * {
- *   "ok": true,
- *   "model_type": "ridge",
- *   "trained_at": "2025-11-22T...",
- *   "role_scope": "global",
- *   "n_features": 8,
- *   "metrics": { "mae": 8234.56, "rmse": 10567.89, "r2": 0.7456 },
- *   "features": [
- *     { "name": "deployment_frequency", "coef": 12345.67, "abs_coef": 12345.67 },
- *     ...
- *   ],
- *   "target_stats": { "min": 65000, "max": 180000, "mean": 115234.5, "std": 28456.7 }
- * }
- *
- * Example:
- * curl http://localhost:3001/api/hrkey-score/model-info
- */
-// SECURITY: Protect ML model metadata - superadmin only to prevent model extraction attacks
 app.get('/api/hrkey-score/model-info', requireAuth, requireSuperadmin, async (req, res) => {
   try {
     const modelInfo = hrkeyScoreService.getModelInfo();
@@ -1571,222 +1399,34 @@ app.get('/api/hrkey-score/model-info', requireAuth, requireSuperadmin, async (re
    HRSCORE PERSISTENCE & HISTORY ENDPOINTS
    ========================= */
 
-/**
- * GET /api/hrscore/info
- * Get HRScore Persistence Layer metadata
- *
- * Auth: Authenticated users
- */
 app.get('/api/hrscore/info', requireAuth, hrscoreController.getLayerInfoEndpoint);
-
-/**
- * GET /api/hrscore/user/:userId/latest?roleId=
- * Get latest HRKey Score for a user
- *
- * Auth: User can view own scores, superadmins can view all
- *
- * Example:
- * curl -H "Authorization: Bearer TOKEN" \
- *   http://localhost:3001/api/hrscore/user/USER_UUID/latest
- */
 app.get('/api/hrscore/user/:userId/latest', requireAuth, hrscoreController.getLatestScoreEndpoint);
-
-/**
- * GET /api/hrscore/user/:userId/history?roleId=&days=90
- * Get historical HRKey Scores for a user
- *
- * Auth: User can view own history, superadmins can view all
- *
- * Query params:
- * - roleId: Optional role filter
- * - days: Number of days to look back (default: 90)
- *
- * Example:
- * curl -H "Authorization: Bearer TOKEN" \
- *   http://localhost:3001/api/hrscore/user/USER_UUID/history?days=30
- */
 app.get('/api/hrscore/user/:userId/history', requireAuth, hrscoreController.getScoreHistoryEndpoint);
-
-/**
- * GET /api/hrscore/user/:userId/improvement?roleId=&days=30
- * Calculate score improvement over a period
- *
- * Auth: User can view own improvement, superadmins can view all
- *
- * Example:
- * curl -H "Authorization: Bearer TOKEN" \
- *   http://localhost:3001/api/hrscore/user/USER_UUID/improvement?days=30
- */
 app.get('/api/hrscore/user/:userId/improvement', requireAuth, hrscoreController.getScoreImprovementEndpoint);
-
-/**
- * GET /api/hrscore/user/:userId/stats?roleId=&days=90
- * Get statistical summary of user's scores
- *
- * Auth: User can view own stats, superadmins can view all
- *
- * Example:
- * curl -H "Authorization: Bearer TOKEN" \
- *   http://localhost:3001/api/hrscore/user/USER_UUID/stats
- */
 app.get('/api/hrscore/user/:userId/stats', requireAuth, hrscoreController.getScoreStatsEndpoint);
-
-/**
- * GET /api/hrscore/user/:userId/evolution?roleId=&days=90
- * Get score evolution with rich analytics
- *
- * Auth: Superadmin only (contains advanced metrics)
- *
- * Example:
- * curl -H "Authorization: Bearer SUPERADMIN_TOKEN" \
- *   http://localhost:3001/api/hrscore/user/USER_UUID/evolution
- */
 app.get('/api/hrscore/user/:userId/evolution', requireSuperadmin, hrscoreController.getScoreEvolutionEndpoint);
-
-/**
- * POST /api/hrscore/calculate
- * Manually trigger HRScore calculation
- *
- * Auth: Superadmin only
- *
- * Body:
- * {
- *   userId: "uuid",
- *   roleId: "uuid" | null,
- *   triggerSource: "manual" | "api_request"
- * }
- *
- * Example:
- * curl -X POST http://localhost:3001/api/hrscore/calculate \
- *   -H "Authorization: Bearer SUPERADMIN_TOKEN" \
- *   -H "Content-Type: application/json" \
- *   -d '{"userId": "USER_UUID", "roleId": null}'
- */
 app.post('/api/hrscore/calculate', requireSuperadmin, hrscoreController.calculateScoreEndpoint);
 
 /* =========================
    ANALYTICS ENDPOINTS (Superadmin only)
    ========================= */
 
-/**
- * GET /api/analytics/dashboard
- * Get comprehensive analytics dashboard data
- *
- * Query params:
- * - days: Number of days to look back (default: 30)
- *
- * Returns aggregated metrics:
- * - Conversion funnel
- * - Demand trends
- * - Top candidates by activity
- * - Top companies by activity
- * - Overall event counts
- *
- * Example:
- * curl -H "Authorization: Bearer TOKEN" http://localhost:3001/api/analytics/dashboard?days=30
- */
 app.get('/api/analytics/dashboard', requireSuperadmin, analyticsController.getAnalyticsDashboardEndpoint);
-
-/**
- * GET /api/analytics/info
- * Get analytics layer metadata and capabilities
- *
- * Returns:
- * - Event types and categories
- * - Available metrics
- * - Layer version
- *
- * Example:
- * curl -H "Authorization: Bearer TOKEN" http://localhost:3001/api/analytics/info
- */
 app.get('/api/analytics/info', requireSuperadmin, analyticsController.getAnalyticsInfoEndpoint);
-
-/**
- * GET /api/analytics/candidates/activity
- * Get candidate activity metrics
- *
- * Query params:
- * - days: Number of days (default: 30)
- * - limit: Max results (default: 50)
- *
- * Example:
- * curl -H "Authorization: Bearer TOKEN" http://localhost:3001/api/analytics/candidates/activity?days=30&limit=50
- */
 app.get('/api/analytics/candidates/activity', requireSuperadmin, analyticsController.getCandidateActivityEndpoint);
-
-/**
- * GET /api/analytics/companies/activity
- * Get company activity and behavior metrics
- *
- * Query params:
- * - days: Number of days (default: 30)
- * - limit: Max results (default: 50)
- *
- * Example:
- * curl -H "Authorization: Bearer TOKEN" http://localhost:3001/api/analytics/companies/activity?days=30&limit=50
- */
 app.get('/api/analytics/companies/activity', requireSuperadmin, analyticsController.getCompanyActivityEndpoint);
-
-/**
- * GET /api/analytics/funnel
- * Get conversion funnel analysis
- *
- * Query params:
- * - days: Number of days (default: 30)
- *
- * Returns funnel stages with conversion rates:
- * - Signups → Companies Created → Data Requests → Approvals → Payments
- *
- * Example:
- * curl -H "Authorization: Bearer TOKEN" http://localhost:3001/api/analytics/funnel?days=30
- */
 app.get('/api/analytics/funnel', requireSuperadmin, analyticsController.getConversionFunnelEndpoint);
-
-/**
- * GET /api/analytics/demand-trends
- * Get market demand trends for skills and locations
- *
- * Query params:
- * - days: Number of days (default: 30)
- *
- * Returns:
- * - Top skills by search volume
- * - Top locations by search volume
- * - Active companies searching
- * - Total searches
- *
- * Example:
- * curl -H "Authorization: Bearer TOKEN" http://localhost:3001/api/analytics/demand-trends?days=30
- */
 app.get('/api/analytics/demand-trends', requireSuperadmin, analyticsController.getDemandTrendsEndpoint);
-
-/**
- * GET /api/analytics/skills/trending
- * Get trending skills analysis
- *
- * Query params:
- * - days: Number of days for recent period (default: 7)
- *
- * Returns skills trending up/down compared to previous period
- *
- * Example:
- * curl -H "Authorization: Bearer TOKEN" http://localhost:3001/api/analytics/skills/trending?days=7
- */
 app.get('/api/analytics/skills/trending', requireSuperadmin, analyticsController.getTrendingSkillsEndpoint);
 
 /* =========================
    DEBUG ROUTE (Temporary - Remove after Sentry verification)
    ========================= */
-// =======================================================
-// Sentry Debug Route — ONLY ENABLED IN NON-PRODUCTION
-// =======================================================
 if (process.env.NODE_ENV !== 'production') {
   app.get('/debug-sentry', async (req, res) => {
     try {
-      // Lanzamos un error intencional
       throw new Error("Ruta de prueba ejecutada en Render");
     } catch (error) {
-      // Sentry captura el error
       if (sentryEnabled) {
         Sentry.captureException(error, scope => {
           scope.setTag('route', '/debug-sentry');
@@ -1836,3 +1476,4 @@ if (process.env.NODE_ENV !== 'test') {
     await ensureSuperadmin();
   });
 }
+
