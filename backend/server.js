@@ -60,8 +60,7 @@ import {
   submitReferenceSchema,
   getReferenceByTokenSchema,
   createReferenceInviteSchema,
-  respondReferenceSchema,
-  getCandidateReferencesParamsSchema
+  respondReferenceSchema
 } from './schemas/reference.schema.js';
 import { createPaymentIntentSchema } from './schemas/payment.schema.js';
 
@@ -143,6 +142,7 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
 // ✅ Admin key (para rutas /api/admin/* sin Supabase JWT)
+//   Preferí HRKEY_ADMIN_KEY como nombre “final”, pero dejamos fallback a ADMIN_KEY.
 const HRKEY_ADMIN_KEY = process.env.HRKEY_ADMIN_KEY || process.env.ADMIN_KEY;
 
 // Fail fast in production if Stripe secrets are missing
@@ -175,7 +175,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
  *  - Query string: ?admin_key=...
  *  - Header: x-admin-key: ...
  *
- * Si quieres máxima seguridad: rota HRKEY_ADMIN_KEY en Render env vars.
+ * Nota:
+ *  - En Express/Node, los headers llegan en minúscula (req.headers['x-admin-key']).
+ *  - NO sirve intentar mandar "x-admin-key=..." en la URL como query param.
  */
 function requireAdminKey(req, res, next) {
   // En test, permitimos si no está configurada (opcional).
@@ -204,10 +206,10 @@ function requireAdminKey(req, res, next) {
   }
 
   try {
-    const a = Buffer.from(provided);
-    const b = Buffer.from(HRKEY_ADMIN_KEY);
+    const a = Buffer.from(provided, 'utf8');
+    const b = Buffer.from(HRKEY_ADMIN_KEY, 'utf8');
 
-    // timing safe compare requires same length
+    // timingSafeEqual requiere misma longitud
     if (a.length !== b.length) {
       return res.status(403).json({ error: 'Forbidden', message: 'Invalid admin key' });
     }
@@ -376,7 +378,6 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, curl, etc)
     if (!origin) {
-      // These are not browser XHR/fetch calls, so this does not weaken CORS security.
       return callback(null, true);
     }
 
@@ -386,7 +387,7 @@ const corsOptions = {
       'http://localhost:3000',
       'http://127.0.0.1:8000',
       'https://hrkey.xyz',
-      'https://www.hrkey.xyz', // ✅ allow www
+      'https://www.hrkey.xyz',
       'https://hrkey.vercel.app'
     ];
 
@@ -401,18 +402,17 @@ const corsOptions = {
         blocked: IS_PRODUCTION
       });
 
-      // SECURITY: Block in production, allow in development for testing
       if (IS_PRODUCTION) {
         callback(new Error('CORS policy: Origin not allowed'));
       } else {
-        callback(null, true); // Permissive in development
+        callback(null, true);
       }
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  // ✅ allow common headers + admin header
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key']
+  // ✅ allow common headers + admin header (preflight)
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key', 'X-Admin-Key']
 };
 
 // Stripe webhook necesita body RAW; para el resto usamos JSON normal
@@ -449,7 +449,7 @@ app.use(
         workerSrc: ["'self'", 'blob:']
       }
     },
-    crossOriginEmbedderPolicy: false, // Required for Base SDK compatibility
+    crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     hsts: {
       maxAge: 31536000,
@@ -695,36 +695,30 @@ app.get('/health/deep', async (req, res) => {
 /* =========================
    Wallet endpoints
    ========================= */
-app.post(
-  '/api/wallet/create',
-  requireAuth,
-  strictLimiter,
-  validateBody(createWalletSchema),
-  async (req, res) => {
-    try {
-      const { userId, email } = req.body;
+app.post('/api/wallet/create', requireAuth, strictLimiter, validateBody(createWalletSchema), async (req, res) => {
+  try {
+    const { userId, email } = req.body;
 
-      if (req.user.id !== userId) {
-        return res.status(403).json({
-          error: 'Forbidden',
-          message: 'You can only create a wallet for yourself'
-        });
-      }
-
-      const wallet = await WalletCreationService.createWalletForUser(userId, email);
-      res.json({ success: true, wallet });
-    } catch (e) {
-      logger.error('Failed to create wallet', {
-        requestId: req.requestId,
-        userId: req.body.userId,
-        email: req.body.email,
-        error: e.message,
-        stack: e.stack
+    if (req.user.id !== userId) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You can only create a wallet for yourself'
       });
-      res.status(500).json({ error: e.message });
     }
+
+    const wallet = await WalletCreationService.createWalletForUser(userId, email);
+    res.json({ success: true, wallet });
+  } catch (e) {
+    logger.error('Failed to create wallet', {
+      requestId: req.requestId,
+      userId: req.body.userId,
+      email: req.body.email,
+      error: e.message,
+      stack: e.stack
+    });
+    res.status(500).json({ error: e.message });
   }
-);
+});
 
 app.get('/api/wallet/:userId', requireAuth, validateParams(getWalletParamsSchema), async (req, res) => {
   try {
@@ -797,25 +791,20 @@ app.post('/api/reference/submit', tokenLimiter, validateBody(submitReferenceSche
   }
 });
 
-app.get(
-  '/api/reference/by-token/:token',
-  tokenLimiter,
-  validateParams(getReferenceByTokenSchema),
-  async (req, res) => {
-    try {
-      const result = await ReferenceService.getReferenceByToken(req.params.token);
-      res.json(result);
-    } catch (e) {
-      logger.error('Failed to get reference by token', {
-        requestId: req.requestId,
-        tokenHashPrefix: req.params.token ? hashInviteToken(req.params.token).slice(0, 12) : undefined,
-        error: e.message,
-        stack: e.stack
-      });
-      res.status(400).json({ success: false, error: e.message });
-    }
+app.get('/api/reference/by-token/:token', tokenLimiter, validateParams(getReferenceByTokenSchema), async (req, res) => {
+  try {
+    const result = await ReferenceService.getReferenceByToken(req.params.token);
+    res.json(result);
+  } catch (e) {
+    logger.error('Failed to get reference by token', {
+      requestId: req.requestId,
+      tokenHashPrefix: req.params.token ? hashInviteToken(req.params.token).slice(0, 12) : undefined,
+      error: e.message,
+      stack: e.stack
+    });
+    res.status(400).json({ success: false, error: e.message });
   }
-);
+});
 
 /**
  * GET /api/references/me
@@ -854,41 +843,35 @@ app.post(
 /* =========================
    Stripe Payments
    ========================= */
-app.post(
-  '/create-payment-intent',
-  requireAuth,
-  authLimiter,
-  validateBody(createPaymentIntentSchema),
-  async (req, res) => {
-    try {
-      const { amount, email, promoCode } = req.body;
+app.post('/create-payment-intent', requireAuth, authLimiter, validateBody(createPaymentIntentSchema), async (req, res) => {
+  try {
+    const { amount, email, promoCode } = req.body;
 
-      const receiptEmail = email || req.user.email;
+    const receiptEmail = email || req.user.email;
 
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount,
-        currency: 'usd',
-        receipt_email: receiptEmail,
-        metadata: { promoCode: promoCode || 'none', plan: 'pro-lifetime' },
-        description: 'HRKey PRO - Lifetime Access'
-      });
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency: 'usd',
+      receipt_email: receiptEmail,
+      metadata: { promoCode: promoCode || 'none', plan: 'pro-lifetime' },
+      description: 'HRKey PRO - Lifetime Access'
+    });
 
-      res.json({
-        clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id
-      });
-    } catch (e) {
-      logger.error('Failed to create Stripe payment intent', {
-        requestId: req.requestId,
-        userId: req.user?.id,
-        amount: req.body.amount,
-        error: e.message,
-        stack: e.stack
-      });
-      res.status(500).json({ error: e.message });
-    }
+    res.json({
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id
+    });
+  } catch (e) {
+    logger.error('Failed to create Stripe payment intent', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      amount: req.body.amount,
+      error: e.message,
+      stack: e.stack
+    });
+    res.status(500).json({ error: e.message });
   }
-);
+});
 
 // Stripe webhook: body RAW
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -1029,11 +1012,7 @@ app.get(
 
 // ===== CANDIDATE EVALUATION ENDPOINT =====
 app.get('/api/candidates/:userId/evaluation', requireAuth, candidateEvaluationController.getCandidateEvaluation);
-app.get(
-  '/api/candidates/:userId/tokenomics-preview',
-  requireAuth,
-  tokenomicsPreviewController.getTokenomicsPreview
-);
+app.get('/api/candidates/:userId/tokenomics-preview', requireAuth, tokenomicsPreviewController.getTokenomicsPreview);
 app.get('/api/me/public-identifier', requireAuth, publicIdentifierController.getMyPublicIdentifier);
 app.get('/api/public/candidates/:identifier', publicProfileController.getPublicCandidateProfile);
 
@@ -1045,7 +1024,13 @@ app.patch('/api/company/:companyId', requireAuth, requireCompanySigner, companyC
 app.post('/api/company/:companyId/verify', requireAuth, requireSuperadmin, companyController.verifyCompany);
 
 // ===== COMPANY SIGNERS ENDPOINTS =====
-app.post('/api/company/:companyId/signers', strictLimiter, requireAuth, requireCompanySigner, signersController.inviteSigner);
+app.post(
+  '/api/company/:companyId/signers',
+  strictLimiter,
+  requireAuth,
+  requireCompanySigner,
+  signersController.inviteSigner
+);
 app.get('/api/company/:companyId/signers', requireAuth, requireCompanySigner, signersController.getSigners);
 app.patch(
   '/api/company/:companyId/signers/:signerId',
@@ -1063,7 +1048,8 @@ app.get('/api/audit/logs', requireAuth, auditController.getAuditLogs);
 app.get('/api/audit/recent', requireAuth, auditController.getRecentActivity);
 
 // ✅ ADMIN OVERVIEW (NO JWT) - usa admin_key / x-admin-key
-app.get('/api/admin/overview', requireAdminKey, adminOverviewController.getAdminOverviewHandler);
+// ✅ AÑADIMOS strictLimiter para evitar abuso (además de apiLimiter global)
+app.get('/api/admin/overview', strictLimiter, requireAdminKey, adminOverviewController.getAdminOverviewHandler);
 
 // ===== DATA ACCESS ENDPOINTS (Pay-per-query) =====
 app.post('/api/data-access/request', requireAuth, dataAccessController.createDataAccessRequest);
@@ -1206,7 +1192,9 @@ app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
   try {
     const format = (req.query.format || 'json').toString().toLowerCase();
     const includeHistoryRaw = req.query.include_history;
-    const includeHistory = ['true', '1', 'yes'].includes((includeHistoryRaw ?? 'false').toString().toLowerCase());
+    const includeHistory = ['true', '1', 'yes'].includes(
+      (includeHistoryRaw ?? 'false').toString().toLowerCase()
+    );
 
     if (!['json', 'csv'].includes(format)) {
       return res.status(400).json({
@@ -1292,7 +1280,12 @@ app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
 
       const header = ['user_id', 'score', 'trigger_source', 'created_at'].join(',');
       const rows = snapshots.map((snapshot) =>
-        [escapeCsvValue(snapshot.user_id), escapeCsvValue(snapshot.score), escapeCsvValue(snapshot.trigger_source), escapeCsvValue(snapshot.created_at)].join(',')
+        [
+          escapeCsvValue(snapshot.user_id),
+          escapeCsvValue(snapshot.score),
+          escapeCsvValue(snapshot.trigger_source),
+          escapeCsvValue(snapshot.created_at)
+        ].join(',')
       );
       const csvBody = [header, ...rows].join('\n');
 
@@ -1420,4 +1413,3 @@ if (process.env.NODE_ENV !== 'test') {
     await ensureSuperadmin();
   });
 }
-
