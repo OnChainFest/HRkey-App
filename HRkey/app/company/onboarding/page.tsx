@@ -8,8 +8,8 @@ import { supabase } from "@/lib/supabaseClient";
 type Company = {
   id: string;
   name: string;
-  taxId?: string;
-  domainEmail?: string;
+  tax_id?: string;
+  domain_email?: string;
   verified: boolean;
 };
 
