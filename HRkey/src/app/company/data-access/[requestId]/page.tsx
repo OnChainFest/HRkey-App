@@ -1,260 +1,324 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { apiGet } from "@/lib/apiClient";
 import { supabase } from "@/lib/supabaseClient";
 
-const ENV_API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  process.env.NEXT_PUBLIC_BACKEND_PUBLIC_URL ||
-  "";
-
-const normalizeBase = (base: string) => base.replace(/\/$/, "");
-
-const resolveApiBase = () => {
-  if (ENV_API_BASE) return normalizeBase(ENV_API_BASE);
-  if (typeof window !== "undefined") {
-    const origin = window.location.origin;
-    const isLocal = origin.includes("localhost:3000") || origin.includes("127.0.0.1:3000");
-    return normalizeBase(isLocal ? "http://localhost:3001" : origin);
-  }
-  return "http://localhost:3001";
+type Company = {
+  id: string;
+  name: string;
+  verified: boolean;
+  logo_url?: string;
 };
 
-const formatCurrency = (value: number | undefined) =>
-  value === undefined ? "—" : value.toLocaleString("en-US", { style: "currency", currency: "USD" });
-
-const truncateText = (text: string, max = 180) =>
-  text.length > max ? `${text.slice(0, max - 1)}…` : text;
-
-type ReferenceAnswer = {
-  questionId: string;
-  cleanedText: string;
-  exaggerationFlag: boolean;
-  positivityFlag: boolean;
-  negativityFlag: boolean;
-  impactSignal: number;
-  reliabilitySignal: number;
-  communicationSignal: number;
-};
-
-type AggregatedSignals = {
-  teamImpact: number;
-  reliability: number;
-  communication: number;
-};
-
-type CandidateEvaluation = {
-  userId: string;
-  scoring: {
-    referenceAnalysis: {
-      answers: ReferenceAnswer[];
-      aggregatedSignals: AggregatedSignals;
-    };
-    hrScoreResult: {
-      normalizedScore: number;
-      hrScore: number;
-    };
-    pricingResult: {
-      normalizedScore: number;
-      priceUsd: number;
-    };
-  };
-};
-
-type DataAccessEvaluationResponse = {
-  success?: boolean;
-  requestId?: string;
-  dataType?: string;
-  accessedAt?: string;
-  data?: any;
-  evaluation?: CandidateEvaluation;
+type Request = {
+  id: string;
+  company: Company;
+  targetUserId: string;
+  requestedByUserId: string;
+  referenceId?: string;
+  status: string;
+  priceAmount: number;
+  currency: string;
+  requestedDataType: string;
+  requestReason?: string;
+  paymentStatus: string;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt: string;
+  consentGivenAt?: string;
+  dataAccessed: boolean;
+  dataAccessedAt?: string;
+  accessCount: number;
 };
 
 type PageProps = {
   params: { requestId: string };
 };
 
-export default function DataAccessRequestPage({ params }: PageProps) {
+export default function DataAccessRequestStatusPage({ params }: PageProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [payload, setPayload] = useState<DataAccessEvaluationResponse | null>(null);
+  const [request, setRequest] = useState<Request | null>(null);
 
   useEffect(() => {
-    const load = async () => {
+    const loadRequest = async () => {
       try {
         setLoading(true);
         setError(null);
 
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError || !sessionData.session || !sessionData.session.user) {
-          setError("Please sign in to view this data access request.");
+        if (sessionError || !sessionData.session) {
+          setError("Please sign in to view this request.");
           setLoading(false);
           return;
         }
 
-        const accessToken = sessionData.session.access_token;
-        const baseUrl = resolveApiBase();
-        const url = `${baseUrl}/api/data-access/${params.requestId}/data`;
+        const result = await apiGet<{ success: boolean; request: Request }>(
+          `/api/data-access/request/${params.requestId}`
+        );
 
-        const response = await fetch(url, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-
-        if (!response.ok) {
-          const body = await response.json().catch(() => ({}));
-          const status = response.status;
-          if (status === 401 || status === 403) {
-            throw new Error("You don't have permission to view this data access request.");
-          }
-          if (status === 404) {
-            throw new Error("Data access request not found.");
-          }
-          throw new Error(body?.error || "Unable to load this request right now.");
+        if (result.success && result.request) {
+          setRequest(result.request);
         }
-
-        const result: DataAccessEvaluationResponse = await response.json();
-        setPayload(result);
       } catch (err: any) {
-        console.error("Failed to load data access request", err);
-        setError(err?.message || "Unexpected error loading request.");
+        console.error("Failed to load request", err);
+        if (err.status === 404) {
+          setError("Request not found.");
+        } else if (err.status === 403) {
+          setError("You don't have permission to view this request.");
+        } else {
+          setError(err.message || "Unable to load request.");
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    load();
+    loadRequest();
   }, [params.requestId]);
 
-  const evaluation = payload?.evaluation;
-  const hrScore = evaluation?.scoring.hrScoreResult.hrScore ?? 0;
-  const price = evaluation?.scoring.pricingResult.priceUsd ?? 10;
-  const aggregated = evaluation?.scoring.referenceAnalysis.aggregatedSignals || {
-    teamImpact: 0,
-    reliability: 0,
-    communication: 0,
+  const getStatusBadge = (status: string) => {
+    const statusLower = status.toLowerCase();
+    if (statusLower === "approved") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-green-100 px-4 py-2 text-sm font-medium text-green-700">
+          ✓ Approved
+        </span>
+      );
+    }
+    if (statusLower === "pending") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-yellow-100 px-4 py-2 text-sm font-medium text-yellow-700">
+          ⏳ Pending
+        </span>
+      );
+    }
+    if (statusLower === "rejected") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-red-100 px-4 py-2 text-sm font-medium text-red-700">
+          ✗ Rejected
+        </span>
+      );
+    }
+    if (statusLower === "expired") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700">
+          ⌛ Expired
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
+        {status}
+      </span>
+    );
   };
 
-  const answers = evaluation?.scoring.referenceAnalysis.answers ?? [];
+  const getStatusMessage = (status: string) => {
+    const statusLower = status.toLowerCase();
+    if (statusLower === "approved") {
+      return "The candidate has approved your data access request. You can now view the data.";
+    }
+    if (statusLower === "pending") {
+      return "Your request is waiting for the candidate to approve or reject it.";
+    }
+    if (statusLower === "rejected") {
+      return "The candidate has declined your data access request.";
+    }
+    if (statusLower === "expired") {
+      return "This request has expired without being approved.";
+    }
+    return "Status unknown.";
+  };
 
-  const profileLabel = useMemo(() => {
-    if (hrScore >= 80) return "High-impact candidate";
-    if (hrScore >= 60) return "Strong candidate";
-    return "Developing candidate";
-  }, [hrScore]);
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        <div className="rounded-lg border p-6 bg-white shadow-sm">Loading request...</div>
+      </div>
+    );
+  }
 
-  const renderSignalBar = (label: string, value: number) => (
-    <div className="space-y-1">
-      <div className="flex justify-between text-sm text-slate-700">
-        <span>{label}</span>
-        <span className="font-semibold">{Math.round(Math.max(0, Math.min(1, value)) * 100)}%</span>
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-700">{error}</div>
+        <div className="mt-4">
+          <Link
+            href="/company/dashboard"
+            className="inline-flex px-4 py-2 text-sm border rounded-lg shadow-sm bg-white hover:bg-slate-50"
+          >
+            ← Back to Dashboard
+          </Link>
+        </div>
       </div>
-      <div className="h-2 rounded bg-slate-200">
-        <div
-          className="h-2 rounded bg-indigo-500"
-          style={{ width: `${Math.min(100, Math.max(0, value * 100))}%` }}
-        />
+    );
+  }
+
+  if (!request) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-700">
+          Request not found.
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  const isExpired = new Date(request.expiresAt) < new Date();
+  const canViewData = request.status.toLowerCase() === "approved";
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Data Access Request</h1>
-          <p className="text-slate-600 text-sm mt-1">Review the requested data and candidate evaluation.</p>
-          <p className="text-xs text-slate-500 mt-1">Request ID: {payload?.requestId || params.requestId}</p>
-          {evaluation?.userId && (
-            <p className="text-xs text-slate-500">Candidate ID: {evaluation.userId}</p>
-          )}
+    <div className="max-w-4xl mx-auto px-6 py-10 space-y-6">
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-2 text-sm text-slate-600 mb-2">
+          <Link href="/company/dashboard" className="hover:text-indigo-600">
+            Dashboard
+          </Link>
+          <span>/</span>
+          <span>Request Details</span>
         </div>
-        <button
-          onClick={() => location.reload()}
-          className="px-3 py-2 text-sm border rounded-lg shadow-sm bg-white hover:bg-slate-50"
-        >
-          Refresh
-        </button>
+        <h1 className="text-3xl font-bold">Data Access Request</h1>
+        <p className="text-slate-600 mt-1">Request ID: {request.id}</p>
       </div>
 
-      {loading && <div className="rounded-lg border p-4 bg-white shadow-sm">Loading request…</div>}
+      {/* Status Card */}
+      <div className="rounded-lg border bg-white p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Status</h2>
+          {getStatusBadge(request.status)}
+        </div>
+        <p className="text-slate-600">{getStatusMessage(request.status)}</p>
 
-      {error && !loading && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>
-      )}
-
-      {!loading && !error && payload && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-xl border bg-white p-5 shadow-sm space-y-2">
-              <div className="text-sm text-slate-600">HRKey Score</div>
-              <div className="text-4xl font-bold text-slate-900">{Math.round(hrScore)}</div>
-              <div className="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700">
-                {profileLabel}
-              </div>
-            </div>
-            <div className="rounded-xl border bg-white p-5 shadow-sm space-y-2">
-              <div className="text-sm text-slate-600">Suggested access price</div>
-              <div className="text-3xl font-semibold text-slate-900">{formatCurrency(price)}</div>
-              <div className="text-sm text-slate-600">Based on references and performance signals.</div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border bg-white p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Aggregated signals</h2>
-              <span className="text-xs text-slate-500">0% = low, 100% = high</span>
-            </div>
-            <div className="space-y-3">
-              {renderSignalBar("Team impact", aggregated.teamImpact)}
-              {renderSignalBar("Reliability", aggregated.reliability)}
-              {renderSignalBar("Communication", aggregated.communication)}
-            </div>
-          </div>
-
-          <div className="rounded-xl border bg-white p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Reference summaries</h2>
-              <span className="text-sm text-slate-600">{answers.length} reference{answers.length === 1 ? "" : "s"}</span>
-            </div>
-
-            {answers.length === 0 && (
-              <p className="text-sm text-slate-600">No references available for this candidate.</p>
+        {canViewData && (
+          <div className="pt-4">
+            <Link
+              href={`/company/data-access/${request.id}/data`}
+              className="inline-flex px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+              View Candidate Data →
+            </Link>
+            {request.dataAccessed && (
+              <p className="mt-2 text-sm text-green-600">
+                ✓ Data accessed {request.accessCount} time{request.accessCount !== 1 ? "s" : ""}
+                {request.dataAccessedAt && ` · Last accessed: ${new Date(request.dataAccessedAt).toLocaleString()}`}
+              </p>
             )}
+          </div>
+        )}
 
-            <div className="space-y-3">
-              {answers.map((answer, index) => (
-                <div key={`${answer.questionId}-${index}`} className="rounded-lg border p-4 bg-slate-50">
-                  <div className="flex items-center justify-between text-sm text-slate-700">
-                    <span className="font-semibold">{answer.questionId || `Reference #${index + 1}`}</span>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-800 leading-relaxed">
-                    {truncateText(answer.cleanedText || "(No response)")}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                    {answer.positivityFlag && (
-                      <span className="rounded-full bg-green-100 text-green-700 px-3 py-1">Positive</span>
-                    )}
-                    {answer.negativityFlag && (
-                      <span className="rounded-full bg-amber-100 text-amber-700 px-3 py-1">Contains concerns</span>
-                    )}
-                    {answer.exaggerationFlag && (
-                      <span className="rounded-full bg-sky-100 text-sky-700 px-3 py-1">Exaggerated tone</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+        {request.status.toLowerCase() === "pending" && isExpired && (
+          <div className="pt-4 rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
+            <p className="font-medium">⚠️ Request Expired</p>
+            <p className="mt-1">This request has expired and will be automatically marked as expired.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Request Details */}
+      <div className="rounded-lg border bg-white p-6 shadow-sm space-y-4">
+        <h2 className="text-lg font-semibold">Request Details</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="text-slate-600">Candidate User ID:</span>
+            <p className="font-mono text-xs mt-1 break-all">{request.targetUserId}</p>
           </div>
 
-          {!evaluation && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
-              Evaluation data is not available for this request.
+          <div>
+            <span className="text-slate-600">Data Type:</span>
+            <p className="font-medium mt-1">{request.requestedDataType || "reference"}</p>
+          </div>
+
+          <div>
+            <span className="text-slate-600">Price:</span>
+            <p className="font-medium mt-1">
+              ${request.priceAmount} {request.currency}
+            </p>
+          </div>
+
+          <div>
+            <span className="text-slate-600">Payment Status:</span>
+            <p className="font-medium mt-1">{request.paymentStatus}</p>
+          </div>
+
+          <div>
+            <span className="text-slate-600">Created:</span>
+            <p className="font-medium mt-1">{new Date(request.createdAt).toLocaleString()}</p>
+          </div>
+
+          <div>
+            <span className="text-slate-600">Expires:</span>
+            <p className="font-medium mt-1">{new Date(request.expiresAt).toLocaleString()}</p>
+          </div>
+
+          {request.consentGivenAt && (
+            <div>
+              <span className="text-slate-600">Approved At:</span>
+              <p className="font-medium mt-1">{new Date(request.consentGivenAt).toLocaleString()}</p>
+            </div>
+          )}
+
+          {request.updatedAt && (
+            <div>
+              <span className="text-slate-600">Last Updated:</span>
+              <p className="font-medium mt-1">{new Date(request.updatedAt).toLocaleString()}</p>
             </div>
           )}
         </div>
+
+        {request.requestReason && (
+          <div className="pt-4 border-t">
+            <span className="text-sm text-slate-600">Request Purpose:</span>
+            <p className="mt-1 text-sm">{request.requestReason}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Company Info */}
+      {request.company && (
+        <div className="rounded-lg border bg-white p-6 shadow-sm space-y-2">
+          <h2 className="text-lg font-semibold">Company</h2>
+          <div className="flex items-center gap-3">
+            {request.company.logo_url && (
+              <img
+                src={request.company.logo_url}
+                alt={request.company.name}
+                className="w-12 h-12 rounded-lg object-cover"
+              />
+            )}
+            <div>
+              <p className="font-medium">{request.company.name}</p>
+              {request.company.verified && (
+                <span className="inline-flex items-center text-xs text-green-600">
+                  ✓ Verified Company
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
       )}
+
+      {/* Actions */}
+      <div className="flex gap-3">
+        <Link
+          href="/company/dashboard"
+          className="px-4 py-2 border border-slate-300 rounded-lg font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
+        >
+          ← Back to Dashboard
+        </Link>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 border border-slate-300 rounded-lg font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
+        >
+          Refresh Status
+        </button>
+      </div>
     </div>
   );
 }
