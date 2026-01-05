@@ -44,10 +44,24 @@
     }
     .btn-primary { background: linear-gradient(135deg, #00C4C7 0%, #00d2cc 100%); color:#000; }
     .btn-secondary { background: transparent; border:2px solid #00C4C7; color:#00C4C7; }
+    .btn-ai { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color:#fff; }
     .alert { margin-top:14px; padding:12px 14px; border-radius:10px; }
     .alert-success { background:rgba(16,185,129,.1); color:#10b981; border-left:4px solid #10b981; }
     .alert-error { background:rgba(239,68,68,.12); color:#ef4444; border-left:4px solid #ef4444; }
+    .alert-info { background:rgba(59,130,246,.1); color:#3b82f6; border-left:4px solid #3b82f6; }
     .tiny { color:#94a3b8; font-size:12px; margin-top:2px; }
+
+    /* AI Refinement Modal */
+    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.8); z-index:1000; }
+    .modal-content { max-width:900px; margin:60px auto; background:#13161f; border-radius:16px; padding:28px; max-height:80vh; overflow-y:auto; }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+    .modal-close { cursor:pointer; font-size:28px; color:#9ca3af; }
+    .modal-close:hover { color:#fff; }
+    .refined-text { background:#0f172a; border:1px solid rgba(0,196,199,.25); border-radius:10px; padding:16px; margin:14px 0; color:#e5e7eb; line-height:1.6; white-space:pre-wrap; }
+    .flag-item { background:rgba(251,191,36,.08); border:1px solid rgba(251,191,36,.3); border-radius:10px; padding:14px; margin:10px 0; }
+    .flag-type { font-weight:700; color:#fbbf24; margin-bottom:6px; }
+    .flag-excerpt { color:#9ca3af; font-size:13px; font-style:italic; margin:6px 0; }
+    .flag-suggestion { color:#e5e7eb; margin-top:6px; }
 
     /* Thanks view */
     .center { text-align:center; }
@@ -69,6 +83,8 @@
 
           <label for="overall">General feedback *</label>
           <textarea id="overall" placeholder="What stood out about their performance? What would you highlight?"></textarea>
+          <button type="button" class="btn btn-ai" id="refineBtn" style="margin-top:10px;">✨ Refine with HRKey AI</button>
+          <div class="tiny" style="margin-top:4px;">Get AI-powered editorial suggestions to improve clarity and professionalism</div>
 
           <div class="row">
             <div>
@@ -107,14 +123,31 @@
         <div style="font-size:48px; margin-top:4px;">🎉</div>
         <div class="big">Thanks for providing your reference!</div>
         <p class="sub">
-          You’ve helped verify someone’s professional profile.
+          You've helped verify someone's professional profile.
           Build your own and manage references in minutes.
         </p>
         <div class="cta">
           <a class="btn btn-primary" href="auth.html">🚀 Create Free Account</a>
           <a class="btn btn-secondary" href="index.html">Maybe later</a>
         </div>
-        <div class="tiny" style="margin-top:10px;">You’ll be redirected shortly…</div>
+        <div class="tiny" style="margin-top:10px;">You'll be redirected shortly…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Refinement Modal -->
+  <div id="aiModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 style="margin:0; color:#fff;">AI Refined Feedback</h2>
+        <span class="modal-close" id="closeModal">&times;</span>
+      </div>
+
+      <div id="refinedContent"></div>
+
+      <div style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap;">
+        <button class="btn btn-primary" id="useRefinedBtn">✅ Use This Version</button>
+        <button class="btn btn-secondary" id="keepOriginalBtn">Keep Original</button>
       </div>
     </div>
   </div>
@@ -275,6 +308,191 @@
     document.getElementById('evalForm').addEventListener('submit', submitEvaluation);
     document.getElementById('cancelBtn').addEventListener('click', () => {
       location.assign("/index.html");
+    });
+
+    // ===== AI Refinement Feature =====
+    const API_BASE_URL = (() => {
+      const isProd = location.hostname === 'hrkey.xyz' || location.hostname === 'www.hrkey.xyz';
+      const isVercel = location.hostname.includes('vercel.app');
+      if (isProd || isVercel) return 'https://hrkey-backend.onrender.com';
+      return 'http://localhost:3001';
+    })();
+
+    let refinedTextCache = '';
+
+    // Get experience context from URL params or use defaults
+    function getExperienceContext() {
+      // Try to get from URL params if available
+      const role = url.searchParams.get('role') || 'Professional';
+      const company = url.searchParams.get('company') || 'their company';
+      const startDate = url.searchParams.get('startDate') || '2020-01-01';
+      const endDate = url.searchParams.get('endDate') || 'present';
+      const visibility = url.searchParams.get('visibility') || 'DEFAULT';
+
+      return { role, company, startDate, endDate, visibility };
+    }
+
+    // Get auth token from localStorage/sessionStorage
+    function getAuthToken() {
+      try {
+        // Try various common storage keys used by Supabase
+        const keys = [
+          'sb-access-token',
+          'sb-refresh-token',
+          'supabase.auth.token',
+          'hrkey-auth-token'
+        ];
+
+        for (const key of keys) {
+          const token = localStorage.getItem(key) || sessionStorage.getItem(key);
+          if (token) {
+            try {
+              const parsed = JSON.parse(token);
+              if (parsed.access_token) return parsed.access_token;
+              if (typeof parsed === 'string') return parsed;
+            } catch {
+              if (typeof token === 'string' && token.length > 20) return token;
+            }
+          }
+        }
+
+        // Check for Supabase session
+        const supabaseKeys = Object.keys(localStorage).filter(k => k.startsWith('sb-') && k.includes('-auth-token'));
+        for (const key of supabaseKeys) {
+          try {
+            const data = JSON.parse(localStorage.getItem(key) || '{}');
+            if (data.access_token) return data.access_token;
+          } catch {}
+        }
+
+        return null;
+      } catch {
+        return null;
+      }
+    }
+
+    async function refineWithAI() {
+      const draft = document.getElementById('overall').value?.trim();
+
+      if (!draft || draft.length < 10) {
+        showAlert('Please write at least 10 characters of feedback before refining.', 'error');
+        return;
+      }
+
+      // Check authentication
+      const authToken = getAuthToken();
+      if (!authToken) {
+        showAlert('Please create an account and log in to use AI refinement. This feature is available to authenticated users.', 'error');
+        setTimeout(() => {
+          if (confirm('Would you like to create a free account now?')) {
+            location.assign('/auth.html');
+          }
+        }, 1000);
+        return;
+      }
+
+      const refineBtn = document.getElementById('refineBtn');
+      const originalBtnText = refineBtn.textContent;
+
+      try {
+        refineBtn.disabled = true;
+        refineBtn.textContent = '⏳ Refining...';
+        setStatus('Refining with AI...');
+
+        const experience = getExperienceContext();
+        const response = await fetch(`${API_BASE_URL}/api/ai/reference/refine`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ experience, draft })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || data.error || 'Failed to refine feedback');
+        }
+
+        // Store refined text
+        refinedTextCache = data.refined || '';
+
+        // Build modal content
+        let content = '<div><label style="color:#00C4C7; font-weight:600; margin-bottom:8px; display:block;">Refined Version:</label>';
+        content += `<div class="refined-text">${escapeHtml(data.refined)}</div></div>`;
+
+        // Add flags if any
+        if (data.flags && data.flags.length > 0) {
+          content += '<div style="margin-top:20px;"><label style="color:#fbbf24; font-weight:600; margin-bottom:8px; display:block;">⚠️ Editorial Notes:</label>';
+          data.flags.forEach(flag => {
+            content += '<div class="flag-item">';
+            content += `<div class="flag-type">${formatFlagType(flag.type)}</div>`;
+            if (flag.excerpt) {
+              content += `<div class="flag-excerpt">"${escapeHtml(flag.excerpt)}"</div>`;
+            }
+            if (flag.suggestion) {
+              content += `<div class="flag-suggestion">💡 ${escapeHtml(flag.suggestion)}</div>`;
+            }
+            content += '</div>';
+          });
+          content += '</div>';
+        }
+
+        document.getElementById('refinedContent').innerHTML = content;
+        document.getElementById('aiModal').style.display = 'block';
+
+        setStatus('');
+      } catch (error) {
+        console.error('AI refinement error:', error);
+        showAlert(`Failed to refine: ${error.message}`, 'error');
+        setStatus('');
+      } finally {
+        refineBtn.disabled = false;
+        refineBtn.textContent = originalBtnText;
+      }
+    }
+
+    function formatFlagType(type) {
+      const labels = {
+        'POTENTIALLY_SENSITIVE_COMPANY_INFO': 'Potentially Sensitive Company Info',
+        'LEGAL_VISIBILITY_RISK': 'Legal/Visibility Risk',
+        'LOW_SPECIFICITY': 'Low Specificity'
+      };
+      return labels[type] || type;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Modal controls
+    document.getElementById('refineBtn').addEventListener('click', refineWithAI);
+
+    document.getElementById('closeModal').addEventListener('click', () => {
+      document.getElementById('aiModal').style.display = 'none';
+    });
+
+    document.getElementById('useRefinedBtn').addEventListener('click', () => {
+      if (refinedTextCache) {
+        document.getElementById('overall').value = refinedTextCache;
+        showAlert('✅ Refined version applied! You can edit it further if needed.', 'success');
+      }
+      document.getElementById('aiModal').style.display = 'none';
+    });
+
+    document.getElementById('keepOriginalBtn').addEventListener('click', () => {
+      document.getElementById('aiModal').style.display = 'none';
+    });
+
+    // Close modal on outside click
+    window.addEventListener('click', (e) => {
+      const modal = document.getElementById('aiModal');
+      if (e.target === modal) {
+        modal.style.display = 'none';
+      }
     });
   </script>
 

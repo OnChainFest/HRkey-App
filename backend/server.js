@@ -31,6 +31,7 @@ import adminOverviewController from './controllers/adminOverview.controller.js';
 import analyticsController from './controllers/analyticsController.js';
 import hrscoreController from './controllers/hrscoreController.js';
 import referencesController from './controllers/referencesController.js';
+import aiRefineController from './controllers/aiRefine.controller.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 import { getScoreSnapshots } from './services/hrscore/scoreSnapshots.js';
 
@@ -63,6 +64,7 @@ import {
   respondReferenceSchema
 } from './schemas/reference.schema.js';
 import { createPaymentIntentSchema } from './schemas/payment.schema.js';
+import { refineReferenceSchema } from './schemas/aiRefine.schema.js';
 
 dotenv.config();
 
@@ -838,6 +840,17 @@ app.post(
   validateParams(getReferenceByTokenSchema),
   validateBody422(respondReferenceSchema),
   referencesController.respondToReferenceInvite
+);
+
+/* =========================
+   AI Reference Refinement
+   ========================= */
+app.post(
+  '/api/ai/reference/refine',
+  requireAuth,
+  strictLimiter,
+  validateBody(refineReferenceSchema),
+  aiRefineController.refineReference
 );
 
 /* =========================
