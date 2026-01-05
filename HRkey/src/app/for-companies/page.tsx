@@ -2,14 +2,10 @@
 
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Section from "@/components/Section";
 import { ApiClientError, apiPost } from "@/lib/apiClient";
 import Link from "next/link";
-import type { Metadata } from "next";
-import Navbar from "@/components/Navbar";
-import Section from "@/components/Section";
 import CTAButton from "@/components/CTAButton";
 
 const PRICING = {
@@ -60,12 +56,6 @@ const faqs = [
 ];
 
 const signupHref = "/dashboard?intent=company";
-
-export const metadata: Metadata = {
-  title: "HRKey for Companies | Verified references with consent",
-  description:
-    "Access verified professional references with candidate consent. Built for agencies and hiring teams that need speed and compliance.",
-};
 
 function B2BHero() {
   return (

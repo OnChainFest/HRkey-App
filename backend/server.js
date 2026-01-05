@@ -1051,6 +1051,7 @@ app.patch(
   requireCompanySigner,
   signersController.updateSigner
 );
+app.get('/api/company/:companyId/data-access/requests', requireAuth, requireCompanySigner, dataAccessController.getCompanyRequests);
 
 // Signer invitation endpoints
 app.get('/api/signers/invite/:token', tokenLimiter, signersController.getInvitationByToken);
@@ -1067,6 +1068,7 @@ app.get('/api/admin/overview', strictLimiter, requireAdminKey, adminOverviewCont
 // ===== DATA ACCESS ENDPOINTS (Pay-per-query) =====
 app.post('/api/data-access/request', requireAuth, dataAccessController.createDataAccessRequest);
 app.get('/api/data-access/pending', requireAuth, dataAccessController.getPendingRequests);
+app.get('/api/data-access/request/:requestId', requireAuth, dataAccessController.getRequestById);
 app.post('/api/data-access/:requestId/approve', requireAuth, dataAccessController.approveDataAccessRequest);
 app.post('/api/data-access/:requestId/reject', requireAuth, dataAccessController.rejectDataAccessRequest);
 app.get('/api/data-access/:requestId/data', requireAuth, dataAccessController.getDataByRequestId);

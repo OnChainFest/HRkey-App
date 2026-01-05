@@ -95,12 +95,6 @@ export default function PublicProfilePage({ params }: PageProps) {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
-      <Head>
-        <title>{pageTitle}</title>
-        <meta name="description" content={pageDescription} />
-      </Head>
-  return (
-    <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
       <header className="space-y-2">
         <p className="text-sm text-slate-500">Public profile preview</p>
         <h1 className="text-3xl font-semibold text-slate-900">
@@ -119,7 +113,6 @@ export default function PublicProfilePage({ params }: PageProps) {
       )}
 
       {error && !loading && (
-        <div className="p-4 rounded-md border border-amber-200 bg-amber-50 text-amber-800">{error}</div>
         <div className="p-4 rounded-md border border-amber-200 bg-amber-50 text-amber-800">
           {error}
         </div>
@@ -176,19 +169,6 @@ export default function PublicProfilePage({ params }: PageProps) {
                   <span>Tokenized estimate</span>
                   <span className="text-lg font-semibold text-slate-900">≈ {formatNumber(profile.hrkTokens)} HRK</span>
                 </div>
-          <section className="grid gap-4 md:grid-cols-2">
-            <div className="p-4 rounded-lg border border-slate-200 bg-white shadow-sm space-y-2">
-              <p className="text-sm text-slate-500">HRKey Score</p>
-              <div className="text-4xl font-bold text-slate-900">{Math.round(profile.hrScore)}</div>
-              <p className="text-sm text-indigo-600 font-semibold">{profileLabel}</p>
-            </div>
-            <div className="p-4 rounded-lg border border-slate-200 bg-white shadow-sm space-y-2">
-              <p className="text-sm text-slate-500">Typical access price</p>
-              <div className="text-4xl font-bold text-slate-900">{formatCurrency(profile.priceUsd)}</div>
-              {profile.hrkTokens !== null && (
-                <p className="text-sm text-slate-600">
-                  ≈ {formatNumber(profile.hrkTokens)} HRK tokens (internal rate)
-                </p>
               )}
             </div>
           </section>
@@ -196,13 +176,6 @@ export default function PublicProfilePage({ params }: PageProps) {
           {profile.skills && profile.skills.length > 0 && (
             <section className="p-5 rounded-xl border border-slate-200 bg-white shadow-sm space-y-3">
               <h3 className="text-lg font-semibold text-slate-900">Highlighted skills</h3>
-          <section className="p-4 rounded-lg border border-slate-200 bg-slate-50 shadow-inner space-y-3">
-            <h2 className="text-lg font-semibold text-slate-900">About this candidate</h2>
-            <p className="text-sm text-slate-700">
-              This public card summarizes verified references, the aggregated HRKey score, and a typical
-              access price. It is intended for discovery and marketing purposes.
-            </p>
-            {profile.skills && profile.skills.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {profile.skills.map((skill) => (
                   <span
@@ -230,22 +203,6 @@ export default function PublicProfilePage({ params }: PageProps) {
       {!loading && !error && !profile && (
         <div className="p-4 rounded-md border border-amber-200 bg-amber-50 text-amber-800">
           This HRKey public profile is not available.
-            )}
-          </section>
-
-          <section className="p-4 rounded-lg border border-slate-200 bg-white shadow-sm space-y-2">
-            <h3 className="text-lg font-semibold text-slate-900">What this means</h3>
-            <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
-              <li>HRKey Score reflects signal quality from verified references.</li>
-              <li>
-                The price is a suggested access tier based on the candidate&apos;s reference strength and profile
-                signals.
-              </li>
-              <li>
-                HRK token amounts are illustrative and will align with platform tokenomics in future releases.
-              </li>
-            </ul>
-          </section>
         </div>
       )}
     </div>

@@ -937,6 +937,186 @@ async function updateCreatorBalance(email, amount, currency, supabaseClient) {
 }
 
 // ============================================================================
+// GET SINGLE REQUEST BY ID
+// ============================================================================
+
+/**
+ * GET /api/data-access/request/:requestId
+ * Get a single data access request by ID
+ * Accessible by: company signers or target user
+ */
+export async function getRequestById(req, res) {
+  try {
+    const { requestId } = req.params;
+    const userId = req.user.id;
+
+    // Get the request
+    const { data: request, error: requestError } = await supabaseClient
+      .from('data_access_requests')
+      .select(`
+        *,
+        companies (
+          id,
+          name,
+          verified,
+          logo_url
+        )
+      `)
+      .eq('id', requestId)
+      .single();
+
+    if (requestError || !request) {
+      return res.status(404).json({
+        error: 'Request not found'
+      });
+    }
+
+    // Check authorization: user must be target user or company signer
+    const isTargetUser = request.target_user_id === userId;
+
+    let isCompanySigner = false;
+    if (!isTargetUser) {
+      const { data: signer } = await supabaseClient
+        .from('company_signers')
+        .select('id')
+        .eq('company_id', request.company_id)
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      isCompanySigner = !!signer;
+    }
+
+    if (!isTargetUser && !isCompanySigner) {
+      return res.status(403).json({
+        error: 'Permission denied',
+        message: 'You do not have access to this request'
+      });
+    }
+
+    return res.json({
+      success: true,
+      request: {
+        id: request.id,
+        company: request.companies,
+        targetUserId: request.target_user_id,
+        requestedByUserId: request.requested_by_user_id,
+        referenceId: request.reference_id,
+        status: request.status,
+        priceAmount: request.price_amount,
+        currency: request.currency,
+        requestedDataType: request.requested_data_type,
+        requestReason: request.request_reason,
+        paymentStatus: request.payment_status,
+        createdAt: request.created_at,
+        updatedAt: request.updated_at,
+        expiresAt: request.expires_at,
+        consentGivenAt: request.consent_given_at,
+        dataAccessed: request.data_accessed,
+        dataAccessedAt: request.data_accessed_at,
+        accessCount: request.access_count || 0
+      }
+    });
+  } catch (error) {
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get request by ID', {
+      userId: req.user?.id,
+      requestId: req.params?.requestId,
+      error: error.message,
+      stack: error.stack
+    });
+    return res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+}
+
+// ============================================================================
+// GET COMPANY'S DATA ACCESS REQUESTS
+// ============================================================================
+
+/**
+ * GET /api/company/:companyId/data-access/requests
+ * Get all data access requests for a company
+ * Requires: User must be an active signer of this company
+ */
+export async function getCompanyRequests(req, res) {
+  try {
+    const { companyId } = req.params;
+    const userId = req.user.id;
+
+    // Verify user is an active signer of the company
+    const { data: signer, error: signerError } = await supabaseClient
+      .from('company_signers')
+      .select('id, company_id')
+      .eq('company_id', companyId)
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (signerError || !signer) {
+      return res.status(403).json({
+        error: 'Permission denied',
+        message: 'You must be an active signer of this company'
+      });
+    }
+
+    // Get all requests for this company
+    const { data: requests, error } = await supabaseClient
+      .from('data_access_requests')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to fetch company requests', {
+        userId: req.user?.id,
+        companyId: companyId,
+        error: error.message,
+        stack: error.stack
+      });
+      return res.status(500).json({
+        error: 'Database error',
+        message: 'Failed to fetch requests'
+      });
+    }
+
+    return res.json({
+      success: true,
+      requests: requests.map(req => ({
+        id: req.id,
+        targetUserId: req.target_user_id,
+        requestedByUserId: req.requested_by_user_id,
+        referenceId: req.reference_id,
+        status: req.status,
+        priceAmount: req.price_amount,
+        currency: req.currency,
+        requestedDataType: req.requested_data_type,
+        requestReason: req.request_reason,
+        paymentStatus: req.payment_status,
+        createdAt: req.created_at,
+        updatedAt: req.updated_at,
+        expiresAt: req.expires_at,
+        dataAccessed: req.data_accessed
+      })),
+      total: requests.length
+    });
+  } catch (error) {
+    const reqLogger = logger.withRequest(req);
+    reqLogger.error('Failed to get company requests', {
+      userId: req.user?.id,
+      companyId: req.params?.companyId,
+      error: error.message,
+      stack: error.stack
+    });
+    return res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+}
+
+// ============================================================================
 // EXPORT CONTROLLER METHODS
 // ============================================================================
 
@@ -945,5 +1125,7 @@ export default {
   getPendingRequests,
   approveDataAccessRequest,
   rejectDataAccessRequest,
-  getDataByRequestId
+  getDataByRequestId,
+  getRequestById,
+  getCompanyRequests
 };
