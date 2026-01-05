@@ -1,6 +1,6 @@
 "use client";
 import { BrowserProvider, Contract } from "ethers";
-import abi from "../abi/HRKeyRegistry.json"; // <-- ABI correcto copiado al front
+import abi from "../abi/PeerProofRegistry.json"; // <-- ABI correcto copiado al front
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
 const BASE_SEPOLIA_ID = Number(process.env.NEXT_PUBLIC_BASE_SEPOLIA_ID || 84532);
