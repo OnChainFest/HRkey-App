@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabaseClient";
+import { apiPost, ApiClientError } from "../../lib/apiClient";
 
 type Row = Record<string, any>
 
@@ -146,64 +147,41 @@ export default function Dashboard() {
     await load()
   }
 
-  const del = async (id: string) => {
-    if (!confirm("¿Eliminar esta referencia?")) return
-    setMsg("Eliminando…")
-    const { error } = await supabase.from("references").delete().eq("id", id)
-    if (error) return setMsg(`No se pudo eliminar: ${error.message}`)
-    setMsg("Eliminada")
-    await load()
-  }
+  // DELETE REMOVED: Philosophy "Hidden ≠ erased"
+  // Users can hide references (strikethrough), but never permanently erase them
+  // Only database administrators can perform hard deletes if absolutely necessary
 
   const hideReference = async (id: string) => {
     const reason = prompt("Razón para ocultar (opcional):")
     if (reason === null) return // cancelled
+
     setMsg("Ocultando referencia…")
-    const { data: auth } = await supabase.auth.getUser()
-    const token = (await supabase.auth.getSession()).data.session?.access_token
-    if (!token) return setMsg("No hay sesión")
-
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
-    const res = await fetch(`${baseUrl}/api/references/${id}/hide`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({ reason })
-    })
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      return setMsg(`Error al ocultar: ${data.message || res.statusText}`)
+    try {
+      await apiPost(`/api/references/${id}/hide`, { reason })
+      setMsg("Referencia ocultada exitosamente")
+      await load()
+    } catch (err) {
+      const errorMsg = err instanceof ApiClientError
+        ? err.message
+        : "Error al ocultar la referencia"
+      setMsg(`Error: ${errorMsg}`)
     }
-
-    setMsg("Referencia ocultada exitosamente")
-    await load()
   }
 
   const unhideReference = async (id: string) => {
     if (!confirm("¿Mostrar esta referencia nuevamente?")) return
+
     setMsg("Mostrando referencia…")
-    const token = (await supabase.auth.getSession()).data.session?.access_token
-    if (!token) return setMsg("No hay sesión")
-
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
-    const res = await fetch(`${baseUrl}/api/references/${id}/unhide`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      }
-    })
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      return setMsg(`Error al mostrar: ${data.message || res.statusText}`)
+    try {
+      await apiPost(`/api/references/${id}/unhide`)
+      setMsg("Referencia visible nuevamente")
+      await load()
+    } catch (err) {
+      const errorMsg = err instanceof ApiClientError
+        ? err.message
+        : "Error al mostrar la referencia"
+      setMsg(`Error: ${errorMsg}`)
     }
-
-    setMsg("Referencia visible nuevamente")
-    await load()
   }
 
   // Enviar invitación y pasar a "submitted"
@@ -319,24 +297,24 @@ export default function Dashboard() {
           <div style={{ display: "grid", gap: 12 }}>
             {rows.map((r) => (
               <article key={r.id} style={{
-                border: r.is_hidden ? "2px solid #f59e0b" : "1px solid #e5e7eb",
+                border: r.is_hidden ? "1px solid #94a3b8" : "1px solid #e5e7eb",
                 borderRadius: 10,
                 padding: 12,
-                backgroundColor: r.is_hidden ? "#fffbeb" : "white",
-                opacity: r.is_hidden ? 0.75 : 1
+                backgroundColor: r.is_hidden ? "#f8fafc" : "white"
               }}>
                 {r.is_hidden && (
                   <div style={{
                     marginBottom: 12,
                     padding: 8,
-                    backgroundColor: "#fef3c7",
+                    backgroundColor: "#f1f5f9",
                     borderRadius: 6,
                     fontSize: 14,
                     fontWeight: 500,
-                    color: "#92400e"
+                    color: "#475569",
+                    borderLeft: "3px solid #94a3b8"
                   }}>
-                    🔒 Referencia oculta {r.hidden_at && `(desde ${fmt(r.hidden_at)})`}
-                    {r.hide_reason && <div style={{ fontSize: 12, marginTop: 4, fontWeight: 400 }}>Razón: {r.hide_reason}</div>}
+                    ℹ️ Referencia oculta {r.hidden_at && `(desde ${fmt(r.hidden_at)})`}
+                    {r.hide_reason && <div style={{ fontSize: 12, marginTop: 4, fontWeight: 400, color: "#64748b" }}>Razón: {r.hide_reason}</div>}
                   </div>
                 )}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
@@ -378,15 +356,14 @@ export default function Dashboard() {
                     )}
                     <button onClick={() => startEdit(r)}>Editar</button>
                     {r.is_hidden ? (
-                      <button onClick={() => unhideReference(r.id)} style={{ backgroundColor: "#10b981", color: "white" }}>
+                      <button onClick={() => unhideReference(r.id)} style={{ backgroundColor: "#64748b", color: "white" }}>
                         Mostrar
                       </button>
                     ) : (
-                      <button onClick={() => hideReference(r.id)} style={{ backgroundColor: "#f59e0b", color: "white" }}>
+                      <button onClick={() => hideReference(r.id)} style={{ backgroundColor: "#64748b", color: "white" }}>
                         Ocultar
                       </button>
                     )}
-                    <button onClick={() => del(r.id)}>Eliminar</button>
                   </div>
                 )}
               </article>

@@ -233,7 +233,10 @@ COMMENT ON VIEW reference_strikethrough_metadata IS 'Public-safe metadata for di
 -- 7. SECURITY POLICIES (RLS)
 -- ============================================================================
 
--- Policy: Users can hide their own references
+-- Enable RLS on references table (CRITICAL: Must be enabled for policies to work)
+ALTER TABLE references ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Users can update (hide/unhide) their own references
 CREATE POLICY "Users can hide their own references"
   ON references FOR UPDATE
   USING (
@@ -244,6 +247,12 @@ CREATE POLICY "Users can hide their own references"
     owner_id = auth.uid()
     OR auth.uid() IN (SELECT id FROM users WHERE role = 'superadmin')
   );
+
+-- Policy: Prevent DELETE operations (Philosophy: "Hidden ≠ erased")
+-- Hard deletes should only be possible via database admin console if absolutely necessary
+CREATE POLICY "Prevent reference deletion"
+  ON references FOR DELETE
+  USING (false);  -- Deny all deletes through normal channels
 
 -- ============================================================================
 -- END OF MIGRATION
