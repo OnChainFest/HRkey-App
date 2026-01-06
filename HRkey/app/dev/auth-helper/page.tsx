@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
 
 // DEV HELPER PAGE - Only for local testing
 // Shows current user ID and session info for manual E2E testing
+// Uses dynamic import to avoid build-time crashes when env vars are missing
 
 export default function DevAuthHelperPage() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -23,6 +23,8 @@ export default function DevAuthHelperPage() {
 
     const loadSession = async () => {
       try {
+        // Dynamic import to avoid build-time initialization
+        const { supabase }: any = await import("@/lib/supabaseClient");
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {

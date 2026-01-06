@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
 
 const ENV_API_BASE =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -87,6 +86,7 @@ export default function DataAccessRequestPage({ params }: PageProps) {
         setLoading(true);
         setError(null);
 
+        const { supabase }: any = await import("@/lib/supabaseClient");
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         if (sessionError || !sessionData.session || !sessionData.session.user) {
           setError("Please sign in to view this data access request.");

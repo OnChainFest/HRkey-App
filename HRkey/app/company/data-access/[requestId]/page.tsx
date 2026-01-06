@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiGet } from "@/lib/apiClient";
-import { supabase } from "@/lib/supabaseClient";
 
 type Company = {
   id: string;
@@ -50,6 +49,7 @@ export default function DataAccessRequestStatusPage({ params }: PageProps) {
         setLoading(true);
         setError(null);
 
+        const { supabase }: any = await import("@/lib/supabaseClient");
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         if (sessionError || !sessionData.session) {
           setError("Please sign in to view this request.");
