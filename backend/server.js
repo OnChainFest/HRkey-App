@@ -823,6 +823,18 @@ app.get('/api/references/pending', requireAuth, referencesController.getMyPendin
  */
 app.get('/api/references/candidate/:candidateId', requireAuth, referencesController.getCandidateReferences);
 
+/**
+ * POST /api/references/:referenceId/hide
+ * Hide a reference (strikethrough in public views)
+ */
+app.post('/api/references/:referenceId/hide', requireAuth, referencesController.hideReference);
+
+/**
+ * POST /api/references/:referenceId/unhide
+ * Unhide a previously hidden reference
+ */
+app.post('/api/references/:referenceId/unhide', requireAuth, referencesController.unhideReference);
+
 /* =========================
    References workflow MVP
    ========================= */

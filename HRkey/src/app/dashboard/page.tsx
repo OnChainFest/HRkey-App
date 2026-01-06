@@ -155,6 +155,57 @@ export default function Dashboard() {
     await load()
   }
 
+  const hideReference = async (id: string) => {
+    const reason = prompt("Razón para ocultar (opcional):")
+    if (reason === null) return // cancelled
+    setMsg("Ocultando referencia…")
+    const { data: auth } = await supabase.auth.getUser()
+    const token = (await supabase.auth.getSession()).data.session?.access_token
+    if (!token) return setMsg("No hay sesión")
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+    const res = await fetch(`${baseUrl}/api/references/${id}/hide`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ reason })
+    })
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      return setMsg(`Error al ocultar: ${data.message || res.statusText}`)
+    }
+
+    setMsg("Referencia ocultada exitosamente")
+    await load()
+  }
+
+  const unhideReference = async (id: string) => {
+    if (!confirm("¿Mostrar esta referencia nuevamente?")) return
+    setMsg("Mostrando referencia…")
+    const token = (await supabase.auth.getSession()).data.session?.access_token
+    if (!token) return setMsg("No hay sesión")
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+    const res = await fetch(`${baseUrl}/api/references/${id}/unhide`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      }
+    })
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      return setMsg(`Error al mostrar: ${data.message || res.statusText}`)
+    }
+
+    setMsg("Referencia visible nuevamente")
+    await load()
+  }
+
   // Enviar invitación y pasar a "submitted"
   const sendInvite = async (r: Row) => {
     setMsg("Creando invitación…")
@@ -267,7 +318,27 @@ export default function Dashboard() {
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
             {rows.map((r) => (
-              <article key={r.id} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 12 }}>
+              <article key={r.id} style={{
+                border: r.is_hidden ? "2px solid #f59e0b" : "1px solid #e5e7eb",
+                borderRadius: 10,
+                padding: 12,
+                backgroundColor: r.is_hidden ? "#fffbeb" : "white",
+                opacity: r.is_hidden ? 0.75 : 1
+              }}>
+                {r.is_hidden && (
+                  <div style={{
+                    marginBottom: 12,
+                    padding: 8,
+                    backgroundColor: "#fef3c7",
+                    borderRadius: 6,
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: "#92400e"
+                  }}>
+                    🔒 Referencia oculta {r.hidden_at && `(desde ${fmt(r.hidden_at)})`}
+                    {r.hide_reason && <div style={{ fontSize: 12, marginTop: 4, fontWeight: 400 }}>Razón: {r.hide_reason}</div>}
+                  </div>
+                )}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
                   <div><div style={{ fontWeight: 600 }}>ID</div><div style={{ fontFamily: "monospace" }}>{r.id}</div></div>
                   <div><div style={{ fontWeight: 600 }}>Estado</div><div>{r.status ?? "—"}</div></div>
@@ -306,6 +377,15 @@ export default function Dashboard() {
                       </button>
                     )}
                     <button onClick={() => startEdit(r)}>Editar</button>
+                    {r.is_hidden ? (
+                      <button onClick={() => unhideReference(r.id)} style={{ backgroundColor: "#10b981", color: "white" }}>
+                        Mostrar
+                      </button>
+                    ) : (
+                      <button onClick={() => hideReference(r.id)} style={{ backgroundColor: "#f59e0b", color: "white" }}>
+                        Ocultar
+                      </button>
+                    )}
                     <button onClick={() => del(r.id)}>Eliminar</button>
                   </div>
                 )}

@@ -54,6 +54,12 @@ export async function getMyReferences(req, res) {
         detailed_feedback,
         status,
         validation_status,
+        is_hidden,
+        hidden_at,
+        hide_reason,
+        reference_type,
+        correction_of,
+        is_correction,
         created_at
       `)
       .eq('owner_id', userId)
@@ -423,10 +429,185 @@ export async function respondToReferenceInvite(req, res) {
   }
 }
 
+/**
+ * POST /api/references/:referenceId/hide
+ * Hide a reference (makes it show as strikethrough in public views)
+ *
+ * Authorization: Owner only or superadmin
+ * Philosophy: Hidden ≠ erased. Strikethrough remains visible forever.
+ */
+export async function hideReference(req, res) {
+  try {
+    const { referenceId } = req.params;
+    const { reason } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        ok: false,
+        error: 'UNAUTHORIZED',
+        message: 'Authentication required'
+      });
+    }
+
+    if (!referenceId) {
+      return res.status(400).json({
+        ok: false,
+        error: 'INVALID_REQUEST',
+        message: 'Reference ID is required'
+      });
+    }
+
+    // Call the database function
+    const { data, error } = await supabase.rpc('hide_reference', {
+      ref_id: referenceId,
+      user_id: userId,
+      reason: reason || null
+    });
+
+    if (error) {
+      logger.error('Failed to hide reference', {
+        requestId: req.requestId,
+        userId,
+        referenceId,
+        error: error.message
+      });
+
+      // Check for permission errors
+      if (error.message.includes('Only the reference owner')) {
+        return res.status(403).json({
+          ok: false,
+          error: 'FORBIDDEN',
+          message: 'You do not have permission to hide this reference'
+        });
+      }
+
+      return res.status(500).json({
+        ok: false,
+        error: 'DATABASE_ERROR',
+        message: 'Failed to hide reference'
+      });
+    }
+
+    logger.info('Reference hidden successfully', {
+      requestId: req.requestId,
+      userId,
+      referenceId,
+      hasReason: !!reason
+    });
+
+    return res.status(200).json({
+      ok: true,
+      message: 'Reference hidden successfully',
+      referenceId
+    });
+
+  } catch (err) {
+    logger.error('Exception in hideReference', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      referenceId: req.params?.referenceId,
+      error: err.message,
+      stack: err.stack
+    });
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred'
+    });
+  }
+}
+
+/**
+ * POST /api/references/:referenceId/unhide
+ * Unhide a previously hidden reference
+ *
+ * Authorization: Owner only or superadmin
+ */
+export async function unhideReference(req, res) {
+  try {
+    const { referenceId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        ok: false,
+        error: 'UNAUTHORIZED',
+        message: 'Authentication required'
+      });
+    }
+
+    if (!referenceId) {
+      return res.status(400).json({
+        ok: false,
+        error: 'INVALID_REQUEST',
+        message: 'Reference ID is required'
+      });
+    }
+
+    // Call the database function
+    const { data, error } = await supabase.rpc('unhide_reference', {
+      ref_id: referenceId,
+      user_id: userId
+    });
+
+    if (error) {
+      logger.error('Failed to unhide reference', {
+        requestId: req.requestId,
+        userId,
+        referenceId,
+        error: error.message
+      });
+
+      if (error.message.includes('Only the reference owner')) {
+        return res.status(403).json({
+          ok: false,
+          error: 'FORBIDDEN',
+          message: 'You do not have permission to unhide this reference'
+        });
+      }
+
+      return res.status(500).json({
+        ok: false,
+        error: 'DATABASE_ERROR',
+        message: 'Failed to unhide reference'
+      });
+    }
+
+    logger.info('Reference unhidden successfully', {
+      requestId: req.requestId,
+      userId,
+      referenceId
+    });
+
+    return res.status(200).json({
+      ok: true,
+      message: 'Reference unhidden successfully',
+      referenceId
+    });
+
+  } catch (err) {
+    logger.error('Exception in unhideReference', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      referenceId: req.params?.referenceId,
+      error: err.message,
+      stack: err.stack
+    });
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred'
+    });
+  }
+}
+
 export default {
   getMyReferences,
   getCandidateReferences,
   getMyPendingInvites,
   requestReferenceInvite,
-  respondToReferenceInvite
+  respondToReferenceInvite,
+  hideReference,
+  unhideReference
 };

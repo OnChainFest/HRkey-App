@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import ReferenceStrikethrough from "@/components/ReferenceStrikethrough";
 
 type ReferenceAnswer = {
   questionId: string;
@@ -12,6 +13,13 @@ type ReferenceAnswer = {
   impactSignal: number;
   reliabilitySignal: number;
   communicationSignal: number;
+  isHidden?: boolean;
+  hiddenAt?: string;
+  referenceType?: string;
+  createdAt?: string;
+  referenceId?: string;
+  isReplacement?: boolean;
+  wasReplaced?: boolean;
 };
 
 type AggregatedSignals = {
@@ -453,36 +461,48 @@ export default function CandidateEvaluationPage() {
 
             <div className="space-y-3">
               {answers.map((answer, index) => (
-                <div
-                  key={`${answer.questionId}-${index}`}
-                  className="rounded-lg border p-4 bg-slate-50"
-                >
-                  <div className="flex items-center justify-between text-sm text-slate-700">
-                    <span className="font-semibold">
-                      {answer.questionId || `Reference #${index + 1}`}
-                    </span>
+                answer.isHidden ? (
+                  <ReferenceStrikethrough
+                    key={`${answer.referenceId || answer.questionId}-${index}`}
+                    referenceId={answer.referenceId || `ref-${index}`}
+                    referenceType={answer.referenceType || "general"}
+                    hiddenAt={answer.hiddenAt || new Date().toISOString()}
+                    createdAt={answer.createdAt || new Date().toISOString()}
+                    isReplacement={answer.isReplacement}
+                    wasReplaced={answer.wasReplaced}
+                  />
+                ) : (
+                  <div
+                    key={`${answer.questionId}-${index}`}
+                    className="rounded-lg border p-4 bg-slate-50"
+                  >
+                    <div className="flex items-center justify-between text-sm text-slate-700">
+                      <span className="font-semibold">
+                        {answer.questionId || `Reference #${index + 1}`}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-slate-800 leading-relaxed">
+                      {truncateText(answer.cleanedText || "(No response)")}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                      {answer.positivityFlag && (
+                        <span className="rounded-full bg-green-100 text-green-700 px-3 py-1">
+                          Positive
+                        </span>
+                      )}
+                      {answer.negativityFlag && (
+                        <span className="rounded-full bg-amber-100 text-amber-700 px-3 py-1">
+                          Contains concerns
+                        </span>
+                      )}
+                      {answer.exaggerationFlag && (
+                        <span className="rounded-full bg-sky-100 text-sky-700 px-3 py-1">
+                          Exaggerated tone
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p className="mt-2 text-sm text-slate-800 leading-relaxed">
-                    {truncateText(answer.cleanedText || "(No response)")}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                    {answer.positivityFlag && (
-                      <span className="rounded-full bg-green-100 text-green-700 px-3 py-1">
-                        Positive
-                      </span>
-                    )}
-                    {answer.negativityFlag && (
-                      <span className="rounded-full bg-amber-100 text-amber-700 px-3 py-1">
-                        Contains concerns
-                      </span>
-                    )}
-                    {answer.exaggerationFlag && (
-                      <span className="rounded-full bg-sky-100 text-sky-700 px-3 py-1">
-                        Exaggerated tone
-                      </span>
-                    )}
-                  </div>
-                </div>
+                )
               ))}
             </div>
           </div>
