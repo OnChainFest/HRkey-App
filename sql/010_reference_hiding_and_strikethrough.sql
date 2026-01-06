@@ -234,9 +234,20 @@ COMMENT ON VIEW reference_strikethrough_metadata IS 'Public-safe metadata for di
 -- ============================================================================
 
 -- Enable RLS on references table (CRITICAL: Must be enabled for policies to work)
-ALTER TABLE references ENABLE ROW LEVEL SECURITY;
+-- Uses IF NOT EXISTS pattern to be idempotent
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_tables
+    WHERE schemaname = 'public' AND tablename = 'references'
+    AND rowsecurity = true
+  ) THEN
+    ALTER TABLE references ENABLE ROW LEVEL SECURITY;
+  END IF;
+END $$;
 
 -- Policy: Users can update (hide/unhide) their own references
+DROP POLICY IF EXISTS "Users can hide their own references" ON references;
 CREATE POLICY "Users can hide their own references"
   ON references FOR UPDATE
   USING (
@@ -250,6 +261,7 @@ CREATE POLICY "Users can hide their own references"
 
 -- Policy: Prevent DELETE operations (Philosophy: "Hidden ≠ erased")
 -- Hard deletes should only be possible via database admin console if absolutely necessary
+DROP POLICY IF EXISTS "Prevent reference deletion" ON references;
 CREATE POLICY "Prevent reference deletion"
   ON references FOR DELETE
   USING (false);  -- Deny all deletes through normal channels
