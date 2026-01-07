@@ -13,16 +13,13 @@ const compat = new FlatCompat({
 /**
  * ESLint Flat Config for HRkey
  *
- * Goals:
- * - Ensure Next.js plugin is detected (next/core-web-vitals)
- * - Avoid ESLintEmptyConfigWarning
- * - Skip lint rules ONLY on CI/Vercel (not just because NODE_ENV=production)
+ * Notes:
+ * - Next.js build already skips lint via next.config.ts (eslint.ignoreDuringBuilds = true)
+ * - So we keep a real config here to avoid "empty config" warnings and ensure Next rules exist.
  */
 
-const isCI = process.env.VERCEL === "1" || process.env.CI === "true";
-
 export default [
-  // Always provide at least one config object to avoid empty-config warnings
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     ignores: [
       "node_modules/**",
@@ -34,7 +31,4 @@ export default [
       "next-env.d.ts",
     ],
   },
-
-  // Only apply Next/TS rules locally (fast CI + avoids false failures in pipelines)
-  ...(isCI ? [] : compat.extends("next/core-web-vitals", "next/typescript")),
 ];
