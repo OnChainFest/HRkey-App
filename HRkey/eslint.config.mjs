@@ -14,38 +14,27 @@ const compat = new FlatCompat({
  * ESLint Flat Config for HRkey
  *
  * Goals:
+ * - Ensure Next.js plugin is detected (next/core-web-vitals)
  * - Avoid ESLintEmptyConfigWarning
- * - Ensure Next.js plugin is properly detected in local dev
- * - Skip linting in CI / Vercel / production builds
- * - Keep sane defaults for local development
+ * - Skip lint rules ONLY on CI/Vercel (not just because NODE_ENV=production)
  */
 
-const isCI =
-  process.env.VERCEL === "1" ||
-  process.env.CI === "true" ||
-  process.env.NODE_ENV === "production";
+const isCI = process.env.VERCEL === "1" || process.env.CI === "true";
 
-const config = isCI
-  ? [
-      // Explicit empty config to avoid ESLintEmptyConfigWarning
-      // This intentionally disables linting in CI / production
-      {},
-    ]
-  : [
-      // Next.js recommended rules (App Router + Core Web Vitals)
-      ...compat.extends("next/core-web-vitals", "next/typescript"),
+export default [
+  // Always provide at least one config object to avoid empty-config warnings
+  {
+    ignores: [
+      "node_modules/**",
+      ".next/**",
+      "out/**",
+      "build/**",
+      "dist/**",
+      "coverage/**",
+      "next-env.d.ts",
+    ],
+  },
 
-      {
-        ignores: [
-          "node_modules/**",
-          ".next/**",
-          "out/**",
-          "build/**",
-          "dist/**",
-          "coverage/**",
-          "next-env.d.ts",
-        ],
-      },
-    ];
-
-export default config;
+  // Only apply Next/TS rules locally (fast CI + avoids false failures in pipelines)
+  ...(isCI ? [] : compat.extends("next/core-web-vitals", "next/typescript")),
+];
