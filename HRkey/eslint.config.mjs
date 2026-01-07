@@ -1,8 +1,17 @@
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+import { FlatCompat } from "@eslint/eslintrc";
 import tseslint from "typescript-eslint";
-import nextPlugin from "@next/eslint-plugin-next";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
 
 export default [
-  // 1) Ignorar legacy / vendor / minificados / temporales
+  // 1) Ignorar legacy/vendor/temporales
   {
     ignores: [
       "public/WebDapp/**",
@@ -14,32 +23,20 @@ export default [
     ],
   },
 
-  // 2) TypeScript recommended (esto mete no-explicit-any, etc)
+  // 2) Next (incluye plugin + reglas)
+  ...compat.extends("next/core-web-vitals"),
+
+  // 3) TypeScript recommended (esto activa no-explicit-any)
   ...tseslint.configs.recommended,
 
-  // 3) Next rules (recommended + core web vitals)
-  {
-    plugins: { "@next/next": nextPlugin },
-    rules: {
-      ...nextPlugin.configs.recommended.rules,
-      ...nextPlugin.configs["core-web-vitals"].rules,
-    },
-  },
-
-  // 4) OVERRIDES para que pase el build AHORA (sin tocar código todavía)
+  // 4) OVERRIDE FINAL: apagar lo que te está rompiendo AHORA
   {
     rules: {
-      // te está rompiendo el lint ahorita
       "@typescript-eslint/no-explicit-any": "off",
 
-      // con --max-warnings=0 cualquier warning te tumba el comando
+      // con --max-warnings=0 los warnings te tumban el comando
       "@typescript-eslint/no-unused-vars": "off",
-      "unused-vars": "off",
-
-      // te está tirando errors por textos con '
       "react/no-unescaped-entities": "off",
-
-      // warnings por <img> (y con --max-warnings=0 muere)
       "@next/next/no-img-element": "off",
     },
   },
