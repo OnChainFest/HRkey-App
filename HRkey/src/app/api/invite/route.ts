@@ -4,10 +4,19 @@ import { createClient } from "@supabase/supabase-js";
 import { makeRefereeLink } from "@/utils/appURL"; // 👈 importar desde el módulo seguro
 import crypto from "crypto";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Build-safe: lazy initialization to avoid build-time errors when env vars missing
+let supabaseInstance: ReturnType<typeof createClient> | null = null;
+function getSupabase(): ReturnType<typeof createClient> {
+  if (!supabaseInstance) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) {
+      throw new Error('Supabase configuration missing: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY required');
+    }
+    supabaseInstance = createClient(url, key);
+  }
+  return supabaseInstance;
+}
 
 export async function POST(request: Request) {
   try {
@@ -25,7 +34,7 @@ export async function POST(request: Request) {
     const token = crypto.randomBytes(32).toString("hex");
 
     // Crear invitación en la base de datos
-    const { data: invite, error: inviteError } = await supabase
+    const { data: invite, error: inviteError } = await getSupabase()
       .from("reference_invites")
       .insert([
         {
@@ -37,7 +46,7 @@ export async function POST(request: Request) {
           metadata: applicantData || {},
           created_at: new Date().toISOString(),
         },
-      ])
+      ] as any)
       .select()
       .single();
 
@@ -52,7 +61,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      inviteId: invite.id,
+      inviteId: (invite as any).id,
       verifyUrl,
     });
   } catch (error: any) {
