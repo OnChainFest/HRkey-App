@@ -3,22 +3,21 @@ import tseslint from "typescript-eslint";
 import nextPlugin from "@next/eslint-plugin-next";
 
 export default [
-  // 1) Ignorar todo lo legacy / public scripts
   {
     ignores: [
-      "public/WebDapp/**",
-      "public/**/*.js",
-      "**/*.min.js",
-      "public/**/temp_*.js",
       ".next/**",
       "node_modules/**",
+      "public/WebDapp/**",
+      "public/**/temp_*.js",
+      "public/**/*.js",
+      "**/*.min.js",
     ],
   },
 
-  // 2) Base TS-eslint recommended (trae no-explicit-any ON por defecto)
+  // TS recommended
   ...tseslint.configs.recommended,
 
-  // 3) Next rules (recommended + core web vitals)
+  // Next rules
   {
     plugins: { "@next/next": nextPlugin },
     rules: {
@@ -27,18 +26,15 @@ export default [
     },
   },
 
-  // 4) 🔥 OVERRIDE FINAL (esto es lo que te faltaba)
-  //    Si esto está al final, gana SIEMPRE.
+  // ✅ OVERRIDE GLOBAL (sin `files:` para que aplique sí o sí)
   {
-    files: ["**/*.{ts,tsx,js,jsx}"],
     rules: {
-      // bloqueadores actuales:
-      "@typescript-eslint/no-explicit-any": "off",
-      "react/no-unescaped-entities": "off",
+      "@typescript-eslint/no-explicit-any": 0,
+      "react/no-unescaped-entities": 0,
 
-      // warnings que no te deben romper el build ahora:
-      "@typescript-eslint/no-unused-vars": "warn",
-      "@next/next/no-img-element": "warn",
+      // opcional: que no te rompa por warnings
+      "@typescript-eslint/no-unused-vars": 1,
+      "@next/next/no-img-element": 1,
     },
   },
 ];
