@@ -1,34 +1,29 @@
 // next.config.ts
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
-  /**
-   * Turbopack workspace root
-   * Fixes warning: "Next.js inferred your workspace root... detected multiple lockfiles"
-   */
-  turbopack: {
-    root: __dirname,
-  },
-
-  // Skip trailing slash redirects to allow .html file access
-  skipTrailingSlashRedirect: true,
-
   // Disable linting and type checking during build for faster deployments
-  // Note: dirs: [] is redundant when ignoreDuringBuilds is true, but kept for clarity.
   eslint: {
     ignoreDuringBuilds: true,
-    dirs: [],
+    dirs: [], // Skip linting all directories
   },
   typescript: {
     ignoreBuildErrors: true,
   },
 
-  // Additional optimization: disable static type checking (typed routes)
-  experimental: {
-    typedRoutes: false,
+  // Next.js 15: typedRoutes moved out of experimental
+  typedRoutes: false,
+
+  // Help Next pick the correct root when multiple lockfiles exist
+  turbopack: {
+    root: path.join(__dirname),
   },
+
+  // Skip trailing slash redirects to allow .html file access
+  skipTrailingSlashRedirect: true,
 
   // 👇 Evita que el Base Account SDK falle por COOP/COEP en dev
   async headers() {
