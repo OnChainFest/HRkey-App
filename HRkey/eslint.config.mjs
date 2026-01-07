@@ -1,3 +1,4 @@
+// eslint.config.mjs
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import { FlatCompat } from "@eslint/eslintrc";
@@ -9,25 +10,41 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-// Skip linting during production builds (Vercel deployment)
-// This allows faster deployments without being blocked by linting errors
-let eslintConfig;
+/**
+ * ESLint Flat Config for HRkey
+ *
+ * Goals:
+ * - Avoid empty-config warnings
+ * - Ensure Next.js plugin is properly detected
+ * - Allow fast CI / Vercel builds by skipping linting there
+ * - Keep sane defaults for local development
+ */
 
-if (process.env.VERCEL || process.env.CI || process.env.NODE_ENV === 'production') {
-  eslintConfig = [];
-} else {
-  eslintConfig = [
-    ...compat.extends("next/core-web-vitals", "next/typescript"),
-    {
-      ignores: [
-        "node_modules/**",
-        ".next/**",
-        "out/**",
-        "build/**",
-        "next-env.d.ts",
-      ],
-    },
-  ];
-}
+const isCI =
+  process.env.VERCEL === "1" ||
+  process.env.CI === "true" ||
+  process.env.NODE_ENV === "production";
 
-export default eslintConfig;
+const config = isCI
+  ? [
+      // Explicit empty config to avoid ESLintEmptyConfigWarning
+      {}
+    ]
+  : [
+      // Next.js recommended rules (App Router + Core Web Vitals)
+      ...compat.extends("next/core-web-vitals", "next/typescript"),
+
+      {
+        ignores: [
+          "node_modules/**",
+          ".next/**",
+          "out/**",
+          "build/**",
+          "dist/**",
+          "coverage/**",
+          "next-env.d.ts",
+        ],
+      },
+    ];
+
+export default config;
