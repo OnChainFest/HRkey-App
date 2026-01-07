@@ -1,43 +1,44 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+// eslint.config.mjs
 import tseslint from "typescript-eslint";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+import nextPlugin from "@next/eslint-plugin-next";
 
 export default [
-  // 1) Ignorar legacy/vendor/temporales
+  // 1) Ignorar todo lo legacy / public scripts
   {
     ignores: [
       "public/WebDapp/**",
-      "**/*.min.js",
       "public/**/*.js",
+      "**/*.min.js",
       "public/**/temp_*.js",
       ".next/**",
       "node_modules/**",
     ],
   },
 
-  // 2) Next (incluye plugin + reglas)
-  ...compat.extends("next/core-web-vitals"),
-
-  // 3) TypeScript recommended (esto activa no-explicit-any)
+  // 2) Base TS-eslint recommended (trae no-explicit-any ON por defecto)
   ...tseslint.configs.recommended,
 
-  // 4) OVERRIDE FINAL: apagar lo que te está rompiendo AHORA
+  // 3) Next rules (recommended + core web vitals)
   {
+    plugins: { "@next/next": nextPlugin },
     rules: {
-      "@typescript-eslint/no-explicit-any": "off",
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs["core-web-vitals"].rules,
+    },
+  },
 
-      // con --max-warnings=0 los warnings te tumban el comando
-      "@typescript-eslint/no-unused-vars": "off",
+  // 4) 🔥 OVERRIDE FINAL (esto es lo que te faltaba)
+  //    Si esto está al final, gana SIEMPRE.
+  {
+    files: ["**/*.{ts,tsx,js,jsx}"],
+    rules: {
+      // bloqueadores actuales:
+      "@typescript-eslint/no-explicit-any": "off",
       "react/no-unescaped-entities": "off",
-      "@next/next/no-img-element": "off",
+
+      // warnings que no te deben romper el build ahora:
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@next/next/no-img-element": "warn",
     },
   },
 ];
