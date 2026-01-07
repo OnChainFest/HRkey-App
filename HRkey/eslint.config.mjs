@@ -1,8 +1,7 @@
-// eslint.config.mjs
+cat > eslint.config.mjs <<'EOF'
 import tseslint from "typescript-eslint";
 import nextPlugin from "@next/eslint-plugin-next";
 
-// Skip linting during production builds (Vercel/CI/prod)
 const shouldSkip =
   Boolean(process.env.VERCEL) ||
   Boolean(process.env.CI) ||
@@ -19,7 +18,7 @@ export default shouldSkip
           "build/**",
           "next-env.d.ts",
 
-          // WebDapp legacy / temporales
+          // legacy / temporales
           "public/WebDapp/**",
           "public/**/temp_*.js",
           "public/**/*.js",
@@ -27,10 +26,10 @@ export default shouldSkip
         ],
       },
 
-      // TS recommended
+      // TS rules base
       ...tseslint.configs.recommended,
 
-      // Next recommended + core-web-vitals
+      // Next rules
       {
         plugins: { "@next/next": nextPlugin },
         rules: {
@@ -39,16 +38,17 @@ export default shouldSkip
         },
       },
 
-      // ✅ Overrides para que deje de joder AHORA
+      // ✅ ESTE BLOQUE TIENE QUE SER EL ÚLTIMO (last-wins)
       {
+        files: ["**/*.{ts,tsx,js,jsx}"],
         rules: {
           "@typescript-eslint/no-explicit-any": "off",
           "react/no-unescaped-entities": "off",
 
-          // warnings (no te bloquea el --max-warnings=0 si igual te quedan warnings,
-          // pero al menos baja el ruido si luego quitás ese flag)
+          // si querés bajar ruido (pero ojo: con --max-warnings=0 igual te quiebra)
           "@typescript-eslint/no-unused-vars": "warn",
           "@next/next/no-img-element": "warn",
         },
       },
     ];
+EOF
