@@ -1,48 +1,26 @@
-// eslint.config.mjs
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({ baseDirectory: __dirname });
+import next from "@next/eslint-plugin-next";
+import tseslint from "typescript-eslint";
 
 export default [
-  // Next.js + TS defaults (App Router + Core Web Vitals)
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
-
-  // Global ignores (STOP linting vendor/minified/public assets)
+  // ✅ 1) Ignorar vendor/legacy/minified JS (NO lo lintées)
   {
     ignores: [
-      "node_modules/**",
-      ".next/**",
-      "out/**",
-      "build/**",
-      "dist/**",
-      "coverage/**",
-      "next-env.d.ts",
-
-      // ✅ critical: stop linting legacy WebDapp assets
       "public/WebDapp/**",
-      "public/**/**/*.min.js",
-      "public/**/**/*.min.css",
-      "public/**/vendor/**",
-      "public/**/lib/**",
-      "public/**/libs/**",
-
-      // temp scripts / scratch
-      "public/**/temp_*.js",
-      "**/temp_*.js",
+      "**/*.min.js",
+      "public/**/*.js",
     ],
   },
 
-  // Optional: relax rules while V1 is in-flight (apply ONLY to src/)
+  // ✅ 2) Reglas recomendadas para TS
+  ...tseslint.configs.recommended,
+
+  // ✅ 3) Reglas Next.js
   {
-    files: ["src/**/*.{ts,tsx,js,jsx}"],
+    plugins: { "@next/next": next },
     rules: {
-      // If you want, keep as warning instead of error during V1
-      "@typescript-eslint/no-explicit-any": "warn",
+      // Puedes ir ajustando luego; por ahora dejamos lo base.
+      ...next.configs.recommended.rules,
+      ...next.configs["core-web-vitals"].rules,
     },
   },
 ];
