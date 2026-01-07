@@ -14,9 +14,9 @@ const compat = new FlatCompat({
  * ESLint Flat Config for HRkey
  *
  * Goals:
- * - Avoid empty-config warnings
- * - Ensure Next.js plugin is properly detected
- * - Allow fast CI / Vercel builds by skipping linting there
+ * - Avoid ESLintEmptyConfigWarning
+ * - Ensure Next.js plugin is properly detected in local dev
+ * - Skip linting in CI / Vercel / production builds
  * - Keep sane defaults for local development
  */
 
@@ -28,7 +28,8 @@ const isCI =
 const config = isCI
   ? [
       // Explicit empty config to avoid ESLintEmptyConfigWarning
-      {}
+      // This intentionally disables linting in CI / production
+      {},
     ]
   : [
       // Next.js recommended rules (App Router + Core Web Vitals)
