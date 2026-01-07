@@ -1,8 +1,8 @@
-import next from "@next/eslint-plugin-next";
 import tseslint from "typescript-eslint";
+import nextPlugin from "@next/eslint-plugin-next";
 
 export default [
-  // ✅ 1) Ignorar vendor/legacy/minified JS (NO lo lintées)
+  // Ignorar TODO el vendor/legacy JS (minificados y esos temp_*.js)
   {
     ignores: [
       "public/WebDapp/**",
@@ -11,16 +11,15 @@ export default [
     ],
   },
 
-  // ✅ 2) Reglas recomendadas para TS
+  // TS recommended
   ...tseslint.configs.recommended,
 
-  // ✅ 3) Reglas Next.js
+  // Next.js rules (flat config)
   {
-    plugins: { "@next/next": next },
+    plugins: { "@next/next": nextPlugin },
     rules: {
-      // Puedes ir ajustando luego; por ahora dejamos lo base.
-      ...next.configs.recommended.rules,
-      ...next.configs["core-web-vitals"].rules,
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs["core-web-vitals"].rules,
     },
   },
 ];
