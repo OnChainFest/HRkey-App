@@ -8,7 +8,7 @@ const shouldSkip =
   process.env.NODE_ENV === "production";
 
 export default shouldSkip
-  ? []
+  ? [{}] // 👈 NO uses [] para que no salga ESLintEmptyConfigWarning
   : [
       /**
        * 1️⃣ Ignored paths (primero siempre)
