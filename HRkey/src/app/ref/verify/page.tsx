@@ -9,7 +9,7 @@ type InviteRow = {
   referrer_email: string | null
   referrer_name: string | null
   expires_at: string | null
-  invite_status: string | null
+  invite_status: string
 }
 
 export default function VerifyReferencePage() {
@@ -37,8 +37,8 @@ export default function VerifyReferencePage() {
 
       setInvite(row as InviteRow)
 
-      if ((row as any).invite_status !== "pending") {
-        setMsg(`Esta invitación ya no está activa (estado: ${(row as any).invite_status}).`)
+      if (row.invite_status !== "pending") {
+        setMsg(`Esta invitación ya no está activa (estado: ${row.invite_status}).`)
       }
       setLoading(false)
     }
@@ -69,7 +69,7 @@ export default function VerifyReferencePage() {
 
   const expires = invite.expires_at ? new Date(invite.expires_at) : null
   const expired = expires ? expires.getTime() < Date.now() : false
-  const status = invite.invite_status ?? "pending"
+  const status = invite.invite_status
   const disabled = expired || status !== "pending"
 
   return (
