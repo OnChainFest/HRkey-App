@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 // DEV HELPER PAGE - Only for local testing
 // Shows current user ID and session info for manual E2E testing
@@ -148,19 +149,19 @@ export default function DevAuthHelperPage() {
             <h2 className="text-lg font-semibold text-blue-900 mb-3">Quick Links for Testing</h2>
             <ul className="space-y-2 text-sm">
               <li>
-                <a href="/company/onboarding" className="text-blue-700 hover:underline">
+                <Link href="/company/onboarding" className="text-blue-700 hover:underline">
                   → Company Onboarding (B1)
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/company/dashboard" className="text-blue-700 hover:underline">
+                <Link href="/company/dashboard" className="text-blue-700 hover:underline">
                   → Company Dashboard (B2)
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/company/data-access/new" className="text-blue-700 hover:underline">
+                <Link href="/company/data-access/new" className="text-blue-700 hover:underline">
                   → Create Data Access Request (B3)
-                </a>
+                </Link>
               </li>
               <li className="text-gray-600">
                 → Request Status Page (B4): /company/data-access/[requestId]
