@@ -28,6 +28,7 @@ import tokenomicsPreviewController from './controllers/tokenomicsPreview.control
 import publicProfileController from './controllers/publicProfile.controller.js';
 import publicIdentifierController from './controllers/publicIdentifier.controller.js';
 import adminOverviewController from './controllers/adminOverview.controller.js';
+import dashboardOverviewController from './controllers/dashboardOverview.controller.js';
 import analyticsController from './controllers/analyticsController.js';
 import hrscoreController from './controllers/hrscoreController.js';
 import referencesController from './controllers/referencesController.js';
@@ -1064,6 +1065,10 @@ app.get('/api/audit/recent', requireAuth, auditController.getRecentActivity);
 // ✅ ADMIN OVERVIEW (NO JWT) - usa admin_key / x-admin-key
 // ✅ AÑADIMOS strictLimiter para evitar abuso (además de apiLimiter global)
 app.get('/api/admin/overview', strictLimiter, requireAdminKey, adminOverviewController.getAdminOverviewHandler);
+
+// ===== DASHBOARD OVERVIEW (Authenticated users) =====
+// Unified person dashboard with dual modes (Candidate + Referrer)
+app.get('/api/dashboard/overview', apiLimiter, requireAuth, dashboardOverviewController.getDashboardOverviewHandler);
 
 // ===== DATA ACCESS ENDPOINTS (Pay-per-query) =====
 app.post('/api/data-access/request', requireAuth, dataAccessController.createDataAccessRequest);
