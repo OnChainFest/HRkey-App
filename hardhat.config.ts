@@ -1,3 +1,6 @@
+cd /c/Users/sofim/HRKey-App
+
+cat > hardhat.config.ts <<'EOF'
 import type { HardhatUserConfig } from "hardhat/config";
 import "dotenv/config";
 
@@ -10,7 +13,6 @@ const config: HardhatUserConfig = {
   },
 
   networks: {
-    // Base Mainnet (RPC)
     base: {
       type: "http",
       url: process.env.BASE_RPC_URL || "https://mainnet.base.org",
@@ -18,7 +20,6 @@ const config: HardhatUserConfig = {
       accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
     },
 
-    // Base Sepolia (RPC)
     baseSepolia: {
       type: "http",
       url: process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
@@ -26,14 +27,12 @@ const config: HardhatUserConfig = {
       accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
     },
 
-    // Local node (RPC)
     localhost: {
       type: "http",
       url: "http://127.0.0.1:8545",
       chainId: 31337,
     },
 
-    // Simulated network (Hardhat 3)
     hardhat: {
       type: "edr-simulated",
       chainId: 31337,
@@ -46,6 +45,9 @@ const config: HardhatUserConfig = {
     cache: "./cache",
     artifacts: "./artifacts",
   },
+
+  mocha: { timeout: 40000 },
 };
 
 export default config;
+EOF
