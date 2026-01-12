@@ -32,6 +32,7 @@ import analyticsController from './controllers/analyticsController.js';
 import hrscoreController from './controllers/hrscoreController.js';
 import referencesController from './controllers/referencesController.js';
 import aiRefineController from './controllers/aiRefine.controller.js';
+import kpiReferenceController from './controllers/kpiReferenceController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 import { getScoreSnapshots } from './services/hrscore/scoreSnapshots.js';
 
@@ -65,6 +66,18 @@ import {
 } from './schemas/reference.schema.js';
 import { createPaymentIntentSchema } from './schemas/payment.schema.js';
 import { refineReferenceSchema } from './schemas/aiRefine.schema.js';
+import {
+  getKpiSetsQuerySchema,
+  createReferenceRequestSchema as createKpiReferenceRequestSchema,
+  submitReferenceSchema as submitKpiReferenceSchema,
+  getCandidateReferencesQuerySchema,
+  tokenParamSchema,
+  candidateIdParamSchema,
+  uuidParamSchema,
+  validateBody as validateKpiBody,
+  validateQuery as validateKpiQuery,
+  validateParams as validateKpiParams
+} from './schemas/kpiReference.schema.js';
 
 dotenv.config();
 
@@ -840,6 +853,114 @@ app.post(
   validateParams(getReferenceByTokenSchema),
   validateBody422(respondReferenceSchema),
   referencesController.respondToReferenceInvite
+);
+
+/* =========================
+   KPI-Driven References (P0)
+   ========================= */
+/**
+ * GET /api/kpis/sets
+ * Get active KPI set by role + seniority
+ */
+app.get(
+  '/api/kpis/sets',
+  validateKpiQuery(getKpiSetsQuerySchema),
+  kpiReferenceController.getKpiSets
+);
+
+/**
+ * GET /api/kpis/roles
+ * List all available roles
+ */
+app.get(
+  '/api/kpis/roles',
+  kpiReferenceController.getAvailableRoles
+);
+
+/**
+ * POST /api/kpi-references/request
+ * Create a KPI-driven reference request
+ */
+app.post(
+  '/api/kpi-references/request',
+  requireAuth,
+  validateKpiBody(createKpiReferenceRequestSchema),
+  kpiReferenceController.createReferenceRequestHandler
+);
+
+/**
+ * GET /api/kpi-references/request/:token
+ * Get reference request by token (for referee)
+ */
+app.get(
+  '/api/kpi-references/request/:token',
+  tokenLimiter,
+  validateKpiParams(tokenParamSchema),
+  kpiReferenceController.getReferenceRequestByTokenHandler
+);
+
+/**
+ * POST /api/kpi-references/submit/:token
+ * Submit a KPI-driven reference
+ */
+app.post(
+  '/api/kpi-references/submit/:token',
+  tokenLimiter,
+  validateKpiParams(tokenParamSchema),
+  validateKpiBody(submitKpiReferenceSchema),
+  kpiReferenceController.submitReferenceHandler
+);
+
+/**
+ * GET /api/kpi-references/candidate/:candidate_id
+ * Get reference pack for a candidate
+ */
+app.get(
+  '/api/kpi-references/candidate/:candidate_id',
+  validateKpiParams(candidateIdParamSchema),
+  validateKpiQuery(getCandidateReferencesQuerySchema),
+  kpiReferenceController.getCandidateReferencesHandler
+);
+
+/**
+ * GET /api/kpi-references/candidate/:candidate_id/stats
+ * Get reference statistics for a candidate
+ */
+app.get(
+  '/api/kpi-references/candidate/:candidate_id/stats',
+  validateKpiParams(candidateIdParamSchema),
+  kpiReferenceController.getCandidateStatsHandler
+);
+
+/**
+ * GET /api/kpi-references/candidate/:candidate_id/aggregates
+ * Get KPI aggregates (materialized view - fast)
+ */
+app.get(
+  '/api/kpi-references/candidate/:candidate_id/aggregates',
+  validateKpiParams(candidateIdParamSchema),
+  kpiReferenceController.getCandidateKpiAggregatesHandler
+);
+
+/**
+ * GET /api/kpi-references/:id
+ * Get single reference by ID (with permission check)
+ */
+app.get(
+  '/api/kpi-references/:id',
+  requireAuth,
+  validateKpiParams(uuidParamSchema),
+  kpiReferenceController.getReferenceByIdHandler
+);
+
+/**
+ * GET /api/kpi-references/requests/pending
+ * Get pending reference requests for authenticated user
+ */
+app.get(
+  '/api/kpi-references/requests/pending',
+  requireAuth,
+  kpiReferenceController.getPendingRequestsHandler
 );
 
 /* =========================
