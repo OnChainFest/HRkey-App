@@ -12,15 +12,47 @@ contract PeerProofRegistry {
         Status  status;
     }
 
+    address public owner;
+    address public issuer; // backend signer / multisig
+
     mapping (bytes32 => Reference) public references;
 
     event ReferenceCreated(bytes32 indexed refId, address indexed employee, address indexed reviewer, bytes32 dataHash);
     event ReferenceStatusChanged(bytes32 indexed refId, Status newStatus);
+    event IssuerChanged(address indexed oldIssuer, address indexed newIssuer);
 
-    function createReference(bytes32 refId, address employee, address reviewer, bytes32 dataHash) external {
+    modifier onlyOwner() {
+        require(msg.sender == owner, "only owner");
+        _;
+    }
+
+    modifier onlyIssuer() {
+        require(msg.sender == issuer, "only issuer");
+        _;
+    }
+
+    constructor(address _issuer) {
+        owner = msg.sender;
+        issuer = _issuer;
+    }
+
+    function setIssuer(address _issuer) external onlyOwner {
+        require(_issuer != address(0), "bad issuer");
+        emit IssuerChanged(issuer, _issuer);
+        issuer = _issuer;
+    }
+
+    function createReference(
+        bytes32 refId,
+        address employee,
+        address reviewer,
+        bytes32 dataHash
+    ) external onlyIssuer {
         require(refId != bytes32(0), "bad refId");
         require(references[refId].createdAt == 0, "already exists");
         require(employee != address(0), "bad employee");
+        require(reviewer != address(0), "bad reviewer");
+        require(dataHash != bytes32(0), "bad dataHash");
 
         references[refId] = Reference({
             employee: employee,
@@ -51,3 +83,4 @@ contract PeerProofRegistry {
         emit ReferenceStatusChanged(refId, r.status);
     }
 }
+
