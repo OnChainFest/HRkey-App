@@ -1,73 +1,37 @@
-import type { HardhatUserConfig } from "hardhat/config";
+import { HardhatUserConfig } from "hardhat/config";
 import "dotenv/config";
 
-// Hardhat v3: no hardhat-toolbox.
-// Si luego querés verificación en Basescan con HH3, instala y descomenta:
-// import "@nomicfoundation/hardhat-verify";
+// Hardhat 3: no uses @nomicfoundation/hardhat-toolbox (requiere Hardhat 2)
+// Tampoco uses @openzeppelin/hardhat-upgrades ni @nomiclabs/hardhat-etherscan si no están instalados/compatibles.
 
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.20",
     settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
-      },
+      optimizer: { enabled: true, runs: 200 },
     },
   },
 
   networks: {
-    // Base Mainnet
     base: {
       url: process.env.BASE_RPC_URL || "https://mainnet.base.org",
       accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
       chainId: 8453,
     },
 
-    // Base Sepolia Testnet
     baseSepolia: {
       url: process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
       accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
       chainId: 84532,
     },
 
-    // Localhost (for testing)
     localhost: {
       url: "http://127.0.0.1:8545",
     },
 
-    // Hardhat in-memory network
     hardhat: {
       chainId: 31337,
     },
-  },
-
-  // ⚠️ Esta sección SOLO se usa si activas "@nomicfoundation/hardhat-verify"
-  // (Hardhat v3). Si no lo instalas, podés dejarla igual (no molesta),
-  // pero la verificación no correrá sin el plugin.
-  etherscan: {
-    apiKey: {
-      base: process.env.BASESCAN_API_KEY || "",
-      baseSepolia: process.env.BASESCAN_API_KEY || "",
-    },
-    customChains: [
-      {
-        network: "base",
-        chainId: 8453,
-        urls: {
-          apiURL: "https://api.basescan.org/api",
-          browserURL: "https://basescan.org",
-        },
-      },
-      {
-        network: "baseSepolia",
-        chainId: 84532,
-        urls: {
-          apiURL: "https://api-sepolia.basescan.org/api",
-          browserURL: "https://sepolia.basescan.org",
-        },
-      },
-    ],
   },
 
   paths: {
