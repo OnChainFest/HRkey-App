@@ -1,6 +1,7 @@
 /**
  * Tokenomics Preparation Layer
- * Converts USD pricing into HRK token amounts, splits revenue, and estimates staking rewards.
+ * USDC-only revenue splitting.
+ * NOTE: HRK is NOT used for marketplace pricing - it's a utility token for participation rights.
  */
 
 /**
@@ -13,42 +14,6 @@
 function clamp(value, min, max) {
   if (!Number.isFinite(value)) return min;
   return Math.min(Math.max(value, min), max);
-}
-
-/**
- * @typedef {Object} TokenAmountInput
- * @property {number} priceUsd - price to access references in USD
- * @property {number} fxRateUsdToHrk - tokens per 1 USD
- * @property {number} [minTokens] - minimum token clamp (default 1)
- * @property {number} [maxTokens] - maximum token clamp (default 10_000)
- */
-
-/**
- * @typedef {Object} TokenAmountResult
- * @property {number} rawTokens - un-clamped token conversion
- * @property {number} clampedTokens - token amount clamped to bounds
- */
-
-/**
- * Convert USD price to HRK token amount with optional clamping.
- * @param {TokenAmountInput} input
- * @returns {TokenAmountResult}
- */
-export function calculateTokenAmount(input) {
-  const minTokens = input.minTokens ?? 1;
-  const maxTokens = input.maxTokens ?? 10_000;
-
-  if (input.priceUsd <= 0 || input.fxRateUsdToHrk <= 0) {
-    return {
-      rawTokens: 0,
-      clampedTokens: 0
-    };
-  }
-
-  const rawTokens = input.priceUsd * input.fxRateUsdToHrk;
-  const clampedTokens = clamp(rawTokens, minTokens, maxTokens);
-
-  return { rawTokens, clampedTokens };
 }
 
 /**
@@ -119,47 +84,6 @@ function normalizeShares(input) {
   };
 }
 
-/**
- * @typedef {Object} StakingInput
- * @property {number} stakeAmountHrk
- * @property {number} baseApr
- * @property {number} lockMonths
- * @property {number} [hrScoreBoost]
- */
-
-/**
- * @typedef {Object} StakingEstimate
- * @property {number} effectiveApr
- * @property {number} estimatedRewardsHrk
- */
-
-/**
- * Estimate staking rewards based on stake amount, APR, lock duration, and optional HRScore boost.
- * @param {StakingInput} input
- * @returns {StakingEstimate}
- */
-export function estimateStakingRewards(input) {
-  if (input.stakeAmountHrk <= 0 || input.baseApr <= 0 || input.lockMonths <= 0) {
-    return {
-      effectiveApr: 0,
-      estimatedRewardsHrk: 0
-    };
-  }
-
-  const monthsInYear = 12;
-  const hrScoreBoost = clamp(input.hrScoreBoost ?? 0, 0, 1);
-  const effectiveApr = clamp(input.baseApr * (1 + hrScoreBoost), 0, 1);
-  const lockYears = input.lockMonths / monthsInYear;
-  const estimatedRewardsHrk = input.stakeAmountHrk * effectiveApr * lockYears;
-
-  return {
-    effectiveApr,
-    estimatedRewardsHrk
-  };
-}
-
 export default {
-  calculateTokenAmount,
-  splitRevenue,
-  estimateStakingRewards
+  splitRevenue
 };

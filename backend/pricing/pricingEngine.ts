@@ -11,10 +11,11 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || ''
 );
 
-// Constants
-export const P_BASE = 5; // HRK base price
-export const P_MIN = 5;  // HRK minimum
-export const P_MAX = 500; // HRK maximum
+// Constants - USDC pricing (stablecoin denominated)
+// HRK is NOT used for pricing - it's a utility token only
+export const P_BASE = 25;  // USDC base price
+export const P_MIN = 10;   // USDC minimum
+export const P_MAX = 1000; // USDC maximum
 
 // Interfaces
 export interface PricingFactors {
@@ -27,7 +28,7 @@ export interface PricingFactors {
 }
 
 export interface PricingResult {
-  priceHRK: number;
+  priceUSDC: number; // All marketplace pricing in USDC (NOT HRK)
   factors: {
     seniority: number;
     demand: number;
@@ -249,16 +250,16 @@ export async function calculateCandidatePrice(
     // 7. Apply bounds
     const finalPrice = Math.min(Math.max(rawPrice, P_MIN), P_MAX);
 
-    // 8. Generate breakdown
+    // 8. Generate breakdown (USDC pricing)
     const breakdown = `
-Base Price: ${P_BASE} HRK
+Base Price: $${P_BASE} USDC
 × Seniority (${candidate.years_of_experience || 0} years): ${factors.seniority.toFixed(2)}x
 × Demand (${queriesLast30Days || 0} queries, avg ${globalAvgQueries.toFixed(0)}): ${factors.demand.toFixed(2)}x
 × Skill Rarity (percentile ${(skillPercentile * 100).toFixed(0)}): ${factors.rarity.toFixed(2)}x
 × HRScore (${candidate.hr_score || 50}): ${factors.hrScore.toFixed(2)}x
 × Geography (${candidate.location || 'United States'}): ${factors.geography.toFixed(2)}x
 × Industry (${candidate.industry || 'Technology'}): ${factors.industry.toFixed(2)}x
-= ${finalPrice.toFixed(2)} HRK
+= $${finalPrice.toFixed(2)} USDC
     `.trim();
 
     // 9. Return result
@@ -266,7 +267,7 @@ Base Price: ${P_BASE} HRK
     const validUntil = new Date(now.getTime() + 6 * 60 * 60 * 1000); // Valid for 6 hours
 
     return {
-      priceHRK: Number(finalPrice.toFixed(2)),
+      priceUSDC: Number(finalPrice.toFixed(2)), // USDC pricing, NOT HRK
       factors,
       breakdown,
       metadata: {
@@ -303,7 +304,7 @@ export async function calculateAllPrices(): Promise<Map<string, number>> {
     for (const candidate of candidates) {
       try {
         const result = await calculateCandidatePrice(candidate.wallet_address);
-        prices.set(candidate.wallet_address, result.priceHRK);
+        prices.set(candidate.wallet_address, result.priceUSDC);
       } catch (error: any) {
         console.warn(`Failed to calculate price for ${candidate.wallet_address}:`, error.message);
         // Fallback to base price
@@ -326,7 +327,7 @@ export async function storePricesInDB(prices: Map<string, number>): Promise<void
   try {
     const records = Array.from(prices.entries()).map(([wallet, price]) => ({
       candidate_wallet: wallet,
-      price_hrk: price,
+      price_usdc: price, // Store USDC price, NOT HRK
       updated_at: new Date().toISOString(),
     }));
 
@@ -353,7 +354,7 @@ export async function getCachedPrice(candidateWallet: string): Promise<number | 
   try {
     const { data, error } = await supabase
       .from('candidate_prices')
-      .select('price_hrk, updated_at')
+      .select('price_usdc, updated_at')
       .eq('candidate_wallet', candidateWallet)
       .single();
 
@@ -370,7 +371,7 @@ export async function getCachedPrice(candidateWallet: string): Promise<number | 
       return null; // Stale price
     }
 
-    return data.price_hrk;
+    return data.price_usdc; // Return USDC price
   } catch (error: any) {
     console.error('Error fetching cached price:', error);
     return null;
@@ -391,7 +392,7 @@ export async function getPrice(candidateWallet: string): Promise<number> {
   const result = await calculateCandidatePrice(candidateWallet);
 
   // Store in cache
-  await storePricesInDB(new Map([[candidateWallet, result.priceHRK]]));
+  await storePricesInDB(new Map([[candidateWallet, result.priceUSDC]]));
 
-  return result.priceHRK;
+  return result.priceUSDC;
 }

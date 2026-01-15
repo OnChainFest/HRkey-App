@@ -11,6 +11,9 @@ import "./HRKStaking.sol";
  * @title HRKSlashing
  * @notice Slashing mechanism for fraudulent evaluators
  * @dev Implements 4-tier slashing system with appeals process
+ *
+ * CRITICAL INVARIANT: Slashed tokens are 100% BURNED (enforcement only)
+ * NO REDISTRIBUTION to other stakers - slashing is NOT a reward mechanism
  */
 contract HRKSlashing is
     Initializable,
@@ -55,14 +58,13 @@ contract HRKSlashing is
 
     // State
     uint256 public proposalCount;
-    uint256 public slashPool;              // Redistributable slashed funds
     uint256 public totalSlashed;
     uint256 public totalBurned;
 
     // Constants
     uint256 public constant APPEALS_PERIOD = 48 hours;
     uint256 public constant APPEAL_STAKE_PERCENTAGE = 5000; // 50% of slash amount
-    uint256 public constant BURN_PERCENTAGE = 50; // 50% burned, 50% redistributed
+    uint256 public constant BURN_PERCENTAGE = 100; // 100% burned (NO redistribution)
 
     // Slash percentages (basis points)
     uint256[4] public slashPercentages = [1000, 3000, 6000, 10000]; // 10%, 30%, 60%, 100%
@@ -79,8 +81,7 @@ contract HRKSlashing is
         uint256 indexed proposalId,
         address indexed evaluator,
         uint256 slashAmount,
-        uint256 burned,
-        uint256 redistributed
+        uint256 burned
     );
     event SlashAppealed(
         uint256 indexed proposalId,
@@ -225,19 +226,18 @@ contract HRKSlashing is
             emit EvaluatorBanned(proposal.evaluator, proposalId);
         }
 
-        // Calculate distribution
-        uint256 burnAmount = (actualSlashAmount * BURN_PERCENTAGE) / 100;
-        uint256 redistributeAmount = actualSlashAmount - burnAmount;
+        // CRITICAL: Burn 100% of slashed tokens (NO redistribution)
+        // Slashing is ENFORCEMENT ONLY, not a reward mechanism for token holders
+        uint256 burnAmount = actualSlashAmount;
 
         // Update totals
         totalSlashed += actualSlashAmount;
         totalBurned += burnAmount;
-        slashPool += redistributeAmount;
 
-        // Burn tokens
+        // Burn all slashed tokens
         HRK.transfer(BURN_ADDRESS, burnAmount);
 
-        emit SlashExecuted(proposalId, proposal.evaluator, actualSlashAmount, burnAmount, redistributeAmount);
+        emit SlashExecuted(proposalId, proposal.evaluator, actualSlashAmount, burnAmount);
     }
 
     /**
@@ -265,22 +265,14 @@ contract HRKSlashing is
 
             _performSlash(proposal.evaluator, proposal.slashAmount);
 
-            // Forfeit appeal stake (50% burn, 50% to slash pool)
-            uint256 appealBurn = proposal.appealStake / 2;
-            uint256 appealRedistribute = proposal.appealStake - appealBurn;
+            // CRITICAL: Burn 100% of all slashed tokens (NO redistribution)
+            uint256 totalBurn = totalSlash;
 
-            HRK.transfer(BURN_ADDRESS, appealBurn);
-            slashPool += appealRedistribute;
-
-            // Distribute slashed amount
-            uint256 slashBurn = (proposal.slashAmount * BURN_PERCENTAGE) / 100;
-            uint256 slashRedistribute = proposal.slashAmount - slashBurn;
-
-            totalBurned += (slashBurn + appealBurn);
+            totalBurned += totalBurn;
             totalSlashed += totalSlash;
-            slashPool += slashRedistribute;
 
-            HRK.transfer(BURN_ADDRESS, slashBurn);
+            // Burn slashed amount + forfeited appeal stake
+            HRK.transfer(BURN_ADDRESS, totalBurn);
 
             // Ban if Fraud tier
             if (proposal.tier == SlashTier.Fraud) {
@@ -289,7 +281,7 @@ contract HRKSlashing is
             }
 
             emit AppealResolved(proposalId, false, 0);
-            emit SlashExecuted(proposalId, proposal.evaluator, totalSlash, slashBurn + appealBurn, slashRedistribute + appealRedistribute);
+            emit SlashExecuted(proposalId, proposal.evaluator, totalSlash, totalBurn);
         }
     }
 
@@ -306,22 +298,6 @@ contract HRKSlashing is
 
         // Transfer slashed tokens from staking contract to this contract
         HRK.transferFrom(address(stakingContract), address(this), amount);
-    }
-
-    /**
-     * @notice Claim share of slash pool (for honest stakers)
-     * @dev Distributes slash pool proportionally to all stakers
-     */
-    function distributeSlashPool() external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(slashPool > 0, "No slash pool to distribute");
-
-        // This would interact with staking contract to distribute rewards
-        // For now, we transfer to staking contract for distribution
-        uint256 amount = slashPool;
-        slashPool = 0;
-
-        HRK.transfer(address(stakingContract), amount);
-        // stakingContract.depositRewards(amount);
     }
 
     /**
