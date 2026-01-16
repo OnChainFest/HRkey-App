@@ -2,14 +2,10 @@ import { jest } from '@jest/globals';
 import request from 'supertest';
 
 const mockGetPublicProfile = jest.fn();
-const mockGetPublicIdentifierForUser = jest.fn();
 
-jest.unstable_mockModule('../../services/publicProfile.service.js', () => ({
+jest.unstable_mockModule('../../services/publicProfile/index.js', () => ({
   getPublicProfile: mockGetPublicProfile,
-  getPublicIdentifierForUser: mockGetPublicIdentifierForUser
-
-jest.unstable_mockModule('../../services/publicProfile.service.js', () => ({
-  getPublicProfile: mockGetPublicProfile
+  getPublicIdentifierForUser: jest.fn()
 }));
 
 // Auth middleware is not applied to this public route, but other routes import it.
@@ -17,7 +13,11 @@ jest.unstable_mockModule('../../middleware/auth.js', () => ({
   requireAuth: (req, _res, next) => next(),
   requireSuperadmin: (req, _res, next) => next(),
   requireCompanySigner: (req, _res, next) => next(),
-  requireAdmin: (req, _res, next) => next()
+  requireAdmin: (req, _res, next) => next(),
+  requireSelfOrSuperadmin: () => (_req, _res, next) => next(),
+  requireWalletLinked: () => (_req, _res, next) => next(),
+  requireOwnWallet: (_field, _options) => (_req, _res, next) => next(),
+  optionalAuth: (req, _res, next) => next()
 }));
 
 const { default: app } = await import('../../server.js');
@@ -35,7 +35,14 @@ describe('GET /api/public/candidates/:identifier', () => {
       .expect(200);
 
     expect(response.body.userId).toBe('user-1');
-    expect(mockGetPublicProfile).toHaveBeenCalledWith('user-1');
+    expect(mockGetPublicProfile).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({
+        trackView: true,
+        viewerId: null,
+        companyId: null
+      })
+    );
   });
 
   test('returns 400 when identifier missing', async () => {

@@ -38,34 +38,6 @@ type CandidateEvaluationResponse = {
   };
 };
 
-type TokenomicsPreviewResponse = {
-  userId: string;
-  priceUsd: number;
-  hrScore: number;
-  hrScoreNormalized: number;
-  tokens: {
-    rawTokens: number;
-    clampedTokens: number;
-  };
-  revenueSplit: {
-    platformUsd: number;
-    referencePoolUsd: number;
-    candidateUsd: number;
-    totalUsd: number;
-    normalizedPcts: {
-      platform: number;
-      referencePool: number;
-      candidate: number;
-    };
-  };
-  stakingPreview: {
-    effectiveApr: number;
-    estimatedRewardsHrk: number;
-    stakeAmountHrk: number;
-    lockMonths: number;
-  };
-};
-
 type PublicIdentifierResponse = {
   userId: string;
   identifier: string;
@@ -119,10 +91,6 @@ export default function CandidateEvaluationPage() {
   const [evaluation, setEvaluation] = useState<CandidateEvaluationResponse | null>(
     null
   );
-  const [tokenomics, setTokenomics] = useState<TokenomicsPreviewResponse | null>(
-    null
-  );
-  const [tokenomicsError, setTokenomicsError] = useState<string | null>(null);
   const [publicIdentifier, setPublicIdentifier] = useState<string | null>(null);
   const [identifierError, setIdentifierError] = useState<string | null>(null);
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
@@ -132,7 +100,6 @@ export default function CandidateEvaluationPage() {
       try {
         setLoading(true);
         setError(null);
-        setTokenomicsError(null);
         setIdentifierError(null);
         setPublicIdentifier(null);
         setCopyState("idle");
@@ -160,31 +127,18 @@ export default function CandidateEvaluationPage() {
         };
 
         const evaluationUrl = `${baseUrl}/api/candidates/${userId}/evaluation`;
-        const tokenomicsUrl = `${baseUrl}/api/candidates/${userId}/tokenomics-preview`;
         const identifierUrl = `${baseUrl}/api/me/public-identifier`;
 
-        const [evaluationResult, tokenomicsResult, identifierResult] =
-          await Promise.allSettled([
-            fetchJson<CandidateEvaluationResponse>(evaluationUrl),
-            fetchJson<TokenomicsPreviewResponse>(tokenomicsUrl),
-            fetchJson<PublicIdentifierResponse>(identifierUrl),
-          ]);
+        const [evaluationResult, identifierResult] = await Promise.allSettled([
+          fetchJson<CandidateEvaluationResponse>(evaluationUrl),
+          fetchJson<PublicIdentifierResponse>(identifierUrl),
+        ]);
 
         if (evaluationResult.status === "rejected") {
           throw evaluationResult.reason;
         }
 
         setEvaluation(evaluationResult.value);
-
-        if (tokenomicsResult.status === "fulfilled") {
-          setTokenomics(tokenomicsResult.value);
-        } else {
-          console.warn("Tokenomics preview unavailable", tokenomicsResult.reason);
-          setTokenomicsError(
-            (tokenomicsResult as PromiseRejectedResult)?.reason?.message ||
-              "Tokenomics preview unavailable."
-          );
-        }
 
         if (identifierResult.status === "fulfilled") {
           setPublicIdentifier(identifierResult.value.identifier);
@@ -220,20 +174,12 @@ export default function CandidateEvaluationPage() {
   }, [hrScore]);
 
   const answers = evaluation?.scoring.referenceAnalysis.answers ?? [];
-  const tokenSplit = tokenomics?.revenueSplit;
-  const tokens = tokenomics?.tokens;
-  const staking = tokenomics?.stakingPreview;
   const appBase = useMemo(() => resolveAppBase(), []);
   const publicProfileUrl = useMemo(() => {
     const identifier = publicIdentifier || evaluation?.userId;
     if (!identifier) return "";
     return `${appBase}/p/${identifier}`;
   }, [appBase, publicIdentifier, evaluation?.userId]);
-
-  const formatPercent = (value?: number) =>
-    value === undefined
-      ? "—"
-      : `${Math.round(Math.min(100, Math.max(0, value * 100)))}%`;
 
   const handleCopyLink = async () => {
     if (!publicProfileUrl) return;
@@ -341,91 +287,52 @@ export default function CandidateEvaluationPage() {
             )}
           </div>
 
-          {tokenomicsError && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
-              Tokenomics preview is temporarily unavailable. Your HRScore and USD
-              price are still available.
+          <div className="rounded-xl border bg-white p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Pricing preview</h2>
+              <span className="text-xs text-slate-500">
+                For your reference pack
+              </span>
             </div>
-          )}
 
-          {tokenomics && (
-            <div className="rounded-xl border bg-white p-5 shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Tokenomics preview</h2>
-                <span className="text-xs text-slate-500">
-                  Illustrative, non-binding preview
-                </span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="rounded-lg border bg-slate-50 p-4 shadow-sm">
+                <div className="text-sm text-slate-600">Estimated access price</div>
+                <div className="mt-2 text-2xl font-bold text-slate-900">
+                  {formatCurrency(pricing)}
+                </div>
+                <p className="mt-1 text-xs text-slate-600">
+                  Based on your HRKey Score and verified reference signals.
+                </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="rounded-lg border bg-slate-50 p-4 shadow-sm">
-                  <div className="text-sm text-slate-600">HRK token equivalent</div>
-                  <div className="mt-2 text-2xl font-bold text-slate-900">
-                    {Math.round(tokens?.clampedTokens ?? 0).toLocaleString("en-US")}{" "}
-                    HRK
-                  </div>
-                  <p className="mt-1 text-xs text-slate-600">
-                    Based on your suggested price of{" "}
-                    {formatCurrency(tokenomics.priceUsd)} and internal HRK rate.
-                  </p>
+              <div className="rounded-lg border bg-slate-50 p-4 shadow-sm space-y-2">
+                <div className="text-sm font-semibold text-slate-700">
+                  How pricing works
                 </div>
+                <p className="text-sm text-slate-600">
+                  Pricing is set in USDC only and reflects demand, rarity, and
+                  operational context for your role and location.
+                </p>
+                <p className="text-xs text-slate-600">
+                  No tokens, revenue splits, or staking payouts are involved.
+                </p>
+              </div>
 
-                <div className="rounded-lg border bg-slate-50 p-4 shadow-sm space-y-2">
-                  <div className="text-sm font-semibold text-slate-700">
-                    Revenue split (USD)
-                  </div>
-                  <div className="text-sm flex items-center justify-between">
-                    <span>Platform</span>
-                    <span className="font-semibold">
-                      {formatCurrency(tokenSplit?.platformUsd)}
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-600">
-                    {formatPercent(tokenSplit?.normalizedPcts.platform)} share
-                  </div>
-                  <div className="text-sm flex items-center justify-between">
-                    <span>Reference providers</span>
-                    <span className="font-semibold">
-                      {formatCurrency(tokenSplit?.referencePoolUsd)}
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-600">
-                    {formatPercent(tokenSplit?.normalizedPcts.referencePool)} share
-                  </div>
-                  <div className="text-sm flex items-center justify-between">
-                    <span>You (candidate)</span>
-                    <span className="font-semibold">
-                      {formatCurrency(tokenSplit?.candidateUsd)}
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-600">
-                    {formatPercent(tokenSplit?.normalizedPcts.candidate)} share
-                  </div>
+              <div className="rounded-lg border bg-slate-50 p-4 shadow-sm space-y-2">
+                <div className="text-sm font-semibold text-slate-700">
+                  Your control
                 </div>
-
-                <div className="rounded-lg border bg-slate-50 p-4 shadow-sm space-y-2">
-                  <div className="text-sm font-semibold text-slate-700">
-                    Potential staking rewards
-                  </div>
-                  <div className="text-3xl font-bold text-slate-900">
-                    {formatPercent(staking?.effectiveApr)}
-                  </div>
-                  <div className="text-sm text-slate-700">
-                    If you staked ~
-                    {Math.round(staking?.stakeAmountHrk ?? 0).toLocaleString("en-US")}{" "}
-                    HRK for {staking?.lockMonths ?? 0} months, estimated rewards
-                    could be{" "}
-                    {Math.round(staking?.estimatedRewardsHrk ?? 0).toLocaleString("en-US")}{" "}
-                    HRK.
-                  </div>
-                  <div className="text-xs text-slate-600">
-                    This preview is for simulation purposes only; final tokenomics
-                    may differ.
-                  </div>
-                </div>
+                <p className="text-sm text-slate-600">
+                  Companies can only access reference packs after you approve
+                  their request.
+                </p>
+                <p className="text-xs text-slate-600">
+                  You can revoke or expire access at any time.
+                </p>
               </div>
             </div>
-          )}
+          </div>
 
           <div className="rounded-xl border bg-white p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between">

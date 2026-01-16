@@ -42,6 +42,8 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
   auditMiddleware: () => (req, res, next) => next()
 }));
 
+jest.resetModules();
+
 const { default: app } = await import('../../server.js');
 
 describe('KPI Observations Security Integration', () => {

@@ -79,6 +79,7 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
 
 jest.unstable_mockModule('../../middleware/validate.js', () => ({
   validateBody: () => (req, res, next) => next(),
+  validateBody422: () => (req, res, next) => next(),
   validateParams: () => (req, res, next) => next(),
   validateQuery: () => (req, res, next) => next()
 }));
@@ -262,7 +263,7 @@ describe('Wallet & Reference - Permission Tests', () => {
   describe('POST /api/reference/submit', () => {
     test('PERM-L7: public can submit reference with a valid token', async () => {
       const invitesTable = buildTableMock({
-        singleResponses: [
+        maybeSingleResponses: [
           mockDatabaseSuccess({
             id: 'invite-1',
             requester_id: '660e8400-e29b-41d4-a716-446655440010',

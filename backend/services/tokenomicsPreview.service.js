@@ -1,17 +1,6 @@
 import { evaluateCandidateForUser } from './candidateEvaluation.service.js';
-import {
-  calculateTokenAmount,
-  splitRevenue,
-  estimateStakingRewards
-} from './tokenomicsPreparation.service.js';
-
 const DEFAULT_CONFIG = {
-  fxRateUsdToHrk: 10,
-  platformSharePct: 0.4,
-  referenceSharePct: 0.4,
-  candidateSharePct: 0.2,
-  baseStakingApr: 0.12,
-  defaultLockMonths: 12
+  pricePrecision: 2
 };
 
 /**
@@ -20,12 +9,7 @@ const DEFAULT_CONFIG = {
 
 /**
  * @typedef {Object} TokenomicsPreviewConfig
- * @property {number} fxRateUsdToHrk
- * @property {number} platformSharePct
- * @property {number} referenceSharePct
- * @property {number} candidateSharePct
- * @property {number} baseStakingApr
- * @property {number} defaultLockMonths
+ * @property {number} pricePrecision
  */
 
 /**
@@ -34,20 +18,6 @@ const DEFAULT_CONFIG = {
  * @property {number} priceUsd
  * @property {number} hrScore
  * @property {number} hrScoreNormalized
- * @property {{ rawTokens: number, clampedTokens: number }} tokens
- * @property {{
- *   platformUsd: number,
- *   referencePoolUsd: number,
- *   candidateUsd: number,
- *   totalUsd: number,
- *   normalizedPcts: { platform: number, referencePool: number, candidate: number }
- * }} revenueSplit
- * @property {{
- *   effectiveApr: number,
- *   estimatedRewardsHrk: number,
- *   stakeAmountHrk: number,
- *   lockMonths: number
- * }} stakingPreview
  */
 
 function mergeConfig(config = {}) {
@@ -73,41 +43,20 @@ export async function getTokenomicsPreviewForUser(userId, config = {}) {
   const resolvedConfig = mergeConfig(config);
   const evaluation = await evaluateCandidateForUser(trimmedUserId);
 
-  const priceUsd = evaluation.scoring?.pricingResult?.priceUsd ?? 0;
+  const priceUsdRaw = evaluation.scoring?.pricingResult?.priceUsd ?? 0;
   const hrScore = evaluation.scoring?.hrScoreResult?.hrScore ?? 0;
   const hrScoreNormalized = evaluation.scoring?.hrScoreResult?.normalizedScore ?? 0;
 
-  const tokens = calculateTokenAmount({
-    priceUsd,
-    fxRateUsdToHrk: resolvedConfig.fxRateUsdToHrk
-  });
-
-  const revenueSplit = splitRevenue({
-    priceUsd,
-    platformSharePct: resolvedConfig.platformSharePct,
-    referenceSharePct: resolvedConfig.referenceSharePct,
-    candidateSharePct: resolvedConfig.candidateSharePct
-  });
-
-  const stakingPreview = estimateStakingRewards({
-    stakeAmountHrk: tokens.clampedTokens,
-    baseApr: resolvedConfig.baseStakingApr,
-    lockMonths: resolvedConfig.defaultLockMonths,
-    hrScoreBoost: hrScoreNormalized
-  });
+  const precision = Number.isFinite(resolvedConfig.pricePrecision)
+    ? resolvedConfig.pricePrecision
+    : DEFAULT_CONFIG.pricePrecision;
+  const priceUsd = Number(priceUsdRaw.toFixed(precision));
 
   return {
     userId: evaluation.userId,
     priceUsd,
     hrScore,
-    hrScoreNormalized,
-    tokens,
-    revenueSplit,
-    stakingPreview: {
-      ...stakingPreview,
-      stakeAmountHrk: tokens.clampedTokens,
-      lockMonths: resolvedConfig.defaultLockMonths
-    }
+    hrScoreNormalized
   };
 }
 

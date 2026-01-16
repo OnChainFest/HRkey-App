@@ -106,13 +106,6 @@ jest.unstable_mockModule('../../services/candidateEvaluation.service.js', () => 
   })
 }));
 
-// Mock tokenomics preview service (used by Public Profile enrichment)
-jest.unstable_mockModule('../../services/tokenomicsPreview.service.js', () => ({
-  getTokenomicsPreviewForUser: jest.fn().mockResolvedValue({
-    tokens: { clampedTokens: 25000 }
-  })
-}));
-
 // Mock email service
 jest.unstable_mockModule('../../utils/emailService.js', () => ({
   sendSignerInvitation: jest.fn().mockResolvedValue(),

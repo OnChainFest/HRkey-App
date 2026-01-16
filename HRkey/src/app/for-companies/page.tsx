@@ -41,8 +41,8 @@ const faqs = [
       "We only share references after the candidate approves your request. Access is logged for compliance and transparency.",
   },
   {
-    question: "Can candidates earn revenue share?",
-    answer: "Yes. Candidates can enable revenue sharing with referrers when they choose to.",
+    question: "How do candidates stay in control?",
+    answer: "Candidates always control consent, and access is logged for compliance.",
   },
   {
     question: "Can we export?",

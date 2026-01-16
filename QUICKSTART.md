@@ -149,6 +149,28 @@ Should return:
 }
 ```
 
+### Test Smart Contracts (Hardhat)
+Online (initial cache seed):
+```bash
+npx hardhat compile
+npx hardhat test
+```
+
+Offline (when compiler download is unavailable):
+```bash
+npx hardhat test --no-compile
+```
+
+If you hit `HHE905`, use the helper script (falls back to `--no-compile` when cached artifacts exist):
+```bash
+./scripts/hardhat-test.sh
+```
+
+**CI cache paths (recommended):**
+- `~/.cache/hardhat-nodejs`
+- `artifacts`
+- `cache`
+
 ### Test Database Connection
 Try creating a test user:
 
@@ -316,7 +338,7 @@ HRkey-App/
 - **Add references**: Try the reference request flow
 - **Explore company features**: Create a company, add signers
 - **Test data access**: Request access to user data
-- **Try revenue sharing**: Simulate pay-per-query
+- **Review pricing**: Confirm USDC pricing and consent flow
 - **Deploy to production**: See [DEPLOYMENT.md](DEPLOYMENT.md)
 
 ---

@@ -1,11 +1,10 @@
 /**
  * Public Profile Service
- * Fetches a candidate profile and attaches evaluation/tokenomics previews for public display.
+ * Fetches a candidate profile and attaches evaluation data for public display.
  */
 
 import { createClient } from '@supabase/supabase-js';
 import { evaluateCandidateForUser } from './candidateEvaluation.service.js';
-import { getTokenomicsPreviewForUser } from './tokenomicsPreview.service.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -33,7 +32,6 @@ function normalizeSkills(raw) {
  * @property {string[]|null} skills
  * @property {number} hrScore
  * @property {number} priceUsd
- * @property {number|null} hrkTokens
  */
 
 /**
@@ -65,14 +63,6 @@ export async function getPublicProfile(identifier) {
   const hrScore = evaluation?.scoring?.hrScoreResult?.hrScore ?? 0;
   const priceUsd = evaluation?.scoring?.pricingResult?.priceUsd ?? 0;
 
-  let hrkTokens = null;
-  try {
-    const preview = await getTokenomicsPreviewForUser(userId);
-    hrkTokens = preview?.tokens?.clampedTokens ?? null;
-  } catch (err) {
-    hrkTokens = null; // Tokenomics preview is optional for public display
-  }
-
   return {
     userId,
     handle,
@@ -80,8 +70,7 @@ export async function getPublicProfile(identifier) {
     headline,
     skills,
     hrScore,
-    priceUsd,
-    hrkTokens
+    priceUsd
   };
 }
 
@@ -119,6 +108,4 @@ export async function getPublicIdentifierForUser(userId) {
 export default {
   getPublicProfile,
   getPublicIdentifierForUser
-export default {
-  getPublicProfile
 };

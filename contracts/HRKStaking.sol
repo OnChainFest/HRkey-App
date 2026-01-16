@@ -13,10 +13,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * @title HRKStaking
  * @notice Staking contract for HRKey evaluators and employers
  * @dev Implements:
- *      - 4-tier staking system (Bronze, Silver, Gold, Platinum)
- *      - Dynamic APY with multipliers (quality, volume, lockup)
+ *      - 4-tier bonded staking system (Bronze, Silver, Gold, Platinum)
  *      - Cooldown periods per tier
- *      - Reward distribution
  *      - Emergency unstake with penalty
  */
 contract HRKStaking is
@@ -30,10 +28,14 @@ contract HRKStaking is
 
     // Roles
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
-    bytes32 public constant REWARD_MANAGER_ROLE = keccak256("REWARD_MANAGER_ROLE");
+    bytes32 public constant SLASHER_ROLE = keccak256("SLASHER_ROLE");
 
     // HRK token
     IERC20 public HRK;
+
+    interface IBurnableToken {
+        function burn(uint256 amount) external;
+    }
 
     // Staking tiers
     enum Tier {
@@ -50,16 +52,12 @@ contract HRKStaking is
         uint256 stakedAt;               // Timestamp when staked
         uint256 lockupMonths;           // Lockup period in months
         uint256 unstakeRequestedAt;     // Timestamp when unstake requested (0 if not requested)
-        uint256 rewardsDebt;            // Rewards already claimed
-        uint256 evaluationCount;        // Number of evaluations completed
-        uint256 avgCorrelation;         // Average HRScore correlation (0-10000, 10000 = 1.0)
     }
 
     // Tier configuration
     struct TierConfig {
         uint256 minimumStake;           // Minimum HRK to stake
         uint256 maxEvaluationsPerMonth; // 0 = unlimited
-        uint256 baseAPYBps;             // Base APY in basis points (500 = 5%)
         uint256 cooldownPeriod;         // Cooldown period in seconds
     }
 
@@ -69,23 +67,17 @@ contract HRKStaking is
 
     // Global state
     uint256 public totalStaked;
-    uint256 public rewardsPool;
-    uint256 public lastRewardDistribution;
 
     // Constants
-    uint256 public constant SECONDS_PER_YEAR = 365 days;
     uint256 public constant BASIS_POINTS = 10000;
     uint256 public constant EMERGENCY_UNSTAKE_PENALTY_BPS = 5000; // 50%
 
     // Events
     event Staked(address indexed user, uint256 amount, Tier tier, uint256 lockupMonths);
     event UnstakeRequested(address indexed user, uint256 unlockTime);
-    event Unstaked(address indexed user, uint256 amount, uint256 rewards);
+    event Unstaked(address indexed user, uint256 amount);
     event EmergencyUnstaked(address indexed user, uint256 amount, uint256 penalty);
-    event RewardsClaimed(address indexed user, uint256 amount);
-    event RewardsDistributed(uint256 amount, uint256 timestamp);
-    event EvaluationCompleted(address indexed evaluator, uint256 newCount, uint256 correlation);
-    event TierConfigUpdated(Tier tier, uint256 minimumStake, uint256 baseAPYBps, uint256 cooldown);
+    event TierConfigUpdated(Tier tier, uint256 minimumStake, uint256 maxEvaluationsPerMonth, uint256 cooldown);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -110,34 +102,29 @@ contract HRKStaking is
 
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(UPGRADER_ROLE, _admin);
-        _grantRole(REWARD_MANAGER_ROLE, _admin);
-
+        _grantRole(SLASHER_ROLE, _admin);
         // Initialize tier configurations
         tierConfigs[Tier.Bronze] = TierConfig({
             minimumStake: 100 * 10**18,
             maxEvaluationsPerMonth: 20,
-            baseAPYBps: 500,  // 5%
             cooldownPeriod: 7 days
         });
 
         tierConfigs[Tier.Silver] = TierConfig({
             minimumStake: 500 * 10**18,
             maxEvaluationsPerMonth: 100,
-            baseAPYBps: 800,  // 8%
             cooldownPeriod: 14 days
         });
 
         tierConfigs[Tier.Gold] = TierConfig({
             minimumStake: 2000 * 10**18,
             maxEvaluationsPerMonth: 0, // unlimited
-            baseAPYBps: 1200, // 12%
             cooldownPeriod: 30 days
         });
 
         tierConfigs[Tier.Platinum] = TierConfig({
             minimumStake: 10000 * 10**18,
             maxEvaluationsPerMonth: 0, // unlimited
-            baseAPYBps: 1500, // 15%
             cooldownPeriod: 90 days
         });
     }
@@ -169,10 +156,7 @@ contract HRKStaking is
             tier: tier,
             stakedAt: block.timestamp,
             lockupMonths: lockupMonths,
-            unstakeRequestedAt: 0,
-            rewardsDebt: 0,
-            evaluationCount: 0,
-            avgCorrelation: 5000 // Default 0.50 correlation
+            unstakeRequestedAt: 0
         });
 
         totalStaked += amount;
@@ -183,7 +167,7 @@ contract HRKStaking is
     /**
      * @notice Request to unstake tokens (starts cooldown)
      */
-    function requestUnstake() external {
+    function initiateUnstake() external {
         Stake storage userStake = stakes[msg.sender];
         require(userStake.amount > 0, "No active stake");
         require(userStake.unstakeRequestedAt == 0, "Unstake already requested");
@@ -203,7 +187,7 @@ contract HRKStaking is
     /**
      * @notice Execute unstake after cooldown period
      */
-    function executeUnstake() external nonReentrant {
+    function finalizeUnstake() external nonReentrant {
         Stake storage userStake = stakes[msg.sender];
         require(userStake.amount > 0, "No active stake");
         require(userStake.unstakeRequestedAt > 0, "Unstake not requested");
@@ -212,23 +196,16 @@ contract HRKStaking is
         uint256 cooldownEnd = userStake.unstakeRequestedAt + config.cooldownPeriod;
         require(block.timestamp >= cooldownEnd, "Cooldown period active");
 
-        // Calculate pending rewards
-        uint256 rewards = calculatePendingRewards(msg.sender);
-
         uint256 amount = userStake.amount;
         totalStaked -= amount;
 
         // Delete stake
         delete stakes[msg.sender];
 
-        // Transfer stake + rewards
+        // Transfer stake
         HRK.safeTransfer(msg.sender, amount);
-        if (rewards > 0 && rewards <= rewardsPool) {
-            HRK.safeTransfer(msg.sender, rewards);
-            rewardsPool -= rewards;
-        }
 
-        emit Unstaked(msg.sender, amount, rewards);
+        emit Unstaked(msg.sender, amount);
     }
 
     /**
@@ -248,158 +225,54 @@ contract HRKStaking is
         // Delete stake
         delete stakes[msg.sender];
 
-        // Transfer reduced amount (penalty stays in contract for rewards pool)
+        // Transfer reduced amount, burn penalty
         HRK.safeTransfer(msg.sender, amountAfterPenalty);
-        rewardsPool += penalty;
+        IBurnableToken(address(HRK)).burn(penalty);
 
         emit EmergencyUnstaked(msg.sender, amountAfterPenalty, penalty);
     }
 
     /**
-     * @notice Claim pending rewards without unstaking
+     * @notice Slash a staker's bonded amount (called by slashing contract)
+     * @param evaluator Address of the evaluator to slash
+     * @param amount Amount to slash
      */
-    function claimRewards() external nonReentrant {
-        Stake storage userStake = stakes[msg.sender];
-        require(userStake.amount > 0, "No active stake");
-
-        uint256 rewards = calculatePendingRewards(msg.sender);
-        require(rewards > 0, "No rewards available");
-        require(rewards <= rewardsPool, "Insufficient rewards pool");
-
-        userStake.rewardsDebt += rewards;
-        rewardsPool -= rewards;
-
-        HRK.safeTransfer(msg.sender, rewards);
-
-        emit RewardsClaimed(msg.sender, rewards);
-    }
-
-    /**
-     * @notice Calculate pending rewards for a staker
-     * @param staker Address of the staker
-     * @return uint256 Pending rewards in HRK
-     */
-    function calculatePendingRewards(address staker) public view returns (uint256) {
-        Stake memory userStake = stakes[staker];
-        if (userStake.amount == 0) return 0;
-
-        TierConfig memory config = tierConfigs[userStake.tier];
-
-        // Time staked in seconds
-        uint256 stakeDuration = block.timestamp - userStake.stakedAt;
-
-        // Base APY rewards
-        uint256 baseRewards = (userStake.amount * config.baseAPYBps * stakeDuration) /
-            (SECONDS_PER_YEAR * BASIS_POINTS);
-
-        // Apply multipliers
-        uint256 multiplier = calculateMultiplier(staker);
-        uint256 totalRewards = (baseRewards * multiplier) / BASIS_POINTS;
-
-        // Subtract already claimed rewards
-        if (totalRewards > userStake.rewardsDebt) {
-            return totalRewards - userStake.rewardsDebt;
-        }
-
-        return 0;
-    }
-
-    /**
-     * @notice Calculate reward multiplier based on quality, volume, and lockup
-     * @param staker Address of the staker
-     * @return uint256 Multiplier in basis points (10000 = 1.0x, 20000 = 2.0x)
-     */
-    function calculateMultiplier(address staker) public view returns (uint256) {
-        Stake memory userStake = stakes[staker];
-
-        // M_hrscore = 1 + (avgCorrelation / 10000)
-        // avgCorrelation is stored as basis points (5000 = 0.50)
-        uint256 qualityMultiplier = BASIS_POINTS + userStake.avgCorrelation;
-
-        // M_volume = 1 + log10(1 + evaluations / 100)
-        // Simplified: capped at 1.5x (15000 bps)
-        uint256 volumeMultiplier = BASIS_POINTS;
-        if (userStake.evaluationCount > 0) {
-            uint256 volumeBonus = (userStake.evaluationCount * 50); // 0.5% per evaluation
-            volumeMultiplier += volumeBonus;
-            if (volumeMultiplier > 15000) volumeMultiplier = 15000; // Cap at 1.5x
-        }
-
-        // M_lockup = sqrt(lockupMonths / 12)
-        // Simplified: linear approximation
-        uint256 lockupMultiplier = BASIS_POINTS +
-            (userStake.lockupMonths * BASIS_POINTS) / 24; // Max 2x for 24 months
-
-        // Combined multiplier
-        uint256 combinedMultiplier = (qualityMultiplier * volumeMultiplier * lockupMultiplier) /
-            (BASIS_POINTS * BASIS_POINTS);
-
-        // Cap at 4x total
-        if (combinedMultiplier > 40000) combinedMultiplier = 40000;
-
-        return combinedMultiplier;
-    }
-
-    /**
-     * @notice Record an evaluation completion (called by backend)
-     * @param evaluator Address of the evaluator
-     * @param correlation Correlation score (0-10000, 10000 = perfect 1.0)
-     */
-    function recordEvaluation(
-        address evaluator,
-        uint256 correlation
-    ) external onlyRole(REWARD_MANAGER_ROLE) {
-        require(correlation <= BASIS_POINTS, "Invalid correlation");
-
-        Stake storage userStake = stakes[evaluator];
-        require(userStake.amount > 0, "No active stake");
-
-        // Update evaluation count
-        userStake.evaluationCount += 1;
-
-        // Update rolling average correlation
-        uint256 totalCorrelation = (userStake.avgCorrelation * (userStake.evaluationCount - 1)) +
-            correlation;
-        userStake.avgCorrelation = totalCorrelation / userStake.evaluationCount;
-
-        emit EvaluationCompleted(evaluator, userStake.evaluationCount, userStake.avgCorrelation);
-    }
-
-    /**
-     * @notice Deposit rewards into the pool
-     * @param amount Amount of HRK to deposit
-     */
-    function depositRewards(uint256 amount) external onlyRole(REWARD_MANAGER_ROLE) {
+    function slash(address evaluator, uint256 amount) external onlyRole(SLASHER_ROLE) {
         require(amount > 0, "Amount must be > 0");
 
-        HRK.safeTransferFrom(msg.sender, address(this), amount);
-        rewardsPool += amount;
-        lastRewardDistribution = block.timestamp;
+        Stake storage userStake = stakes[evaluator];
+        require(userStake.amount >= amount, "Insufficient stake");
 
-        emit RewardsDistributed(amount, block.timestamp);
+        userStake.amount -= amount;
+        totalStaked -= amount;
+
+        if (userStake.amount == 0) {
+            delete stakes[evaluator];
+        }
+
+        HRK.safeTransfer(msg.sender, amount);
     }
 
     /**
      * @notice Update tier configuration
      * @param tier Tier to update
      * @param minimumStake New minimum stake
-     * @param baseAPYBps New base APY in basis points
+     * @param maxEvaluationsPerMonth New max evaluations per month (0 = unlimited)
      * @param cooldownPeriod New cooldown period in seconds
      */
     function updateTierConfig(
         Tier tier,
         uint256 minimumStake,
-        uint256 baseAPYBps,
+        uint256 maxEvaluationsPerMonth,
         uint256 cooldownPeriod
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(baseAPYBps <= 5000, "APY too high"); // Max 50%
         require(cooldownPeriod <= 180 days, "Cooldown too long");
 
         tierConfigs[tier].minimumStake = minimumStake;
-        tierConfigs[tier].baseAPYBps = baseAPYBps;
+        tierConfigs[tier].maxEvaluationsPerMonth = maxEvaluationsPerMonth;
         tierConfigs[tier].cooldownPeriod = cooldownPeriod;
 
-        emit TierConfigUpdated(tier, minimumStake, baseAPYBps, cooldownPeriod);
+        emit TierConfigUpdated(tier, minimumStake, maxEvaluationsPerMonth, cooldownPeriod);
     }
 
     /**

@@ -259,8 +259,6 @@ app.post('/api/identity', validate(createIdentitySchema), handler);
 2. ✅ `HRKToken.sol` - 268 líneas (ERC-20)
 3. ✅ `HRKStaking.sol` - 448 líneas
 4. ✅ `HRKSlashing.sol` - 370 líneas
-5. ✅ `HRKPriceOracle.sol` - 368 líneas
-6. ✅ `HRKeyRevenueShare.sol` - 299 líneas
 
 **Estado de deployment:**
 
@@ -270,14 +268,12 @@ app.post('/api/identity', validate(createIdentitySchema), handler);
 | HRKToken | ❌ | ❌ | ❌ | ❌ |
 | HRKStaking | ❌ | ❌ | ❌ | ❌ |
 | HRKSlashing | ❌ | ❌ | ❌ | ❌ |
-| HRKPriceOracle | ❌ | ❌ | ❌ | ❌ |
-| HRKeyRevenueShare | ❌ | ❌ | ❌ | ❌ |
 
 **Problemas:**
 - ❌ **Cero tests de Hardhat** para contratos
 - ❌ **No hay auditoría externa** (requerida para producción)
 - ❌ **No hay documentación natspec** completa
-- ⚠️ Contratos manejan fondos (staking, revenue share)
+- ⚠️ Contratos manejan fondos (staking)
 - ⚠️ Funciones privilegiadas (slashing) sin timelock
 
 **Solución:**
@@ -350,8 +346,7 @@ describe("HRKToken", function () {
 1. ✅ `identityController` - Gestión de identidad y KYC
 2. ✅ `companyController` - Empresas y signatarios
 3. ✅ `signersController` - Invitaciones corporativas
-4. ✅ `dataAccessController` - Acceso a datos y revenue sharing
-5. ✅ `revenueController` - Dashboard de ingresos
+4. ✅ `dataAccessController` - Acceso a datos con control de capacidad
 6. ✅ `auditController` - Logs de auditoría
 7. ✅ `kpiObservationsController` - Observaciones de KPI
 
@@ -453,7 +448,6 @@ networks: {
 
 **Scripts de deployment:**
 - ✅ `scripts/deploy-base.ts` - Deploy principal
-- ✅ `scripts/deploy-revenue-share.js` - Revenue share
 - ✅ `scripts/deploy.js` - Genérico
 - ✅ `scripts/publish-example.js` - Publishing
 
@@ -473,8 +467,6 @@ const CONTRACTS = {
 - ❌ HRKToken deployment
 - ❌ HRKStaking deployment
 - ❌ HRKSlashing deployment
-- ❌ HRKPriceOracle deployment
-- ❌ HRKeyRevenueShare deployment
 - ❌ Verification en Basescan
 
 ---
@@ -737,7 +729,6 @@ npm install --save-dev @nomicfoundation/hardhat-chai-matchers chai
 // test/HRKToken.test.js
 // test/HRKStaking.test.js
 // test/HRKSlashing.test.js
-// test/HRKeyRevenueShare.test.js
 ```
 
 **Frontend tests (Vitest + Testing Library):**
@@ -753,12 +744,10 @@ npm install --save-dev vitest @testing-library/react @testing-library/jest-dom
 - ☐ Escribir tests para auth endpoints
 - ☐ Escribir tests para wallet creation
 - ☐ Escribir tests para Stripe webhooks
-- ☐ Escribir tests para revenue sharing
 - ☐ Configurar Hardhat testing
 - ☐ Tests para HRKToken (mint, transfer, burn)
-- ☐ Tests para HRKStaking (stake, unstake, rewards)
+- ☐ Tests para HRKStaking (stake, unstake)
 - ☐ Tests para HRKSlashing (slash conditions)
-- ☐ Tests para HRKeyRevenueShare (splits, withdrawals)
 - ☐ Configurar Vitest para frontend
 - ☐ Tests para componentes críticos (Dashboard, Wallets)
 
@@ -953,8 +942,6 @@ app.get('/health', async (req, res) => {
 - ✅ HRKToken.sol (ERC-20)
 - ✅ HRKStaking.sol (staking mechanism)
 - ✅ HRKSlashing.sol (slashing logic)
-- ✅ HRKPriceOracle.sol (price feeds)
-- ✅ HRKeyRevenueShare.sol (automated payouts)
 
 **Tareas:**
 - ☐ Seleccionar auditor
@@ -1551,25 +1538,13 @@ async function main() {
   await slashing.deployed();
   console.log('HRKSlashing deployed:', slashing.address);
 
-  // 4. Deploy HRKPriceOracle
-  const HRKPriceOracle = await ethers.getContractFactory('HRKPriceOracle');
-  const oracle = await HRKPriceOracle.deploy();
-  await oracle.deployed();
-  console.log('HRKPriceOracle deployed:', oracle.address);
-
-  // 5. Deploy HRKeyRevenueShare
-  const HRKeyRevenueShare = await ethers.getContractFactory('HRKeyRevenueShare');
-  const revenue = await HRKeyRevenueShare.deploy(token.address);
-  await revenue.deployed();
-  console.log('HRKeyRevenueShare deployed:', revenue.address);
-
-  // 6. Verify contracts on Basescan
+  // 4. Verify contracts on Basescan
   console.log('Verifying contracts...');
   await verifyContract(token.address, []);
   await verifyContract(staking.address, [token.address]);
   // ...
 
-  // 7. Save deployment addresses
+  // 5. Save deployment addresses
   const deployment = {
     network: 'base-mainnet',
     chainId: 8453,
@@ -1577,9 +1552,7 @@ async function main() {
     contracts: {
       HRKToken: token.address,
       HRKStaking: staking.address,
-      HRKSlashing: slashing.address,
-      HRKPriceOracle: oracle.address,
-      HRKeyRevenueShare: revenue.address
+      HRKSlashing: slashing.address
     }
   };
 

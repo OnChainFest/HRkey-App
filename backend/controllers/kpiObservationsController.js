@@ -430,15 +430,17 @@ export async function getKpiObservationsSummary(req, res) {
     const isSuperadmin = req.user.role === 'superadmin';
 
     // Fetch authenticated user's wallet address for filtering
-    let userWallet = null;
+    let userWallet = req.user?.wallet_address || null;
     if (!isSuperadmin) {
-      const { data: authUser } = await supabase
-        .from('users')
-        .select('wallet_address')
-        .eq('id', req.user.id)
-        .single();
+      if (!userWallet) {
+        const { data: authUser } = await supabase
+          .from('users')
+          .select('wallet_address')
+          .eq('id', req.user.id)
+          .single();
 
-      userWallet = authUser?.wallet_address;
+        userWallet = authUser?.wallet_address;
+      }
 
       // Non-superadmin users without a wallet can't see any summary data
       if (!userWallet) {

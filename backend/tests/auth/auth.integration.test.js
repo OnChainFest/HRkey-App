@@ -26,6 +26,8 @@ jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
 }));
 
+jest.resetModules();
+
 // Import app AFTER mocking dependencies
 const { default: app } = await import('../../server.js');
 

@@ -44,7 +44,6 @@ export const AuditActionTypes = {
   APPROVE_DATA_ACCESS_REQUEST: 'approve_data_access_request',
   REJECT_DATA_ACCESS_REQUEST: 'reject_data_access_request',
   ACCESS_DATA: 'access_data',
-  PROCESS_REVENUE_SHARE: 'process_revenue_share',
   REQUEST_PAYOUT: 'request_payout',
 
   // Admin actions
@@ -63,7 +62,6 @@ export const ResourceTypes = {
   REFERENCE: 'reference',
   IDENTITY: 'identity',
   DATA_ACCESS_REQUEST: 'data_access_request',
-  REVENUE_SHARE: 'revenue_share'
 };
 
 // ============================================================================

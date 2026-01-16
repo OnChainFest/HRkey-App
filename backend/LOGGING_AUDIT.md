@@ -50,7 +50,6 @@ The HRKey backend **already has** a well-designed centralized Winston logger (`l
 #### 2. **Controllers** (All Files)
 **Pattern:** Every controller uses `console.error()` in catch blocks with zero context.
 
-**Example from revenueController.js:**
 ```javascript
 } catch (error) {
   console.error('Request payout error:', error);  // ❌ No requestId, no userId, no amount
@@ -70,7 +69,6 @@ The HRKey backend **already has** a well-designed centralized Winston logger (`l
 - `signersController.js`: 12 console.error/warn calls
 - `auditController.js`: 4 console.error calls
 - `dataAccessController.js`: 14 console.error/warn calls
-- `revenueController.js`: 8 console.error calls
 - `kpiObservationsController.js`: 10 console.log/error calls (mix of EN/ES)
 
 #### 3. **Middleware** (auth.js, validate.js)
@@ -344,7 +342,7 @@ Use these levels consistently:
 | `warn` | 4xx errors, deprecations, recoverable issues | Invalid input, missing optional config |
 | `info` | Business events, important state changes | User registered, payment processed, server started |
 | `debug` | Detailed flow info, helpful for debugging | Query executed, cache hit/miss |
-| `http` | HTTP requests/responses (via middleware) | GET /api/revenue/balance 200 (125ms) |
+| `http` | HTTP requests/responses (via middleware) | GET /api/data-access/pending 200 (125ms) |
 
 ---
 

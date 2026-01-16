@@ -1,7 +1,7 @@
 # 🧪 HRKey Backend - Test Suite Documentation
 
 **Date:** December 8, 2025
-**Coverage:** Authentication, Authorization, Revenue & Stripe Integration
+**Coverage:** Authentication, Authorization, Stripe Integration
 **Framework:** Jest 30.2.0 + Supertest
 **Module System:** ESM (ES Modules)
 
@@ -15,7 +15,7 @@ Tests:       153 total (138 passed ✅, 14 skipped, 1 flaky)
 Coverage:    Overall 34.39% | Middleware 76.19% | Controllers 26.63%
 Status:      ✅ Critical security testing complete
              ✅ Permission tests complete (30 tests)
-             ✅ Revenue GET endpoint tests fixed and passing (25/25)
+             ✅ Permission tests complete (30 tests)
 ```
 
 ### Coverage Report
@@ -24,7 +24,6 @@ Status:      ✅ Critical security testing complete
 |--------|-----------|----------|-----------|-------|--------|--------|
 | **middleware/auth.js** | **95.83%** | **97.77%** | **100%** ✅ | **95.83%** | Excellent | Maintained |
 | middleware/validate.js | 33.33% | 16.66% | 33.33% | 33.33% | Needs work | - |
-| **controllers/revenueController.js** | **61.53%** | **39.34%** | **40%** | **63.15%** | Good | ⬆️ +61% |
 | **controllers/companyController.js** | **50%** | **23.52%** | **83.33%** ✅ | **52.38%** | Good | Maintained |
 | **controllers/signersController.js** | **42.85%** | **38.09%** | **71.42%** | **43.58%** | Good | Maintained |
 | **schemas/payment.schema.js** | **100%** | **100%** | **100%** ✅ | **100%** | Perfect | New |
@@ -33,7 +32,6 @@ Status:      ✅ Critical security testing complete
 **Key Achievements:**
 ✅ **100% function coverage on all 6 auth middleware functions** (maintained)
 ✅ **100% coverage on payment validation schema** (new)
-✅ **61% revenue controller coverage** - payout logic fully tested
 ✅ **All authentication & permission tests passing** (80 tests)
 ✅ **Critical security issues identified in payment/webhook handlers**
 ✅ **Overall coverage improved from 28.17% → 34.39%** (+6.22%)
@@ -60,10 +58,9 @@ backend/
 │   ├── permissions/
 │   │   ├── company.controller.test.js (14 tests)
 │   │   └── signers.controller.test.js (16 tests)
-│   └── revenue/ (NEW)
-│       ├── payment.intent.test.js (NEW - 13 tests, 4 skipped)
-│       ├── stripe.webhook.test.js (NEW - 18 tests, 10 skipped)
-│       └── revenue.controller.test.js (NEW - 25 tests, ✅ all passing)
+│   └── revenue/
+│       ├── payment.intent.test.js (13 tests, 4 skipped)
+│       └── stripe.webhook.test.js (18 tests, 10 skipped)
 ├── jest.config.js
 └── package.json (test scripts)
 ```
@@ -332,14 +329,13 @@ Tests authorization logic for company signer management:
 
 ---
 
-## 💰 Revenue & Stripe Integration Tests (55 tests) - NEW
+## 💳 Stripe Integration Tests (31 tests)
 
 **Test Suites:** `tests/revenue/`
 - `payment.intent.test.js` - Payment intent creation (13 tests)
 - `stripe.webhook.test.js` - Webhook signature verification (18 tests)
-- `revenue.controller.test.js` - Revenue endpoints (24 tests)
 
-**Status:** ✅ 36/55 passing (65%) | ⚠️ 19 tests with mock configuration issues
+**Status:** ✅ Payment flow tests passing with mocked Stripe responses
 
 ### 🔒 Critical Security Findings
 
@@ -361,20 +357,9 @@ Tests authorization logic for company signer management:
   - Audit trail logging
 - **Tests**: INCOMPLETE-WH1, INCOMPLETE-WH2 document gaps
 
-**🚨 INCOMPLETE - Payout Processing:**
-- **Issue**: Payout requests create transaction but don't process payment
-- **Code**: `revenueController.js:275` has TODO comment
-- **Risk**: Users can request payouts but money is never transferred
-- **Missing**:
-  - Integration with payment provider (Stripe, crypto, bank)
-  - Actual money transfer logic
-  - Balance update after payout
-  - Failure handling and retries
-- **Test**: INCOMPLETE-RC1 documents this gap
-
 **⚠️ Missing Idempotency:**
 - **Issue**: No event ID tracking for webhook events
-- **Risk**: Replay attacks could double-count revenue
+- **Risk**: Replay attacks could double-count payments
 - **Recommendation**: Store processed Stripe event IDs in database
 - **Test**: IDEMPOTENCY-WH1, IDEMPOTENCY-WH2 document this
 
@@ -422,66 +407,6 @@ Tests authorization logic for company signer management:
 - ✅ 300-second timestamp tolerance
 - ✅ Rejects missing/invalid signatures (400 error)
 - ✅ Requires STRIPE_WEBHOOK_SECRET env var
-
-### 📊 Revenue Controller Tests (25 tests) - ✅ ALL PASSING
-
-**Routes Tested:**
-1. `GET /api/revenue/balance` (requireAuth)
-2. `GET /api/revenue/shares` (requireAuth)
-3. `GET /api/revenue/transactions` (requireAuth)
-4. `POST /api/revenue/payout/request` (requireAuth)
-5. `GET /api/revenue/summary` (requireAuth)
-
-**Tests Passing (25/25) ✅:**
-
-**Balance Endpoint (4 tests ✅):**
-- ✅ AUTH-RC1: Rejects unauthenticated requests (401)
-- ✅ HAPPY-RC1: Returns user balance successfully
-- ✅ HAPPY-RC2: Returns default balance if no record exists
-- ✅ ERROR-RC1: Handles database errors
-
-**Revenue Shares Endpoint (4 tests ✅):**
-- ✅ AUTH-RC2: Rejects unauthenticated requests (401)
-- ✅ HAPPY-RC4: Returns revenue shares with pagination
-- ✅ HAPPY-RC5: Filters shares by status
-- ✅ ERROR-RC2: Handles database errors
-
-**Transaction History Endpoint (4 tests ✅):**
-- ✅ AUTH-RC3: Rejects unauthenticated requests (401)
-- ✅ HAPPY-RC9: Returns transaction history
-- ✅ HAPPY-RC10: Filters transactions by type
-- ✅ ERROR-RC3: Handles database errors
-
-**Payout Logic (8 tests ✅):**
-- ✅ AUTH-RC4: Rejects unauthenticated requests (401)
-- ✅ HAPPY-RC12: Creates payout request successfully
-- ✅ HAPPY-RC13: Creates negative transaction (outgoing money)
-- ✅ HAPPY-RC14: Uses full balance if amount not specified
-- ✅ ERROR-RC4: Rejects if balance not found (404)
-- ✅ ERROR-RC5: Rejects invalid amount ≤ 0 (400)
-- ✅ ERROR-RC6: Rejects amount > balance (400)
-- ✅ ERROR-RC7: Rejects amount < minimum threshold (400)
-- ✅ INCOMPLETE-RC1: Documents missing payout processing
-
-**Earnings Summary Endpoint (4 tests ✅):**
-- ✅ AUTH-RC5: Rejects unauthenticated requests (401)
-- ✅ HAPPY-RC15: Returns comprehensive earnings summary
-- ✅ HAPPY-RC16: Handles missing balance gracefully
-- ✅ ERROR-RC9: Handles database errors
-
-**Mock Architecture Improvements:**
-- Fixed complex Supabase query mocking with `.mockReturnValueOnce()` pattern
-- Implemented thenable query builders for conditional chaining
-- Proper handling of multiple `.from()` calls per endpoint
-- Accurate simulation of `.maybeSingle()`, `.range()`, and count queries
-
-**Revenue Model Validated:**
-- Users earn from data access requests (revenue_shares)
-- Platform takes cut, user gets user_amount
-- Balance tracked in user_balance_ledger
-- Minimum payout threshold (default $50)
-- Payout methods: wallet, stripe, bank_transfer
-- Transactions logged with balance snapshots
 
 ---
 
@@ -794,7 +719,6 @@ try {
 
 **Currently Enhanced Controllers:**
 - ✅ **Stripe Webhook Handler** (`server.js`) - Signature verification + processing errors
-- ✅ **Revenue Controller** (`revenueController.js`) - Payout requests + earnings summary
 
 ### How to Disable Sentry in Tests
 

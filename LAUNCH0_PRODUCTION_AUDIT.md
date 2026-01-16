@@ -284,4 +284,4 @@
 
 **Training the HRScore ML model on real KPI observation data.**
 
-The product's entire value proposition rests on predictive scoring. Every other feature (references, revenue sharing, data access) is commodity. The ML model with R² = -2.67 is worse than random guessing. Without a credible model, Launch-0 is launching a data collection platform pretending to be an AI product. Get 50-100 real KPI observations, retrain the model, and prove the correlation thesis. Everything else can wait.
+The product's entire value proposition rests on predictive scoring. Every other feature (references, data access) is commodity. The ML model with R² = -2.67 is worse than random guessing. Without a credible model, Launch-0 is launching a data collection platform pretending to be an AI product. Get 50-100 real KPI observations, retrain the model, and prove the correlation thesis. Everything else can wait.

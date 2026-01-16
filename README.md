@@ -38,13 +38,13 @@
 1. **Verifiable Professional References** - Blockchain-backed references from colleagues, managers, and clients
 2. **KPI Observations** - Structured evaluations of job-specific Key Performance Indicators
 3. **ML-Powered Scoring** - Predictive models that calculate a 0-100 "HRKey Score" based on historical KPI data
-4. **Data Monetization** - Users earn revenue when companies request access to their professional data
+4. **Data Access Controls** - Companies request access to professional data in a consented flow
 
 ### The Problem
 
 Traditional hiring relies on subjective references and unverified claims. Candidates have no way to:
 - Prove their professional track record quantitatively
-- Monetize their reputation data
+- Share verified data only with approved companies
 - Share verifiable performance metrics with potential employers
 
 ### The Solution
@@ -53,7 +53,7 @@ HRKey creates a **proof-of-performance system** where:
 - **Observers** (managers, colleagues) submit structured KPI evaluations
 - **Machine learning models** correlate KPI ratings with measurable job outcomes
 - **Candidates** receive a predictive **HRKey Score** (0-100) that forecasts their performance
-- **Companies** pay to access candidate data, with revenue shared between platform, candidate, and reference providers
+- **Companies** pay in USDC to access candidate data after explicit consent
 
 ---
 
@@ -75,10 +75,9 @@ HRKey creates a **proof-of-performance system** where:
 - **Confidence Metrics** - Transparency about prediction reliability
 - **Interactive Dashboard** - Circular gauge, KPI breakdown, model metadata
 
-### 💰 Data Access & Revenue Sharing
-- **Pay-per-Query** - Companies pay to access candidate references/profiles
-- **Automatic Revenue Split** - 40% platform / 40% candidate / 20% reference creator
-- **Earnings Dashboard** - Track balance, payouts, transaction history
+### 💰 Data Access & Pricing
+- **Pay-per-Query** - Companies pay to access candidate references/profiles in USDC
+- **Consent-first Access** - Access is granted only after candidate approval
 - **Stripe Integration** - Secure payment processing
 
 ### 🌐 Blockchain Foundation (Phase 2)
@@ -588,7 +587,7 @@ Opens interactive dashboard at http://localhost:8501
 
 ### Additional Guides
 
-- **[QUICKSTART_DATA_ACCESS.md](QUICKSTART_DATA_ACCESS.md)** - Data access & revenue sharing quickstart
+- **[QUICKSTART_DATA_ACCESS.md](QUICKSTART_DATA_ACCESS.md)** - Data access quickstart
 - **[README-REFERRAL-STRIPE.md](README-REFERRAL-STRIPE.md)** - Stripe referral integration
 - **[STRIPE_CONFIG.md](STRIPE_CONFIG.md)** - Stripe configuration guide
 

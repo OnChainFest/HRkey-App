@@ -21,6 +21,7 @@ function buildTableMock({ singleResponses = [], maybeSingleResponses = [], range
     select: jest.fn(),
     insert: jest.fn().mockReturnThis(),
     eq: jest.fn().mockReturnThis(),
+    or: jest.fn().mockReturnThis(),
     order: jest.fn().mockReturnThis(),
     range: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
@@ -87,10 +88,20 @@ describe('KPI Observations Controller - Permission Tests', () => {
 
   describe('POST /api/kpi-observations', () => {
     test('PERM-K1: authenticated user can create KPI observation', async () => {
-      const user = mockUserData({ id: 'kpi-user-1', email: 'kpi1@example.com' });
+      const user = mockUserData({
+        id: 'kpi-user-1',
+        email: 'kpi1@example.com',
+        wallet_address: '0xobserver'
+      });
       const inserted = [{ id: 'obs-1', kpi_name: 'quality', rating_value: 5 }];
 
-      const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
+      const usersTable = buildTableMock({
+        singleResponses: [
+          mockDatabaseSuccess(user),
+          mockDatabaseSuccess(user),
+          mockDatabaseSuccess(user)
+        ]
+      });
       const maybeUserLookup = buildTableMock({ maybeSingleResponses: [{ data: null, error: null }] });
       const observationsTable = buildTableMock({ selectResponse: mockDatabaseSuccess(inserted) });
       observationsTable.insert.mockReturnThis();
@@ -131,7 +142,7 @@ describe('KPI Observations Controller - Permission Tests', () => {
     });
 
     test('PERM-K3: invalid KPI payload returns 400', async () => {
-      const user = mockUserData({ id: 'kpi-user-2' });
+      const user = mockUserData({ id: 'kpi-user-2', wallet_address: '0xobserver' });
       const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
       configureTableMocks({ users: usersTable });
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(user.id, user.email));
@@ -148,8 +159,8 @@ describe('KPI Observations Controller - Permission Tests', () => {
     test('PERM-K4: authenticated user can query observations', async () => {
       const user = mockUserData({ id: 'kpi-user-3' });
       const observations = [
-        { id: 'obs-1', kpi_name: 'deployment_frequency', rating_value: 4 },
-        { id: 'obs-2', kpi_name: 'code_quality', rating_value: 5 }
+        { id: 'obs-1', subject_user_id: user.id, kpi_name: 'deployment_frequency', rating_value: 4 },
+        { id: 'obs-2', observer_user_id: user.id, kpi_name: 'code_quality', rating_value: 5 }
       ];
 
       const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
@@ -169,11 +180,10 @@ describe('KPI Observations Controller - Permission Tests', () => {
       expect(response.body.count).toBe(2);
     });
 
-    test('PERM-K5: observations are global (no user isolation enforced)', async () => {
+    test('PERM-K5: observations are filtered to the authenticated user', async () => {
       const user = mockUserData({ id: 'kpi-user-4' });
       const observations = [
-        { id: 'obs-a', subject_wallet: 'wallet-user-a', kpi_name: 'quality', rating_value: 5 },
-        { id: 'obs-b', subject_wallet: 'wallet-user-b', kpi_name: 'delivery', rating_value: 3 }
+        { id: 'obs-a', subject_user_id: user.id, kpi_name: 'quality', rating_value: 5 }
       ];
 
       const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
@@ -189,15 +199,14 @@ describe('KPI Observations Controller - Permission Tests', () => {
         .set('Authorization', 'Bearer valid-token')
         .expect(200);
 
-      // Controller currently returns global observations without user filtering; this test documents that behavior.
-      expect(response.body.observations).toHaveLength(2);
-      expect(response.body.observations.find((o) => o.subject_wallet === 'wallet-user-b')).toBeTruthy();
+      expect(response.body.observations).toHaveLength(1);
+      expect(response.body.observations[0].id).toBe('obs-a');
     });
   });
 
   describe('GET /api/kpi-observations/summary', () => {
     test('PERM-K4 (summary extension): authenticated user can query KPI summary', async () => {
-      const user = mockUserData({ id: 'kpi-user-5' });
+      const user = mockUserData({ id: 'kpi-user-5', wallet_address: 'wallet-user-a' });
       const summary = [
         { subject_wallet: 'wallet-user-a', kpi_name: 'quality', observation_count: 2, avg_rating: 4.5 }
       ];
@@ -206,6 +215,10 @@ describe('KPI Observations Controller - Permission Tests', () => {
       const summaryTable = buildTableMock({
         rangeResponse: { data: summary, error: null, count: summary.length }
       });
+      summaryTable.select.mockReturnThis();
+      summaryTable.eq.mockReturnThis();
+      summaryTable.order.mockReturnThis();
+      summaryTable.limit.mockResolvedValue({ data: summary, error: null, count: summary.length });
 
       configureTableMocks({ users: usersTable, kpi_observations_summary: summaryTable });
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(user.id, user.email));

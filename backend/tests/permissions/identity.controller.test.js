@@ -154,7 +154,7 @@ describe('Identity Controller - Permission Tests', () => {
   });
 
   describe('GET /api/identity/status/:userId', () => {
-    test('PERM-I4: authenticated user can view identity status for a given userId (current permissive behavior)', async () => {
+    test('PERM-I4: authenticated user cannot view another user identity status (403)', async () => {
       const requester = mockUserData({ id: 'viewer-1' });
       const targetUser = mockUserData({ id: 'target-1', identity_verified: true });
 
@@ -171,14 +171,12 @@ describe('Identity Controller - Permission Tests', () => {
       const response = await request(app)
         .get('/api/identity/status/target-1')
         .set('Authorization', 'Bearer valid-token')
-        .expect(200); // Controller allows querying other users' status
+        .expect(403);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.userId).toBe('target-1');
-      expect(response.body.verified).toBe(true);
+      expect(response.body.error).toBe('Forbidden');
     });
 
-    test('PERM-I5: invalid or non-existent userId returns 404', async () => {
+    test('PERM-I5: non-owner requests return 403 before user lookup', async () => {
       const requester = mockUserData({ id: 'viewer-2' });
       const usersTable = buildTableMock({
         singleResponses: [
@@ -193,9 +191,9 @@ describe('Identity Controller - Permission Tests', () => {
       const response = await request(app)
         .get('/api/identity/status/missing-user')
         .set('Authorization', 'Bearer valid-token')
-        .expect(404);
+        .expect(403);
 
-      expect(response.body.error).toBe('User not found');
+      expect(response.body.error).toBe('Forbidden');
     });
   });
 });

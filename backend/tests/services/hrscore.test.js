@@ -8,18 +8,19 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { createClient } from '@supabase/supabase-js';
 
 // Mock Supabase client
-jest.mock('@supabase/supabase-js');
+jest.unstable_mockModule('@supabase/supabase-js', () => ({
+  createClient: jest.fn()
+}));
 
 // Mock hrkeyScoreService
-jest.mock('../../hrkeyScoreService.js', () => ({
+jest.unstable_mockModule('../../hrkeyScoreService.js', () => ({
   computeHrkeyScore: jest.fn()
 }));
 
 // Mock analytics
-jest.mock('../../services/analytics/eventTracker.js', () => ({
+jest.unstable_mockModule('../../services/analytics/eventTracker.js', () => ({
   logEvent: jest.fn().mockResolvedValue(null),
   EventTypes: {
     HRSCORE_CALCULATED: 'HRSCORE_CALCULATED',
@@ -27,6 +28,8 @@ jest.mock('../../services/analytics/eventTracker.js', () => ({
     HRSCORE_DECLINED: 'HRSCORE_DECLINED'
   }
 }));
+
+let createClient;
 
 // ============================================================================
 // SCORE CALCULATOR TESTS
@@ -54,6 +57,7 @@ describe('scoreCalculator', () => {
       limit: jest.fn().mockReturnThis()
     };
 
+    ({ createClient } = await import('@supabase/supabase-js'));
     createClient.mockReturnValue(mockSupabase);
 
     // Import after mocking
@@ -80,12 +84,6 @@ describe('scoreCalculator', () => {
           },
           error: null
         })
-        // Mock previous scores lookup
-        .mockResolvedValueOnce({
-          data: [],
-          error: null
-        })
-        // Mock score insert
         .mockResolvedValueOnce({
           data: {
             id: 'score-123',
@@ -94,10 +92,16 @@ describe('scoreCalculator', () => {
             score: 78.45,
             confidence: 0.89,
             n_observations: 16,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            metadata: { score_delta: null }
           },
           error: null
         });
+
+      mockSupabase.limit.mockResolvedValueOnce({
+        data: [],
+        error: null
+      });
 
       // Mock hrkeyScoreService
       computeHrkeyScore.mockResolvedValue({
@@ -167,19 +171,18 @@ describe('scoreCalculator', () => {
     });
 
     it('should return null if score computation fails', async () => {
-      mockSupabase.single
-        .mockResolvedValueOnce({
-          data: {
-            id: 'user-123',
-            wallet_address: '0xABC',
-            email: 'user@example.com'
-          },
-          error: null
-        })
-        .mockResolvedValueOnce({
-          data: [],
-          error: null
-        });
+      mockSupabase.single.mockResolvedValueOnce({
+        data: {
+          id: 'user-123',
+          wallet_address: '0xABC',
+          email: 'user@example.com'
+        },
+        error: null
+      });
+      mockSupabase.limit.mockResolvedValueOnce({
+        data: [],
+        error: null
+      });
 
       computeHrkeyScore.mockResolvedValue({
         ok: false,
@@ -208,15 +211,6 @@ describe('scoreCalculator', () => {
         })
         .mockResolvedValueOnce({
           data: {
-            id: 'prev-score-123',
-            user_id: 'user-123',
-            score: 70.00,
-            created_at: '2025-12-10T00:00:00Z'
-          },
-          error: null
-        })
-        .mockResolvedValueOnce({
-          data: {
             id: 'score-123',
             user_id: 'user-123',
             score: 78.45,
@@ -228,9 +222,16 @@ describe('scoreCalculator', () => {
           error: null
         });
 
-      mockSupabase.limit.mockReturnValue({
-        ...mockSupabase,
-        single: mockSupabase.single
+      mockSupabase.limit.mockResolvedValueOnce({
+        data: [
+          {
+            id: 'prev-score-123',
+            user_id: 'user-123',
+            score: 70.00,
+            created_at: '2025-12-10T00:00:00Z'
+          }
+        ],
+        error: null
       });
 
       computeHrkeyScore.mockResolvedValue({
@@ -259,10 +260,6 @@ describe('scoreCalculator', () => {
           error: null
         })
         .mockResolvedValueOnce({
-          data: { score: 70.00 },
-          error: null
-        })
-        .mockResolvedValueOnce({
           data: {
             id: 'score-123',
             score: 80.00,
@@ -271,9 +268,9 @@ describe('scoreCalculator', () => {
           error: null
         });
 
-      mockSupabase.limit.mockReturnValue({
-        ...mockSupabase,
-        single: mockSupabase.single
+      mockSupabase.limit.mockResolvedValueOnce({
+        data: [{ score: 70.00 }],
+        error: null
       });
 
       computeHrkeyScore.mockResolvedValue({
@@ -304,11 +301,12 @@ describe('scoreCalculator', () => {
           data: { id: 'user-123', wallet_address: '0xABC', email: 'user@example.com' },
           error: null
         })
-        .mockResolvedValueOnce({ data: [], error: null })
         .mockResolvedValueOnce({
-          data: { id: 'score-123', score: 78.45 },
+          data: { id: 'score-123', score: 78.45, metadata: { score_delta: null } },
           error: null
         });
+
+      mockSupabase.limit.mockResolvedValueOnce({ data: [], error: null });
 
       computeHrkeyScore.mockResolvedValue({
         ok: true,
@@ -338,9 +336,9 @@ describe('scoreCalculator', () => {
     it('should force recalculation with manual trigger', async () => {
       mockSupabase.single
         .mockResolvedValueOnce({ data: { id: 'user-123', wallet_address: '0xABC' }, error: null })
-        .mockResolvedValueOnce({ data: [], error: null })
-        .mockResolvedValueOnce({ data: { id: 'score-123', score: 78.45 }, error: null });
+        .mockResolvedValueOnce({ data: { id: 'score-123', score: 78.45, metadata: { score_delta: null } }, error: null });
 
+      mockSupabase.limit.mockResolvedValueOnce({ data: [], error: null });
       computeHrkeyScore.mockResolvedValue({
         ok: true,
         score: 78.45,
@@ -385,6 +383,7 @@ describe('scoreHistory', () => {
       single: jest.fn()
     };
 
+    ({ createClient } = await import('@supabase/supabase-js'));
     createClient.mockReturnValue(mockSupabase);
 
     const history = await import('../../services/hrscore/scoreHistory.js');
@@ -565,6 +564,7 @@ describe('autoTrigger', () => {
       single: jest.fn()
     };
 
+    ({ createClient } = await import('@supabase/supabase-js'));
     createClient.mockReturnValue(mockSupabase);
 
     // Mock calculateAndPersistScore

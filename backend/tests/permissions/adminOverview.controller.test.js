@@ -12,10 +12,11 @@ import request from 'supertest';
 import {
   createMockSupabaseClient,
   resetQueryBuilderMocks,
-  mockAuthGetUserSuccess,
-  mockDatabaseSuccess,
-  mockUserData
+  mockDatabaseSuccess
 } from '../__mocks__/supabase.mock.js';
+
+const originalAdminKey = process.env.HRKEY_ADMIN_KEY;
+process.env.HRKEY_ADMIN_KEY = 'test-admin-key-123456';
 
 // Mock Supabase before importing the app
 const mockSupabaseClient = createMockSupabaseClient();
@@ -24,6 +25,48 @@ const mockQueryBuilder = mockSupabaseClient.from();
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
 }));
+
+jest.unstable_mockModule('../../middleware/auth.js', () => {
+  const requireAuth = (req, res, next) => {
+    const header = req.headers['x-test-user'];
+    if (!header) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+      req.user = JSON.parse(header);
+    } catch (err) {
+      req.user = { id: header, role: 'user' };
+    }
+    return next();
+  };
+
+  const requireSuperadmin = (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (req.user.role !== 'superadmin') {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Superadmin access required'
+      });
+    }
+
+    return next();
+  };
+
+  return {
+    requireAuth,
+    requireSuperadmin,
+    requireCompanySigner: (_req, _res, next) => next(),
+    requireAdmin: (_req, _res, next) => next(),
+    requireSelfOrSuperadmin: () => (_req, _res, next) => next(),
+    requireWalletLinked: () => (_req, _res, next) => next(),
+    requireOwnWallet: (_field, _options) => (_req, _res, next) => next(),
+    optionalAuth: (_req, _res, next) => next()
+  };
+});
 
 // Import app AFTER mocking dependencies
 const { default: app } = await import('../../server.js');
@@ -35,7 +78,11 @@ describe('Admin Overview Endpoint - Superadmin Authorization', () => {
     resetQueryBuilderMocks(mockQueryBuilder);
   });
 
-  test('SEC-AO1: Should reject unauthenticated requests (401)', async () => {
+  afterAll(() => {
+    process.env.HRKEY_ADMIN_KEY = originalAdminKey;
+  });
+
+  test('SEC-AO1: Should reject missing admin key (401)', async () => {
     const response = await request(app)
       .get('/api/admin/overview')
       .expect(401);
@@ -43,125 +90,48 @@ describe('Admin Overview Endpoint - Superadmin Authorization', () => {
     expect(response.body.error).toBe('Authentication required');
   });
 
-  test('SEC-AO2: Should reject regular user requests (403)', async () => {
-    const regularUserId = '550e8400-e29b-41d4-a716-446655440000';
-    const regularUser = mockUserData({
-      id: regularUserId,
-      email: 'user@example.com',
-      role: 'user'
-    });
-
-    // Mock authentication
-    mockSupabaseClient.auth.getUser.mockResolvedValue(
-      mockAuthGetUserSuccess(regularUserId, 'user@example.com')
-    );
-
-    // Mock user table lookup - returns regular user
-    mockQueryBuilder.single.mockResolvedValue(
-      mockDatabaseSuccess(regularUser)
-    );
-
+  test('SEC-AO2: Should reject invalid admin key (403)', async () => {
     const response = await request(app)
       .get('/api/admin/overview')
-      .set('Authorization', 'Bearer valid-token')
+      .set('x-admin-key', 'invalid-admin-key-0000')
       .expect(403);
 
     expect(response.body.error).toBe('Forbidden');
-    expect(response.body.message).toBe('Superadmin access required');
+    expect(response.body.message).toBe('Invalid admin key');
   });
 
-  test('SEC-AO3: Should reject company admin requests (403)', async () => {
-    const companyAdminId = '660e8400-e29b-41d4-a716-446655440001';
-    const companyAdmin = mockUserData({
-      id: companyAdminId,
-      email: 'admin@company.com',
-      role: 'admin'
-    });
-
-    mockSupabaseClient.auth.getUser.mockResolvedValue(
-      mockAuthGetUserSuccess(companyAdminId, 'admin@company.com')
-    );
-
-    mockQueryBuilder.single.mockResolvedValue(
-      mockDatabaseSuccess(companyAdmin)
-    );
-
+  test('SEC-AO3: Should reject invalid admin key via query param (403)', async () => {
     const response = await request(app)
-      .get('/api/admin/overview')
-      .set('Authorization', 'Bearer valid-token')
+      .get('/api/admin/overview?admin_key=bad-key')
       .expect(403);
 
     expect(response.body.error).toBe('Forbidden');
-    expect(response.body.message).toBe('Superadmin access required');
+    expect(response.body.message).toBe('Invalid admin key');
   });
 
-  test('SEC-AO4: Should allow superadmin access (200)', async () => {
-    const superadminId = '770e8400-e29b-41d4-a716-446655440002';
-    const superadmin = mockUserData({
-      id: superadminId,
-      email: 'superadmin@hrkey.xyz',
-      role: 'superadmin'
-    });
-
-    mockSupabaseClient.auth.getUser.mockResolvedValue(
-      mockAuthGetUserSuccess(superadminId, 'superadmin@hrkey.xyz')
-    );
-
-    mockQueryBuilder.single.mockResolvedValue(
-      mockDatabaseSuccess(superadmin)
-    );
-
-    // Mock the admin overview data responses
-    // First call: audit events count
-    mockQueryBuilder.eq.mockReturnThis();
-    mockQueryBuilder.select.mockReturnThis();
-    mockQueryBuilder.count.mockResolvedValueOnce(
-      mockDatabaseSuccess(null, 100)
-    );
-
-    // Second call: users count
-    mockQueryBuilder.count.mockResolvedValueOnce(
-      mockDatabaseSuccess(null, 50)
-    );
-
-    // Third call: companies count
-    mockQueryBuilder.count.mockResolvedValueOnce(
-      mockDatabaseSuccess(null, 25)
-    );
-
-    // Fourth call: data access requests count
-    mockQueryBuilder.count.mockResolvedValueOnce(
-      mockDatabaseSuccess(null, 75)
-    );
+  test('SEC-AO4: Should allow access with valid admin key (200)', async () => {
+    const now = new Date().toISOString();
+    mockQueryBuilder.select
+      .mockResolvedValueOnce(mockDatabaseSuccess([{ created_at: now }]))
+      .mockResolvedValueOnce(mockDatabaseSuccess([{ amount: 42, created_at: now }]))
+      .mockResolvedValueOnce(mockDatabaseSuccess([{ status: 'APPROVED', created_at: now }]))
+      .mockResolvedValueOnce(mockDatabaseSuccess([{ created_at: now }]));
 
     const response = await request(app)
       .get('/api/admin/overview')
-      .set('Authorization', 'Bearer valid-superadmin-token')
+      .set('x-admin-key', 'test-admin-key-123456')
       .expect(200);
 
-    expect(response.body.success).toBe(true);
-    expect(response.body).toHaveProperty('overview');
+    expect(response.body).toHaveProperty('auditEvents');
+    expect(response.body).toHaveProperty('revenue');
+    expect(response.body).toHaveProperty('dataAccessRequests');
+    expect(response.body).toHaveProperty('kpiObservations');
   });
 
   test('SEC-AO5: Should not leak admin data in error responses', async () => {
-    const regularUserId = '550e8400-e29b-41d4-a716-446655440000';
-    const regularUser = mockUserData({
-      id: regularUserId,
-      email: 'user@example.com',
-      role: 'user'
-    });
-
-    mockSupabaseClient.auth.getUser.mockResolvedValue(
-      mockAuthGetUserSuccess(regularUserId, 'user@example.com')
-    );
-
-    mockQueryBuilder.single.mockResolvedValue(
-      mockDatabaseSuccess(regularUser)
-    );
-
     const response = await request(app)
       .get('/api/admin/overview')
-      .set('Authorization', 'Bearer valid-token')
+      .set('x-admin-key', 'invalid-admin-key-0000')
       .expect(403);
 
     // Ensure response doesn't contain any admin metrics

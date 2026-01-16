@@ -123,6 +123,18 @@ describe('Data Access Controller - Permission Tests', () => {
         maybeSingleResponses: [mockDatabaseSuccess(signerRecord)]
       });
 
+      const stakingTiersTable = buildTableMock({
+        maybeSingleResponses: [
+          mockDatabaseSuccess({
+            user_id: requester.id,
+            wallet_address: requester.wallet_address,
+            tier: 'silver',
+            stake_amount: 1000,
+            updated_at: new Date().toISOString()
+          })
+        ]
+      });
+
       const pricingTable = buildTableMock({
         singleResponses: [mockDatabaseSuccess(pricing)]
       });
@@ -139,6 +151,7 @@ describe('Data Access Controller - Permission Tests', () => {
       configureTableMocks({
         users: usersTable,
         company_signers: companySignersTable,
+        staking_tiers: stakingTiersTable,
         data_access_pricing: pricingTable,
         data_access_requests: dataAccessTable,
         companies: companiesTable
@@ -183,6 +196,56 @@ describe('Data Access Controller - Permission Tests', () => {
         .expect(403);
 
       expect(response.body.error).toBe('Permission denied');
+    });
+
+    test('PERM-D2b: rejects requester without required staking tier', async () => {
+      const companyId = 'company-tier';
+      const targetUserId = 'user-target-tier';
+      const requester = mockUserData({ id: 'signer-tier-user' });
+      const targetUser = mockUserData({ id: targetUserId, email: 'target@example.com' });
+      const signerRecord = mockCompanySignerData({ company_id: companyId, user_id: requester.id });
+      const pricing = { id: 'price-2', price_amount: 25, currency: 'USD' };
+
+      const usersTable = buildTableMock({
+        singleResponses: [
+          mockDatabaseSuccess(requester),
+          mockDatabaseSuccess(targetUser)
+        ]
+      });
+
+      const companySignersTable = buildTableMock({
+        maybeSingleResponses: [mockDatabaseSuccess(signerRecord)]
+      });
+
+      const stakingTiersTable = buildTableMock({
+        maybeSingleResponses: [{ data: null, error: null }]
+      });
+
+      const pricingTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(pricing)]
+      });
+
+      const dataAccessTable = buildTableMock({
+        maybeSingleResponses: [{ data: null, error: null }]
+      });
+
+      configureTableMocks({
+        users: usersTable,
+        company_signers: companySignersTable,
+        staking_tiers: stakingTiersTable,
+        data_access_pricing: pricingTable,
+        data_access_requests: dataAccessTable
+      });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(requester.id));
+
+      const response = await request(app)
+        .post('/api/data-access/request')
+        .set('Authorization', 'Bearer valid-token')
+        .send({ companyId, targetUserId, requestedDataType: 'reference' })
+        .expect(403);
+
+      expect(response.body.error).toBe('Insufficient stake tier');
     });
 
     test('PERM-D3: rejects unauthenticated with 401', async () => {
@@ -405,7 +468,9 @@ describe('Data Access Controller - Permission Tests', () => {
         access_count: 0
       };
 
-      const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(signerUser), mockDatabaseSuccess({ id: 'target-data', email: 'target@x.com', wallet_address: null, identity_verified: false })] });
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(signerUser), mockDatabaseSuccess(signerUser)]
+      });
       const requestsTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(requestRecord)] });
       const companySignersTable = buildTableMock({ maybeSingleResponses: [mockDatabaseSuccess(mockCompanySignerData({ company_id: requestRecord.company_id, user_id: signerUser.id }))] });
       const referencesTable = buildTableMock({ singleResponses: [mockDatabaseSuccess({ id: 'ref-123', overall_rating: 5 })] });
@@ -425,11 +490,24 @@ describe('Data Access Controller - Permission Tests', () => {
         }
       };
 
+      const stakingTiersTable = buildTableMock({
+        maybeSingleResponses: [
+          mockDatabaseSuccess({
+            user_id: signerUser.id,
+            wallet_address: signerUser.wallet_address,
+            tier: 'silver',
+            stake_amount: 1500,
+            updated_at: new Date().toISOString()
+          })
+        ]
+      });
+
       configureTableMocks({
         users: usersTable,
         data_access_requests: requestsTable,
         company_signers: companySignersTable,
-        references: referencesTable
+        references: referencesTable,
+        staking_tiers: stakingTiersTable
       });
 
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(signerUser.id));

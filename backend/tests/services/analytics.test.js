@@ -10,10 +10,13 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { createClient } from '@supabase/supabase-js';
 
 // Mock Supabase client
-jest.mock('@supabase/supabase-js');
+jest.unstable_mockModule('@supabase/supabase-js', () => ({
+  createClient: jest.fn()
+}));
+
+let createClient;
 
 // ============================================================================
 // EVENT TRACKER TESTS
@@ -35,6 +38,7 @@ describe('eventTracker', () => {
       single: jest.fn()
     };
 
+    ({ createClient } = await import('@supabase/supabase-js'));
     createClient.mockReturnValue(mockSupabase);
 
     // Import services after mocking
@@ -235,6 +239,7 @@ describe('conversionFunnel', () => {
       })
     };
 
+    ({ createClient } = await import('@supabase/supabase-js'));
     createClient.mockReturnValue(mockSupabase);
 
     const funnel = await import('../../services/analytics/conversionFunnel.js');
@@ -345,12 +350,11 @@ describe('candidateMetrics', () => {
       select: jest.fn().mockReturnThis(),
       gte: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      order: jest.fn().mockResolvedValue({
-        data: [],
-        error: null
-      })
+      lte: jest.fn(),
+      rpc: jest.fn()
     };
 
+    ({ createClient } = await import('@supabase/supabase-js'));
     createClient.mockReturnValue(mockSupabase);
 
     const metrics = await import('../../services/analytics/candidateMetrics.js');
@@ -361,31 +365,33 @@ describe('candidateMetrics', () => {
   describe('getCandidateActivity', () => {
     it('should aggregate candidate activity', async () => {
       const mockData = [
-        { user_id: 'user-1', event_count: '10' },
-        { user_id: 'user-2', event_count: '5' }
+        { user_id: 'user-1', total_events: 10 },
+        { user_id: 'user-2', total_events: 5 }
       ];
 
-      mockSupabase.order.mockResolvedValue({
+      mockSupabase.rpc.mockResolvedValue({
         data: mockData,
         error: null
       });
 
-      const result = await getCandidateActivity({ days: 30 });
+      const endDate = new Date('2024-02-01T00:00:00Z');
+      const startDate = new Date('2024-01-01T00:00:00Z');
+      const result = await getCandidateActivity({ startDate, endDate, limit: 50 });
 
-      expect(result).toBeTruthy();
-      expect(result.candidates).toHaveLength(2);
-      expect(result.period.days).toBe(30);
+      expect(result).toHaveLength(2);
+      expect(result[0].user_id).toBe('user-1');
     });
 
     it('should handle empty results', async () => {
-      mockSupabase.order.mockResolvedValue({
+      mockSupabase.rpc.mockResolvedValue({
         data: [],
         error: null
       });
 
-      const result = await getCandidateActivity({ days: 30 });
-      expect(result.candidates).toHaveLength(0);
-      expect(result.total_candidates).toBe(0);
+      const endDate = new Date('2024-02-01T00:00:00Z');
+      const startDate = new Date('2024-01-01T00:00:00Z');
+      const result = await getCandidateActivity({ startDate, endDate, limit: 50 });
+      expect(result).toHaveLength(0);
     });
   });
 
@@ -394,20 +400,23 @@ describe('candidateMetrics', () => {
       const mockData = [
         {
           context: { candidateId: 'candidate-1' },
-          view_count: '15',
-          unique_companies: '3'
+          created_at: '2024-01-02T00:00:00Z',
+          company_id: 'company-1'
         }
       ];
 
-      mockSupabase.order.mockResolvedValue({
+      mockSupabase.eq.mockReturnThis();
+      mockSupabase.lte.mockResolvedValueOnce({
         data: mockData,
         error: null
       });
 
-      const result = await getCandidateProfileViews({ days: 30, limit: 50 });
+      const endDate = new Date('2024-02-01T00:00:00Z');
+      const startDate = new Date('2024-01-01T00:00:00Z');
+      const result = await getCandidateProfileViews({ startDate, endDate });
 
-      expect(result).toBeTruthy();
-      expect(result.candidates).toHaveLength(1);
+      expect(result).toHaveLength(1);
+      expect(result[0].candidate_id).toBe('candidate-1');
     });
   });
 });
@@ -427,14 +436,12 @@ describe('companyMetrics', () => {
       from: jest.fn().mockReturnThis(),
       select: jest.fn().mockReturnThis(),
       gte: jest.fn().mockReturnThis(),
-      isNot: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      order: jest.fn().mockResolvedValue({
-        data: [],
-        error: null
-      })
+      lte: jest.fn().mockReturnThis(),
+      not: jest.fn(),
+      eq: jest.fn().mockReturnThis()
     };
 
+    ({ createClient } = await import('@supabase/supabase-js'));
     createClient.mockReturnValue(mockSupabase);
 
     const metrics = await import('../../services/analytics/companyMetrics.js');
@@ -447,33 +454,35 @@ describe('companyMetrics', () => {
       const mockData = [
         {
           company_id: 'company-1',
-          total_events: '100',
-          unique_users: '5',
-          search_count: '20',
-          request_count: '10'
+          event_type: 'PROFILE_VIEW',
+          user_id: 'user-1',
+          created_at: '2024-01-02T00:00:00Z'
         }
       ];
 
-      mockSupabase.order.mockResolvedValue({
+      mockSupabase.not.mockResolvedValue({
         data: mockData,
         error: null
       });
 
-      const result = await getCompanyActivity({ days: 30 });
+      const endDate = new Date('2024-02-01T00:00:00Z');
+      const startDate = new Date('2024-01-01T00:00:00Z');
+      const result = await getCompanyActivity({ startDate, endDate, limit: 50 });
 
-      expect(result).toBeTruthy();
-      expect(result.companies).toHaveLength(1);
-      expect(result.period.days).toBe(30);
+      expect(result).toHaveLength(1);
+      expect(result[0].company_id).toBe('company-1');
     });
 
     it('should handle database errors', async () => {
-      mockSupabase.order.mockResolvedValue({
+      mockSupabase.not.mockResolvedValue({
         data: null,
         error: { message: 'Error' }
       });
 
-      const result = await getCompanyActivity({ days: 30 });
-      expect(result).toBeNull();
+      const endDate = new Date('2024-02-01T00:00:00Z');
+      const startDate = new Date('2024-01-01T00:00:00Z');
+      const result = await getCompanyActivity({ startDate, endDate, limit: 50 });
+      expect(result).toEqual([]);
     });
   });
 
@@ -489,17 +498,18 @@ describe('companyMetrics', () => {
         }
       ];
 
-      mockSupabase.eq.mockResolvedValue({
-        data: mockData,
-        error: null
-      });
+      mockSupabase.lte.mockReturnThis();
+      mockSupabase.eq
+        .mockImplementationOnce(() => mockSupabase)
+        .mockImplementationOnce(() => Promise.resolve({ data: mockData, error: null }));
 
       const result = await getCompanySearchBehavior({
         companyId: 'company-1',
-        days: 30
+        startDate: new Date('2024-01-01T00:00:00Z'),
+        endDate: new Date('2024-02-01T00:00:00Z')
       });
 
-      expect(result).toBeTruthy();
+      expect(result).toHaveLength(3);
     });
   });
 });
@@ -519,13 +529,11 @@ describe('demandTrends', () => {
       from: jest.fn().mockReturnThis(),
       select: jest.fn().mockReturnThis(),
       gte: jest.fn().mockReturnThis(),
-      lt: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockResolvedValue({
-        data: [],
-        error: null
-      })
+      lte: jest.fn(),
+      eq: jest.fn().mockReturnThis()
     };
 
+    ({ createClient } = await import('@supabase/supabase-js'));
     createClient.mockReturnValue(mockSupabase);
 
     const trends = await import('../../services/analytics/demandTrends.js');
@@ -550,16 +558,17 @@ describe('demandTrends', () => {
         }
       ];
 
-      mockSupabase.eq.mockResolvedValue({
+      mockSupabase.lte.mockResolvedValue({
         data: mockData,
         error: null
       });
 
-      const result = await getSkillDemandTrends({ days: 30 });
+      const result = await getSkillDemandTrends({
+        startDate: new Date('2024-01-01T00:00:00Z'),
+        endDate: new Date('2024-02-01T00:00:00Z')
+      });
 
-      expect(result).toBeTruthy();
-      expect(result.skills).toBeDefined();
-      expect(result.period.days).toBe(30);
+      expect(result).toHaveLength(4);
     });
 
     it('should handle searches without skills', async () => {
@@ -567,30 +576,32 @@ describe('demandTrends', () => {
         { context: { location: 'NYC' } }
       ];
 
-      mockSupabase.eq.mockResolvedValue({
+      mockSupabase.lte.mockResolvedValue({
         data: mockData,
         error: null
       });
 
-      const result = await getSkillDemandTrends({ days: 30 });
+      const result = await getSkillDemandTrends({
+        startDate: new Date('2024-01-01T00:00:00Z'),
+        endDate: new Date('2024-02-01T00:00:00Z')
+      });
       expect(result).toBeTruthy();
     });
   });
 
   describe('getTrendingSkills', () => {
     it('should compare recent vs previous period', async () => {
-      mockSupabase.eq.mockResolvedValue({
+      mockSupabase.lte.mockResolvedValue({
         data: [],
         error: null
       });
 
-      const result = await getTrendingSkills({ days: 7 });
+      const result = await getTrendingSkills(7);
 
       expect(result).toBeTruthy();
-      expect(result.trending_up).toBeDefined();
-      expect(result.trending_down).toBeDefined();
       expect(result.recent_period).toBeDefined();
-      expect(result.comparison_period).toBeDefined();
+      expect(result.previous_period).toBeDefined();
+      expect(result.trending_skills).toBeDefined();
     });
   });
 });

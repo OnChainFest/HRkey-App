@@ -1,14 +1,13 @@
 /**
  * Public Profile Enrichment
  *
- * Enriches base profiles with HRScore, pricing, tokenomics, and analytics data.
+ * Enriches base profiles with HRScore, pricing, and analytics data.
  * All enrichment is fail-soft - failures never block profile display.
  *
  * @module services/publicProfile/enrichment
  */
 
 import { evaluateCandidateForUser } from '../candidateEvaluation.service.js';
-import { getTokenomicsPreviewForUser } from '../tokenomicsPreview.service.js';
 import { createClient } from '@supabase/supabase-js';
 import logger from '../../logger.js';
 
@@ -34,22 +33,21 @@ const supabase = createClient(
  * Queries the candidate evaluation service to get:
  * - Current HRScore
  * - Dynamic pricing
- * - Optional tokenomics data
+ * - Optional pricing data
  *
  * Fail-soft behavior: Returns degraded data on errors, never throws.
  *
  * @param {string} userId - User ID to enrich
- * @returns {Promise<{hrScore: number, priceUsd: number, hrkTokens: number|null, hrscore: HRScoreSummary}>}
+ * @returns {Promise<{hrScore: number, priceUsd: number, hrscore: HRScoreSummary}>}
  *
  * @example
  * const enriched = await attachHrScoreSummary('uuid-123');
- * // Returns: { hrScore: 78.5, priceUsd: 1500, hrkTokens: 15000, hrscore: { current: 78.5 } }
+ * // Returns: { hrScore: 78.5, priceUsd: 1500, hrscore: { current: 78.5 } }
  */
 export async function attachHrScoreSummary(userId) {
   const defaultResult = {
     hrScore: 0,
     priceUsd: 0,
-    hrkTokens: null,
     hrscore: {
       current: null
     }
@@ -76,24 +74,10 @@ export async function attachHrScoreSummary(userId) {
     const hrScore = evaluation?.scoring?.hrScoreResult?.hrScore ?? 0;
     const priceUsd = evaluation?.scoring?.pricingResult?.priceUsd ?? 0;
 
-    // Get tokenomics data (optional, fail-soft)
-    let hrkTokens = null;
-    try {
-      const preview = await getTokenomicsPreviewForUser(userId);
-      hrkTokens = preview?.tokens?.clampedTokens ?? null;
-    } catch (err) {
-      logger.warn('PublicProfile: Tokenomics preview unavailable', {
-        userId,
-        error: err.message
-      });
-      // Continue without tokenomics - not critical
-    }
-
     // Build enriched result
     const result = {
       hrScore,
       priceUsd,
-      hrkTokens,
       hrscore: {
         current: hrScore > 0 ? hrScore : null
       }
@@ -198,7 +182,7 @@ export async function attachViewMetrics(userId) {
 /**
  * Enrich a base profile with all available data.
  *
- * Combines HRScore, pricing, tokenomics, and view metrics.
+ * Combines HRScore, pricing, and view metrics.
  * All enrichment is fail-soft - partial failures return degraded data.
  *
  * @param {import('./resolver.js').BaseProfile} baseProfile - Base profile from resolver
@@ -207,7 +191,7 @@ export async function attachViewMetrics(userId) {
  * @example
  * const base = await resolveProfileByIdentifier('john_doe');
  * const enriched = await enrichProfile(base);
- * // Returns: { ...base, hrScore, priceUsd, hrkTokens, hrscore: {...}, metrics: {...} }
+ * // Returns: { ...base, hrScore, priceUsd, hrscore: {...}, metrics: {...} }
  */
 export async function enrichProfile(baseProfile) {
   if (!baseProfile) {
@@ -233,7 +217,6 @@ export async function enrichProfile(baseProfile) {
       skills: baseProfile.skills,
       hrScore: hrScoreData.hrScore,
       priceUsd: hrScoreData.priceUsd,
-      hrkTokens: hrScoreData.hrkTokens,
       hrscore: hrScoreData.hrscore,
       metrics: metricsData
     };
@@ -262,7 +245,6 @@ export async function enrichProfile(baseProfile) {
       skills: baseProfile.skills,
       hrScore: 0,
       priceUsd: 0,
-      hrkTokens: null,
       hrscore: { current: null },
       metrics: { profileViews: null }
     };
