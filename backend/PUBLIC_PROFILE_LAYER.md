@@ -60,7 +60,6 @@ This layer provides:
 ┌─────────────────────────────────────────────────────────────────┐
 │ Dependencies                                                      │
 │ ├─ candidateEvaluation.service.js (HRScore + pricing)           │
-│ ├─ tokenomicsPreview.service.js (HRK token calculations)        │
 │ └─ analytics/eventTracker.js (PROFILE_VIEW events)              │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -148,7 +147,6 @@ Enriches a profile with HRScore, pricing, and tokenomics data.
 {
   hrScore: number,
   priceUsd: number,
-  hrkTokens: number | null,
   hrscore: {
     current: number | null
   }
@@ -207,7 +205,6 @@ Registers multiple profile view events efficiently.
   skills: string[] | null,
   hrScore: number,
   priceUsd: number,
-  hrkTokens: number | null
 }
 ```
 
@@ -222,7 +219,6 @@ Registers multiple profile view events efficiently.
   skills: string[] | null,
   hrScore: number,
   priceUsd: number,
-  hrkTokens: number | null,
 
   // NEW: Additive enrichment (v1)
   hrscore: {
@@ -257,7 +253,6 @@ Registers multiple profile view events efficiently.
    - `skills`: Public (skill tags)
    - `hrScore`: Public (already visible via evaluation)
    - `priceUsd`: Public (dynamic pricing)
-   - `hrkTokens`: Public (tokenomics preview)
 
 3. **Hidden Fields (Internal)**
    - Email addresses
@@ -287,7 +282,6 @@ All functions in this layer follow **fail-soft principles**:
 
 2. **Graceful degradation**
    - If HRScore fails → return `hrScore: 0`
-   - If tokenomics fails → return `hrkTokens: null`
    - If analytics fails → skip view tracking silently
 
 3. **Non-blocking enrichment**
@@ -458,7 +452,7 @@ const profile = await getPublicProfile(identifier, {
 - ✅ Same URL path
 - ✅ Same HTTP method (GET)
 - ✅ Same status codes (400/404/200/500)
-- ✅ Same response fields (userId, handle, fullName, headline, skills, hrScore, priceUsd, hrkTokens)
+- ✅ Same response fields (userId, handle, fullName, headline, skills, hrScore, priceUsd)
 - ✅ New fields are additive only (hrscore, metrics)
 
 #### `GET /api/me/public-identifier`

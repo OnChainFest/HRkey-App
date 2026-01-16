@@ -1,6 +1,6 @@
 /**
  * Deployment script for HRKey contracts on Base
- * Deploys: HRKToken, HRKStaking, HRKSlashing, HRKPriceOracle
+ * Deploys: HRKToken, HRKStaking, HRKSlashing
  */
 
 import { ethers, upgrades } from 'hardhat';
@@ -16,7 +16,6 @@ async function main() {
   let hrkTokenAddress: string;
   let stakingAddress: string;
   let slashingAddress: string;
-  let priceOracleAddress: string;
 
   // Treasury address (update this!)
   const TREASURY_ADDRESS = process.env.TREASURY_ADDRESS || deployer.address;
@@ -24,7 +23,7 @@ async function main() {
 
   try {
     // 1. Deploy HRKToken
-    console.log('[1/4] Deploying HRKToken...');
+    console.log('[1/3] Deploying HRKToken...');
     const HRKToken = await ethers.getContractFactory('HRKToken');
     const hrkToken = await upgrades.deployProxy(
       HRKToken,
@@ -36,7 +35,7 @@ async function main() {
     console.log(`✅ HRKToken deployed to: ${hrkTokenAddress}\n`);
 
     // 2. Deploy HRKStaking
-    console.log('[2/4] Deploying HRKStaking...');
+    console.log('[2/3] Deploying HRKStaking...');
     const HRKStaking = await ethers.getContractFactory('HRKStaking');
     const staking = await upgrades.deployProxy(
       HRKStaking,
@@ -48,7 +47,7 @@ async function main() {
     console.log(`✅ HRKStaking deployed to: ${stakingAddress}\n`);
 
     // 3. Deploy HRKSlashing
-    console.log('[3/4] Deploying HRKSlashing...');
+    console.log('[3/3] Deploying HRKSlashing...');
     const HRKSlashing = await ethers.getContractFactory('HRKSlashing');
     const slashing = await upgrades.deployProxy(
       HRKSlashing,
@@ -59,34 +58,21 @@ async function main() {
     slashingAddress = slashing.address;
     console.log(`✅ HRKSlashing deployed to: ${slashingAddress}\n`);
 
-    // 4. Deploy HRKPriceOracle
-    console.log('[4/4] Deploying HRKPriceOracle...');
-    const HRKPriceOracle = await ethers.getContractFactory('HRKPriceOracle');
-    const priceOracle = await upgrades.deployProxy(
-      HRKPriceOracle,
-      [hrkTokenAddress, TREASURY_ADDRESS, deployer.address],
-      { initializer: 'initialize', kind: 'uups' }
-    );
-    await priceOracle.deployed();
-    priceOracleAddress = priceOracle.address;
-    console.log(`✅ HRKPriceOracle deployed to: ${priceOracleAddress}\n`);
-
-    // 5. Grant roles
-    console.log('[5/6] Setting up roles...');
+    // 4. Grant roles
+    console.log('[4/4] Setting up roles...');
 
     // Grant BURNER_ROLE to slashing contract
     const BURNER_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('BURNER_ROLE'));
     await hrkToken.grantRole(BURNER_ROLE, slashingAddress);
     console.log(`✅ Granted BURNER_ROLE to HRKSlashing`);
 
-    // Grant REWARD_MANAGER_ROLE to deployer (for testing)
-    const REWARD_MANAGER_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('REWARD_MANAGER_ROLE'));
-    await staking.grantRole(REWARD_MANAGER_ROLE, deployer.address);
-    console.log(`✅ Granted REWARD_MANAGER_ROLE to deployer`);
+    // Grant SLASHER_ROLE to slashing contract
+    const SLASHER_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('SLASHER_ROLE'));
+    await staking.grantRole(SLASHER_ROLE, slashingAddress);
+    console.log(`✅ Granted SLASHER_ROLE to HRKSlashing`);
 
-    // Grant ORACLE_ROLE to deployer (for price oracle updates)
+    // Grant ORACLE_ROLE to deployer (for slashing updates)
     const ORACLE_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('ORACLE_ROLE'));
-    await priceOracle.grantRole(ORACLE_ROLE, deployer.address);
     await slashing.grantRole(ORACLE_ROLE, deployer.address);
     console.log(`✅ Granted ORACLE_ROLE to deployer\n`);
 
@@ -96,7 +82,6 @@ async function main() {
     console.log(`  HRKToken:      ${hrkTokenAddress}`);
     console.log(`  HRKStaking:    ${stakingAddress}`);
     console.log(`  HRKSlashing:   ${slashingAddress}`);
-    console.log(`  HRKPriceOracle: ${priceOracleAddress}`);
 
     console.log(`\nKey Parameters:`);
     console.log(`  Total Supply:  1,000,000,000 HRK`);
@@ -106,8 +91,7 @@ async function main() {
     console.log(`\nNext Steps:`);
     console.log(`  1. Verify contracts on Basescan`);
     console.log(`  2. Update .env with contract addresses`);
-    console.log(`  3. Configure backend to use price oracle`);
-    console.log(`  4. Distribute initial token allocations`);
+    console.log(`  3. Distribute initial token allocations`);
 
     // Save addresses to file
     const fs = require('fs');
@@ -119,8 +103,7 @@ async function main() {
       contracts: {
         HRKToken: hrkTokenAddress,
         HRKStaking: stakingAddress,
-        HRKSlashing: slashingAddress,
-        HRKPriceOracle: priceOracleAddress,
+        HRKSlashing: slashingAddress
       },
     };
 

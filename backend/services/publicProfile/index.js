@@ -5,7 +5,7 @@
  *
  * Features:
  * - Profile resolution by identifier (handle or user ID)
- * - HRScore and tokenomics enrichment
+ * - HRScore and pricing enrichment
  * - Analytics integration (view tracking)
  * - Fail-soft error handling
  * - Privacy-aware data exposure
@@ -62,7 +62,7 @@ export async function getPublicProfile(identifier, options = {}) {
       return null;
     }
 
-    // Step 2: Enrich with HRScore, tokenomics, metrics
+    // Step 2: Enrich with HRScore, pricing, metrics
     const enrichedProfile = await enrichProfile(baseProfile);
 
     // Step 3: Optional view tracking (fail-soft)

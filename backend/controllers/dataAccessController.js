@@ -2,13 +2,14 @@
 // Data Access Controller
 // ============================================================================
 // Handles data access requests from companies with user consent workflow
-// Implements pay-per-query with revenue sharing
+// Implements pay-per-query with capacity enforcement
 // ============================================================================
 
 import { createClient } from '@supabase/supabase-js';
 import { logDataAccessAction, AuditActionTypes } from '../utils/auditLogger.js';
 import { sendDataAccessRequestNotification, sendDataAccessApprovedNotification } from '../utils/emailService.js';
 import { evaluateCandidateForUser } from '../services/candidateEvaluation.service.js';
+import { getRequiredTierForDataType, getStakeTierStatus, hasRequiredTier } from '../services/stakingTier.service.js';
 import logger from '../logger.js';
 import { logEvent, EventTypes } from '../services/analytics/eventTracker.js';
 
@@ -58,6 +59,33 @@ export async function createDataAccessRequest(req, res) {
       return res.status(403).json({
         error: 'Permission denied',
         message: 'You must be an active signer of this company'
+      });
+    }
+
+    // Verify signer has required staking tier
+    const { data: requesterUser, error: requesterError } = await supabaseClient
+      .from('users')
+      .select('id, wallet_address')
+      .eq('id', requestedByUserId)
+      .single();
+
+    if (requesterError || !requesterUser) {
+      return res.status(404).json({
+        error: 'User not found',
+        message: 'Requesting user does not exist'
+      });
+    }
+
+    const requiredTier = getRequiredTierForDataType(requestedDataType);
+    const stakeStatus = await getStakeTierStatus({
+      userId: requesterUser.id,
+      walletAddress: requesterUser.wallet_address
+    });
+
+    if (!stakeStatus || !hasRequiredTier(stakeStatus.tier, requiredTier)) {
+      return res.status(403).json({
+        error: 'Insufficient stake tier',
+        message: `Required tier: ${requiredTier}`
       });
     }
 
@@ -141,10 +169,7 @@ export async function createDataAccessRequest(req, res) {
       requested_data_type: requestedDataType,
       request_reason: requestReason || null,
       metadata: {
-        pricing_id: pricing.id,
-        platform_fee_percent: pricing.platform_fee_percent,
-        user_fee_percent: pricing.user_fee_percent,
-        ref_creator_fee_percent: pricing.ref_creator_fee_percent
+        pricing_id: pricing.id
       },
       payment_status: 'PENDING',
       payment_provider: 'internal_ledger',
@@ -412,16 +437,6 @@ export async function approveDataAccessRequest(req, res) {
     // TODO: Verify wallet signature (ethers.js)
     // For now, we just store it
 
-    // Process payment and create revenue share
-    const revenueShareResult = await createRevenueShare(request, supabaseClient);
-
-    if (!revenueShareResult.success) {
-      return res.status(500).json({
-        error: 'Payment processing failed',
-        message: revenueShareResult.error
-      });
-    }
-
     // Update request status
     const { data: updatedRequest, error: updateError } = await supabaseClient
       .from('data_access_requests')
@@ -459,7 +474,6 @@ export async function approveDataAccessRequest(req, res) {
       'approve_data_access_request',
       {
         requestId,
-        revenueShareId: revenueShareResult.revenueShareId,
         signature: signature.substring(0, 20) + '...'
       },
       req
@@ -506,8 +520,7 @@ export async function approveDataAccessRequest(req, res) {
         requestId: requestId,
         dataType: request.requested_data_type,
         price: request.price_amount,
-        currency: request.currency,
-        revenueShareId: revenueShareResult.revenueShareId
+        currency: request.currency
       },
       req
     });
@@ -515,7 +528,6 @@ export async function approveDataAccessRequest(req, res) {
     return res.json({
       success: true,
       request: updatedRequest,
-      revenueShare: revenueShareResult.revenueShare,
       message: 'Data access request approved successfully'
     });
   } catch (error) {
@@ -690,6 +702,33 @@ export async function getDataByRequestId(req, res) {
       });
     }
 
+    // Verify signer has required staking tier (fail-closed)
+    const { data: requesterUser, error: requesterError } = await supabaseClient
+      .from('users')
+      .select('id, wallet_address')
+      .eq('id', userId)
+      .single();
+
+    if (requesterError || !requesterUser) {
+      return res.status(404).json({
+        error: 'User not found',
+        message: 'Requesting user does not exist'
+      });
+    }
+
+    const requiredTier = getRequiredTierForDataType(request.requested_data_type);
+    const stakeStatus = await getStakeTierStatus({
+      userId: requesterUser.id,
+      walletAddress: requesterUser.wallet_address
+    });
+
+    if (!stakeStatus || !hasRequiredTier(stakeStatus.tier, requiredTier)) {
+      return res.status(403).json({
+        error: 'Insufficient stake tier',
+        message: `Required tier: ${requiredTier}`
+      });
+    }
+
     // Fetch the data based on requested_data_type
     let responseData = {};
 
@@ -777,162 +816,6 @@ export async function getDataByRequestId(req, res) {
     return res.status(500).json({
       error: 'Internal server error'
     });
-  }
-}
-
-// ============================================================================
-// HELPER FUNCTION: CREATE REVENUE SHARE
-// ============================================================================
-
-async function createRevenueShare(request, supabaseClient) {
-  try {
-    // Calculate split amounts
-    const metadata = request.metadata || {};
-    const platformPercent = metadata.platform_fee_percent || 40.00;
-    const userPercent = metadata.user_fee_percent || 40.00;
-    const refCreatorPercent = metadata.ref_creator_fee_percent || 20.00;
-
-    const totalAmount = parseFloat(request.price_amount);
-    const platformAmount = (totalAmount * platformPercent / 100).toFixed(2);
-    const userAmount = (totalAmount * userPercent / 100).toFixed(2);
-    const refCreatorAmount = (totalAmount * refCreatorPercent / 100).toFixed(2);
-
-    // Get reference creator email if reference exists
-    let refCreatorEmail = null;
-    if (request.reference_id) {
-      const { data: reference } = await supabaseClient
-        .from('references')
-        .select('referrer_email')
-        .eq('id', request.reference_id)
-        .single();
-
-      refCreatorEmail = reference?.referrer_email || null;
-    }
-
-    // Create revenue share record
-    const revenueShareData = {
-      data_access_request_id: request.id,
-      company_id: request.company_id,
-      target_user_id: request.target_user_id,
-      reference_id: request.reference_id,
-      total_amount: totalAmount,
-      currency: request.currency,
-      platform_amount: parseFloat(platformAmount),
-      platform_percent: platformPercent,
-      user_amount: parseFloat(userAmount),
-      user_percent: userPercent,
-      ref_creator_amount: parseFloat(refCreatorAmount),
-      ref_creator_percent: refCreatorPercent,
-      ref_creator_email: refCreatorEmail,
-      status: 'PENDING_PAYOUT',
-      created_at: new Date().toISOString()
-    };
-
-    const { data: revenueShare, error } = await supabaseClient
-      .from('revenue_shares')
-      .insert([revenueShareData])
-      .select()
-      .single();
-
-    if (error) {
-      logger.error('Failed to create revenue share', {
-        requestId: request.id,
-        companyId: request.company_id,
-        targetUserId: request.target_user_id,
-        totalAmount: totalAmount,
-        error: error.message,
-        stack: error.stack
-      });
-      return { success: false, error: 'Failed to create revenue share' };
-    }
-
-    // Update or create user balance ledger entries
-    await updateUserBalance(request.target_user_id, userAmount, request.currency, supabaseClient);
-
-    if (refCreatorEmail) {
-      await updateCreatorBalance(refCreatorEmail, refCreatorAmount, request.currency, supabaseClient);
-    }
-
-    return {
-      success: true,
-      revenueShareId: revenueShare.id,
-      revenueShare
-    };
-  } catch (error) {
-    logger.error('Failed to create revenue share', {
-      requestId: request?.id,
-      error: error.message,
-      stack: error.stack
-    });
-    return { success: false, error: error.message };
-  }
-}
-
-// Update user balance ledger
-async function updateUserBalance(userId, amount, currency, supabaseClient) {
-  const { data: existing } = await supabaseClient
-    .from('user_balance_ledger')
-    .select('*')
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  const amountNum = parseFloat(amount);
-
-  if (existing) {
-    await supabaseClient
-      .from('user_balance_ledger')
-      .update({
-        total_earned: parseFloat(existing.total_earned) + amountNum,
-        current_balance: parseFloat(existing.current_balance) + amountNum
-      })
-      .eq('user_id', userId);
-  } else {
-    const { data: user } = await supabaseClient
-      .from('users')
-      .select('email, wallet_address')
-      .eq('id', userId)
-      .single();
-
-    await supabaseClient
-      .from('user_balance_ledger')
-      .insert([{
-        user_id: userId,
-        user_email: user.email,
-        total_earned: amountNum,
-        current_balance: amountNum,
-        currency,
-        wallet_address: user.wallet_address
-      }]);
-  }
-}
-
-// Update creator balance ledger (by email)
-async function updateCreatorBalance(email, amount, currency, supabaseClient) {
-  const { data: existing } = await supabaseClient
-    .from('user_balance_ledger')
-    .select('*')
-    .eq('user_email', email)
-    .maybeSingle();
-
-  const amountNum = parseFloat(amount);
-
-  if (existing) {
-    await supabaseClient
-      .from('user_balance_ledger')
-      .update({
-        total_earned: parseFloat(existing.total_earned) + amountNum,
-        current_balance: parseFloat(existing.current_balance) + amountNum
-      })
-      .eq('user_email', email);
-  } else {
-    await supabaseClient
-      .from('user_balance_ledger')
-      .insert([{
-        user_email: email,
-        total_earned: amountNum,
-        current_balance: amountNum,
-        currency
-      }]);
   }
 }
 

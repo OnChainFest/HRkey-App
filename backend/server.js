@@ -21,7 +21,6 @@ import companyController from './controllers/companyController.js';
 import signersController from './controllers/signersController.js';
 import auditController from './controllers/auditController.js';
 import dataAccessController from './controllers/dataAccessController.js';
-import revenueController from './controllers/revenueController.js';
 import kpiObservationsController from './controllers/kpiObservationsController.js';
 import candidateEvaluationController from './controllers/candidateEvaluation.controller.js';
 import tokenomicsPreviewController from './controllers/tokenomicsPreview.controller.js';
@@ -627,21 +626,35 @@ app.get('/health/deep', async (req, res) => {
   try {
     const supabaseStartTime = Date.now();
 
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Supabase health check timeout')), 5000)
-    );
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(
+        () => reject(new Error('Supabase health check timeout')),
+        5000
+      );
+    });
+    timeoutPromise.catch(() => {});
 
     const checkPromise = supabase.from('users').select('count').limit(1);
 
-    const { error } = await Promise.race([checkPromise, timeoutPromise]);
+    let raceError;
+    try {
+      ({ error: raceError } = await Promise.race([checkPromise, timeoutPromise]));
+    } catch (err) {
+      raceError = err;
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
 
     const supabaseResponseTime = Date.now() - supabaseStartTime;
 
-    if (error) {
+    if (raceError) {
       healthcheck.status = 'degraded';
       healthcheck.checks.supabase = {
         status: 'error',
-        error: error.message,
+        error: raceError.message,
         responseTime: supabaseResponseTime
       };
     } else {
@@ -1072,18 +1085,6 @@ app.get('/api/data-access/request/:requestId', requireAuth, dataAccessController
 app.post('/api/data-access/:requestId/approve', requireAuth, dataAccessController.approveDataAccessRequest);
 app.post('/api/data-access/:requestId/reject', requireAuth, dataAccessController.rejectDataAccessRequest);
 app.get('/api/data-access/:requestId/data', requireAuth, dataAccessController.getDataByRequestId);
-
-// ===== REVENUE SHARING ENDPOINTS =====
-app.get('/api/revenue/balance', requireAuth, revenueController.getUserBalance);
-app.get('/api/revenue/shares', requireAuth, revenueController.getRevenueShares);
-app.get('/api/revenue/transactions', requireAuth, revenueController.getTransactionHistory);
-app.get('/api/revenue/summary', requireAuth, revenueController.getEarningsSummary);
-app.post(
-  '/api/revenue/payout/request',
-  requireAuth,
-  requireWalletLinked({ message: 'You must have a linked wallet to request payouts' }),
-  revenueController.requestPayout
-);
 
 /* =========================
    KPI OBSERVATIONS ENDPOINTS (Proof of Correlation MVP)

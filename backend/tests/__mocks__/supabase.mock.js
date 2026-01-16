@@ -42,6 +42,7 @@ export function createMockSupabaseClient() {
     order: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
     range: jest.fn().mockReturnThis(),
+    count: jest.fn(),
     single: jest.fn(),
     maybeSingle: jest.fn()
   };
@@ -92,6 +93,7 @@ export function resetQueryBuilderMocks(queryBuilder) {
   queryBuilder.order.mockReturnThis();
   queryBuilder.limit.mockReturnThis();
   queryBuilder.range.mockReturnThis();
+  queryBuilder.count.mockReturnThis();
 }
 
 /**

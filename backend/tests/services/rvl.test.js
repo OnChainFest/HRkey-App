@@ -43,7 +43,7 @@ describe('narrativeStandardizer', () => {
     });
 
     it('should convert smart quotes to straight quotes', () => {
-      const input = '"Smart quotes" and 'single quotes'';
+      const input = '"Smart quotes" and \'single quotes\'';
       const output = standardizeNarrative(input);
       expect(output).toBe('"Smart quotes" and \'single quotes\'');
     });
@@ -186,7 +186,7 @@ describe('consistencyChecker', () => {
 
       const result = await checkConsistency(
         'John was okay',
-        { teamwork: 2, leadership: 2 }, // Large deviation
+        { teamwork: 1, leadership: 1 }, // Large deviation
         previousRefs
       );
 

@@ -1,4 +1,4 @@
-# 🚀 QUICKSTART: Data Access & Revenue Sharing
+# 🚀 QUICKSTART: Data Access
 
 ## ✅ LO QUE YA ESTÁ LISTO
 
@@ -19,14 +19,14 @@ Después de hacer merge, tendrás:
 
 1. Ve a tu **Supabase Dashboard**
 2. Abre **SQL Editor**
-3. Copia y pega TODO el contenido de: `sql/002_data_access_and_revenue_sharing.sql`
+3. Copia y pega TODO el contenido de: `sql/010_pricing_and_staking_cache.sql`
 4. Click **Run**
 5. Verifica que funcionó:
 
 ```sql
 -- Ejecuta esto para verificar:
 SELECT tablename FROM pg_tables
-WHERE tablename IN ('data_access_requests', 'revenue_shares', 'user_balance_ledger');
+WHERE tablename IN ('data_access_requests', 'data_access_pricing', 'staking_tiers');
 
 -- Deberías ver 3+ tablas
 ```
@@ -45,10 +45,8 @@ npm start
 curl http://localhost:3001/health
 
 # Test 2: Verificar endpoint existe (reemplaza TOKEN)
-curl http://localhost:3001/api/revenue/balance \
+curl http://localhost:3001/api/data-access/pending \
   -H "Authorization: Bearer TU_TOKEN"
-
-# Deberías recibir: {"success":true,"balance":{...}}
 ```
 
 ---
@@ -59,11 +57,9 @@ curl http://localhost:3001/api/revenue/balance \
 
 **Dashboard principal (`/WebDapp/app.html`):**
 - ✅ Card "Data Requests" → Muestra solicitudes pendientes
-- ✅ Card "Earnings" → Muestra balance disponible
 
 **Nuevas páginas:**
 - ✅ `/WebDapp/data-access-requests.html` → Aprobar/rechazar solicitudes
-- ✅ `/WebDapp/earnings-dashboard.html` → Ver ganancias y solicitar payouts
 
 ### Para Empresas:
 
@@ -121,8 +117,8 @@ Usuario ve notificación en dashboard →
 Abre /data-access-requests.html →
 Click "Approve & Sign" → Firma con wallet →
 POST /api/data-access/:id/approve →
-Revenue share creado (40/40/20) →
-Usuario gana $4 USD (si precio era $10)
+Solicitud aprobada y registrada →
+Acceso habilitado para la empresa
 ```
 
 ### 3. Empresa Accede a Datos
@@ -176,11 +172,9 @@ curl http://localhost:3001/api/data-access/pending \
 # 3. Aprobar (desde frontend con wallet signature)
 # Ver /data-access-requests.html
 
-# 4. Ver balance
-curl http://localhost:3001/api/revenue/balance \
-  -H "Authorization: Bearer USER_TOKEN"
-
-# Deberías ver: currentBalance: 4.00 (si aprobaste una de $10)
+# 4. Consultar solicitud aprobada desde la empresa
+curl http://localhost:3001/api/data-access/request/REQUEST_ID \
+  -H "Authorization: Bearer COMPANY_TOKEN"
 ```
 
 ---
@@ -199,9 +193,6 @@ curl http://localhost:3001/api/revenue/balance \
 ### "CORS error"
 ➡️ **Solución**: Backend debe estar corriendo en `localhost:3001`. Verificar que CORS esté habilitado.
 
-### Frontend muestra "$0" en earnings
-➡️ **Solución**: Normal si aún no hay aprobaciones. Probar el flujo completo de test arriba.
-
 ---
 
 ## 📦 ARCHIVOS CLAVE
@@ -211,7 +202,6 @@ curl http://localhost:3001/api/revenue/balance \
 backend/
 ├── controllers/
 │   ├── dataAccessController.js     ← Lógica de solicitudes
-│   └── revenueController.js        ← Lógica de earnings
 ├── utils/
 │   ├── web3RevenueService.js       ← Integración blockchain (stub)
 │   ├── auditLogger.js              ← Logging actualizado
@@ -223,40 +213,24 @@ backend/
 ```
 public/WebDapp/
 ├── data-access-requests.html       ← Gestión de solicitudes
-├── earnings-dashboard.html         ← Dashboard de ganancias
 └── app.html                        ← Dashboard principal (integrado)
 ```
 
 ### Database:
 ```
 sql/
-└── 002_data_access_and_revenue_sharing.sql  ← Migración completa
+└── 010_pricing_and_staking_cache.sql  ← Pricing cache + staking tiers
 ```
 
 ### Documentation:
 ```
 docs/
-└── DATA_ACCESS_REVENUE_SHARING.md  ← Documentación exhaustiva (1100+ líneas)
+└── QUICKSTART_DATA_ACCESS.md  ← Guía rápida
 ```
 
 ---
 
 ## 🎯 PRÓXIMOS PASOS OPCIONALES
-
-### Phase 2 - Web3 Integration:
-
-```bash
-# 1. Deploy smart contract
-npx hardhat compile
-node scripts/deploy-revenue-share.js
-
-# 2. Configurar .env
-REVENUE_SHARE_CONTRACT_ADDRESS=0x...
-PLATFORM_PRIVATE_KEY=0x...
-
-# 3. Activar pagos on-chain
-# (código ya preparado en web3RevenueService.js)
-```
 
 ### Phase 2 - Stripe Integration:
 
@@ -293,7 +267,6 @@ Después de seguir estos pasos, tendrás:
 ✅ Sistema completo de pago por consulta
 ✅ Revenue sharing automático (40/40/20)
 ✅ Consentimiento con firma de wallet
-✅ Dashboard de earnings funcional
 ✅ Notificaciones por email
 ✅ Audit trail completo
 ✅ Preparado para blockchain (Phase 2)

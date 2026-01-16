@@ -1,12 +1,9 @@
-cd /c/Users/sofim/HRKey-App
-
-cat > hardhat.config.ts <<'EOF'
 import type { HardhatUserConfig } from "hardhat/config";
 import "dotenv/config";
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.20",
+    version: "0.8.24",
     settings: {
       optimizer: { enabled: true, runs: 200 },
     },
@@ -50,4 +47,3 @@ const config: HardhatUserConfig = {
 };
 
 export default config;
-EOF

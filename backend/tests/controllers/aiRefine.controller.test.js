@@ -31,7 +31,7 @@ jest.unstable_mockModule('@supabase/supabase-js', () => ({
 
 // Import mocks
 const supabaseMock = await import('../__mocks__/supabase.mock.js');
-const { createMockSupabaseClient, createMockAuthUser } = supabaseMock.default;
+const { createMockSupabaseClient, mockUserData } = supabaseMock.default;
 
 // Create Supabase mock client
 const mockSupabaseClient = createMockSupabaseClient();
@@ -42,12 +42,16 @@ createClient.mockReturnValue(mockSupabaseClient);
 const OpenAI = (await import('openai')).default;
 let mockOpenAICreate;
 
+process.env.RATE_LIMIT_ENABLED = 'false';
+
 // Import app after mocks
 const { default: app } = await import('../../server.js');
 
 describe('AI Reference Refinement Controller', () => {
   const validAuthToken = 'valid-test-token-12345';
-  const mockUser = createMockAuthUser({
+  const originalOpenAiKey = process.env.OPENAI_API_KEY;
+  const originalRateLimit = process.env.RATE_LIMIT_ENABLED;
+  const mockUser = mockUserData({
     id: 'test-user-id',
     email: 'referee@example.com'
   });
@@ -75,7 +79,18 @@ describe('AI Reference Refinement Controller', () => {
   };
 
   beforeEach(() => {
+    process.env.OPENAI_API_KEY = 'test-openai-key';
+    process.env.RATE_LIMIT_ENABLED = 'false';
     jest.clearAllMocks();
+
+    mockOpenAICreate = jest.fn();
+    OpenAI.mockImplementation(() => ({
+      chat: {
+        completions: {
+          create: mockOpenAICreate
+        }
+      }
+    }));
 
     // Mock auth
     mockSupabaseClient.auth.getUser.mockResolvedValue({
@@ -94,10 +109,6 @@ describe('AI Reference Refinement Controller', () => {
       })
     });
 
-    // Get the mock create function from the OpenAI instance
-    const openaiInstance = new OpenAI();
-    mockOpenAICreate = openaiInstance.chat.completions.create;
-
     // Mock successful OpenAI response by default
     mockOpenAICreate.mockResolvedValue({
       choices: [
@@ -108,6 +119,11 @@ describe('AI Reference Refinement Controller', () => {
         }
       ]
     });
+  });
+
+  afterAll(() => {
+    process.env.OPENAI_API_KEY = originalOpenAiKey;
+    process.env.RATE_LIMIT_ENABLED = originalRateLimit;
   });
 
   // ============================================================================

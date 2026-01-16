@@ -26,7 +26,11 @@ jest.unstable_mockModule('../../middleware/auth.js', () => {
     requireAuth,
     requireSuperadmin: (req, _res, next) => next(),
     requireCompanySigner: (req, _res, next) => next(),
-    requireAdmin: (req, _res, next) => next()
+    requireAdmin: (req, _res, next) => next(),
+    requireSelfOrSuperadmin: () => (_req, _res, next) => next(),
+    requireWalletLinked: () => (_req, _res, next) => next(),
+    requireOwnWallet: (_field, _options) => (_req, _res, next) => next(),
+    optionalAuth: (req, _res, next) => next()
   };
 });
 

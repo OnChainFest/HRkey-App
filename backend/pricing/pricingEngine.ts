@@ -12,9 +12,9 @@ const supabase = createClient(
 );
 
 // Constants
-export const P_BASE = 5; // HRK base price
-export const P_MIN = 5;  // HRK minimum
-export const P_MAX = 500; // HRK maximum
+export const PRICE_BASE_USDC = 5; // Base price in USDC
+export const PRICE_MIN_USDC = 5;  // Minimum price in USDC
+export const PRICE_MAX_USDC = 500; // Maximum price in USDC
 
 // Interfaces
 export interface PricingFactors {
@@ -27,7 +27,7 @@ export interface PricingFactors {
 }
 
 export interface PricingResult {
-  priceHRK: number;
+  priceUsd: number;
   factors: {
     seniority: number;
     demand: number;
@@ -90,9 +90,9 @@ export function getHRScoreMultiplier(hrScore: number): number {
 }
 
 /**
- * Market compensation index by country
+ * Operational cost index by region
  */
-const MARKET_COMPENSATION_INDEX: Record<string, number> = {
+const OPERATIONAL_COST_INDEX: Record<string, number> = {
   // Tier 1 (High cost markets)
   'Switzerland': 120,
   'Singapore': 115,
@@ -145,15 +145,15 @@ const MARKET_COMPENSATION_INDEX: Record<string, number> = {
 };
 
 /**
- * Calculate geography multiplier based on location
+ * Calculate geography multiplier based on operational cost index
  */
 export function getGeographyMultiplier(location: string): number {
-  const index = MARKET_COMPENSATION_INDEX[location] || 100; // Default to Tier 2
+  const index = OPERATIONAL_COST_INDEX[location] || 100; // Default to Tier 2
   return index / 100;
 }
 
 /**
- * Industry turnover rates (annual %)
+ * Industry churn rates (annual %)
  */
 const INDUSTRY_TURNOVER_RATES: Record<string, number> = {
   'Hospitality': 73,
@@ -171,7 +171,7 @@ const INDUSTRY_TURNOVER_RATES: Record<string, number> = {
 };
 
 /**
- * Calculate industry multiplier based on turnover rate
+ * Calculate industry multiplier based on churn rate (anti-abuse / ops load)
  */
 export function getIndustryMultiplier(industry: string): number {
   const turnoverRate = INDUSTRY_TURNOVER_RATES[industry] || 20; // Default 20%
@@ -238,7 +238,7 @@ export async function calculateCandidatePrice(
     };
 
     // 6. Apply pricing formula
-    const rawPrice = P_BASE *
+    const rawPrice = PRICE_BASE_USDC *
       factors.seniority *
       factors.demand *
       factors.rarity *
@@ -247,18 +247,18 @@ export async function calculateCandidatePrice(
       factors.industry;
 
     // 7. Apply bounds
-    const finalPrice = Math.min(Math.max(rawPrice, P_MIN), P_MAX);
+    const finalPrice = Math.min(Math.max(rawPrice, PRICE_MIN_USDC), PRICE_MAX_USDC);
 
     // 8. Generate breakdown
     const breakdown = `
-Base Price: ${P_BASE} HRK
-× Seniority (${candidate.years_of_experience || 0} years): ${factors.seniority.toFixed(2)}x
-× Demand (${queriesLast30Days || 0} queries, avg ${globalAvgQueries.toFixed(0)}): ${factors.demand.toFixed(2)}x
-× Skill Rarity (percentile ${(skillPercentile * 100).toFixed(0)}): ${factors.rarity.toFixed(2)}x
-× HRScore (${candidate.hr_score || 50}): ${factors.hrScore.toFixed(2)}x
-× Geography (${candidate.location || 'United States'}): ${factors.geography.toFixed(2)}x
-× Industry (${candidate.industry || 'Technology'}): ${factors.industry.toFixed(2)}x
-= ${finalPrice.toFixed(2)} HRK
+Base Price: ${PRICE_BASE_USDC} USDC
+× Seniority (experience band): ${factors.seniority.toFixed(2)}x
+× Demand load (${queriesLast30Days || 0} queries, avg ${globalAvgQueries.toFixed(0)}): ${factors.demand.toFixed(2)}x
+× Skill scarcity signal (percentile ${(skillPercentile * 100).toFixed(0)}): ${factors.rarity.toFixed(2)}x
+× HRScore signal (${candidate.hr_score || 50}): ${factors.hrScore.toFixed(2)}x
+× Regional ops index (${candidate.location || 'United States'}): ${factors.geography.toFixed(2)}x
+× Industry churn risk (${candidate.industry || 'Technology'}): ${factors.industry.toFixed(2)}x
+= ${finalPrice.toFixed(2)} USDC
     `.trim();
 
     // 9. Return result
@@ -266,7 +266,7 @@ Base Price: ${P_BASE} HRK
     const validUntil = new Date(now.getTime() + 6 * 60 * 60 * 1000); // Valid for 6 hours
 
     return {
-      priceHRK: Number(finalPrice.toFixed(2)),
+      priceUsd: Number(finalPrice.toFixed(2)),
       factors,
       breakdown,
       metadata: {
@@ -303,11 +303,11 @@ export async function calculateAllPrices(): Promise<Map<string, number>> {
     for (const candidate of candidates) {
       try {
         const result = await calculateCandidatePrice(candidate.wallet_address);
-        prices.set(candidate.wallet_address, result.priceHRK);
+        prices.set(candidate.wallet_address, result.priceUsd);
       } catch (error: any) {
         console.warn(`Failed to calculate price for ${candidate.wallet_address}:`, error.message);
         // Fallback to base price
-        prices.set(candidate.wallet_address, P_BASE);
+        prices.set(candidate.wallet_address, PRICE_BASE_USDC);
       }
     }
 
@@ -326,7 +326,7 @@ export async function storePricesInDB(prices: Map<string, number>): Promise<void
   try {
     const records = Array.from(prices.entries()).map(([wallet, price]) => ({
       candidate_wallet: wallet,
-      price_hrk: price,
+      price_usdc: price,
       updated_at: new Date().toISOString(),
     }));
 
@@ -353,7 +353,7 @@ export async function getCachedPrice(candidateWallet: string): Promise<number | 
   try {
     const { data, error } = await supabase
       .from('candidate_prices')
-      .select('price_hrk, updated_at')
+      .select('price_usdc, updated_at')
       .eq('candidate_wallet', candidateWallet)
       .single();
 
@@ -370,7 +370,7 @@ export async function getCachedPrice(candidateWallet: string): Promise<number | 
       return null; // Stale price
     }
 
-    return data.price_hrk;
+    return data.price_usdc;
   } catch (error: any) {
     console.error('Error fetching cached price:', error);
     return null;
@@ -391,7 +391,7 @@ export async function getPrice(candidateWallet: string): Promise<number> {
   const result = await calculateCandidatePrice(candidateWallet);
 
   // Store in cache
-  await storePricesInDB(new Map([[candidateWallet, result.priceHRK]]));
+  await storePricesInDB(new Map([[candidateWallet, result.priceUsd]]));
 
-  return result.priceHRK;
+  return result.priceUsd;
 }

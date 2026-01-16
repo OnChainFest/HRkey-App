@@ -50,6 +50,8 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
   auditMiddleware: () => (req, res, next) => next()
 }));
 
+jest.resetModules();
+
 // Import app AFTER mocking dependencies
 const { default: app } = await import('../../server.js');
 

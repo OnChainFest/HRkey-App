@@ -27,9 +27,6 @@ const formatCurrency = (value: number | null | undefined) =>
     ? "—"
     : value.toLocaleString("en-US", { style: "currency", currency: "USD" });
 
-const formatNumber = (value: number | null | undefined) =>
-  value === undefined || value === null ? "—" : Math.round(value).toLocaleString();
-
 type PublicProfileResponse = {
   userId: string;
   handle: string | null;
@@ -38,7 +35,6 @@ type PublicProfileResponse = {
   skills: string[] | null;
   hrScore: number;
   priceUsd: number;
-  hrkTokens: number | null;
 };
 
 type PageProps = {
@@ -150,7 +146,6 @@ export default function PublicProfilePage({ params }: PageProps) {
               <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
                 <li>HRKey Score reflects the strength and consistency of verified references.</li>
                 <li>Pricing suggests the typical access tier for this candidate&apos;s references.</li>
-                <li>Token estimates are illustrative for the HRKey ecosystem.</li>
               </ul>
             </div>
 
@@ -164,12 +159,6 @@ export default function PublicProfilePage({ params }: PageProps) {
                 <span>Typical access price</span>
                 <span className="text-xl font-bold text-slate-900">{formatCurrency(profile.priceUsd)}</span>
               </div>
-              {profile.hrkTokens !== null && (
-                <div className="flex items-center justify-between text-sm text-slate-700">
-                  <span>Tokenized estimate</span>
-                  <span className="text-lg font-semibold text-slate-900">≈ {formatNumber(profile.hrkTokens)} HRK</span>
-                </div>
-              )}
             </div>
           </section>
 

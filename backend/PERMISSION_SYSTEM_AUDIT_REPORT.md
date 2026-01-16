@@ -523,7 +523,7 @@ export async function resolveProfileByIdentifier(identifier) {
 #### enrichment.js
 ```javascript
 export async function attachHrScoreSummary(userId) {
-  const defaultResult = { hrScore: 0, priceUsd: 0, hrkTokens: null, ... };
+  const defaultResult = { hrScore: 0, priceUsd: 0, ... };
   try {
     // ... enrichment logic ...
     return result;

@@ -8,28 +8,26 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { createClient } from '@supabase/supabase-js';
 
 // Mock Supabase client
-jest.mock('@supabase/supabase-js');
+jest.unstable_mockModule('@supabase/supabase-js', () => ({
+  createClient: jest.fn()
+}));
 
 // Mock candidate evaluation service
-jest.mock('../../services/candidateEvaluation.service.js', () => ({
+jest.unstable_mockModule('../../services/candidateEvaluation.service.js', () => ({
   evaluateCandidateForUser: jest.fn()
 }));
 
-// Mock tokenomics preview service
-jest.mock('../../services/tokenomicsPreview.service.js', () => ({
-  getTokenomicsPreviewForUser: jest.fn()
-}));
-
 // Mock analytics event tracker
-jest.mock('../../services/analytics/eventTracker.js', () => ({
+jest.unstable_mockModule('../../services/analytics/eventTracker.js', () => ({
   logEvent: jest.fn(),
   EventTypes: {
     PROFILE_VIEW: 'PROFILE_VIEW'
   }
 }));
+
+let createClient;
 
 // ============================================================================
 // RESOLVER TESTS
@@ -51,6 +49,7 @@ describe('publicProfile/resolver', () => {
       maybeSingle: jest.fn()
     };
 
+    ({ createClient } = await import('@supabase/supabase-js'));
     createClient.mockReturnValue(mockSupabase);
 
     // Import services after mocking
@@ -312,7 +311,7 @@ describe('publicProfile/resolver', () => {
 describe('publicProfile/enrichment', () => {
   let mockSupabase;
   let attachHrScoreSummary, attachViewMetrics, enrichProfile;
-  let mockEvaluateCandidateForUser, mockGetTokenomicsPreviewForUser;
+  let mockEvaluateCandidateForUser;
 
   beforeEach(async () => {
     jest.resetModules();
@@ -324,14 +323,12 @@ describe('publicProfile/enrichment', () => {
       eq: jest.fn().mockReturnThis()
     };
 
+    ({ createClient } = await import('@supabase/supabase-js'));
     createClient.mockReturnValue(mockSupabase);
 
     // Import mocked services
     const candidateEval = await import('../../services/candidateEvaluation.service.js');
     mockEvaluateCandidateForUser = candidateEval.evaluateCandidateForUser;
-
-    const tokenomics = await import('../../services/tokenomicsPreview.service.js');
-    mockGetTokenomicsPreviewForUser = tokenomics.getTokenomicsPreviewForUser;
 
     // Import enrichment services
     const enrichment = await import('../../services/publicProfile/enrichment.js');
@@ -350,15 +347,10 @@ describe('publicProfile/enrichment', () => {
         }
       });
 
-      mockGetTokenomicsPreviewForUser.mockResolvedValue({
-        tokens: { clampedTokens: 25000 }
-      });
-
       const result = await attachHrScoreSummary('user-123');
 
       expect(result.hrScore).toBe(85.5);
       expect(result.priceUsd).toBe(2500);
-      expect(result.hrkTokens).toBe(25000);
       expect(result.hrscore.current).toBe(85.5);
     });
 
@@ -375,26 +367,6 @@ describe('publicProfile/enrichment', () => {
       expect(result.hrscore.current).toBeNull();
     });
 
-    it('should continue without tokenomics on error', async () => {
-      mockEvaluateCandidateForUser.mockResolvedValue({
-        userId: 'user-123',
-        scoring: {
-          hrScoreResult: { hrScore: 75 },
-          pricingResult: { priceUsd: 2000 }
-        }
-      });
-
-      mockGetTokenomicsPreviewForUser.mockRejectedValue(
-        new Error('Tokenomics service unavailable')
-      );
-
-      const result = await attachHrScoreSummary('user-123');
-
-      expect(result.hrScore).toBe(75);
-      expect(result.priceUsd).toBe(2000);
-      expect(result.hrkTokens).toBeNull();
-    });
-
     it('should return defaults on evaluation error', async () => {
       mockEvaluateCandidateForUser.mockRejectedValue(
         new Error('Evaluation failed')
@@ -404,7 +376,6 @@ describe('publicProfile/enrichment', () => {
 
       expect(result.hrScore).toBe(0);
       expect(result.priceUsd).toBe(0);
-      expect(result.hrkTokens).toBeNull();
       expect(result.hrscore.current).toBeNull();
     });
 
@@ -420,13 +391,11 @@ describe('publicProfile/enrichment', () => {
   describe('attachViewMetrics', () => {
     it('should return profile view count', async () => {
       mockSupabase.select.mockReturnThis();
-      mockSupabase.eq.mockReturnThis();
-
-      // Mock count query
-      mockSupabase.eq.mockResolvedValue({
-        count: 42,
-        error: null
-      });
+      mockSupabase.eq
+        .mockImplementationOnce(() => mockSupabase)
+        .mockResolvedValueOnce({ data: [], error: null })
+        .mockImplementationOnce(() => mockSupabase)
+        .mockResolvedValueOnce({ count: 42, error: null });
 
       const result = await attachViewMetrics('user-123');
 
@@ -434,10 +403,11 @@ describe('publicProfile/enrichment', () => {
     });
 
     it('should return null for zero views', async () => {
-      mockSupabase.eq.mockResolvedValue({
-        count: 0,
-        error: null
-      });
+      mockSupabase.eq
+        .mockImplementationOnce(() => mockSupabase)
+        .mockResolvedValueOnce({ data: [], error: null })
+        .mockImplementationOnce(() => mockSupabase)
+        .mockResolvedValueOnce({ count: 0, error: null });
 
       const result = await attachViewMetrics('user-123');
 
@@ -445,10 +415,11 @@ describe('publicProfile/enrichment', () => {
     });
 
     it('should handle database errors gracefully', async () => {
-      mockSupabase.eq.mockResolvedValue({
-        count: null,
-        error: { message: 'Database error' }
-      });
+      mockSupabase.eq
+        .mockImplementationOnce(() => mockSupabase)
+        .mockResolvedValueOnce({ data: [], error: null })
+        .mockImplementationOnce(() => mockSupabase)
+        .mockResolvedValueOnce({ count: null, error: { message: 'Database error' } });
 
       const result = await attachViewMetrics('user-123');
 
@@ -480,11 +451,11 @@ describe('publicProfile/enrichment', () => {
         }
       });
 
-      mockGetTokenomicsPreviewForUser.mockResolvedValue({
-        tokens: { clampedTokens: 20000 }
-      });
-
-      mockSupabase.eq.mockResolvedValue({ count: 10, error: null });
+      mockSupabase.eq
+        .mockImplementationOnce(() => mockSupabase)
+        .mockResolvedValueOnce({ data: [], error: null })
+        .mockImplementationOnce(() => mockSupabase)
+        .mockResolvedValueOnce({ count: 10, error: null });
 
       const enriched = await enrichProfile(baseProfile);
 
@@ -492,7 +463,6 @@ describe('publicProfile/enrichment', () => {
       expect(enriched.handle).toBe('john_doe');
       expect(enriched.hrScore).toBe(80);
       expect(enriched.priceUsd).toBe(2000);
-      expect(enriched.hrkTokens).toBe(20000);
       expect(enriched.hrscore.current).toBe(80);
       expect(enriched.metrics.profileViews).toBe(10);
     });
@@ -654,7 +624,7 @@ describe('publicProfile/viewTracker', () => {
 describe('publicProfile/index (integration)', () => {
   let mockSupabase;
   let getPublicProfile;
-  let mockEvaluateCandidateForUser, mockGetTokenomicsPreviewForUser, mockLogEvent;
+  let mockEvaluateCandidateForUser, mockLogEvent;
 
   beforeEach(async () => {
     jest.resetModules();
@@ -668,14 +638,12 @@ describe('publicProfile/index (integration)', () => {
       maybeSingle: jest.fn()
     };
 
+    ({ createClient } = await import('@supabase/supabase-js'));
     createClient.mockReturnValue(mockSupabase);
 
     // Import mocked dependencies
     const candidateEval = await import('../../services/candidateEvaluation.service.js');
     mockEvaluateCandidateForUser = candidateEval.evaluateCandidateForUser;
-
-    const tokenomics = await import('../../services/tokenomicsPreview.service.js');
-    mockGetTokenomicsPreviewForUser = tokenomics.getTokenomicsPreviewForUser;
 
     const analytics = await import('../../services/analytics/eventTracker.js');
     mockLogEvent = analytics.logEvent;
@@ -708,11 +676,11 @@ describe('publicProfile/index (integration)', () => {
         }
       });
 
-      mockGetTokenomicsPreviewForUser.mockResolvedValue({
-        tokens: { clampedTokens: 25000 }
-      });
-
-      mockSupabase.eq.mockResolvedValue({ count: 15, error: null });
+      mockSupabase.eq
+        .mockImplementationOnce(() => mockSupabase)
+        .mockResolvedValueOnce({ data: [], error: null })
+        .mockImplementationOnce(() => mockSupabase)
+        .mockResolvedValueOnce({ count: 15, error: null });
 
       const profile = await getPublicProfile('john_doe');
 
@@ -721,7 +689,6 @@ describe('publicProfile/index (integration)', () => {
       expect(profile.handle).toBe('john_doe');
       expect(profile.hrScore).toBe(85);
       expect(profile.priceUsd).toBe(2500);
-      expect(profile.hrkTokens).toBe(25000);
       expect(profile.metrics.profileViews).toBe(15);
     });
 
@@ -738,11 +705,11 @@ describe('publicProfile/index (integration)', () => {
         scoring: { hrScoreResult: { hrScore: 80 }, pricingResult: { priceUsd: 2000 } }
       });
 
-      mockGetTokenomicsPreviewForUser.mockResolvedValue({
-        tokens: { clampedTokens: 20000 }
-      });
-
-      mockSupabase.eq.mockResolvedValue({ count: 0, error: null });
+      mockSupabase.eq
+        .mockImplementationOnce(() => mockSupabase)
+        .mockResolvedValueOnce({ data: [], error: null })
+        .mockImplementationOnce(() => mockSupabase)
+        .mockResolvedValueOnce({ count: 0, error: null });
       mockLogEvent.mockResolvedValue({});
 
       await getPublicProfile('user-123', {

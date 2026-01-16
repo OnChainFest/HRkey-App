@@ -2,11 +2,10 @@ import { jest } from '@jest/globals';
 import request from 'supertest';
 
 const mockGetPublicIdentifierForUser = jest.fn();
-const mockGetPublicProfile = jest.fn();
 
-jest.unstable_mockModule('../../services/publicProfile.service.js', () => ({
+jest.unstable_mockModule('../../services/publicProfile/index.js', () => ({
   getPublicIdentifierForUser: mockGetPublicIdentifierForUser,
-  getPublicProfile: mockGetPublicProfile
+  getPublicProfile: jest.fn()
 }));
 
 jest.unstable_mockModule('../../middleware/auth.js', () => {
@@ -20,7 +19,11 @@ jest.unstable_mockModule('../../middleware/auth.js', () => {
     requireAuth,
     requireSuperadmin: (req, _res, next) => next(),
     requireCompanySigner: (req, _res, next) => next(),
-    requireAdmin: (req, _res, next) => next()
+    requireAdmin: (req, _res, next) => next(),
+    requireSelfOrSuperadmin: () => (_req, _res, next) => next(),
+    requireWalletLinked: () => (_req, _res, next) => next(),
+    requireOwnWallet: (_field, _options) => (_req, _res, next) => next(),
+    optionalAuth: (req, _res, next) => next()
   };
 });
 

@@ -6,10 +6,14 @@
 import OpenAI from 'openai';
 import logger from '../logger.js';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+const buildOpenAIClient = () => {
+  if (!process.env.OPENAI_API_KEY) {
+    return null;
+  }
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+  });
+};
 
 // Get model from env or use default
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
@@ -105,8 +109,8 @@ export async function refineReference(req, res) {
   try {
     const { experience, draft } = req.body;
 
-    // Check if OpenAI API key is configured
-    if (!process.env.OPENAI_API_KEY) {
+    const openai = buildOpenAIClient();
+    if (!openai) {
       logger.error('OpenAI API key not configured', { requestId });
       return res.status(503).json({
         error: 'Service unavailable',

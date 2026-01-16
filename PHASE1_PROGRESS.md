@@ -230,7 +230,6 @@ export const createPaymentIntentSchema = z.object({
   - [ ] payment_intent.succeeded
   - [ ] Validación de firma
   - [ ] Manejo de errores
-- [ ] Tests para revenue sharing
   - [ ] Cálculo de splits correcto (40/40/20)
   - [ ] Validación de balances
 - [ ] Tests para middleware
@@ -277,15 +276,13 @@ describe('Authentication', () => {
 - [ ] Tests para HRKStaking.sol
   - [ ] Stake tokens
   - [ ] Unstake tokens
-  - [ ] Calcular rewards correctamente
   - [ ] Prevenir unstake antes del período
+  - [ ] Validar periodo de unbonding
 - [ ] Tests para HRKSlashing.sol
   - [ ] Slash por mala conducta
   - [ ] Validación de condiciones
-  - [ ] Distribución de fondos slashed
-- [ ] Tests para HRKeyRevenueShare.sol
-  - [ ] Revenue splits correctos
-  - [ ] Withdrawals
+  - [ ] Burn del 100% de fondos slashed
+  - [ ] Sin redistribución ni incentivos
   - [ ] Prevenir double-spending
 
 **Ejemplo de Test:**
@@ -364,8 +361,6 @@ describe("HRKToken", function () {
 - ✅ HRKToken.sol (268 líneas)
 - ✅ HRKStaking.sol (448 líneas)
 - ✅ HRKSlashing.sol (370 líneas)
-- ✅ HRKPriceOracle.sol (368 líneas)
-- ✅ HRKeyRevenueShare.sol (299 líneas)
 
 **Total:** 1,753 líneas de Solidity
 
@@ -556,12 +551,10 @@ Proceder directamente a Fase 2 (CI/CD, Logging, Monitoring) sin completar tests 
 - [ ] Tests de autenticación
 - [ ] Tests de wallet creation
 - [ ] Tests de Stripe webhooks
-- [ ] Tests de revenue sharing
 - [ ] Hardhat tests configurados
 - [ ] Tests de HRKToken
 - [ ] Tests de HRKStaking
 - [ ] Tests de HRKSlashing
-- [ ] Tests de HRKeyRevenueShare
 - [ ] Cobertura mínima 40%
 
 ### Validación Completa (Pendiente)
