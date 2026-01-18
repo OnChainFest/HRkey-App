@@ -20,5 +20,5 @@ const NETWORK_CONFIG = {
   blockExplorerUrls: ['https://basescan.org']
 };
 
-window.PEERPROOF_CONTRACT = CONTRACTS.HRKeyRegistry;
+window.HRKEY_CONTRACT = CONTRACTS.HRKeyRegistry;
 window.BASE_NETWORK_CONFIG = NETWORK_CONFIG;

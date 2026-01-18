@@ -88,7 +88,7 @@
 - Missing: Actual observers submitting data / Correlation calculation scripts running on real data / Statistical validation of KPI→outcome relationships
 
 **Blockchain Integration - Prepared / Not Active**
-- Smart contracts in contracts/ directory (PeerProofRegistry)
+- Smart contracts in contracts/ directory (HRKToken, HRKStaking, HRKSlashing, HRKeyRevenueShare, HRKPriceOracle)
 - Hardhat config files present
 - Wallet creation works (custodial, Base-ready)
 - Missing: Deployed contract addresses / Actual on-chain reference storage / Gasless transaction infrastructure / Paymaster funding

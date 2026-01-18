@@ -83,7 +83,7 @@ HRKey creates a **proof-of-performance system** where:
 
 ### 🌐 Blockchain Foundation (Phase 2)
 - **Base Network** - Deployment on Ethereum L2 for low-cost transactions
-- **Smart Contracts** - PeerProofRegistry for immutable reference storage
+- **Smart Contracts** - HRKToken, HRKStaking, HRKSlashing, HRKeyRevenueShare, HRKPriceOracle
 - **Hardhat Development** - Smart contract testing and deployment tools
 
 ---
@@ -396,7 +396,11 @@ HRkey-App/
 │   └── 004_kpi_observations.sql
 │
 ├── 📂 contracts/               # Solidity smart contracts
-│   └── PeerProofRegistry.sol
+│   ├── HRKPriceOracle.sol
+│   ├── HRKSlashing.sol
+│   ├── HRKStaking.sol
+│   ├── HRKToken.sol
+│   └── HRKeyRevenueShare.sol
 │
 ├── 📂 scripts/                 # Deployment scripts
 │   └── deploy.js              # Hardhat deployment

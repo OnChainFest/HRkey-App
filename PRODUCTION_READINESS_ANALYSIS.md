@@ -254,13 +254,12 @@ app.post('/api/identity', validate(createIdentitySchema), handler);
 
 ### 6. ⚠️ SMART CONTRACTS SIN AUDITAR (CRÍTICO)
 
-**Contratos presentes (1,806 líneas de Solidity):**
-1. ✅ `PeerProofRegistry.sol` - 53 líneas
-2. ✅ `HRKToken.sol` - 268 líneas (ERC-20)
-3. ✅ `HRKStaking.sol` - 448 líneas
-4. ✅ `HRKSlashing.sol` - 370 líneas
-5. ✅ `HRKPriceOracle.sol` - 368 líneas
-6. ✅ `HRKeyRevenueShare.sol` - 299 líneas
+**Contratos presentes (1,753 líneas de Solidity):**
+1. ✅ `HRKToken.sol` - 268 líneas (ERC-20)
+2. ✅ `HRKStaking.sol` - 448 líneas
+3. ✅ `HRKSlashing.sol` - 370 líneas
+4. ✅ `HRKPriceOracle.sol` - 368 líneas
+5. ✅ `HRKeyRevenueShare.sol` - 299 líneas
 
 **Estado de deployment:**
 

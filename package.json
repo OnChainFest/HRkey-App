@@ -1,5 +1,5 @@
 {
-  "name": "peerproof",
+  "name": "hrkey",
   "version": "1.0.0",
   "type": "module",
   "main": "index.js",
@@ -8,8 +8,7 @@
     "build": "next build",
     "start": "next start",
     "hh": "hardhat",
-    "compile": "hardhat compile && node copy-abi.cjs",
-    "deploy:base-sepolia": "hardhat run scripts/deploy.js --network baseSepolia && node copy-abi.cjs",
+    "compile": "hardhat compile",
     "verify:base-sepolia": "hardhat verify --network baseSepolia"
   },
   "dependencies": {

@@ -19,8 +19,8 @@ class BlockchainService {
     await this.ensureCorrectNetwork();
     
     this.contract = new ethers.Contract(
-      window.PEERPROOF_CONTRACT.address,
-      window.PEERPROOF_ABI,
+      window.HRKEY_CONTRACT.address,
+      window.HRKEY_ABI,
       this.signer
     );
     

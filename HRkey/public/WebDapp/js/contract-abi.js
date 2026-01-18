@@ -1,5 +1,5 @@
 // HRKeyRegistry Contract ABI
-const PEERPROOF_ABI = [
+const HRKEY_ABI = [
   {
     "anonymous": false,
     "inputs": [
@@ -61,4 +61,4 @@ const PEERPROOF_ABI = [
   }
 ];
 
-window.PEERPROOF_ABI = PEERPROOF_ABI;
+window.HRKEY_ABI = HRKEY_ABI;
