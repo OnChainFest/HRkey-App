@@ -67,6 +67,13 @@ contract HRKStaking is
 
     // Global state
     uint256 public totalStaked;
+    uint256 public totalRewardsDistributed;
+    uint256 public rewardPoolBalance;              // RLUSD balance for rewards
+    address public rewardToken;                     // RLUSD token address
+
+    // Reward tracking per user
+    mapping(address => uint256) public userRewardsClaimed;
+    mapping(address => uint256) public userRewardsEarned;
 
     // Constants
     uint256 public constant BASIS_POINTS = 10000;
@@ -78,6 +85,9 @@ contract HRKStaking is
     event Unstaked(address indexed user, uint256 amount);
     event EmergencyUnstaked(address indexed user, uint256 amount, uint256 penalty);
     event TierConfigUpdated(Tier tier, uint256 minimumStake, uint256 maxEvaluationsPerMonth, uint256 cooldown);
+    event RewardsDeposited(uint256 amount, uint256 timestamp);
+    event RewardsClaimed(address indexed user, uint256 amount);
+    event RewardsDistributed(uint256 totalAmount, uint256 timestamp);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -87,10 +97,12 @@ contract HRKStaking is
     /**
      * @notice Initialize the staking contract
      * @param _hrkToken Address of the HRK token
+     * @param _rewardToken Address of the reward token (RLUSD)
      * @param _admin Address of the admin
      */
-    function initialize(address _hrkToken, address _admin) public initializer {
+    function initialize(address _hrkToken, address _rewardToken, address _admin) public initializer {
         require(_hrkToken != address(0), "Invalid HRK token");
+        require(_rewardToken != address(0), "Invalid reward token");
         require(_admin != address(0), "Invalid admin");
 
         __ReentrancyGuard_init();
@@ -99,6 +111,7 @@ contract HRKStaking is
         __UUPSUpgradeable_init();
 
         HRK = IERC20(_hrkToken);
+        rewardToken = _rewardToken;
 
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(UPGRADER_ROLE, _admin);
@@ -313,9 +326,133 @@ contract HRKStaking is
     }
 
     /**
+     * @notice Deposit RLUSD rewards into pool (called by PaymentSplitter)
+     * @dev 5% of all payments flow here as staking rewards
+     * @param amount Amount of RLUSD to add to reward pool
+     */
+    function depositRewards(uint256 amount) external nonReentrant {
+        require(amount > 0, "Amount must be > 0");
+        require(totalStaked > 0, "No active stakes");
+
+        // Transfer RLUSD from sender to this contract
+        IERC20(rewardToken).safeTransferFrom(msg.sender, address(this), amount);
+
+        rewardPoolBalance += amount;
+        totalRewardsDistributed += amount;
+
+        emit RewardsDeposited(amount, block.timestamp);
+        emit RewardsDistributed(amount, block.timestamp);
+    }
+
+    /**
+     * @notice Calculate pending rewards for a user
+     * @param user Address of the staker
+     * @return rewards Amount of RLUSD rewards earned
+     */
+    function calculateRewards(address user) public view returns (uint256 rewards) {
+        Stake memory userStake = stakes[user];
+        if (userStake.amount == 0 || totalStaked == 0) {
+            return 0;
+        }
+
+        // Get lock period multiplier
+        uint256 multiplier = getLockPeriodMultiplier(userStake.lockupMonths);
+
+        // Calculate weighted stake
+        uint256 weightedStake = (userStake.amount * multiplier) / 100;
+
+        // Calculate share of reward pool
+        // Formula: (weightedStake / totalWeightedStakes) * rewardPoolBalance
+        // Simplified for gas efficiency
+        uint256 userShare = (weightedStake * rewardPoolBalance) / totalStaked;
+
+        // Subtract already claimed rewards
+        uint256 totalEarned = userRewardsEarned[user] + userShare;
+        uint256 pending = totalEarned - userRewardsClaimed[user];
+
+        return pending;
+    }
+
+    /**
+     * @notice Claim accumulated rewards
+     */
+    function claimRewards() external nonReentrant whenNotPaused {
+        require(stakes[msg.sender].amount > 0, "No active stake");
+
+        uint256 rewards = calculateRewards(msg.sender);
+        require(rewards > 0, "No rewards to claim");
+        require(rewardPoolBalance >= rewards, "Insufficient reward pool");
+
+        // Update state
+        userRewardsClaimed[msg.sender] += rewards;
+        rewardPoolBalance -= rewards;
+
+        // Transfer RLUSD rewards
+        IERC20(rewardToken).safeTransfer(msg.sender, rewards);
+
+        emit RewardsClaimed(msg.sender, rewards);
+    }
+
+    /**
+     * @notice Get lock period multiplier for rewards
+     * @param lockupMonths Lockup period in months
+     * @return multiplier Multiplier in basis points (100 = 1.0x, 150 = 1.5x, 200 = 2.0x)
+     */
+    function getLockPeriodMultiplier(uint256 lockupMonths) public pure returns (uint256 multiplier) {
+        if (lockupMonths >= 12) {
+            return 200; // 2.0x for 12+ months
+        } else if (lockupMonths >= 6) {
+            return 150; // 1.5x for 6-11 months
+        } else if (lockupMonths >= 3) {
+            return 125; // 1.25x for 3-5 months
+        } else {
+            return 100; // 1.0x for 1-2 months
+        }
+    }
+
+    /**
+     * @notice Get user staking info including rewards
+     * @param user Address to query
+     * @return stakeAmount Amount staked
+     * @return tier Staking tier
+     * @return lockupMonths Lockup period
+     * @return pendingRewards Unclaimed rewards
+     * @return totalClaimed Total rewards claimed
+     */
+    function getUserStakingInfo(address user) external view returns (
+        uint256 stakeAmount,
+        Tier tier,
+        uint256 lockupMonths,
+        uint256 pendingRewards,
+        uint256 totalClaimed
+    ) {
+        Stake memory userStake = stakes[user];
+        return (
+            userStake.amount,
+            userStake.tier,
+            userStake.lockupMonths,
+            calculateRewards(user),
+            userRewardsClaimed[user]
+        );
+    }
+
+    /**
+     * @notice Get total value locked (TVL)
+     * @return tvlHRK Total HRK staked
+     * @return tvlRewards Total RLUSD in reward pool
+     */
+    function getTVL() external view returns (
+        uint256 tvlHRK,
+        uint256 tvlRewards
+    ) {
+        return (totalStaked, rewardPoolBalance);
+    }
+
+    /**
      * @notice Get contract version
      */
     function version() external pure returns (string memory) {
-        return "1.0.0";
+        return "2.0.0";
     }
 }
+
