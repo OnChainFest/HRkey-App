@@ -9,6 +9,10 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+interface IBurnableToken {
+    function burn(uint256 amount) external;
+}
+
 /**
  * @title HRKStaking
  * @notice Staking contract for HRKey evaluators and employers
@@ -32,10 +36,6 @@ contract HRKStaking is
 
     // HRK token
     IERC20 public HRK;
-
-    interface IBurnableToken {
-        function burn(uint256 amount) external;
-    }
 
     // Staking tiers
     enum Tier {
