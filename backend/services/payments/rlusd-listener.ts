@@ -9,6 +9,7 @@
 import { ethers } from 'ethers';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import PaymentSplitterABI from '../../../abis/ReferencePaymentSplitter.json';
+import { getNotificationManager } from '../notifications/notification-manager.js';
 
 interface PaymentEventData {
   referenceId: string;
@@ -308,32 +309,63 @@ export class RLUSDPaymentListener {
     payment: PaymentRecord,
     eventData: PaymentEventData
   ): Promise<void> {
-    // Get recipient emails from database
+    // Get recipient user IDs and emails from database by wallet address
     const { data: recipients } = await this.supabase
       .from('users')
-      .select('wallet_address, email, full_name')
+      .select('id, wallet_address, email, name')
       .in('wallet_address', [
         eventData.referenceProvider,
         eventData.candidate,
       ]);
 
     if (!recipients || recipients.length === 0) {
-      console.warn('No recipients found for notification');
+      console.warn('⚠️  No recipients found for payment notifications');
       return;
     }
 
-    // TODO: Integrate with email service (Resend, SendGrid, etc.)
-    // For now, log what would be sent
-    for (const recipient of recipients) {
-      const amount =
-        recipient.wallet_address === eventData.referenceProvider
-          ? ethers.formatUnits(eventData.split.providerAmount, 6)
-          : ethers.formatUnits(eventData.split.candidateAmount, 6);
+    const notificationManager = getNotificationManager();
 
-      console.log(`   📧 Would email ${recipient.email}:`);
-      console.log(`      Subject: You received ${amount} RLUSD`);
-      console.log(`      Amount: ${amount} RLUSD ($${amount})`);
-      console.log(`      TX: ${payment.tx_hash}`);
+    // Send notifications to each recipient
+    for (const recipient of recipients) {
+      try {
+        // Determine if this user is provider or candidate
+        const isProvider = recipient.wallet_address === eventData.referenceProvider;
+
+        // Calculate amount received by this recipient
+        const amountWei = isProvider
+          ? eventData.split.providerAmount
+          : eventData.split.candidateAmount;
+        const amountFormatted = ethers.formatUnits(amountWei, 6);
+
+        // Determine role for messaging
+        const role = isProvider ? 'reference provider' : 'candidate';
+
+        // Create in-app notification with email
+        await notificationManager.createNotification({
+          userId: recipient.id,
+          type: 'payment_received',
+          title: '💰 Payment Received!',
+          message: `You received ${amountFormatted} RLUSD as ${role} for reference #${eventData.referenceId.slice(0, 8)}`,
+          data: {
+            payment_id: payment.id,
+            reference_id: eventData.referenceId,
+            amount: amountFormatted,
+            amount_usd: Number(amountFormatted),
+            tx_hash: payment.tx_hash,
+            block_number: payment.block_number,
+            role: role,
+            recipient_type: isProvider ? 'provider' : 'candidate',
+          },
+          sendEmail: true,
+        });
+
+        console.log(`   ✅ Notification sent to ${recipient.email} (${role})`);
+        console.log(`      Amount: ${amountFormatted} RLUSD`);
+
+      } catch (error: any) {
+        console.error(`   ❌ Failed to send notification to ${recipient.email}:`, error.message);
+        // Don't throw - continue with other notifications
+      }
     }
   }
 
