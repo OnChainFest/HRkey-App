@@ -31,6 +31,8 @@ import analyticsController from './controllers/analyticsController.js';
 import hrscoreController from './controllers/hrscoreController.js';
 import referencesController from './controllers/referencesController.js';
 import aiRefineController from './controllers/aiRefine.controller.js';
+import * as walletController from './controllers/wallet.controller.js';
+import * as notificationsController from './controllers/notifications.controller.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 import { getScoreSnapshots } from './services/hrscore/scoreSnapshots.js';
 
@@ -1349,6 +1351,28 @@ app.get('/api/hrkey-score/model-info', requireAuth, requireSuperadmin, async (re
     });
   }
 });
+
+/* =========================
+   WALLET ENDPOINTS
+   ========================= */
+app.post('/api/wallet/setup', requireAuth, walletController.setupWallet);
+app.get('/api/wallet/me', requireAuth, walletController.getMyWallet);
+app.get('/api/wallet/info/:userId', requireAuth, walletController.getWalletInfo);
+app.get('/api/wallet/balance/:userId', requireAuth, walletController.getWalletBalance);
+app.get('/api/wallet/has-wallet/:userId', requireAuth, walletController.hasWallet);
+app.delete('/api/wallet/me', requireAuth, walletController.deleteMyWallet);
+app.patch('/api/wallet/me/label', requireAuth, walletController.updateWalletLabel);
+
+/* =========================
+   NOTIFICATIONS ENDPOINTS
+   ========================= */
+app.get('/api/notifications', requireAuth, notificationsController.getNotifications);
+app.get('/api/notifications/unread-count', requireAuth, notificationsController.getUnreadCount);
+app.patch('/api/notifications/:id/read', requireAuth, notificationsController.markNotificationAsRead);
+app.post('/api/notifications/mark-all-read', requireAuth, notificationsController.markAllAsRead);
+app.patch('/api/notifications/:id/archive', requireAuth, notificationsController.archiveNotification);
+app.delete('/api/notifications/:id', requireAuth, notificationsController.deleteNotification);
+app.post('/api/notifications/test', requireAuth, notificationsController.createTestNotification);
 
 /* =========================
    HRSCORE PERSISTENCE & HISTORY ENDPOINTS
