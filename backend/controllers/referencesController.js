@@ -17,6 +17,8 @@ import {
   fetchInviteByToken,
   hashInviteToken
 } from '../services/references.service.js';
+import { getPaymentProcessor } from '../services/payments/payment-processor.js';
+import { getWalletManager } from '../services/wallet/wallet-manager.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -400,14 +402,127 @@ export async function respondToReferenceInvite(req, res) {
       });
     }
 
-    await ReferenceService.submitReference({
+    const referenceId = await ReferenceService.submitReference({
       token,
       invite,
       ratings,
       comments
     });
 
-    return res.json({ ok: true });
+    // ========================================
+    // PAYMENT INTEGRATION: Trigger payment after successful reference submission
+    // ========================================
+    try {
+      // Get reference details including provider and candidate
+      const { data: reference, error: refError } = await supabase
+        .from('references')
+        .select(`
+          id,
+          owner_id,
+          evaluator_id,
+          referrer_name,
+          referrer_email,
+          candidate:users!owner_id(id, email, name, wallet_address),
+          provider:users!evaluator_id(id, email, name, wallet_address)
+        `)
+        .eq('id', referenceId)
+        .single();
+
+      if (refError || !reference) {
+        logger.warn('Could not fetch reference for payment creation', {
+          requestId: req.requestId,
+          referenceId,
+          error: refError?.message
+        });
+        // Don't fail the request - reference was created successfully
+        return res.json({ ok: true, referenceId });
+      }
+
+      // Check if both participants have wallets
+      const walletManager = getWalletManager();
+      const providerHasWallet = await walletManager.hasWallet(reference.evaluator_id);
+      const candidateHasWallet = await walletManager.hasWallet(reference.owner_id);
+
+      if (!providerHasWallet || !candidateHasWallet) {
+        logger.warn('Payment skipped - participants missing wallets', {
+          requestId: req.requestId,
+          referenceId,
+          providerHasWallet,
+          candidateHasWallet
+        });
+
+        // Return response with wallet requirement flag
+        return res.json({
+          ok: true,
+          referenceId,
+          paymentPending: false,
+          requiresWallet: true,
+          missingWallets: {
+            provider: !providerHasWallet,
+            candidate: !candidateHasWallet
+          },
+          message: 'Reference submitted successfully. Payment will be created once all participants set up their wallets.'
+        });
+      }
+
+      // Both have wallets - create payment intent
+      const paymentProcessor = getPaymentProcessor();
+      const payment = await paymentProcessor.createPaymentIntent({
+        referenceId: reference.id,
+        referenceProvider: reference.evaluator_id, // User ID
+        candidate: reference.owner_id, // User ID
+        amount: 100, // $100 RLUSD standard amount
+        payerEmail: invite.metadata?.employer_email || reference.referrer_email || 'employer@unknown.com'
+      });
+
+      // Link payment to reference
+      await supabase
+        .from('references')
+        .update({
+          payment_id: payment.paymentId,
+          payment_status: 'pending'
+        })
+        .eq('id', referenceId);
+
+      logger.info('Payment intent created for reference', {
+        requestId: req.requestId,
+        referenceId,
+        paymentId: payment.paymentId,
+        amount: payment.amount
+      });
+
+      // Return success with payment info
+      return res.json({
+        ok: true,
+        referenceId,
+        paymentPending: true,
+        payment: {
+          paymentId: payment.paymentId,
+          amount: payment.amount,
+          qrCode: payment.qrCode,
+          expiresAt: payment.expiresAt,
+          message: 'Payment request sent to employer. Waiting for payment confirmation.'
+        }
+      });
+
+    } catch (paymentError) {
+      logger.error('Failed to create payment for reference', {
+        requestId: req.requestId,
+        referenceId,
+        error: paymentError.message,
+        stack: paymentError.stack
+      });
+
+      // Don't fail the request - reference was created successfully
+      return res.json({
+        ok: true,
+        referenceId,
+        paymentPending: false,
+        paymentError: 'Payment creation failed. This can be retried later.',
+        message: 'Reference submitted successfully, but payment creation encountered an issue.'
+      });
+    }
+    // ========================================
   } catch (e) {
     // SECURITY: Never log raw tokens - use hash prefix only
     logger.error('Failed to submit reference response', {
