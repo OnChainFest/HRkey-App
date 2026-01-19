@@ -10,6 +10,7 @@ import { ethers } from 'ethers';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as QRCode from 'qrcode';
 import { randomBytes } from 'crypto';
+import { getNotificationManager } from '../notifications/notification-manager.js';
 
 interface CreatePaymentParams {
   referenceId: string;
@@ -150,6 +151,24 @@ export class PaymentProcessor {
     console.log(`   📱 QR code generated`);
     console.log(`   ⏰ Expires: ${expiresAt.toISOString()}`);
 
+    // 7. Send payment request email to payer (if email provided)
+    if (params.payerEmail) {
+      try {
+        await this.sendPaymentRequestEmail({
+          payerEmail: params.payerEmail,
+          amount: params.amount,
+          referenceId: params.referenceId,
+          qrCode,
+          paymentUrl,
+          expiresAt,
+        });
+        console.log(`   📧 Payment request email sent to ${params.payerEmail}`);
+      } catch (emailError: any) {
+        console.error(`   ⚠️  Failed to send payment email: ${emailError.message}`);
+        // Don't throw - payment intent was created successfully
+      }
+    }
+
     return {
       paymentId,
       referenceId: params.referenceId,
@@ -166,6 +185,128 @@ export class PaymentProcessor {
         staking: 5,
       },
     };
+  }
+
+  /**
+   * Send payment request email to payer
+   */
+  private async sendPaymentRequestEmail(params: {
+    payerEmail: string;
+    amount: number;
+    referenceId: string;
+    qrCode: string;
+    paymentUrl: string;
+    expiresAt: Date;
+  }): Promise<void> {
+    const notificationManager = getNotificationManager();
+
+    // Calculate expiry time in minutes
+    const expiryMinutes = Math.floor(
+      (params.expiresAt.getTime() - Date.now()) / 60000
+    );
+
+    // Generate payment request email HTML
+    const subject = `Reference Verification Payment - $${params.amount} RLUSD`;
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Payment Request</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">💳 Payment Request</h1>
+          </div>
+
+          <div style="background: #ffffff; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 16px; margin-bottom: 20px;">Hello,</p>
+
+            <p style="font-size: 16px; margin-bottom: 25px;">
+              A professional reference has been verified and is ready for your review.
+              To access the verified reference, please complete the payment below.
+            </p>
+
+            <div style="background: #f7fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 25px 0;">
+              <h3 style="margin-top: 0; color: #2d3748;">Payment Details:</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #4a5568;"><strong>Amount:</strong></td>
+                  <td style="padding: 8px 0; text-align: right; color: #2d3748; font-size: 20px; font-weight: bold;">$${params.amount} RLUSD</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #4a5568;"><strong>Reference ID:</strong></td>
+                  <td style="padding: 8px 0; text-align: right; color: #2d3748; font-family: monospace; font-size: 13px;">${params.referenceId.slice(0, 8)}...${params.referenceId.slice(-6)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #4a5568;"><strong>Expires in:</strong></td>
+                  <td style="padding: 8px 0; text-align: right; color: #dc2626; font-weight: 600;">${expiryMinutes} minutes</td>
+                </tr>
+              </table>
+            </div>
+
+            <h3 style="color: #2d3748; margin-top: 30px; margin-bottom: 15px;">Payment Options:</h3>
+
+            <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <p style="margin: 0 0 15px 0; font-weight: 600; color: #2d3748;">Option 1: Scan QR Code</p>
+              <p style="margin: 0 0 15px 0; font-size: 14px; color: #4a5568;">
+                Open your Web3 wallet app (MetaMask, Coinbase Wallet, etc.) and scan this QR code:
+              </p>
+              <div style="text-align: center; margin: 20px 0;">
+                <img src="${params.qrCode}" alt="Payment QR Code" width="250" style="border: 2px solid #e2e8f0; border-radius: 8px; padding: 10px; background: white;" />
+              </div>
+            </div>
+
+            <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+              <p style="margin: 0 0 15px 0; font-weight: 600; color: #1e40af;">Option 2: Pay with Wallet Button</p>
+              <p style="margin: 0 0 15px 0; font-size: 14px; color: #1e3a8a;">
+                Click the button below to open your wallet app directly:
+              </p>
+              <div style="text-align: center; margin: 20px 0;">
+                <a href="${params.paymentUrl}" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">Pay with Wallet</a>
+              </div>
+            </div>
+
+            <div style="background: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; border-radius: 4px; margin-top: 25px;">
+              <p style="margin: 0; color: #92400e; font-size: 14px;">
+                <strong>⏰ Important:</strong> This payment link expires in ${expiryMinutes} minutes. If it expires, you'll need to request a new verification.
+              </p>
+            </div>
+
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+              <h4 style="color: #2d3748; margin-bottom: 10px;">How the payment is distributed:</h4>
+              <ul style="color: #4a5568; line-height: 1.8; font-size: 14px;">
+                <li><strong>60%</strong> → Reference provider (for their time and expertise)</li>
+                <li><strong>20%</strong> → Candidate (for building their professional profile)</li>
+                <li><strong>15%</strong> → HRKey platform (for maintaining the service)</li>
+                <li><strong>5%</strong> → Staking rewards pool (for token holders)</li>
+              </ul>
+            </div>
+
+            <div style="margin-top: 25px; padding: 15px; background: #f7fafc; border-radius: 6px;">
+              <p style="margin: 0; font-size: 13px; color: #4a5568;">
+                <strong>Need help?</strong> Make sure you have:<br>
+                • RLUSD tokens in your wallet on Base network<br>
+                • Sufficient ETH for gas fees<br>
+                • A Web3 wallet app (MetaMask, Coinbase Wallet, etc.)
+              </p>
+            </div>
+          </div>
+
+          <div style="text-align: center; padding: 20px; color: #718096; font-size: 12px;">
+            <p>© ${new Date().getFullYear()} HRKey. All rights reserved.</p>
+            <p>Secure payments powered by Base network and RLUSD stablecoin</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    await notificationManager.sendEmail({
+      to: params.payerEmail,
+      subject,
+      html,
+    });
   }
 
   /**
