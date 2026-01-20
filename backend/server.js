@@ -33,6 +33,8 @@ import referencesController from './controllers/referencesController.js';
 import aiRefineController from './controllers/aiRefine.controller.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 import { getScoreSnapshots } from './services/hrscore/scoreSnapshots.js';
+import { buildCanonicalReferencePack } from './services/referencePack.service.js';
+import { canonicalHash } from './utils/canonicalHash.js';
 
 // Import services
 import * as webhookService from './services/webhookService.js';
@@ -165,6 +167,61 @@ if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
 
 const stripe = new Stripe(STRIPE_SECRET_KEY || 'sk_test_placeholder');
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+const REFERENCE_PROOF_ABI = [
+  'function recordReferencePackProof(bytes32 packHash, string candidateIdentifier) external',
+  'function getProof(bytes32 packHash) view returns (address recorder, uint256 timestamp, string candidateIdentifier, bool exists)',
+  'event ReferencePackProofRecorded(bytes32 indexed packHash, address indexed recorder, uint256 timestamp, string candidateIdentifier)'
+];
+
+function getReferenceProofConfig() {
+  const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL;
+  const contractAddress = process.env.PROOF_CONTRACT_ADDRESS;
+  const chainId = Number(process.env.BASE_CHAIN_ID || 84532);
+
+  if (!rpcUrl || !contractAddress) {
+    const error = new Error('BASE_SEPOLIA_RPC_URL and PROOF_CONTRACT_ADDRESS must be configured');
+    error.status = 500;
+    throw error;
+  }
+
+  return { rpcUrl, contractAddress, chainId };
+}
+
+function normalizePackHash(packHash) {
+  const normalized = packHash.startsWith('0x') ? packHash : `0x${packHash}`;
+  if (!/^0x[0-9a-fA-F]{64}$/.test(normalized)) {
+    const error = new Error('Invalid pack hash');
+    error.status = 400;
+    throw error;
+  }
+  return normalized;
+}
+
+function getReferenceProofWriteContract() {
+  const { rpcUrl, contractAddress, chainId } = getReferenceProofConfig();
+  const privateKey = process.env.PROOF_SIGNER_PRIVATE_KEY;
+
+  if (!privateKey) {
+    const error = new Error('PROOF_SIGNER_PRIVATE_KEY must be configured');
+    error.status = 500;
+    throw error;
+  }
+
+  const provider = new ethers.JsonRpcProvider(rpcUrl, chainId);
+  const signer = new ethers.Wallet(privateKey, provider);
+  const contract = new ethers.Contract(contractAddress, REFERENCE_PROOF_ABI, signer);
+
+  return { contract, chainId, contractAddress };
+}
+
+function getReferenceProofReadContract() {
+  const { rpcUrl, contractAddress, chainId } = getReferenceProofConfig();
+  const provider = new ethers.JsonRpcProvider(rpcUrl, chainId);
+  const contract = new ethers.Contract(contractAddress, REFERENCE_PROOF_ABI, provider);
+
+  return { contract, chainId, contractAddress };
+}
 
 /* =========================
    Admin Key Middleware (NO JWT)
@@ -835,6 +892,85 @@ app.get('/api/references/pending', requireAuth, referencesController.getMyPendin
  * GET /api/references/candidate/:candidateId
  */
 app.get('/api/references/candidate/:candidateId', requireAuth, referencesController.getCandidateReferences);
+
+/**
+ * GET /api/reference-pack/:identifier
+ *
+ * Returns canonical reference pack and hash for a candidate.
+ */
+app.get('/api/reference-pack/:identifier', requireAuth, async (req, res) => {
+  try {
+    const pack = await buildCanonicalReferencePack(req.params.identifier);
+    const { hash } = canonicalHash(pack);
+    return res.json({ pack, pack_hash: hash, generated_at: new Date().toISOString() });
+  } catch (error) {
+    logger.error('Failed to build reference pack', {
+      identifier: req.params.identifier,
+      error: error.message
+    });
+    return res.status(error.status || 500).json({ error: 'Failed to build reference pack' });
+  }
+});
+
+/**
+ * POST /api/reference-pack/:identifier/commit
+ *
+ * Anchors the canonical pack hash on Base Sepolia.
+ */
+app.post('/api/reference-pack/:identifier/commit', requireAuth, async (req, res) => {
+  try {
+    const pack = await buildCanonicalReferencePack(req.params.identifier);
+    const { hash } = canonicalHash(pack);
+    const packHashHex = normalizePackHash(hash);
+    const { contract, chainId, contractAddress } = getReferenceProofWriteContract();
+
+    const tx = await contract.recordReferencePackProof(packHashHex, req.params.identifier);
+    await tx.wait();
+
+    return res.json({
+      pack_hash: hash,
+      tx_hash: tx.hash,
+      chain_id: chainId,
+      contract_address: contractAddress,
+      recorded_at: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Failed to commit reference pack proof', {
+      identifier: req.params.identifier,
+      error: error.message
+    });
+    return res.status(error.status || 500).json({ error: 'Failed to commit reference pack proof' });
+  }
+});
+
+/**
+ * GET /api/reference-pack/proof/:packHash
+ *
+ * Returns on-chain proof status for a pack hash.
+ */
+app.get('/api/reference-pack/proof/:packHash', async (req, res) => {
+  try {
+    const packHashHex = normalizePackHash(req.params.packHash);
+    const { contract, chainId, contractAddress } = getReferenceProofReadContract();
+    const [recorder, timestamp, candidateIdentifier, exists] = await contract.getProof(packHashHex);
+    const normalizedTimestamp = typeof timestamp === 'bigint' ? Number(timestamp) : Number(timestamp);
+
+    return res.json({
+      exists: Boolean(exists),
+      recorder,
+      timestamp: normalizedTimestamp,
+      candidateIdentifier,
+      contract_address: contractAddress,
+      chain_id: chainId
+    });
+  } catch (error) {
+    logger.error('Failed to fetch reference pack proof', {
+      packHash: req.params.packHash,
+      error: error.message
+    });
+    return res.status(error.status || 500).json({ error: 'Failed to fetch reference pack proof' });
+  }
+});
 
 /* =========================
    References workflow MVP
