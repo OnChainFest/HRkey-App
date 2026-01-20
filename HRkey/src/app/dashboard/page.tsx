@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabaseClient";
+import { apiGet } from "../../lib/apiClient";
 
 type Row = Record<string, any>
 
@@ -14,6 +15,11 @@ export default function Dashboard() {
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState<string | null>(null)
+
+  // Wallet state
+  const [hasWallet, setHasWallet] = useState<boolean | null>(null)
+  const [walletCheckLoading, setWalletCheckLoading] = useState(true)
+  const [showWalletPrompt, setShowWalletPrompt] = useState(true)
 
   // form (crear)
   const [newSummary, setNewSummary] = useState("")
@@ -81,6 +87,27 @@ export default function Dashboard() {
   useEffect(() => {
     load()
   }, [load])
+
+  // Check if user has a wallet
+  useEffect(() => {
+    const checkWallet = async () => {
+      setWalletCheckLoading(true)
+      try {
+        const response = await apiGet<{ success: boolean; wallet: any }>('/api/wallet/me')
+        setHasWallet(response.success && !!response.wallet)
+      } catch (err: any) {
+        if (err.status === 404) {
+          setHasWallet(false)
+        }
+      } finally {
+        setWalletCheckLoading(false)
+      }
+    }
+
+    if (userId) {
+      checkWallet()
+    }
+  }, [userId])
 
   // --- acciones -------------------------------------------------------------
 
@@ -240,6 +267,83 @@ export default function Dashboard() {
           <button onClick={signOut}>Salir</button>
         </div>
       </header>
+
+      {/* Wallet Setup Prompt */}
+      {!walletCheckLoading && hasWallet === false && showWalletPrompt && (
+        <div style={{
+          marginTop: 24,
+          padding: 16,
+          border: "2px solid #6366f1",
+          borderRadius: 12,
+          background: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontSize: 24, marginRight: 8 }}>💰</span>
+                <h3 style={{ margin: 0, color: "#4338ca", fontWeight: 600 }}>
+                  Set Up Your Payment Wallet
+                </h3>
+              </div>
+              <p style={{ margin: "8px 0", color: "#4338ca", fontSize: 14 }}>
+                Connect a wallet to receive automatic payments when your references are verified.
+                You'll earn RLUSD tokens on the Base network.
+              </p>
+              <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+                <button
+                  onClick={() => router.push('/wallet')}
+                  style={{
+                    padding: "8px 16px",
+                    background: "#4f46e5",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 8,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontSize: 14,
+                  }}
+                >
+                  Set Up Wallet →
+                </button>
+                <button
+                  onClick={() => setShowWalletPrompt(false)}
+                  style={{
+                    padding: "8px 16px",
+                    background: "transparent",
+                    color: "#4f46e5",
+                    border: "1px solid #c7d2fe",
+                    borderRadius: 8,
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    fontSize: 14,
+                  }}
+                >
+                  Maybe Later
+                </button>
+              </div>
+              <p style={{ margin: "12px 0 0 0", fontSize: 12, color: "#6366f1" }}>
+                <strong>How it works:</strong> When references are verified, payments are automatically
+                split between you (as candidate) and the reference provider. Treasury and staking pools
+                also receive a portion.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowWalletPrompt(false)}
+              style={{
+                background: "transparent",
+                border: "none",
+                fontSize: 20,
+                color: "#6366f1",
+                cursor: "pointer",
+                padding: 4,
+              }}
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       <section style={{ marginTop: 24 }}>
         <h2 style={{ marginBottom: 12 }}>Nueva referencia</h2>
