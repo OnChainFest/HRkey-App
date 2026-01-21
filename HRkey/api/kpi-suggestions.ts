@@ -1,10 +1,25 @@
 // api/kpi-suggestions.ts
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // service role para inserts desde backend
-);
+/**
+ * Lazy Supabase client initialization
+ * Prevents build-time errors by initializing only when called
+ */
+function getSupabaseClient(): SupabaseClient {
+  const supabaseUrl =
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error(
+      "Missing Supabase credentials. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+    );
+  }
+
+  return createClient(supabaseUrl, supabaseKey);
+}
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -12,6 +27,9 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    // Initialize Supabase client inside handler (not at module scope)
+    const supabase = getSupabaseClient();
+
     const { kpis, position, company, userEmail } = req.body || {};
     if (!Array.isArray(kpis) || kpis.length === 0) {
       return res.status(400).json({ ok:false, error: 'No KPIs provided' });

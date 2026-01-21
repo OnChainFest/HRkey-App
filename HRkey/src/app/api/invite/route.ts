@@ -1,16 +1,41 @@
 // src/app/api/invite/route.ts
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { makeRefereeLink } from "@/utils/appURL"; // 👈 importar desde el módulo seguro
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { makeRefereeLink } from "@/utils/appURL";
 import crypto from "crypto";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+/**
+ * Lazy Supabase client initialization for API routes
+ * Prevents build-time errors by initializing only when called
+ */
+function getSupabaseClient(): SupabaseClient {
+  // Priority 1: Server-side env vars (recommended for API routes)
+  const supabaseUrl =
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl) {
+    throw new Error(
+      "Missing Supabase URL. Set SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL in Vercel environment variables."
+    );
+  }
+
+  if (!supabaseKey) {
+    throw new Error(
+      "Missing Supabase Key. Set SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel environment variables."
+    );
+  }
+
+  return createClient(supabaseUrl, supabaseKey);
+}
 
 export async function POST(request: Request) {
   try {
+    // Initialize Supabase client inside handler (not at module scope)
+    const supabase = getSupabaseClient();
+
     const body = await request.json();
     const { userId, email, name, applicantData } = body;
 
@@ -57,10 +82,17 @@ export async function POST(request: Request) {
     });
   } catch (error: any) {
     console.error("❌ Error creating invite:", error);
+
+    // Return user-friendly error for missing env vars
+    const errorMessage =
+      error.message?.includes("Supabase") ||
+      error.message?.includes("supabaseUrl")
+        ? `Configuration error: ${error.message}`
+        : error.message;
+
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
 }
-

@@ -1,12 +1,37 @@
 // api/kpi-digest.ts
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-const resend = new Resend(process.env.RESEND_API_KEY!);
+/**
+ * Lazy Supabase client initialization
+ * Prevents build-time errors by initializing only when called
+ */
+function getSupabaseClient(): SupabaseClient {
+  const supabaseUrl =
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error(
+      "Missing Supabase credentials. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+    );
+  }
+
+  return createClient(supabaseUrl, supabaseKey);
+}
+
+/**
+ * Lazy Resend client initialization
+ * Returns null if RESEND_API_KEY is not set
+ */
+function getResendClient() {
+  if (!process.env.RESEND_API_KEY) {
+    return null;
+  }
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 const TO_EMAIL = process.env.DIGEST_TO_EMAIL || 'vicvalch@hrkey.xyz';
 const FROM_EMAIL = process.env.DIGEST_FROM_EMAIL || 'HRKey <no-reply@hrkey.xyz>';
@@ -29,70 +54,109 @@ function escapeHtml(s:string) {
 function buildHtml(items:any[]) {
   const rows = items.map((it, i) => `
     <tr>
-      <td style="padding:8px;border-bottom:1px solid #eee;">${i+1}</td>
-      <td style="padding:8px;border-bottom:1px solid #eee;">
-        <strong>${escapeHtml(it.title)}</strong><br>
-        <span style="color:#475569">${escapeHtml(it.description)}</span>
+      <td style="padding:8px; border:1px solid #ccc; text-align:center;">${i+1}</td>
+      <td style="padding:8px; border:1px solid #ccc;">${escapeHtml(it.title || '')}</td>
+      <td style="padding:8px; border:1px solid #ccc;">${escapeHtml(it.description || '')}</td>
+      <td style="padding:8px; border:1px solid #ccc; font-size:11px; color:#666;">
+        ${escapeHtml(it.position_hint || '')}<br/>
+        ${escapeHtml(it.company_hint || '')}
       </td>
-      <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(it.position_hint||'')}</td>
-      <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(it.user_email||'')}</td>
-      <td style="padding:8px;border-bottom:1px solid #eee;">${new Date(it.created_at).toLocaleString('en-US',{ timeZone:'America/Costa_Rica'})}</td>
+      <td style="padding:8px; border:1px solid #ccc; font-size:11px; color:#666;">
+        ${escapeHtml(it.user_email || '')}
+      </td>
+      <td style="padding:8px; border:1px solid #ccc; font-size:11px; color:#999;">
+        ${it.created_at ? new Date(it.created_at).toLocaleString('es-CR', {timeZone:'America/Costa_Rica'}) : ''}
+      </td>
     </tr>
-  `).join('');
+  `).join('\n');
 
   return `
-  <div style="font-family:Rubik,Arial,sans-serif;color:#0f172a;">
-    <h2 style="margin:0 0 8px;">HRKey — KPI Suggestions (Daily Digest)</h2>
-    <p style="margin:0 0 16px;color:#475569;">Below are KPIs added by users today.</p>
-    <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:14px;">
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"/><title>HRKey Daily KPI Digest</title></head>
+<body style="font-family:Arial,sans-serif; margin:0; padding:20px; background:#f9f9f9;">
+  <div style="max-width:900px; margin:auto; background:white; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+    <h1 style="color:#333; margin-bottom:0;">HRKey Daily KPI Suggestions</h1>
+    <p style="color:#666; margin-top:8px; margin-bottom:24px;">
+      <strong>${items.length}</strong> suggestion(s) received today.
+    </p>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
       <thead>
-        <tr>
-          <th style="text-align:left;padding:8px;border-bottom:2px solid #e2e8f0;">#</th>
-          <th style="text-align:left;padding:8px;border-bottom:2px solid #e2e8f0;">KPI</th>
-          <th style="text-align:left;padding:8px;border-bottom:2px solid #e2e8f0;">Role Hint</th>
-          <th style="text-align:left;padding:8px;border-bottom:2px solid #e2e8f0;">User</th>
-          <th style="text-align:left;padding:8px;border-bottom:2px solid #e2e8f0;">Created</th>
+        <tr style="background:#f0f0f0;">
+          <th style="padding:10px; border:1px solid #ccc; text-align:left;">#</th>
+          <th style="padding:10px; border:1px solid #ccc; text-align:left;">Title</th>
+          <th style="padding:10px; border:1px solid #ccc; text-align:left;">Description</th>
+          <th style="padding:10px; border:1px solid #ccc; text-align:left;">Hints</th>
+          <th style="padding:10px; border:1px solid #ccc; text-align:left;">User</th>
+          <th style="padding:10px; border:1px solid #ccc; text-align:left;">Created</th>
         </tr>
       </thead>
-      <tbody>${rows || `<tr><td colspan="5" style="padding:12px;color:#64748b;">No items today</td></tr>`}</tbody>
+      <tbody>
+        ${rows}
+      </tbody>
     </table>
-  </div>`;
+    <p style="margin-top:24px; font-size:12px; color:#999; border-top:1px solid #eee; padding-top:16px;">
+      This is an automated daily digest generated by HRKey backend.
+    </p>
+  </div>
+</body>
+</html>
+`;
 }
 
-export default async function handler(req: any, res: any) {
-  // Opcional: proteger con una secret si quieres (x-cron-secret)
+export default async function handler(req:any, res:any) {
+  if (req.method !== 'POST' && req.method !== 'GET') {
+    return res.status(405).json({ ok:false, error:'Only POST/GET allowed' });
+  }
+
   try {
-    const { y, m, d, start, end } = todayRangeLocalTZ('America/Costa_Rica');
+    // Initialize clients inside handler (not at module scope)
+    const supabase = getSupabaseClient();
+    const resend = getResendClient();
+
+    const tz = 'America/Costa_Rica';
+    const { y, m, d, start, end } = todayRangeLocalTZ(tz);
 
     const { data, error } = await supabase
       .from('kpi_suggestions')
       .select('*')
       .gte('created_at', start.toISOString())
       .lte('created_at', end.toISOString())
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    const html = buildHtml(data || []);
-    const subject = `HRKey KPI Digest — ${y}-${m}-${d} (CR) — ${data?.length || 0} item(s)`;
+    const items = data ?? [];
+    console.log(`[kpi-digest] Found ${items.length} suggestions for ${y}-${m}-${d} (${tz})`);
 
-    if (!process.env.RESEND_API_KEY) {
-      console.warn('RESEND_API_KEY missing — skipping email send');
-      return res.status(200).json({ ok:true, count: data?.length || 0, emailSkipped:true });
+    if (items.length === 0) {
+      return res.status(200).json({ ok:true, count:0, message:'No suggestions today' });
     }
 
-    const { error: sendErr } = await resend.emails.send({
+    const htmlBody = buildHtml(items);
+
+    if (!resend) {
+      console.warn('[kpi-digest] RESEND_API_KEY not set, skipping email send');
+      return res.status(200).json({
+        ok:true,
+        count:items.length,
+        message:'Email not sent (RESEND_API_KEY missing)',
+        preview: htmlBody
+      });
+    }
+
+    const emailRes = await resend.emails.send({
       from: FROM_EMAIL,
       to: TO_EMAIL,
-      subject,
-      html
+      subject: `HRKey Daily KPI Suggestions - ${y}-${m}-${d} (${items.length} new)`,
+      html: htmlBody,
     });
 
-    if (sendErr) throw sendErr;
+    console.log('[kpi-digest] Email sent:', emailRes);
 
-    return res.status(200).json({ ok:true, count: data?.length || 0 });
+    return res.status(200).json({ ok:true, count:items.length, emailId: (emailRes as any).id });
   } catch (e:any) {
-    console.error('kpi-digest error:', e);
+    console.error('[kpi-digest] error:', e);
     return res.status(500).json({ ok:false, error: e.message });
   }
 }
