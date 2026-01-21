@@ -1,7 +1,10 @@
-# Excluir cualquier middleware o funciones
-middleware
-middleware.*
-**/middleware.*
-api/
-api/**
-functions/
+# Development and test files only
+__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+.env.local
+.env.development
+coverage/
+
+# IMPORTANT: Do NOT ignore middleware.ts or api/ - they are required for production
