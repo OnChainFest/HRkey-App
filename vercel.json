@@ -1,10 +1,51 @@
 {
+  "version": 2,
+  "name": "hrkey",
+  "buildCommand": null,
+  "outputDirectory": "frontend",
+  "installCommand": null,
+  "devCommand": null,
+  "framework": null,
+  "cleanUrls": true,
+  "trailingSlash": false,
+
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://hrkey-backend.onrender.com/api/:path*"
+    }
+  ],
+
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ],
+
   "redirects": [
-    { "source": "/auth",          "destination": "/WebDapp/auth.html", "permanent": false },
-    { "source": "/auth/",         "destination": "/WebDapp/auth.html", "permanent": false },
-    { "source": "/auth.html",     "destination": "/WebDapp/auth.html", "permanent": false },
-    { "source": "/Auth.html",     "destination": "/WebDapp/auth.html", "permanent": false },
-    { "source": "/AUTH.html",     "destination": "/WebDapp/auth.html", "permanent": false },
-    { "source": "/webdapp/auth.html", "destination": "/WebDapp/auth.html", "permanent": false }
+    {
+      "source": "/app",
+      "destination": "/app.html",
+      "permanent": false
+    },
+    {
+      "source": "/auth",
+      "destination": "/auth.html",
+      "permanent": false
+    }
   ]
 }
