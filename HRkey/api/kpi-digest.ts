@@ -1,15 +1,39 @@
 // api/kpi-digest.ts
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-const resend = new Resend(process.env.RESEND_API_KEY!);
 
 const TO_EMAIL = process.env.DIGEST_TO_EMAIL || 'vicvalch@hrkey.xyz';
 const FROM_EMAIL = process.env.DIGEST_FROM_EMAIL || 'HRKey <no-reply@hrkey.xyz>';
+
+/**
+ * Lazy Supabase client initialization
+ * Prevents build-time errors by initializing only when called
+ */
+function getSupabaseClient(): SupabaseClient {
+  const supabaseUrl =
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error(
+      "Missing Supabase credentials. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+    );
+  }
+
+  return createClient(supabaseUrl, supabaseKey);
+}
+
+/**
+ * Lazy Resend client initialization
+ */
+function getResendClient() {
+  if (!process.env.RESEND_API_KEY) {
+    return null;
+  }
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 function todayRangeLocalTZ(tz: string) {
   // Construye el rango [inicio,hoy_fin) en tz local (Costa Rica en tu caso)
@@ -62,6 +86,10 @@ function buildHtml(items:any[]) {
 export default async function handler(req: any, res: any) {
   // Opcional: proteger con una secret si quieres (x-cron-secret)
   try {
+    // Initialize clients inside handler (not at module scope)
+    const supabase = getSupabaseClient();
+    const resend = getResendClient();
+
     const { y, m, d, start, end } = todayRangeLocalTZ('America/Costa_Rica');
 
     const { data, error } = await supabase
@@ -76,7 +104,7 @@ export default async function handler(req: any, res: any) {
     const html = buildHtml(data || []);
     const subject = `HRKey KPI Digest — ${y}-${m}-${d} (CR) — ${data?.length || 0} item(s)`;
 
-    if (!process.env.RESEND_API_KEY) {
+    if (!resend) {
       console.warn('RESEND_API_KEY missing — skipping email send');
       return res.status(200).json({ ok:true, count: data?.length || 0, emailSkipped:true });
     }
