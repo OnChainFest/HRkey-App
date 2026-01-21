@@ -9,9 +9,8 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  turbopack: {
-    root: __dirname,
-  },
+  // Removed turbopack.root to avoid conflict with outputFileTracingRoot
+  // Next.js will detect the root automatically
 };
 
 export default nextConfig;
