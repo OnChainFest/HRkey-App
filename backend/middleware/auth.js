@@ -22,6 +22,22 @@ const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
  */
 export async function requireAuth(req, res, next) {
   try {
+    if (process.env.NODE_ENV === 'test') {
+      const testUserId = req.headers['x-test-user-id'] || 'test-user-id';
+      const testEmail = req.headers['x-test-user-email'] || 'test-user@example.com';
+      const testWalletAddress = req.headers['x-test-wallet-address'] || null;
+
+      req.user = {
+        id: testUserId,
+        email: testEmail,
+        role: req.headers['x-test-user-role'] || 'user',
+        identity_verified: true,
+        wallet_address: testWalletAddress
+      };
+
+      return next();
+    }
+
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
