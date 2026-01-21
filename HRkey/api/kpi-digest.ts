@@ -2,6 +2,9 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
+const TO_EMAIL = process.env.DIGEST_TO_EMAIL || 'vicvalch@hrkey.xyz';
+const FROM_EMAIL = process.env.DIGEST_FROM_EMAIL || 'HRKey <no-reply@hrkey.xyz>';
+
 /**
  * Lazy Supabase client initialization
  * Prevents build-time errors by initializing only when called
@@ -24,7 +27,6 @@ function getSupabaseClient(): SupabaseClient {
 
 /**
  * Lazy Resend client initialization
- * Returns null if RESEND_API_KEY is not set
  */
 function getResendClient() {
   if (!process.env.RESEND_API_KEY) {
@@ -32,9 +34,6 @@ function getResendClient() {
   }
   return new Resend(process.env.RESEND_API_KEY);
 }
-
-const TO_EMAIL = process.env.DIGEST_TO_EMAIL || 'vicvalch@hrkey.xyz';
-const FROM_EMAIL = process.env.DIGEST_FROM_EMAIL || 'HRKey <no-reply@hrkey.xyz>';
 
 function todayRangeLocalTZ(tz: string) {
   // Construye el rango [inicio,hoy_fin) en tz local (Costa Rica en tu caso)
