@@ -8,3 +8,4 @@ process.env.STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_
 process.env.RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'no-reply@hrkey.test';
 process.env.BASE_SEPOLIA_RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || 'https://rpc.test';
 process.env.PROOF_CONTRACT_ADDRESS = process.env.PROOF_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000';
+process.env.ALLOW_TEST_AUTH_BYPASS = process.env.ALLOW_TEST_AUTH_BYPASS || 'true';

@@ -16,29 +16,60 @@ import { makeRefereeLink as makeRefereeLinkUtil, getFrontendBaseURL } from './ut
 import * as Sentry from '@sentry/node';
 
 // Import new controllers
-import identityController from './controllers/identityController.js';
-import companyController from './controllers/companyController.js';
-import signersController from './controllers/signersController.js';
-import auditController from './controllers/auditController.js';
-import dataAccessController from './controllers/dataAccessController.js';
-import kpiObservationsController from './controllers/kpiObservationsController.js';
-import candidateEvaluationController from './controllers/candidateEvaluation.controller.js';
-import tokenomicsPreviewController from './controllers/tokenomicsPreview.controller.js';
-import publicProfileController from './controllers/publicProfile.controller.js';
-import publicIdentifierController from './controllers/publicIdentifier.controller.js';
-import adminOverviewController from './controllers/adminOverview.controller.js';
-import analyticsController from './controllers/analyticsController.js';
-import hrscoreController from './controllers/hrscoreController.js';
-import referencesController from './controllers/referencesController.js';
-import aiRefineController from './controllers/aiRefine.controller.js';
-import hrkeyScoreService from './hrkeyScoreService.js';
-import { getScoreSnapshots } from './services/hrscore/scoreSnapshots.js';
-import { buildCanonicalReferencePack } from './services/referencePack.service.js';
-import { canonicalHash } from './utils/canonicalHash.js';
+const lazyController = (importer) => {
+  let cached;
+  return new Proxy(
+    {},
+    {
+      get(_target, prop) {
+        return async (...args) => {
+          if (!cached) {
+            const mod = await importer();
+            cached = mod.default ?? mod;
+          }
+          const handler = cached[prop];
+          if (typeof handler !== 'function') {
+            throw new Error(`Controller method ${String(prop)} is not available`);
+          }
+          return handler(...args);
+        };
+      }
+    }
+  );
+};
 
-// Import services
-import * as webhookService from './services/webhookService.js';
-import { ReferenceService, hashInviteToken } from './services/references.service.js';
+const lazyModule = (importer) => {
+  let cached;
+  return async () => {
+    if (!cached) {
+      cached = await importer();
+    }
+    return cached;
+  };
+};
+
+const identityController = lazyController(() => import('./controllers/identityController.js'));
+const companyController = lazyController(() => import('./controllers/companyController.js'));
+const signersController = lazyController(() => import('./controllers/signersController.js'));
+const auditController = lazyController(() => import('./controllers/auditController.js'));
+const dataAccessController = lazyController(() => import('./controllers/dataAccessController.js'));
+const kpiObservationsController = lazyController(() => import('./controllers/kpiObservationsController.js'));
+const candidateEvaluationController = lazyController(() => import('./controllers/candidateEvaluation.controller.js'));
+const tokenomicsPreviewController = lazyController(() => import('./controllers/tokenomicsPreview.controller.js'));
+const publicProfileController = lazyController(() => import('./controllers/publicProfile.controller.js'));
+const publicIdentifierController = lazyController(() => import('./controllers/publicIdentifier.controller.js'));
+const adminOverviewController = lazyController(() => import('./controllers/adminOverview.controller.js'));
+const analyticsController = lazyController(() => import('./controllers/analyticsController.js'));
+const hrscoreController = lazyController(() => import('./controllers/hrscoreController.js'));
+const referencesController = lazyController(() => import('./controllers/referencesController.js'));
+const aiRefineController = lazyController(() => import('./controllers/aiRefine.controller.js'));
+
+const loadHrkeyScoreService = lazyModule(() => import('./hrkeyScoreService.js'));
+const loadScoreSnapshots = lazyModule(() => import('./services/hrscore/scoreSnapshots.js'));
+const loadReferencePack = lazyModule(() => import('./services/referencePack.service.js'));
+const loadCanonicalHash = lazyModule(() => import('./utils/canonicalHash.js'));
+const loadWebhookService = lazyModule(() => import('./services/webhookService.js'));
+const loadReferenceService = lazyModule(() => import('./services/references.service.js'));
 
 // Import logging
 import logger, { requestIdMiddleware, requestLoggingMiddleware } from './logger.js';
@@ -74,16 +105,6 @@ dotenv.config();
    ========================= */
 const isTest = process.env.NODE_ENV === 'test';
 const sentryEnabled = !isTest && !!process.env.SENTRY_DSN;
-
-if (sentryEnabled) {
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.SENTRY_ENV || process.env.NODE_ENV || 'development',
-    enabled: sentryEnabled,
-    integrations: (integrations) => [...integrations],
-    tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0')
-  });
-}
 
 /* =========================
    URL helpers (robustos)
@@ -148,25 +169,52 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 //   Preferí HRKEY_ADMIN_KEY como nombre “final”, pero dejamos fallback a ADMIN_KEY.
 const HRKEY_ADMIN_KEY = process.env.HRKEY_ADMIN_KEY || process.env.ADMIN_KEY;
 
-// Fail fast in production if Stripe secrets are missing
-if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
-  const message = 'CRITICAL: Stripe secrets not configured';
-  if (process.env.NODE_ENV === 'production') {
-    logger.error(message, {
-      hasSecretKey: !!STRIPE_SECRET_KEY,
-      hasWebhookSecret: !!STRIPE_WEBHOOK_SECRET,
-      environment: process.env.NODE_ENV
-    });
-    throw new Error(`${message}. Cannot start in production without Stripe configuration.`);
-  } else {
-    logger.warn(`${message} - Using test mode`, {
-      environment: process.env.NODE_ENV
+let stripeClient;
+let supabaseClient;
+let sentryInitialized = false;
+
+const initSentry = () => {
+  if (sentryInitialized) return;
+  sentryInitialized = true;
+  if (sentryEnabled) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.SENTRY_ENV || process.env.NODE_ENV || 'development',
+      enabled: sentryEnabled,
+      integrations: (integrations) => [...integrations],
+      tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0')
     });
   }
-}
+};
 
-const stripe = new Stripe(STRIPE_SECRET_KEY || 'sk_test_placeholder');
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+const getStripe = () => {
+  if (!stripeClient) {
+    if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
+      const message = 'CRITICAL: Stripe secrets not configured';
+      if (process.env.NODE_ENV === 'production') {
+        logger.error(message, {
+          hasSecretKey: !!STRIPE_SECRET_KEY,
+          hasWebhookSecret: !!STRIPE_WEBHOOK_SECRET,
+          environment: process.env.NODE_ENV
+        });
+        throw new Error(`${message}. Cannot start in production without Stripe configuration.`);
+      } else {
+        logger.warn(`${message} - Using test mode`, {
+          environment: process.env.NODE_ENV
+        });
+      }
+    }
+    stripeClient = new Stripe(STRIPE_SECRET_KEY || 'sk_test_placeholder');
+  }
+  return stripeClient;
+};
+
+const getSupabase = () => {
+  if (!supabaseClient) {
+    supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+  }
+  return supabaseClient;
+};
 
 const REFERENCE_PROOF_ABI = [
   'function recordReferencePackProof(bytes32 packHash, string candidateIdentifier) external',
@@ -299,7 +347,7 @@ async function ensureSuperadmin() {
   }
 
   try {
-    const { data: user, error } = await supabase
+    const { data: user, error } = await getSupabase()
       .from('users')
       .select('id, email, role')
       .eq('email', superadminEmail)
@@ -314,7 +362,7 @@ async function ensureSuperadmin() {
     }
 
     if (user.role !== 'superadmin') {
-      await supabase.from('users').update({ role: 'superadmin' }).eq('id', user.id);
+      await getSupabase().from('users').update({ role: 'superadmin' }).eq('id', user.id);
 
       logger.info('Superadmin role assigned', {
         userId: user.id,
@@ -355,7 +403,7 @@ class WalletCreationService {
       created_at: new Date().toISOString()
     };
 
-    const { data, error } = await supabase.from('user_wallets').insert([row]).select().single();
+    const { data, error } = await getSupabase().from('user_wallets').insert([row]).select().single();
     if (error) throw error;
 
     await this.initializeUserPlan(userId, wallet.address);
@@ -369,7 +417,7 @@ class WalletCreationService {
   }
 
   static async checkExistingWallet(userId) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('user_wallets')
       .select('*')
       .eq('user_id', userId)
@@ -407,12 +455,12 @@ class WalletCreationService {
       payment_tx_hash: null,
       created_at: new Date().toISOString()
     };
-    const { error } = await supabase.from('user_plans').insert([row]);
+    const { error } = await getSupabase().from('user_plans').insert([row]);
     if (error) throw error;
   }
 
   static async getUserWallet(userId) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('user_wallets')
       .select('address, network, wallet_type, created_at')
       .eq('user_id', userId)
@@ -558,7 +606,7 @@ async function resolveCandidateId({ candidateId, candidateWallet }) {
   if (candidateId) return candidateId;
   if (!candidateWallet) return null;
 
-  const { data: userByWallet, error: userError } = await supabase
+  const { data: userByWallet, error: userError } = await getSupabase()
     .from('users')
     .select('id')
     .eq('wallet_address', candidateWallet)
@@ -566,7 +614,7 @@ async function resolveCandidateId({ candidateId, candidateWallet }) {
 
   if (!userError && userByWallet?.id) return userByWallet.id;
 
-  const { data: walletRow, error: walletError } = await supabase
+  const { data: walletRow, error: walletError } = await getSupabase()
     .from('user_wallets')
     .select('user_id')
     .eq('address', candidateWallet)
@@ -580,7 +628,7 @@ async function resolveCandidateId({ candidateId, candidateWallet }) {
 async function hasApprovedReferenceAccess(requesterId, candidateId) {
   if (!requesterId || !candidateId) return false;
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('data_access_requests')
     .select('id, status, requested_data_type')
     .eq('requested_by_user_id', requesterId)
@@ -632,6 +680,7 @@ app.use((req, res, next) => {
    ========================= */
 if (sentryEnabled) {
   app.use((req, res, next) => {
+    initSentry();
     const requestId = req.requestId || res.locals.requestId;
     if (requestId) Sentry.setTag('request_id', requestId);
 
@@ -692,7 +741,7 @@ app.get('/health/deep', async (req, res) => {
     });
     timeoutPromise.catch(() => {});
 
-    const checkPromise = supabase.from('users').select('count').limit(1);
+    const checkPromise = getSupabase().from('users').select('count').limit(1);
 
     let raceError;
     try {
@@ -834,6 +883,7 @@ app.post('/api/reference/request', requireAuth, validateBody(createReferenceRequ
       });
     }
 
+    const { ReferenceService } = await loadReferenceService();
     const result = await ReferenceService.createReferenceRequest(req.body);
     res.json(result);
   } catch (e) {
@@ -850,6 +900,7 @@ app.post('/api/reference/request', requireAuth, validateBody(createReferenceRequ
 
 app.post('/api/reference/submit', tokenLimiter, validateBody(submitReferenceSchema), async (req, res) => {
   try {
+    const { ReferenceService, hashInviteToken } = await loadReferenceService();
     const result = await ReferenceService.submitReference(req.body);
     res.json(result);
   } catch (e) {
@@ -865,6 +916,7 @@ app.post('/api/reference/submit', tokenLimiter, validateBody(submitReferenceSche
 
 app.get('/api/reference/by-token/:token', tokenLimiter, validateParams(getReferenceByTokenSchema), async (req, res) => {
   try {
+    const { ReferenceService, hashInviteToken } = await loadReferenceService();
     const result = await ReferenceService.getReferenceByToken(req.params.token);
     res.json(result);
   } catch (e) {
@@ -900,6 +952,8 @@ app.get('/api/references/candidate/:candidateId', requireAuth, referencesControl
  */
 app.get('/api/reference-pack/:identifier', requireAuth, async (req, res) => {
   try {
+    const { buildCanonicalReferencePack } = await loadReferencePack();
+    const { canonicalHash } = await loadCanonicalHash();
     const pack = await buildCanonicalReferencePack(req.params.identifier);
     const { hash } = canonicalHash(pack);
     return res.json({ pack, pack_hash: hash, generated_at: new Date().toISOString() });
@@ -919,6 +973,8 @@ app.get('/api/reference-pack/:identifier', requireAuth, async (req, res) => {
  */
 app.post('/api/reference-pack/:identifier/commit', requireAuth, async (req, res) => {
   try {
+    const { buildCanonicalReferencePack } = await loadReferencePack();
+    const { canonicalHash } = await loadCanonicalHash();
     const pack = await buildCanonicalReferencePack(req.params.identifier);
     const { hash } = canonicalHash(pack);
     const packHashHex = normalizePackHash(hash);
@@ -1011,7 +1067,7 @@ app.post('/create-payment-intent', requireAuth, authLimiter, validateBody(create
 
     const receiptEmail = email || req.user.email;
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount,
       currency: 'usd',
       receipt_email: receiptEmail,
@@ -1042,7 +1098,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
+    event = getStripe().webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     reqLogger.error('Webhook signature verification failed', {
       error: err.message,
@@ -1063,6 +1119,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   }
 
   try {
+    const webhookService = await loadWebhookService();
     const alreadyProcessed = await webhookService.isEventProcessed(event.id);
     if (alreadyProcessed) {
       reqLogger.info('Event already processed, skipping (idempotency)', {
@@ -1257,6 +1314,7 @@ app.post(
         });
       }
 
+      const { default: hrkeyScoreService } = await loadHrkeyScoreService();
       const result = await hrkeyScoreService.computeHrkeyScore({
         subjectWallet: subject_wallet,
         roleId: role_id
@@ -1314,6 +1372,7 @@ app.get('/api/hrkey-score/history', requireAuth, async (req, res) => {
       });
     }
 
+    const { getScoreSnapshots } = await loadScoreSnapshots();
     const history = await getScoreSnapshots({
       userId: requestedUserId,
       limit
@@ -1367,7 +1426,7 @@ app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
       });
     }
 
-    const { data: latestScore, error: latestScoreError } = await supabase
+    const { data: latestScore, error: latestScoreError } = await getSupabase()
       .from('hrkey_scores')
       .select('score, created_at')
       .eq('user_id', requestedUserId)
@@ -1397,7 +1456,7 @@ app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
     let snapshots = [];
 
     if (fetchSnapshots) {
-      const { data: snapshotData, error: snapshotError } = await supabase
+      const { data: snapshotData, error: snapshotError } = await getSupabase()
         .from('hrscore_snapshots')
         .select('user_id, score, trigger_source, created_at')
         .eq('user_id', requestedUserId)
@@ -1470,6 +1529,7 @@ app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
 
 app.get('/api/hrkey-score/model-info', requireAuth, requireSuperadmin, async (req, res) => {
   try {
+    const { default: hrkeyScoreService } = await loadHrkeyScoreService();
     const modelInfo = hrkeyScoreService.getModelInfo();
     return res.json(modelInfo);
   } catch (err) {
