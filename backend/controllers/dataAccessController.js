@@ -12,6 +12,7 @@ import { evaluateCandidateForUser } from '../services/candidateEvaluation.servic
 import { getRequiredTierForDataType, getStakeTierStatus, hasRequiredTier } from '../services/stakingTier.service.js';
 import logger from '../logger.js';
 import { logEvent, EventTypes } from '../services/analytics/eventTracker.js';
+import { createConsent } from '../utils/consentManager.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -525,9 +526,62 @@ export async function approveDataAccessRequest(req, res) {
       req
     });
 
+    // Auto-create consent for approved data access request
+    let consent = null;
+    try {
+      // Calculate expiration (30 days for pay-per-query)
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+
+      consent = await createConsent({
+        subjectUserId: request.target_user_id,
+        grantedToOrg: request.company_id,
+        resourceType: request.requested_data_type,
+        resourceId: request.reference_id || null,
+        scope: ['read'],
+        purpose: 'data_access_request_approved',
+        expiresAt,
+        metadata: {
+          data_access_request_id: requestId,
+          signature: signature.substring(0, 20) + '...',
+          price_amount: request.price_amount,
+          currency: request.currency
+        }
+      });
+
+      // Update data_access_request with consent_id
+      await supabaseClient
+        .from('data_access_requests')
+        .update({ consent_id: consent.id })
+        .eq('id', requestId);
+
+      logger.info('Consent auto-created from data access approval', {
+        consentId: consent.id,
+        requestId,
+        subjectUserId: request.target_user_id,
+        companyId: request.company_id,
+        resourceType: request.requested_data_type
+      });
+
+    } catch (consentError) {
+      // Don't fail the approval if consent creation fails
+      const reqLogger = logger.withRequest(req);
+      reqLogger.error('Failed to auto-create consent', {
+        userId: req.user?.id,
+        requestId,
+        error: consentError.message,
+        stack: consentError.stack
+      });
+    }
+
     return res.json({
       success: true,
       request: updatedRequest,
+      consent: consent ? {
+        id: consent.id,
+        status: consent.status,
+        expiresAt: consent.expires_at
+      } : null,
       message: 'Data access request approved successfully'
     });
   } catch (error) {

@@ -63,6 +63,7 @@ const analyticsController = lazyController(() => import('./controllers/analytics
 const hrscoreController = lazyController(() => import('./controllers/hrscoreController.js'));
 const referencesController = lazyController(() => import('./controllers/referencesController.js'));
 const aiRefineController = lazyController(() => import('./controllers/aiRefine.controller.js'));
+const consentController = lazyController(() => import('./controllers/consentController.js'));
 
 const loadHrkeyScoreService = lazyModule(() => import('./hrkeyScoreService.js'));
 const loadScoreSnapshots = lazyModule(() => import('./services/hrscore/scoreSnapshots.js'));
@@ -1316,6 +1317,37 @@ app.get('/api/data-access/request/:requestId', requireAuth, dataAccessController
 app.post('/api/data-access/:requestId/approve', requireAuth, dataAccessController.approveDataAccessRequest);
 app.post('/api/data-access/:requestId/reject', requireAuth, dataAccessController.rejectDataAccessRequest);
 app.get('/api/data-access/:requestId/data', requireAuth, dataAccessController.getDataByRequestId);
+
+// ===== CONSENT MANAGEMENT ENDPOINTS =====
+/**
+ * POST /api/consents
+ * Create a new consent (user grants access to their data)
+ */
+app.post('/api/consents', requireAuth, consentController.createConsentEndpoint);
+
+/**
+ * GET /api/consents/my
+ * List consents granted by authenticated user (as subject)
+ */
+app.get('/api/consents/my', requireAuth, consentController.getMyConsents);
+
+/**
+ * GET /api/consents/granted
+ * List consents granted to authenticated user or their company (as grantee)
+ */
+app.get('/api/consents/granted', requireAuth, consentController.getGrantedConsents);
+
+/**
+ * POST /api/consents/:consentId/revoke
+ * Revoke a consent (immediate effect)
+ */
+app.post('/api/consents/:consentId/revoke', requireAuth, consentController.revokeConsentEndpoint);
+
+/**
+ * DELETE /api/consents/:consentId
+ * Delete a consent (superadmin only)
+ */
+app.delete('/api/consents/:consentId', requireSuperadmin, consentController.deleteConsent);
 
 /* =========================
    KPI OBSERVATIONS ENDPOINTS (Proof of Correlation MVP)
