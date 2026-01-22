@@ -85,6 +85,7 @@ import {
   optionalAuth
 } from './middleware/auth.js';
 import { validateBody, validateBody422, validateParams } from './middleware/validate.js';
+import { validateConsent } from './middleware/validateConsent.js';
 
 // Import validation schemas
 import { createWalletSchema, getWalletParamsSchema } from './schemas/wallet.schema.js';
@@ -1110,8 +1111,25 @@ app.get('/api/references/pending', requireAuth, referencesController.getMyPendin
 
 /**
  * GET /api/references/candidate/:candidateId
+ * Requires consent validation for accessing another user's references
  */
-app.get('/api/references/candidate/:candidateId', requireAuth, referencesController.getCandidateReferences);
+app.get(
+  '/api/references/candidate/:candidateId',
+  requireAuth,
+  validateConsent({
+    resourceType: 'references',
+    getTargetOwnerId: async (req) => req.params.candidateId,
+    getTargetId: async (req) => null, // All references for candidate
+    getGrantee: async (req) => ({
+      companyId: req.user.companyId || null,
+      userId: req.user.companyId ? null : req.user.id
+    }),
+    action: 'read',
+    allowSuperadmin: true,
+    allowSelf: true
+  }),
+  referencesController.getCandidateReferences
+);
 
 /**
  * GET /api/reference-pack/:identifier
@@ -1398,7 +1416,27 @@ app.get(
 );
 
 // ===== CANDIDATE EVALUATION ENDPOINT =====
-app.get('/api/candidates/:userId/evaluation', requireAuth, candidateEvaluationController.getCandidateEvaluation);
+/**
+ * GET /api/candidates/:userId/evaluation
+ * Requires consent validation for accessing candidate evaluation data
+ */
+app.get(
+  '/api/candidates/:userId/evaluation',
+  requireAuth,
+  validateConsent({
+    resourceType: 'profile', // Full profile evaluation
+    getTargetOwnerId: async (req) => req.params.userId,
+    getTargetId: async (req) => null,
+    getGrantee: async (req) => ({
+      companyId: req.user.companyId || null,
+      userId: req.user.companyId ? null : req.user.id
+    }),
+    action: 'read',
+    allowSuperadmin: true,
+    allowSelf: true
+  }),
+  candidateEvaluationController.getCandidateEvaluation
+);
 app.get('/api/candidates/:userId/tokenomics-preview', requireAuth, tokenomicsPreviewController.getTokenomicsPreview);
 app.get('/api/me/public-identifier', requireAuth, publicIdentifierController.getMyPublicIdentifier);
 app.get('/api/public/candidates/:identifier', publicProfileController.getPublicCandidateProfile);
@@ -1719,10 +1757,94 @@ app.get('/api/hrkey-score/model-info', requireAuth, requireSuperadmin, async (re
    ========================= */
 
 app.get('/api/hrscore/info', requireAuth, hrscoreController.getLayerInfoEndpoint);
-app.get('/api/hrscore/user/:userId/latest', requireAuth, hrscoreController.getLatestScoreEndpoint);
-app.get('/api/hrscore/user/:userId/history', requireAuth, hrscoreController.getScoreHistoryEndpoint);
-app.get('/api/hrscore/user/:userId/improvement', requireAuth, hrscoreController.getScoreImprovementEndpoint);
-app.get('/api/hrscore/user/:userId/stats', requireAuth, hrscoreController.getScoreStatsEndpoint);
+
+/**
+ * GET /api/hrscore/user/:userId/latest
+ * Requires consent validation for accessing another user's HRScore
+ */
+app.get(
+  '/api/hrscore/user/:userId/latest',
+  requireAuth,
+  validateConsent({
+    resourceType: 'hrkey_score',
+    getTargetOwnerId: async (req) => req.params.userId,
+    getTargetId: async (req) => null,
+    getGrantee: async (req) => ({
+      companyId: req.user.companyId || null,
+      userId: req.user.companyId ? null : req.user.id
+    }),
+    action: 'read',
+    allowSuperadmin: true,
+    allowSelf: true
+  }),
+  hrscoreController.getLatestScoreEndpoint
+);
+
+/**
+ * GET /api/hrscore/user/:userId/history
+ * Requires consent validation for accessing score history
+ */
+app.get(
+  '/api/hrscore/user/:userId/history',
+  requireAuth,
+  validateConsent({
+    resourceType: 'hrkey_score',
+    getTargetOwnerId: async (req) => req.params.userId,
+    getTargetId: async (req) => null,
+    getGrantee: async (req) => ({
+      companyId: req.user.companyId || null,
+      userId: req.user.companyId ? null : req.user.id
+    }),
+    action: 'read',
+    allowSuperadmin: true,
+    allowSelf: true
+  }),
+  hrscoreController.getScoreHistoryEndpoint
+);
+
+/**
+ * GET /api/hrscore/user/:userId/improvement
+ * Requires consent validation for accessing score improvement data
+ */
+app.get(
+  '/api/hrscore/user/:userId/improvement',
+  requireAuth,
+  validateConsent({
+    resourceType: 'hrkey_score',
+    getTargetOwnerId: async (req) => req.params.userId,
+    getTargetId: async (req) => null,
+    getGrantee: async (req) => ({
+      companyId: req.user.companyId || null,
+      userId: req.user.companyId ? null : req.user.id
+    }),
+    action: 'read',
+    allowSuperadmin: true,
+    allowSelf: true
+  }),
+  hrscoreController.getScoreImprovementEndpoint
+);
+
+/**
+ * GET /api/hrscore/user/:userId/stats
+ * Requires consent validation for accessing score statistics
+ */
+app.get(
+  '/api/hrscore/user/:userId/stats',
+  requireAuth,
+  validateConsent({
+    resourceType: 'hrkey_score',
+    getTargetOwnerId: async (req) => req.params.userId,
+    getTargetId: async (req) => null,
+    getGrantee: async (req) => ({
+      companyId: req.user.companyId || null,
+      userId: req.user.companyId ? null : req.user.id
+    }),
+    action: 'read',
+    allowSuperadmin: true,
+    allowSelf: true
+  }),
+  hrscoreController.getScoreStatsEndpoint
+);
 app.get('/api/hrscore/user/:userId/evolution', requireSuperadmin, hrscoreController.getScoreEvolutionEndpoint);
 app.post('/api/hrscore/calculate', requireSuperadmin, hrscoreController.calculateScoreEndpoint);
 
