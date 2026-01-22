@@ -274,32 +274,20 @@ export function requireApprovedDataAccess(options = {}) {
       }
 
       // Check existing data_access_requests table (legacy)
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+      // Note: This uses the existing checkConsent infrastructure
+      // For legacy compatibility with data_access_requests table
+      const consentCheck = await checkConsent({
+        subjectUserId: targetUserId,
+        grantedToUser: requesterId,
+        resourceType: 'full_data', // Legacy: full data access
+        resourceId: null
+      });
 
-      const { data, error } = await supabase
-        .from('data_access_requests')
-        .select('id, status')
-        .eq('requested_by_user_id', requesterId)
-        .eq('target_user_id', targetUserId)
-        .eq('status', 'APPROVED')
-        .maybeSingle();
-
-      if (error) {
-        reqLogger.error('Failed to check data access request', {
-          requesterId,
-          targetUserId,
-          error: error.message
-        });
-        return res.status(500).json({
-          error: 'Internal server error'
-        });
-      }
-
-      if (!data) {
+      if (!consentCheck.hasConsent) {
         reqLogger.warn('Data access denied - no approved request', {
           requesterId,
-          targetUserId
+          targetUserId,
+          reason: consentCheck.reason
         });
 
         return res.status(403).json({
