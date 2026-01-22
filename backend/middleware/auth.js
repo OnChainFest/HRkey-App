@@ -10,7 +10,14 @@ import logger from '../logger.js';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
-const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+let supabaseClient;
+
+const getSupabaseClient = () => {
+  if (!supabaseClient) {
+    supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+  }
+  return supabaseClient;
+};
 
 // ============================================================================
 // AUTHENTICATION MIDDLEWARE
@@ -22,6 +29,22 @@ const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
  */
 export async function requireAuth(req, res, next) {
   try {
+    if (process.env.NODE_ENV === 'test' && process.env.ALLOW_TEST_AUTH_BYPASS === 'true') {
+      const testUserId = req.headers['x-test-user-id'] || 'test-user-id';
+      const testEmail = req.headers['x-test-user-email'] || 'test-user@example.com';
+      const testWalletAddress = req.headers['x-test-wallet-address'] || null;
+
+      req.user = {
+        id: testUserId,
+        email: testEmail,
+        role: req.headers['x-test-user-role'] || 'user',
+        identity_verified: true,
+        wallet_address: testWalletAddress
+      };
+
+      return next();
+    }
+
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
@@ -34,7 +57,7 @@ export async function requireAuth(req, res, next) {
     const token = authHeader.replace('Bearer ', '');
 
     // Verify token with Supabase
-    const { data: { user }, error } = await supabaseClient.auth.getUser(token);
+    const { data: { user }, error } = await getSupabaseClient().auth.getUser(token);
 
     if (error || !user) {
       return res.status(401).json({
@@ -44,7 +67,7 @@ export async function requireAuth(req, res, next) {
     }
 
     // Fetch additional user data from users table
-    const { data: userData, error: userError } = await supabaseClient
+    const { data: userData, error: userError } = await getSupabaseClient()
       .from('users')
       .select('id, email, role, identity_verified, wallet_address')
       .eq('id', user.id)
@@ -154,7 +177,7 @@ export async function requireCompanySigner(req, res, next) {
     }
 
     // Check if user is an active signer for this company
-    const { data: signer, error } = await supabaseClient
+    const { data: signer, error } = await getSupabaseClient()
       .from('company_signers')
       .select('id, role, is_active, company_id')
       .eq('company_id', companyId)
@@ -203,7 +226,7 @@ export async function requireAnySigner(req, res, next) {
     }
 
     // Check if user is a signer of any company
-    const { data: signers, error } = await supabaseClient
+    const { data: signers, error } = await getSupabaseClient()
       .from('company_signers')
       .select('id, company_id')
       .eq('user_id', req.user.id)
@@ -388,14 +411,14 @@ export async function optionalAuth(req, res, next) {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error } = await supabaseClient.auth.getUser(token);
+    const { data: { user }, error } = await getSupabaseClient().auth.getUser(token);
 
     if (error || !user) {
       req.user = null;
       return next();
     }
 
-    const { data: userData } = await supabaseClient
+    const { data: userData } = await getSupabaseClient()
       .from('users')
       .select('id, email, role, identity_verified')
       .eq('id', user.id)

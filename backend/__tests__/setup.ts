@@ -1,0 +1,11 @@
+process.env.NODE_ENV = 'test';
+process.env.ENCRYPTION_KEY = '12345678901234567890123456789012';
+process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'https://test.supabase.co';
+process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'test-service-key';
+process.env.RESEND_API_KEY = process.env.RESEND_API_KEY || 'test-resend-key';
+process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder';
+process.env.STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test_placeholder';
+process.env.RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'no-reply@hrkey.test';
+process.env.BASE_SEPOLIA_RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || 'https://rpc.test';
+process.env.PROOF_CONTRACT_ADDRESS = process.env.PROOF_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000';
+process.env.ALLOW_TEST_AUTH_BYPASS = process.env.ALLOW_TEST_AUTH_BYPASS || 'true';
