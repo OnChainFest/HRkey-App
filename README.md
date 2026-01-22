@@ -85,6 +85,43 @@ HRKey creates a **proof-of-performance system** where:
 - **Smart Contracts** - PeerProofRegistry for immutable reference storage
 - **Hardhat Development** - Smart contract testing and deployment tools
 
+### 🔒 Permissions & Consent Model (P0)
+- **Consent as First-Class Object** - Granular consent management for all data access
+- **Server-Side Enforcement** - Middleware validates consent before returning sensitive data
+- **Institutional Audit Trail** - Records all access attempts (allowed and denied) with purpose
+- **GDPR/Legal Compliance** - Consent includes scope, purpose, expiration, and revocation
+- **Fail-Closed Security** - Access denied by default unless explicit consent exists
+
+**Key Components:**
+- `consents` table: Tracks granular permissions with subject, grantee, resource, scope, purpose, expiration
+- `audit_events` table: Immutable log of all data access attempts with result (allowed/denied)
+- `validateConsent` middleware: Server-side enforcement before data is returned
+- Consent lifecycle: active → revoked/expired with immediate effect
+
+**Example:**
+```javascript
+// Protected endpoint with consent validation
+app.get('/api/references/:referenceId',
+  requireAuth,
+  validateConsent({
+    resourceType: 'references',
+    getTargetOwnerId: async (req) => {
+      const ref = await getReference(req.params.referenceId);
+      return ref.owner_id;
+    },
+    getGrantee: (req) => ({ companyId: req.user.companyId })
+  }),
+  controller.getReference
+);
+```
+
+**Security guarantees:**
+- ✅ No data access without explicit consent
+- ✅ All access attempts logged (allowed + denied)
+- ✅ Consent can be revoked with immediate effect
+- ✅ Row-level security (RLS) enabled on sensitive tables
+- ✅ Superadmin actions audited with override reason
+
 ---
 
 ## 🏗️ Architecture
