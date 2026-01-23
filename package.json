@@ -11,10 +11,10 @@
     "compile": "hardhat compile && node copy-abi.cjs",
     "deploy:base-sepolia": "hardhat run scripts/deploy.js --network baseSepolia && node copy-abi.cjs",
     "verify:base-sepolia": "hardhat verify --network baseSepolia",
-    "test": "jest -c jest.config.cjs",
-    "test:unit": "jest -c jest.config.cjs --selectProjects backend --testPathPattern=unit --coverage",
-    "test:integration": "jest -c jest.config.cjs --selectProjects backend --testPathPattern=integration --coverage",
-    "test:frontend": "jest -c jest.config.cjs --selectProjects frontend",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest -c jest.config.cjs",
+    "test:unit": "NODE_OPTIONS=--experimental-vm-modules jest -c jest.config.cjs --selectProjects backend --testPathPattern=unit --coverage",
+    "test:integration": "NODE_OPTIONS=--experimental-vm-modules jest -c jest.config.cjs --selectProjects backend --testPathPattern=integration --coverage",
+    "test:frontend": "NODE_OPTIONS=--experimental-vm-modules jest -c jest.config.cjs --selectProjects frontend",
     "test:ci": "npm run test:unit && npm run test:integration && npm run test:frontend"
   },
   "dependencies": {
