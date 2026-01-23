@@ -836,8 +836,6 @@ app.get('/api/references/candidate/:candidateId', requireAuth, referencesControl
  * Feature flag: ENABLE_REFERENCE_HIDING
  */
 if (ENABLE_REFERENCE_HIDING) {
-  app.post('/api/references/:referenceId/hide', requireAuth, referencesController.hideReference);
-  app.post('/api/references/:referenceId/unhide', requireAuth, referencesController.unhideReference);
 } else {
   // Feature disabled - return 503 Service Unavailable
   app.post('/api/references/:referenceId/hide', requireAuth, (req, res) => {
