@@ -622,49 +622,55 @@ sed -i 's/ENABLE_REFERENCE_HIDING=false/ENABLE_REFERENCE_HIDING=true/' backend/.
 
 ### Emergency Rollback Script
 
-A complete rollback script is available for migration 010 (strikethrough feature).
+A safe rollback script is available for migration 010 (strikethrough feature).
 
 **Location:** `sql/010_reference_hiding_and_strikethrough_ROLLBACK.sql`
 
-**⚠️ WARNING:** This rollback will **permanently delete data**:
-- 7 columns from `references` table: `is_hidden`, `hidden_at`, `hidden_by`, `hide_reason`, `reference_type`, `correction_of`, `is_correction`
-- All hiding/strikethrough metadata will be lost
-- Cannot be undone without database backup
+**What Gets Rolled Back (by default):**
+1. ✅ Drops 1 view (`reference_strikethrough_metadata`)
+2. ✅ Drops 3 functions (`hide_reference`, `unhide_reference`, `validate_reference_hiding`)
+3. ✅ Drops 1 trigger (`validate_hiding`)
+4. ✅ Drops 2 RLS policies ("Users can hide their own references", "Prevent reference deletion")
+5. ✅ Drops 5 indexes
+6. ✅ **Preserves all data columns** (7 columns remain intact but unused)
 
-**What Gets Rolled Back:**
-1. ✅ Drops 7 columns from `references` table
-2. ✅ Drops 5 indexes
-3. ✅ Drops 1 view (`reference_strikethrough_metadata`)
-4. ✅ Drops 3 functions (`hide_reference`, `unhide_reference`, `validate_reference_hiding`)
-5. ✅ Drops 1 trigger (`validate_hiding`)
-6. ✅ Drops 2 RLS policies
+**Data Safety:**
+- ✅ **Columns NOT dropped by default** — data is preserved
+- ⚠️ Optional column drops are available as commented-out statements (section 6)
+- Only uncomment if you need to permanently remove strikethrough data
+
+**Columns Preserved:**
+- `is_hidden`, `hidden_at`, `hidden_by`, `hide_reason`
+- `reference_type`, `correction_of`, `is_correction`
 
 **Safety Features:**
-- 10-second pause before execution (allows Ctrl+C abort)
+- Idempotent (safe to run multiple times with `IF EXISTS`)
 - Built-in verification checks after rollback
-- Clear backup recommendations
-- Idempotent (safe to run multiple times)
+- Data-preserving by default (non-destructive)
+- Clear warnings for optional column drops
 
 **Rollback Procedure:**
 
 ```bash
-# 1. CRITICAL: Create backup first
-pg_dump -h <host> -U <user> -d <database> -t references > backup_references_$(date +%Y%m%d_%H%M%S).sql
-
-# 2. Deploy compatible application code (without strikethrough features)
+# 1. Deploy compatible application code (without strikethrough features)
 # This step is CRITICAL - deploy code BEFORE running database rollback
 
-# 3. Run rollback script
+# 2. Run rollback script (removes functions/views/policies, keeps data)
 psql $DATABASE_URL -f sql/010_reference_hiding_and_strikethrough_ROLLBACK.sql
 
-# 4. Verify application still functions
+# 3. Verify application still functions
 # Test reference creation, listing, and verification flows
+
+# 4. (OPTIONAL) To also drop columns (permanent data loss):
+# Edit the rollback script, uncomment section 6, create backup first:
+pg_dump -h <host> -U <user> -d <database> -t references > backup_references_$(date +%Y%m%d_%H%M%S).sql
+psql $DATABASE_URL -f sql/010_reference_hiding_and_strikethrough_ROLLBACK.sql
 ```
 
 **When to Use Rollback:**
-- Critical bug found in production that cannot be fixed quickly
+- Critical bug in strikethrough functions that cannot be fixed quickly
 - Performance degradation from new indexes
-- Need to restore pre-feature state for compliance reasons
+- Need to disable feature at database level (beyond feature flag)
 - **Only use as last resort** - prefer feature flag kill switch first
 
 **Decision Tree:**
@@ -672,12 +678,14 @@ psql $DATABASE_URL -f sql/010_reference_hiding_and_strikethrough_ROLLBACK.sql
 Is there a production issue?
 ├─ Can it be fixed with a code deploy? → Deploy fix
 ├─ Can it be disabled via feature flag? → Use ENABLE_REFERENCE_HIDING=false
-└─ Neither option works? → Consider database rollback (requires backup)
+├─ Need database-level disable? → Run rollback script (keeps data)
+└─ Need complete removal? → Uncomment column drops (permanent)
 ```
 
 **Notes:**
 - Feature flag kill switch (`ENABLE_REFERENCE_HIDING=false`) is **preferred** over database rollback
-- Database rollback is **irreversible** without backup
+- Default rollback preserves data (non-destructive)
+- Column drops are optional and require explicit uncommenting
 - Application code must be deployed BEFORE database rollback to avoid breaking changes
 
 ---
