@@ -1,3 +1,4 @@
+import { jest } from '/globals';
 import { createSupabaseMock, mockSuccess } from '../utils/supabase-mock';
 
 const { supabase, setTableResponses } = createSupabaseMock();
