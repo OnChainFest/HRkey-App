@@ -1,3 +1,4 @@
+import {  jest  } from '@jest/globals';
 import { createSupabaseMock, mockSuccess } from '../utils/supabase-mock';
 
 const { supabase, setTableResponses } = createSupabaseMock();
@@ -11,12 +12,15 @@ jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => supabase)
 }));
 
-jest.mock('ethers', () => ({
+await jest.unstable_mockModule('ethers', () => ({
+  Wallet: {
+    createRandom: jest.fn(() => mockWallet),
+  },
   ethers: {
     Wallet: {
-      createRandom: jest.fn(() => mockWallet)
-    }
-  }
+      createRandom: jest.fn(() => mockWallet),
+    },
+  },
 }));
 
 const { WalletCreationService } = await import('../../Wallet_Creation_Base_SDK.js');
