@@ -46,3 +46,4 @@ nul
 backend/env.js
 backend/utils/appUrl.js
 backend/utils/supabaseClient.js
+.next/
