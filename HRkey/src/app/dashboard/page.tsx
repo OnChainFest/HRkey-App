@@ -161,6 +161,11 @@ export default function Dashboard() {
       setMsg("Referencia ocultada exitosamente")
       await load()
     } catch (err) {
+      // Handle feature disabled gracefully (503 Service Unavailable)
+      if (err instanceof ApiClientError && err.status === 503) {
+        setMsg("⚠️ La función de ocultar referencias está temporalmente deshabilitada. Tus referencias están seguras.")
+        return
+      }
       const errorMsg = err instanceof ApiClientError
         ? err.message
         : "Error al ocultar la referencia"
@@ -177,6 +182,11 @@ export default function Dashboard() {
       setMsg("Referencia visible nuevamente")
       await load()
     } catch (err) {
+      // Handle feature disabled gracefully (503 Service Unavailable)
+      if (err instanceof ApiClientError && err.status === 503) {
+        setMsg("⚠️ La función de ocultar referencias está temporalmente deshabilitada. Tus referencias están seguras.")
+        return
+      }
       const errorMsg = err instanceof ApiClientError
         ? err.message
         : "Error al mostrar la referencia"

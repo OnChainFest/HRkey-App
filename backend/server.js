@@ -69,6 +69,13 @@ import { refineReferenceSchema } from './schemas/aiRefine.schema.js';
 dotenv.config();
 
 /* =========================
+   Feature Flags
+   ========================= */
+// Kill switch for reference hiding feature
+// Set ENABLE_REFERENCE_HIDING=false in .env to disable
+const ENABLE_REFERENCE_HIDING = process.env.ENABLE_REFERENCE_HIDING !== 'false';
+
+/* =========================
    Sentry Error Monitoring
    ========================= */
 const isTest = process.env.NODE_ENV === 'test';
@@ -826,14 +833,39 @@ app.get('/api/references/candidate/:candidateId', requireAuth, referencesControl
 /**
  * POST /api/references/:referenceId/hide
  * Hide a reference (strikethrough in public views)
+ * Feature flag: ENABLE_REFERENCE_HIDING
  */
-app.post('/api/references/:referenceId/hide', requireAuth, referencesController.hideReference);
+if (ENABLE_REFERENCE_HIDING) {
+  app.post('/api/references/:referenceId/hide', requireAuth, referencesController.hideReference);
+  app.post('/api/references/:referenceId/unhide', requireAuth, referencesController.unhideReference);
+} else {
+  // Feature disabled - return 503 Service Unavailable
+  app.post('/api/references/:referenceId/hide', requireAuth, (req, res) => {
+    logger.warn('Reference hiding feature is disabled', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      referenceId: req.params.referenceId
+    });
+    return res.status(503).json({
+      ok: false,
+      error: 'FEATURE_DISABLED',
+      message: 'Reference hiding is temporarily disabled'
+    });
+  });
 
-/**
- * POST /api/references/:referenceId/unhide
- * Unhide a previously hidden reference
- */
-app.post('/api/references/:referenceId/unhide', requireAuth, referencesController.unhideReference);
+  app.post('/api/references/:referenceId/unhide', requireAuth, (req, res) => {
+    logger.warn('Reference hiding feature is disabled', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      referenceId: req.params.referenceId
+    });
+    return res.status(503).json({
+      ok: false,
+      error: 'FEATURE_DISABLED',
+      message: 'Reference hiding is temporarily disabled'
+    });
+  });
+}
 
 /* =========================
    References workflow MVP

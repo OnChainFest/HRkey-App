@@ -569,6 +569,119 @@ This implementation delivers a **complete strikethrough system** that:
 
 ---
 
+## 🚨 Feature Flag: Kill Switch
+
+### Reference Hiding Feature Toggle
+
+A production-safe kill switch has been implemented for the reference hiding feature.
+
+**Environment Variable:**
+```bash
+ENABLE_REFERENCE_HIDING=true  # Default: enabled
+ENABLE_REFERENCE_HIDING=false # Disable feature
+```
+
+**Location:** `backend/.env`
+
+**Behavior When Disabled:**
+- Hide/unhide endpoints return `503 Service Unavailable`
+- Frontend shows friendly message: *"⚠️ La función de ocultar referencias está temporalmente deshabilitada. Tus referencias están seguras."*
+- Core reference flows remain unaffected
+- No data loss or breaking changes
+
+**Implementation:**
+- **Backend:** `backend/server.js` (lines 71-77, 826-856)
+- **Frontend:** `HRkey/src/app/dashboard/page.tsx` (lines 154-185)
+
+**Manual Test:**
+```bash
+# 1. Disable feature
+echo "ENABLE_REFERENCE_HIDING=false" >> backend/.env
+
+# 2. Restart backend
+cd backend && npm run dev
+
+# 3. Try to hide a reference via dashboard
+# Expected: Friendly error message displayed
+
+# 4. Re-enable feature
+sed -i 's/ENABLE_REFERENCE_HIDING=false/ENABLE_REFERENCE_HIDING=true/' backend/.env
+
+# 5. Restart backend and verify normal operation
+```
+
+**Use Cases:**
+- Emergency rollback without deployment
+- A/B testing feature availability
+- Gradual rollout to user segments
+- Temporary disable during maintenance
+
+---
+
+## 🗄️ Database Migration Rollback
+
+### Emergency Rollback Script
+
+A complete rollback script is available for migration 010 (strikethrough feature).
+
+**Location:** `sql/010_reference_hiding_and_strikethrough_ROLLBACK.sql`
+
+**⚠️ WARNING:** This rollback will **permanently delete data**:
+- 7 columns from `references` table: `is_hidden`, `hidden_at`, `hidden_by`, `hide_reason`, `reference_type`, `correction_of`, `is_correction`
+- All hiding/strikethrough metadata will be lost
+- Cannot be undone without database backup
+
+**What Gets Rolled Back:**
+1. ✅ Drops 7 columns from `references` table
+2. ✅ Drops 5 indexes
+3. ✅ Drops 1 view (`reference_strikethrough_metadata`)
+4. ✅ Drops 3 functions (`hide_reference`, `unhide_reference`, `validate_reference_hiding`)
+5. ✅ Drops 1 trigger (`validate_hiding`)
+6. ✅ Drops 2 RLS policies
+
+**Safety Features:**
+- 10-second pause before execution (allows Ctrl+C abort)
+- Built-in verification checks after rollback
+- Clear backup recommendations
+- Idempotent (safe to run multiple times)
+
+**Rollback Procedure:**
+
+```bash
+# 1. CRITICAL: Create backup first
+pg_dump -h <host> -U <user> -d <database> -t references > backup_references_$(date +%Y%m%d_%H%M%S).sql
+
+# 2. Deploy compatible application code (without strikethrough features)
+# This step is CRITICAL - deploy code BEFORE running database rollback
+
+# 3. Run rollback script
+psql $DATABASE_URL -f sql/010_reference_hiding_and_strikethrough_ROLLBACK.sql
+
+# 4. Verify application still functions
+# Test reference creation, listing, and verification flows
+```
+
+**When to Use Rollback:**
+- Critical bug found in production that cannot be fixed quickly
+- Performance degradation from new indexes
+- Need to restore pre-feature state for compliance reasons
+- **Only use as last resort** - prefer feature flag kill switch first
+
+**Decision Tree:**
+```
+Is there a production issue?
+├─ Can it be fixed with a code deploy? → Deploy fix
+├─ Can it be disabled via feature flag? → Use ENABLE_REFERENCE_HIDING=false
+└─ Neither option works? → Consider database rollback (requires backup)
+```
+
+**Notes:**
+- Feature flag kill switch (`ENABLE_REFERENCE_HIDING=false`) is **preferred** over database rollback
+- Database rollback is **irreversible** without backup
+- Application code must be deployed BEFORE database rollback to avoid breaking changes
+
+---
+
 **For questions or support:**
 - Technical: Review `docs/AI_FEEDBACK_ENHANCEMENT.md`
 - Database: Check `sql/010_*.sql` and `sql/011_*.sql`
