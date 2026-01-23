@@ -816,6 +816,15 @@ app.get('/health/deep', async (req, res) => {
 /* =========================
    Wallet endpoints
    ========================= */
+const isProductionEnv = process.env.NODE_ENV === 'production';
+const maskEmailForLogs = (email) => {
+  if (!email || typeof email !== 'string') return undefined;
+  const [local, domain] = email.split('@');
+  if (!domain) return `${email.slice(0, 2)}***`;
+  const visible = local.slice(0, 2);
+  return `${visible}${local.length > 2 ? '***' : ''}@${domain}`;
+};
+
 app.post('/api/wallet/create', requireAuth, strictLimiter, validateBody(createWalletSchema), async (req, res) => {
   try {
     const { userId, email } = req.body;
@@ -833,11 +842,11 @@ app.post('/api/wallet/create', requireAuth, strictLimiter, validateBody(createWa
     logger.error('Failed to create wallet', {
       requestId: req.requestId,
       userId: req.body.userId,
-      email: req.body.email,
+      email: maskEmailForLogs(req.body.email),
       error: e.message,
-      stack: e.stack
+      stack: isProductionEnv ? undefined : e.stack
     });
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -849,10 +858,7 @@ app.get('/api/wallet/:userId', requireAuth, validateParams(getWalletParamsSchema
     const isSuperadmin = req.user?.role === 'superadmin';
 
     if (!isOwner && !isSuperadmin) {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'You can only view your own wallet'
-      });
+      return res.status(404).json({ error: 'Not found' });
     }
 
     const wallet = await WalletCreationService.getUserWallet(userId);
@@ -863,9 +869,9 @@ app.get('/api/wallet/:userId', requireAuth, validateParams(getWalletParamsSchema
       requestId: req.requestId,
       userId: req.params.userId,
       error: e.message,
-      stack: e.stack
+      stack: isProductionEnv ? undefined : e.stack
     });
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -890,11 +896,11 @@ app.post('/api/reference/request', requireAuth, validateBody(createReferenceRequ
     logger.error('Failed to create reference request', {
       requestId: req.requestId,
       userId: req.body.userId,
-      refereeEmail: req.body.email,
+      refereeEmail: maskEmailForLogs(req.body.email),
       error: e.message,
-      stack: e.stack
+      stack: isProductionEnv ? undefined : e.stack
     });
-    res.status(500).json({ success: false, error: e.message });
+    res.status(500).json({ success: false, error: 'Failed to create reference request' });
   }
 });
 
@@ -904,13 +910,17 @@ app.post('/api/reference/submit', tokenLimiter, validateBody(submitReferenceSche
     const result = await ReferenceService.submitReference(req.body);
     res.json(result);
   } catch (e) {
+    const status = e.status || 500;
     logger.error('Failed to submit reference', {
       requestId: req.requestId,
       tokenHashPrefix: req.body.token ? hashInviteToken(req.body.token).slice(0, 12) : undefined,
       error: e.message,
-      stack: e.stack
+      stack: isProductionEnv ? undefined : e.stack
     });
-    res.status(e.status || 500).json({ success: false, error: e.message });
+    res.status(status).json({
+      success: false,
+      error: status >= 500 ? 'Failed to submit reference' : e.message
+    });
   }
 });
 
@@ -920,13 +930,17 @@ app.get('/api/reference/by-token/:token', tokenLimiter, validateParams(getRefere
     const result = await ReferenceService.getReferenceByToken(req.params.token);
     res.json(result);
   } catch (e) {
+    const status = e.status || 400;
     logger.error('Failed to get reference by token', {
       requestId: req.requestId,
       tokenHashPrefix: req.params.token ? hashInviteToken(req.params.token).slice(0, 12) : undefined,
       error: e.message,
-      stack: e.stack
+      stack: isProductionEnv ? undefined : e.stack
     });
-    res.status(400).json({ success: false, error: e.message });
+    res.status(status).json({
+      success: false,
+      error: status >= 500 ? 'Failed to get reference' : e.message
+    });
   }
 });
 

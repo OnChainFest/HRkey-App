@@ -72,4 +72,35 @@ describe('Wallet API', () => {
     expect(response.status).toBe(200);
     expect(response.body.wallet.address).toBe('0x0000000000000000000000000000000000000001');
   });
+
+  it('returns 404 when accessing another user wallet', async () => {
+    const response = await request(app)
+      .get('/api/wallet/user-2')
+      .set('x-test-user-id', 'user-1')
+      .set('x-test-user-email', 'user@example.com');
+
+    expect(response.status).toBe(404);
+  });
+
+  it('allows superadmin to access another user wallet', async () => {
+    setTableResponses('user_wallets', {
+      singleResponses: [
+        mockSuccess({
+          address: '0x0000000000000000000000000000000000000002',
+          network: 'base-mainnet',
+          wallet_type: 'custodial',
+          created_at: '2024-01-03T00:00:00.000Z'
+        })
+      ]
+    });
+
+    const response = await request(app)
+      .get('/api/wallet/user-2')
+      .set('x-test-user-id', 'admin-1')
+      .set('x-test-user-email', 'admin@example.com')
+      .set('x-test-user-role', 'superadmin');
+
+    expect(response.status).toBe(200);
+    expect(response.body.wallet.address).toBe('0x0000000000000000000000000000000000000002');
+  });
 });
