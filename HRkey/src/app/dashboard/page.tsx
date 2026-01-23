@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabaseClient";
+import { apiPost, ApiClientError } from "../../lib/apiClient";
 
 type Row = Record<string, any>
 
@@ -146,13 +147,51 @@ export default function Dashboard() {
     await load()
   }
 
-  const del = async (id: string) => {
-    if (!confirm("¿Eliminar esta referencia?")) return
-    setMsg("Eliminando…")
-    const { error } = await supabase.from("references").delete().eq("id", id)
-    if (error) return setMsg(`No se pudo eliminar: ${error.message}`)
-    setMsg("Eliminada")
-    await load()
+  // DELETE REMOVED: Philosophy "Hidden ≠ erased"
+  // Users can hide references (strikethrough), but never permanently erase them
+  // Only database administrators can perform hard deletes if absolutely necessary
+
+  const hideReference = async (id: string) => {
+    const reason = prompt("Razón para ocultar (opcional):")
+    if (reason === null) return // cancelled
+
+    setMsg("Ocultando referencia…")
+    try {
+      await apiPost(`/api/references/${id}/hide`, { reason })
+      setMsg("Referencia ocultada exitosamente")
+      await load()
+    } catch (err) {
+      // Handle feature disabled gracefully (503 Service Unavailable)
+      if (err instanceof ApiClientError && err.status === 503) {
+        setMsg("⚠️ La función de ocultar referencias está temporalmente deshabilitada. Tus referencias están seguras.")
+        return
+      }
+      const errorMsg = err instanceof ApiClientError
+        ? err.message
+        : "Error al ocultar la referencia"
+      setMsg(`Error: ${errorMsg}`)
+    }
+  }
+
+  const unhideReference = async (id: string) => {
+    if (!confirm("¿Mostrar esta referencia nuevamente?")) return
+
+    setMsg("Mostrando referencia…")
+    try {
+      await apiPost(`/api/references/${id}/unhide`)
+      setMsg("Referencia visible nuevamente")
+      await load()
+    } catch (err) {
+      // Handle feature disabled gracefully (503 Service Unavailable)
+      if (err instanceof ApiClientError && err.status === 503) {
+        setMsg("⚠️ La función de ocultar referencias está temporalmente deshabilitada. Tus referencias están seguras.")
+        return
+      }
+      const errorMsg = err instanceof ApiClientError
+        ? err.message
+        : "Error al mostrar la referencia"
+      setMsg(`Error: ${errorMsg}`)
+    }
   }
 
   // Enviar invitación y pasar a "submitted"
@@ -267,7 +306,27 @@ export default function Dashboard() {
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
             {rows.map((r) => (
-              <article key={r.id} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 12 }}>
+              <article key={r.id} style={{
+                border: r.is_hidden ? "1px solid #94a3b8" : "1px solid #e5e7eb",
+                borderRadius: 10,
+                padding: 12,
+                backgroundColor: r.is_hidden ? "#f8fafc" : "white"
+              }}>
+                {r.is_hidden && (
+                  <div style={{
+                    marginBottom: 12,
+                    padding: 8,
+                    backgroundColor: "#f1f5f9",
+                    borderRadius: 6,
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: "#475569",
+                    borderLeft: "3px solid #94a3b8"
+                  }}>
+                    ℹ️ Referencia oculta {r.hidden_at && `(desde ${fmt(r.hidden_at)})`}
+                    {r.hide_reason && <div style={{ fontSize: 12, marginTop: 4, fontWeight: 400, color: "#64748b" }}>Razón: {r.hide_reason}</div>}
+                  </div>
+                )}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
                   <div><div style={{ fontWeight: 600 }}>ID</div><div style={{ fontFamily: "monospace" }}>{r.id}</div></div>
                   <div><div style={{ fontWeight: 600 }}>Estado</div><div>{r.status ?? "—"}</div></div>
@@ -306,7 +365,15 @@ export default function Dashboard() {
                       </button>
                     )}
                     <button onClick={() => startEdit(r)}>Editar</button>
-                    <button onClick={() => del(r.id)}>Eliminar</button>
+                    {r.is_hidden ? (
+                      <button onClick={() => unhideReference(r.id)} style={{ backgroundColor: "#64748b", color: "white" }}>
+                        Mostrar
+                      </button>
+                    ) : (
+                      <button onClick={() => hideReference(r.id)} style={{ backgroundColor: "#64748b", color: "white" }}>
+                        Ocultar
+                      </button>
+                    )}
                   </div>
                 )}
               </article>
