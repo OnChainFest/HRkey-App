@@ -569,52 +569,29 @@ This implementation delivers a **complete strikethrough system** that:
 
 ---
 
-## 🚨 Feature Flag: Kill Switch
+## 🚨 Feature Flag Configuration
 
 ### Reference Hiding Feature Toggle
 
-A production-safe kill switch has been implemented for the reference hiding feature.
+**Environment Variable:** `ENABLE_REFERENCE_HIDING`
 
-**Environment Variable:**
+**Configuration:** Set in `backend/.env`
+
 ```bash
-ENABLE_REFERENCE_HIDING=true  # Default: enabled
-ENABLE_REFERENCE_HIDING=false # Disable feature
+ENABLE_REFERENCE_HIDING=true   # Default: enabled
+ENABLE_REFERENCE_HIDING=false  # Disable feature
 ```
 
-**Location:** `backend/.env`
-
-**Behavior When Disabled:**
-- Hide/unhide endpoints return `503 Service Unavailable`
-- Frontend shows friendly message: *"⚠️ La función de ocultar referencias está temporalmente deshabilitada. Tus referencias están seguras."*
-- Core reference flows remain unaffected
-- No data loss or breaking changes
-
-**Implementation:**
-- **Backend:** `backend/server.js` (lines 71-77, 826-856)
-- **Frontend:** `HRkey/src/app/dashboard/page.tsx` (lines 154-185)
-
-**Manual Test:**
-```bash
-# 1. Disable feature
-echo "ENABLE_REFERENCE_HIDING=false" >> backend/.env
-
-# 2. Restart backend
-cd backend && npm run dev
-
-# 3. Try to hide a reference via dashboard
-# Expected: Friendly error message displayed
-
-# 4. Re-enable feature
-sed -i 's/ENABLE_REFERENCE_HIDING=false/ENABLE_REFERENCE_HIDING=true/' backend/.env
-
-# 5. Restart backend and verify normal operation
-```
+**Behavior:**
+- **Default:** `true` (feature enabled)
+- **When `false`:** Hide/unhide endpoints return `503 FEATURE_DISABLED`
+- **Impact:** Core reference flows (create, update, verify) remain unaffected
+- **Frontend:** Gracefully handles 503 with user-friendly message
 
 **Use Cases:**
-- Emergency rollback without deployment
-- A/B testing feature availability
-- Gradual rollout to user segments
-- Temporary disable during maintenance
+- Emergency disable without redeployment
+- Temporary rollback during incident response
+- A/B testing or gradual rollout
 
 ---
 
