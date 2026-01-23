@@ -97,6 +97,8 @@ import {
 } from './schemas/reference.schema.js';
 import { createPaymentIntentSchema } from './schemas/payment.schema.js';
 import { refineReferenceSchema } from './schemas/aiRefine.schema.js';
+import { consentSchema, viewIssuanceSchema } from './schemas/sdl.schema.js';
+import { getMarketSchema } from './schemas/marketSchemas.js';
 
 dotenv.config();
 
@@ -814,6 +816,20 @@ app.get('/health/deep', async (req, res) => {
 });
 
 /* =========================
+   SDL Market schema endpoints
+   ========================= */
+app.get('/api/market-schemas/:id', (req, res) => {
+  const schema = getMarketSchema(req.params.id);
+  if (!schema) {
+    return res.status(404).json({
+      error: 'Not Found',
+      message: 'Resource not found'
+    });
+  }
+  return res.json(schema);
+});
+
+/* =========================
    Wallet endpoints
    ========================= */
 app.post('/api/wallet/create', requireAuth, strictLimiter, validateBody(createWalletSchema), async (req, res) => {
@@ -868,6 +884,158 @@ app.get('/api/wallet/:userId', requireAuth, validateParams(getWalletParamsSchema
     res.status(500).json({ error: e.message });
   }
 });
+
+app.post('/api/wallet/consents', requireAuth, strictLimiter, validateBody(consentSchema), async (req, res) => {
+  try {
+    const supabase = getSupabase();
+    const consent = req.body;
+    const subjectId = req.user.id;
+
+    const { error } = await supabase.from('sdl_consents').insert({
+      consent_id: consent.consent_id,
+      subject: subjectId,
+      grantee: consent.grantee,
+      purpose: consent.purpose,
+      scope: {
+        ...consent.scope,
+        subject_did: consent.subject
+      },
+      duration_from: consent.duration_from,
+      duration_to: consent.duration_to,
+      revocable: consent.revocable
+    });
+
+    if (error) {
+      logger.error('Failed to store consent', {
+        requestId: req.requestId,
+        userId: subjectId,
+        error: error.message
+      });
+      return res.status(500).json({
+        error: 'Internal error',
+        message: 'Failed to record consent'
+      });
+    }
+
+    const { error: auditError } = await supabase.from('sdl_audit_log').insert({
+      subject: subjectId,
+      actor: subjectId,
+      action: 'consent_granted',
+      meta: {
+        consent_id: consent.consent_id,
+        schema_id: consent.scope?.schema_id,
+        grantee: consent.grantee,
+        subject_did: consent.subject
+      }
+    });
+
+    if (auditError) {
+      logger.warn('Failed to write consent audit log', {
+        requestId: req.requestId,
+        userId: subjectId,
+        error: auditError.message
+      });
+    }
+
+    return res.json({ ok: true, consent_id: consent.consent_id });
+  } catch (e) {
+    logger.error('Consent endpoint failed', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      error: e.message,
+      stack: e.stack
+    });
+    return res.status(500).json({
+      error: 'Internal error',
+      message: 'Failed to record consent'
+    });
+  }
+});
+
+app.post(
+  '/api/wallet/views',
+  requireAuth,
+  strictLimiter,
+  validateBody(viewIssuanceSchema),
+  async (req, res) => {
+    try {
+      const supabase = getSupabase();
+      const subjectId = req.user.id;
+      const { view, consent_id } = req.body;
+
+      const { data: consent, error } = await supabase
+        .from('sdl_consents')
+        .select('*')
+        .eq('consent_id', consent_id)
+        .eq('subject', subjectId)
+        .single();
+
+      if (error || !consent) {
+        return res.status(403).json({
+          error: 'Consent invalid',
+          message: 'Consent is required to issue this view'
+        });
+      }
+
+      const now = Date.now();
+      if (consent.duration_to && new Date(consent.duration_to).getTime() <= now) {
+        return res.status(403).json({
+          error: 'Consent expired',
+          message: 'Consent is required to issue this view'
+        });
+      }
+
+      if (consent.scope?.schema_id && consent.scope.schema_id !== view.schema_id) {
+        return res.status(403).json({
+          error: 'Consent mismatch',
+          message: 'Consent scope does not match the requested schema'
+        });
+      }
+
+      if (consent.scope?.subject_did && consent.scope.subject_did !== view.subject) {
+        return res.status(403).json({
+          error: 'Consent mismatch',
+          message: 'Consent subject does not match'
+        });
+      }
+
+      const { error: auditError } = await supabase.from('sdl_audit_log').insert({
+        subject: subjectId,
+        actor: subjectId,
+        action: 'view_issued',
+        meta: {
+          view_id: view.view_id,
+          schema_id: view.schema_id,
+          linked_statements: view.linked_statements,
+          generated_at: view.generated_at,
+          consent_id,
+          subject_did: view.subject
+        }
+      });
+
+      if (auditError) {
+        logger.warn('Failed to write view audit log', {
+          requestId: req.requestId,
+          userId: subjectId,
+          error: auditError.message
+        });
+      }
+
+      return res.json({ ok: true, view_id: view.view_id });
+    } catch (e) {
+      logger.error('View issuance failed', {
+        requestId: req.requestId,
+        userId: req.user?.id,
+        error: e.message,
+        stack: e.stack
+      });
+      return res.status(500).json({
+        error: 'Internal error',
+        message: 'Failed to issue view'
+      });
+    }
+  }
+);
 
 /* =========================
    Reference endpoints

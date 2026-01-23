@@ -1,0 +1,22 @@
+{
+  "version": "0.1",
+  "attributes": {
+    "email": {
+      "type": "string",
+      "sensitivity": "high"
+    },
+    "city": {
+      "type": "string",
+      "sensitivity": "medium"
+    },
+    "distance_km": {
+      "type": "number",
+      "sensitivity": "medium"
+    }
+  },
+  "proofs": {
+    "age_over": {
+      "params": ["min_age"]
+    }
+  }
+}
