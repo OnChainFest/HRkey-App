@@ -1,12 +1,10 @@
 {
-  "name": "peerproof",
+  "name": "hrkey-monorepo",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
-  "main": "index.js",
+  "description": "HRKey monorepo - frontend in HRkey/, backend in backend/",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
     "hh": "hardhat",
     "compile": "hardhat compile && node copy-abi.cjs",
     "deploy:base-sepolia": "hardhat run scripts/deploy.js --network baseSepolia && node copy-abi.cjs",
@@ -23,11 +21,7 @@
     "ethers": "^6.13.2",
     "express": "^5.1.0",
     "helmet": "^8.1.0",
-    "micro": "^10.0.1",
-    "next": "14.2.5",
     "pg": "^8.16.3",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
     "stripe": "^14.10.0"
   },
   "devDependencies": {

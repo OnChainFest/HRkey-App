@@ -4,7 +4,7 @@ const KEY_REF = 'local:wsd:aes-gcm:v1';
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-const toBase64 = (buffer: ArrayBuffer) =>
+const toBase64 = (buffer: ArrayBuffer | Uint8Array) =>
   btoa(String.fromCharCode(...new Uint8Array(buffer)));
 
 const fromBase64 = (value: string) =>

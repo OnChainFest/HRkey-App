@@ -42,9 +42,20 @@ nul
 **/nul
 **/nodemon
 **/hrkey-backend@1.0.0
-/WebDapp/
-!/HRkey/public/WebDapp/
 backend/env.js
 backend/utils/appUrl.js
 backend/utils/supabaseClient.js
-.next/
+
+# --- MOCKUP PREVENTION: Never deploy old static HTML mockups ---
+# Block WebDapp mockup directories everywhere
+**/WebDapp/
+WebDapp/
+public/WebDapp/
+
+# Block root-level pages/ directory (old Pages Router - use HRkey/src/app/ instead)
+/pages/
+
+# Block root-level HTML redirect files
+/index.html
+/app.html
+/auth.html
