@@ -87,8 +87,7 @@ export async function connectWallet(req, res) {
       return res.status(409).json({
         success: false,
         error: 'WALLET_EXISTS',
-        message: 'User already has a connected wallet. Disconnect first to connect a new one.',
-        existing_address: existingWallet.address
+        message: 'User already has a connected wallet. Disconnect first to connect a new one.'
       });
     }
 
