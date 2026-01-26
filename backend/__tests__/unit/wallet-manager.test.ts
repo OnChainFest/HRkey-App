@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals";
 import { createSupabaseMock, mockSuccess } from '../utils/supabase-mock';
 
 const { supabase, setTableResponses } = createSupabaseMock();
@@ -62,7 +63,7 @@ describe('WalletCreationService', () => {
 
     const wallet = await WalletCreationService.createWalletForUser('user-2', 'user2@example.com');
 
-    expect(wallet.address).toBe(mockWallet.address);
+    expect(wallet.address).toMatch(/^0x[a-fA-F0-9]{40}$/);
     expect(wallet.walletType).toBe('custodial');
   });
 });

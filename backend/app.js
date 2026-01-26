@@ -524,7 +524,7 @@ const corsOptions = {
 // Stripe webhook necesita body RAW; para el resto usamos JSON normal
 app.use(cors(corsOptions));
 // ✅ handle preflight for all routes
-app.options('*', cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
 // Request ID middleware for request correlation
 app.use(requestIdMiddleware);

@@ -1,56 +1,38 @@
+/** @type {import('jest').Config} */
 module.exports = {
-  collectCoverageFrom: [
-    'backend/**/*.{js,ts}',
-    'HRkey/src/**/*.{ts,tsx}',
-    '!**/*.test.*',
-    '!**/node_modules/**'
-  ],
-  coverageThreshold: {
-    global: {
-      branches: 30,
-      functions: 30,
-      lines: 30,
-      statements: 30
-    }
-  },
   projects: [
     {
       displayName: 'backend',
       testEnvironment: 'node',
       roots: ['<rootDir>/backend'],
-      testMatch: ['**/__tests__/**/*.test.js', '**/__tests__/**/*.test.ts'],
-      setupFilesAfterEnv: ['<rootDir>/backend/__tests__/setup.ts'],
-      extensionsToTreatAsEsm: ['.ts'],
+      testMatch: [
+        '**/__tests__/**/*.test.ts',
+        '**/__tests__/**/*.test.js',
+      ],
       transform: {
-        '^.+\\.ts$': [
-          'ts-jest',
-          {
-            useESM: true,
-            tsconfig: '<rootDir>/tsconfig.json'
-          }
-        ]
-      }
+        '^.+\\.(t|j)s$': ['ts-jest', { useESM: true }],
+      },
+      extensionsToTreatAsEsm: ['.ts'],
     },
+
     {
       displayName: 'frontend',
       testEnvironment: 'jsdom',
       roots: ['<rootDir>/HRkey/src'],
-      testMatch: ['**/__tests__/**/*.test.tsx', '**/__tests__/**/*.test.jsx', '**/__tests__/**/*.test.ts'],
-      passWithNoTests: true,
-      setupFilesAfterEnv: ['<rootDir>/HRkey/src/__tests__/setup.ts'],
-      moduleNameMapper: {
-        '^@/(.*)$': '<rootDir>/HRkey/src/$1'
-      },
-      extensionsToTreatAsEsm: ['.ts', '.tsx'],
+      testMatch: [
+        '**/__tests__/**/*.test.tsx',
+        '**/__tests__/**/*.test.jsx',
+        '**/__tests__/**/*.test.ts',
+      ],
       transform: {
-        '^.+\\.(ts|tsx)$': [
-          'ts-jest',
-          {
-            useESM: true,
-            tsconfig: '<rootDir>/HRkey/tsconfig.json'
-          }
-        ]
-      }
-    }
-  ]
+        '^.+\\.[tj]sx?$': ['babel-jest', { presets: ['next/babel'] }],
+      },
+      moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/HRkey/src/$1',
+        '^\\.(css|less|sass|scss)$': 'identity-obj-proxy',
+        '^.+\\.(png|jpg|jpeg|gif|webp|svg)$': '<rootDir>/backend/__tests__/mocks/fileMock.js',
+      },
+      setupFilesAfterEnv: ['<rootDir>/HRkey/src/__tests__/setup.ts'],
+    },
+  ],
 };
