@@ -32,6 +32,9 @@ import analyticsController from './controllers/analyticsController.js';
 import hrscoreController from './controllers/hrscoreController.js';
 import referencesController from './controllers/referencesController.js';
 import aiRefineController from './controllers/aiRefine.controller.js';
+import walletsController from './controllers/walletsController.js';
+import notificationsController from './controllers/notificationsController.js';
+import billingController from './controllers/billingController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 import { getScoreSnapshots } from './services/hrscore/scoreSnapshots.js';
 
@@ -65,6 +68,8 @@ import {
 } from './schemas/reference.schema.js';
 import { createPaymentIntentSchema } from './schemas/payment.schema.js';
 import { refineReferenceSchema } from './schemas/aiRefine.schema.js';
+import { connectWalletSchema } from './schemas/wallets.schema.js';
+import { createCheckoutSessionSchema } from './schemas/billing.schema.js';
 
 dotenv.config();
 
@@ -896,6 +901,37 @@ app.post(
 );
 
 /* =========================
+   Wallets (Identity Only)
+   ========================= */
+app.post(
+  '/api/wallets/connect',
+  requireAuth,
+  strictLimiter,
+  validateBody(connectWalletSchema),
+  walletsController.connectWallet
+);
+app.get('/api/wallets/me', requireAuth, walletsController.getMyWallet);
+app.delete('/api/wallets/me', requireAuth, walletsController.disconnectWallet);
+
+/* =========================
+   Notifications (In-App Only)
+   ========================= */
+app.get('/api/notifications', requireAuth, notificationsController.getNotifications);
+app.post('/api/notifications/:id/read', requireAuth, notificationsController.markAsRead);
+app.post('/api/notifications/read-all', requireAuth, notificationsController.markAllAsRead);
+
+/* =========================
+   Billing (Stripe Checkout)
+   ========================= */
+app.post(
+  '/api/billing/create-checkout-session',
+  requireAuth,
+  authLimiter,
+  validateBody(createCheckoutSessionSchema),
+  billingController.createCheckoutSession
+);
+
+/* =========================
    Stripe Payments
    ========================= */
 app.post('/create-payment-intent', requireAuth, authLimiter, validateBody(createPaymentIntentSchema), async (req, res) => {
@@ -1013,6 +1049,51 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
         await webhookService.processPaymentFailed(paymentIntent);
         await webhookService.markEventProcessed(event.id, event.type, {
           payment_intent_id: paymentIntent.id
+        });
+
+        break;
+      }
+
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        reqLogger.info('Processing checkout.session.completed', {
+          sessionId: session.id,
+          customerEmail: session.customer_email,
+          metadata: session.metadata
+        });
+
+        const result = await billingController.handleCheckoutSessionCompleted(session);
+
+        if (result.success) {
+          reqLogger.info('Checkout session processed successfully', {
+            sessionId: session.id,
+            userId: result.userId,
+            productCode: result.productCode
+          });
+        } else {
+          reqLogger.warn('Checkout session processed with issues', {
+            sessionId: session.id,
+            reason: result.reason
+          });
+        }
+
+        await webhookService.markEventProcessed(event.id, event.type, {
+          session_id: session.id,
+          success: result.success
+        });
+
+        break;
+      }
+
+      case 'checkout.session.expired': {
+        const session = event.data.object;
+        reqLogger.info('Processing checkout.session.expired', {
+          sessionId: session.id
+        });
+
+        await billingController.handleCheckoutSessionExpired(session);
+        await webhookService.markEventProcessed(event.id, event.type, {
+          session_id: session.id
         });
 
         break;
