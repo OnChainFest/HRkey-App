@@ -21,7 +21,6 @@ import companyController from './controllers/companyController.js';
 import signersController from './controllers/signersController.js';
 import auditController from './controllers/auditController.js';
 import dataAccessController from './controllers/dataAccessController.js';
-import revenueController from './controllers/revenueController.js';
 import kpiObservationsController from './controllers/kpiObservationsController.js';
 import candidateEvaluationController from './controllers/candidateEvaluation.controller.js';
 import tokenomicsPreviewController from './controllers/tokenomicsPreview.controller.js';
@@ -911,14 +910,12 @@ app.post(
   walletsController.connectWallet
 );
 app.get('/api/wallets/me', requireAuth, walletsController.getMyWallet);
-app.delete('/api/wallets/me', requireAuth, walletsController.disconnectWallet);
 
 /* =========================
    Notifications (In-App Only)
    ========================= */
 app.get('/api/notifications', requireAuth, notificationsController.getNotifications);
 app.post('/api/notifications/:id/read', requireAuth, notificationsController.markAsRead);
-app.post('/api/notifications/read-all', requireAuth, notificationsController.markAllAsRead);
 
 /* =========================
    Billing (Stripe Checkout)
@@ -1195,18 +1192,6 @@ app.get('/api/data-access/request/:requestId', requireAuth, dataAccessController
 app.post('/api/data-access/:requestId/approve', requireAuth, dataAccessController.approveDataAccessRequest);
 app.post('/api/data-access/:requestId/reject', requireAuth, dataAccessController.rejectDataAccessRequest);
 app.get('/api/data-access/:requestId/data', requireAuth, dataAccessController.getDataByRequestId);
-
-// ===== REVENUE SHARING ENDPOINTS =====
-app.get('/api/revenue/balance', requireAuth, revenueController.getUserBalance);
-app.get('/api/revenue/shares', requireAuth, revenueController.getRevenueShares);
-app.get('/api/revenue/transactions', requireAuth, revenueController.getTransactionHistory);
-app.get('/api/revenue/summary', requireAuth, revenueController.getEarningsSummary);
-app.post(
-  '/api/revenue/payout/request',
-  requireAuth,
-  requireWalletLinked({ message: 'You must have a linked wallet to request payouts' }),
-  revenueController.requestPayout
-);
 
 /* =========================
    KPI OBSERVATIONS ENDPOINTS (Proof of Correlation MVP)

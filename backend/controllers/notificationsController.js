@@ -164,43 +164,6 @@ export async function markAsRead(req, res) {
 }
 
 /**
- * POST /api/notifications/read-all
- * Mark all notifications as read
- */
-export async function markAllAsRead(req, res) {
-  try {
-    const userId = req.user.id;
-
-    const { error } = await getSupabase()
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', userId)
-      .eq('is_read', false);
-
-    if (error) {
-      throw error;
-    }
-
-    return res.json({
-      success: true,
-      message: 'All notifications marked as read'
-    });
-  } catch (error) {
-    logger.error('Failed to mark all notifications as read', {
-      requestId: req.requestId,
-      userId: req.user?.id,
-      error: error.message,
-      stack: error.stack
-    });
-    return res.status(500).json({
-      success: false,
-      error: 'INTERNAL_ERROR',
-      message: 'Failed to update notifications'
-    });
-  }
-}
-
-/**
  * Create a notification (internal service function)
  * @param {Object} params - Notification params
  * @param {string} params.userId - User ID
@@ -238,6 +201,5 @@ export async function createNotification({ userId, type, title, body }) {
 export default {
   getNotifications,
   markAsRead,
-  markAllAsRead,
   createNotification
 };

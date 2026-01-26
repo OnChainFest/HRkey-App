@@ -252,31 +252,4 @@ describe('Notifications Controller - Access Control Tests', () => {
       expect(response.body.error).toBe('NOT_FOUND');
     });
   });
-
-  describe('POST /api/notifications/read-all', () => {
-    test('NOTIF-P8: requires authentication (401)', async () => {
-      const response = await request(app)
-        .post('/api/notifications/read-all')
-        .expect(401);
-
-      expect(response.body.error).toBe('Authentication required');
-    });
-
-    test('NOTIF-P9: authenticated user can mark all their notifications as read', async () => {
-      const user = mockUserData({ id: 'user-readall-1', email: 'readall@example.com' });
-      const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
-      const notificationsTable = buildTableMock();
-      configureTableMocks({ users: usersTable, notifications: notificationsTable });
-
-      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(user.id, user.email));
-
-      const response = await request(app)
-        .post('/api/notifications/read-all')
-        .set('Authorization', 'Bearer valid-token')
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toMatch(/All notifications marked as read/);
-    });
-  });
 });

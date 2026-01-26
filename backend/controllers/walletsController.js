@@ -214,66 +214,7 @@ export async function getMyWallet(req, res) {
   }
 }
 
-/**
- * DELETE /api/wallets/me
- * Disconnect current user's wallet
- */
-export async function disconnectWallet(req, res) {
-  try {
-    const userId = req.user.id;
-
-    const { data: deleted, error } = await getSupabase()
-      .from('wallets')
-      .delete()
-      .eq('user_id', userId)
-      .select()
-      .maybeSingle();
-
-    if (error) {
-      throw error;
-    }
-
-    if (!deleted) {
-      return res.status(404).json({
-        success: false,
-        error: 'WALLET_NOT_FOUND',
-        message: 'No wallet connected to this account'
-      });
-    }
-
-    // Clear wallet_address from users table
-    await getSupabase()
-      .from('users')
-      .update({ wallet_address: null })
-      .eq('id', userId);
-
-    logger.info('Wallet disconnected', {
-      requestId: req.requestId,
-      userId,
-      address: deleted.address
-    });
-
-    return res.json({
-      success: true,
-      message: 'Wallet disconnected successfully'
-    });
-  } catch (error) {
-    logger.error('Failed to disconnect wallet', {
-      requestId: req.requestId,
-      userId: req.user?.id,
-      error: error.message,
-      stack: error.stack
-    });
-    return res.status(500).json({
-      success: false,
-      error: 'INTERNAL_ERROR',
-      message: 'Failed to disconnect wallet'
-    });
-  }
-}
-
 export default {
   connectWallet,
-  getMyWallet,
-  disconnectWallet
+  getMyWallet
 };

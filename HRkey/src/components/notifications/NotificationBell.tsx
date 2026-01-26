@@ -68,20 +68,6 @@ const NotificationBell = ({ pollInterval = 30000 }: NotificationBellProps) => {
     }
   }, []);
 
-  const markAllAsRead = useCallback(async () => {
-    try {
-      await apiPost('/api/notifications/read-all');
-
-      // Update local state
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, is_read: true }))
-      );
-      setUnreadCount(0);
-    } catch (err) {
-      console.error('Failed to mark all notifications as read', err);
-    }
-  }, []);
-
   // Initial fetch and polling
   useEffect(() => {
     fetchNotifications();
@@ -153,15 +139,6 @@ const NotificationBell = ({ pollInterval = 30000 }: NotificationBellProps) => {
         <div className="notification-dropdown" role="menu">
           <div className="notification-header">
             <h4>Notifications</h4>
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={markAllAsRead}
-                className="mark-all-read"
-              >
-                Mark all read
-              </button>
-            )}
           </div>
 
           <ul className="notification-list" aria-label="notifications-list">

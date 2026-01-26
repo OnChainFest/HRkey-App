@@ -246,35 +246,4 @@ describe('Wallets Controller - Permission Tests', () => {
       expect(response.body.error).toBe('WALLET_NOT_FOUND');
     });
   });
-
-  describe('DELETE /api/wallets/me', () => {
-    test('WALLET-P8: requires authentication (401)', async () => {
-      const response = await request(app)
-        .delete('/api/wallets/me')
-        .expect(401);
-
-      expect(response.body.error).toBe('Authentication required');
-    });
-
-    test('WALLET-P9: authenticated user can disconnect their wallet', async () => {
-      const user = mockUserData({ id: 'user-delete-wallet', email: 'delete@example.com' });
-      const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
-      const walletsTable = buildTableMock({
-        maybeSingleResponses: [mockDatabaseSuccess({
-          id: 'wallet-to-delete',
-          address: '0xdeleted'
-        })]
-      });
-      configureTableMocks({ users: usersTable, wallets: walletsTable });
-
-      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(user.id, user.email));
-
-      const response = await request(app)
-        .delete('/api/wallets/me')
-        .set('Authorization', 'Bearer valid-token')
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-    });
-  });
 });
