@@ -2,10 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-<<<<<<<< HEAD:HRkey/src/app/dev/auth-helper/page.tsx
-import { supabase } from "@/lib/supabaseClient";
-========
->>>>>>>> claude/design-hrkey-reputation-system-7m3DM:HRkey/_app.old/dev/auth-helper/page.tsx
 
 // DEV HELPER PAGE - Only for local testing
 // Shows current user ID and session info for manual E2E testing
@@ -28,14 +24,10 @@ export default function DevAuthHelperPage() {
 
     const loadSession = async () => {
       try {
-<<<<<<<< HEAD:HRkey/src/app/dev/auth-helper/page.tsx
-        const { data: sessionData, error: sessionError } =
-          await supabase.auth.getSession();
-========
         // Dynamic import to avoid build-time initialization
         const { supabase }: any = await import("@/lib/supabaseClient");
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
->>>>>>>> claude/design-hrkey-reputation-system-7m3DM:HRkey/_app.old/dev/auth-helper/page.tsx
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
 
         if (sessionError) {
           setError(`Session error: ${sessionError.message}`);
@@ -43,7 +35,7 @@ export default function DevAuthHelperPage() {
           return;
         }
 
-        if (!sessionData.session) {
+        if (!sessionData?.session) {
           setError("No active session - please sign in first");
           setLoading(false);
           return;
@@ -66,8 +58,8 @@ export default function DevAuthHelperPage() {
         );
 
         setLoading(false);
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
+      } catch (e: any) {
+        const message = e instanceof Error ? e.message : String(e);
         setError(`Error: ${message}`);
         setLoading(false);
       }
@@ -180,38 +172,26 @@ export default function DevAuthHelperPage() {
             </h2>
             <ul className="space-y-2 text-sm">
               <li>
-<<<<<<<< HEAD:HRkey/src/app/dev/auth-helper/page.tsx
                 <Link
                   href="/company/onboarding"
                   className="text-blue-700 hover:underline"
                 >
-========
-                <Link href="/company/onboarding" className="text-blue-700 hover:underline">
->>>>>>>> claude/design-hrkey-reputation-system-7m3DM:HRkey/_app.old/dev/auth-helper/page.tsx
                   → Company Onboarding (B1)
                 </Link>
               </li>
               <li>
-<<<<<<<< HEAD:HRkey/src/app/dev/auth-helper/page.tsx
                 <Link
                   href="/company/dashboard"
                   className="text-blue-700 hover:underline"
                 >
-========
-                <Link href="/company/dashboard" className="text-blue-700 hover:underline">
->>>>>>>> claude/design-hrkey-reputation-system-7m3DM:HRkey/_app.old/dev/auth-helper/page.tsx
                   → Company Dashboard (B2)
                 </Link>
               </li>
               <li>
-<<<<<<<< HEAD:HRkey/src/app/dev/auth-helper/page.tsx
                 <Link
                   href="/company/data-access/new"
                   className="text-blue-700 hover:underline"
                 >
-========
-                <Link href="/company/data-access/new" className="text-blue-700 hover:underline">
->>>>>>>> claude/design-hrkey-reputation-system-7m3DM:HRkey/_app.old/dev/auth-helper/page.tsx
                   → Create Data Access Request (B3)
                 </Link>
               </li>
