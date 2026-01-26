@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { jest } from "@jest/globals";
 type SupabaseResponse = { data: unknown; error: null | { message: string; code?: string } };
 
 type TableResponses = {

@@ -11,6 +11,16 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+const isProductionEnv = process.env.NODE_ENV === 'production';
+
+const maskEmailForLogs = (email) => {
+  if (!email || typeof email !== 'string') return undefined;
+  const [local, domain] = email.split('@');
+  if (!domain) return `${email.slice(0, 2)}***`;
+  const visible = local.slice(0, 2);
+  return `${visible}${local.length > 2 ? '***' : ''}@${domain}`;
+};
+
 function useHashedReferenceTokens() {
   return process.env.USE_HASHED_REFERENCE_TOKENS === 'true';
 }
@@ -156,7 +166,7 @@ export class ReferenceService {
     const verificationUrl = makeRefereeLink(inviteToken);
 
     logger.debug('Sending referee invitation email', {
-      refereeEmail: email,
+      refereeEmail: maskEmailForLogs(email),
       requesterId: userId,
       inviteId: invite.id
     });
@@ -168,150 +178,188 @@ export class ReferenceService {
 
   static async submitReference({ token, invite, refereeData, ratings, comments }) {
     let inviteRecord = invite;
+    let reference = null;
+    let referenceCreated = false;
 
-    if (!inviteRecord) {
-      const { data: inviteData, error: invErr } = await fetchInviteByToken(token);
+    try {
+      if (!inviteRecord) {
+        const { data: inviteData, error: invErr } = await fetchInviteByToken(token);
 
-      if (invErr || !inviteData) {
-        const notFoundError = new Error('Invalid invitation token');
-        notFoundError.status = 404;
-        throw notFoundError;
+        if (invErr || !inviteData) {
+          const notFoundError = new Error('Invalid invitation token');
+          notFoundError.status = 404;
+          throw notFoundError;
+        }
+
+        inviteRecord = inviteData;
       }
 
-      inviteRecord = inviteData;
-    }
+      if (inviteRecord.status === 'completed') {
+        const usedError = new Error('This reference has already been submitted');
+        usedError.status = 422;
+        throw usedError;
+      }
 
-    if (inviteRecord.status === 'completed') {
-      const usedError = new Error('This reference has already been submitted');
-      usedError.status = 422;
-      throw usedError;
-    }
+      if (inviteRecord.status === 'processing') {
+        const processingError = new Error('Reference is already being processed');
+        processingError.status = 409;
+        throw processingError;
+      }
 
-    if (inviteRecord.expires_at && new Date(inviteRecord.expires_at) < new Date()) {
-      const expiredError = new Error('This invitation has expired');
-      expiredError.status = 422;
-      throw expiredError;
-    }
+      if (inviteRecord.expires_at && new Date(inviteRecord.expires_at) < new Date()) {
+        const expiredError = new Error('This invitation has expired');
+        expiredError.status = 422;
+        throw expiredError;
+      }
 
-    const overall = this.calculateOverallRating(ratings);
+      const { data: claimData, error: claimError } = await supabase
+        .from('reference_invites')
+        .update({ status: 'processing' })
+        .eq('id', inviteRecord.id)
+        .eq('status', 'pending')
+        .select('id, status');
 
-    const refRow = {
-      owner_id: inviteRecord.requester_id,
-      referrer_name: inviteRecord.referee_name,
-      referrer_email: inviteRecord.referee_email,
-      relationship: inviteRecord.metadata?.relationship || 'colleague',
-      role_id: inviteRecord.metadata?.role_id || null,
-      summary: comments?.recommendation || '',
-      overall_rating: overall,
-      kpi_ratings: ratings,
-      detailed_feedback: comments || {},
-      status: 'active',
-      created_at: new Date().toISOString(),
-      invite_id: inviteRecord.id
-    };
+      if (claimError) {
+        const claimFailure = new Error('Failed to reserve reference invite');
+        claimFailure.status = 500;
+        throw claimFailure;
+      }
 
-    const { data: reference, error: refErr } = await supabase
-      .from('references')
-      .insert([refRow])
-      .select()
-      .single();
+      if (!claimData || claimData.length === 0) {
+        const claimConflict = new Error('Reference is already being processed');
+        claimConflict.status = 409;
+        throw claimConflict;
+      }
 
-    if (refErr) throw refErr;
-
-    try {
-      logger.info('Processing reference through RVL', { reference_id: reference.id });
-
-      const { data: previousRefs } = await supabase
-        .from('references')
-        .select('summary, kpi_ratings, validated_data')
-        .eq('owner_id', inviteRecord.requester_id)
-        .neq('id', reference.id)
-        .eq('status', 'active')
-        .limit(10);
-
-      const validatedData = await validateReferenceRVL({
-        summary: refRow.summary,
-        kpi_ratings: refRow.kpi_ratings,
-        detailed_feedback: refRow.detailed_feedback,
-        owner_id: refRow.owner_id,
-        referrer_email: refRow.referrer_email
-      }, {
-        previousReferences: previousRefs || [],
-        skipEmbeddings: process.env.NODE_ENV === 'test'
-      });
-
-      await supabase
-        .from('references')
-        .update({
-          validated_data: validatedData,
-          validation_status: validatedData.validation_status,
-          fraud_score: validatedData.fraud_score,
-          consistency_score: validatedData.consistency_score,
-          validated_at: new Date().toISOString()
-        })
-        .eq('id', reference.id);
-
-      logger.info('RVL processing completed', {
-        reference_id: reference.id,
-        validation_status: validatedData.validation_status,
-        fraud_score: validatedData.fraud_score
-      });
-
-    } catch (rvlError) {
-      logger.error('RVL processing failed, reference submitted without validation', {
-        reference_id: reference.id,
-        error: rvlError.message,
-        stack: rvlError.stack
-      });
-
-      await supabase
-        .from('references')
-        .update({
-          validation_status: 'PENDING',
-          validated_at: new Date().toISOString()
-        })
-        .eq('id', reference.id);
-    }
-
-    try {
-      logger.info('Triggering HRScore recalculation after reference validation', {
-        reference_id: reference.id,
-        owner_id: inviteRecord.requester_id
-      });
-
-      await hrscoreAutoTrigger(reference.id);
-
-      logger.debug('HRScore auto-trigger completed', {
-        reference_id: reference.id
-      });
-    } catch (hrscoreError) {
-      logger.warn('HRScore auto-trigger failed (non-blocking)', {
-        reference_id: reference.id,
+      const overall = this.calculateOverallRating(ratings);
+      const refRow = {
         owner_id: inviteRecord.requester_id,
-        error: hrscoreError.message,
-        stack: hrscoreError.stack
-      });
-    }
+        referrer_name: inviteRecord.referee_name,
+        referrer_email: inviteRecord.referee_email,
+        relationship: inviteRecord.metadata?.relationship || 'colleague',
+        role_id: inviteRecord.metadata?.role_id || null,
+        summary: comments?.recommendation || '',
+        overall_rating: overall,
+        kpi_ratings: ratings,
+        detailed_feedback: comments || {},
+        status: 'active',
+        created_at: new Date().toISOString(),
+        invite_id: inviteRecord.id
+      };
 
-    await supabase
-      .from('reference_invites')
-      .update({ status: 'completed', completed_at: new Date().toISOString() })
-      .eq('id', inviteRecord.id);
+      const { data: insertedReference, error: refErr } = await supabase
+        .from('references')
+        .insert([refRow])
+        .select()
+        .single();
 
-    await logEvent({
-      userId: inviteRecord.requester_id,
-      eventType: EventTypes.REFERENCE_SUBMITTED,
-      context: {
-        referenceId: reference.id,
-        overallRating: overall,
-        referrerEmail: inviteRecord.referee_email,
-        hasDetailedFeedback: !!(comments?.recommendation || comments?.strengths || comments?.improvements)
+      if (refErr) throw refErr;
+
+      reference = insertedReference;
+      referenceCreated = true;
+
+      try {
+        logger.info('Processing reference through RVL', { reference_id: reference.id });
+
+        const { data: previousRefs } = await supabase
+          .from('references')
+          .select('summary, kpi_ratings, validated_data')
+          .eq('owner_id', inviteRecord.requester_id)
+          .neq('id', reference.id)
+          .eq('status', 'active')
+          .limit(10);
+
+        const validatedData = await validateReferenceRVL({
+          summary: refRow.summary,
+          kpi_ratings: refRow.kpi_ratings,
+          detailed_feedback: refRow.detailed_feedback,
+          owner_id: refRow.owner_id,
+          referrer_email: refRow.referrer_email
+        }, {
+          previousReferences: previousRefs || [],
+          skipEmbeddings: process.env.NODE_ENV === 'test'
+        });
+
+        await supabase
+          .from('references')
+          .update({
+            validated_data: validatedData,
+            validation_status: validatedData.validation_status,
+            fraud_score: validatedData.fraud_score,
+            consistency_score: validatedData.consistency_score,
+            validated_at: new Date().toISOString()
+          })
+          .eq('id', reference.id);
+
+        logger.info('RVL processing completed', {
+          reference_id: reference.id,
+          validation_status: validatedData.validation_status,
+          fraud_score: validatedData.fraud_score
+        });
+      } catch (rvlError) {
+        logger.error('RVL processing failed, reference submitted without validation', {
+          reference_id: reference.id,
+          error: rvlError.message,
+          stack: isProductionEnv ? undefined : rvlError.stack
+        });
+
+        await supabase
+          .from('references')
+          .update({
+            validation_status: 'PENDING',
+            validated_at: new Date().toISOString()
+          })
+          .eq('id', reference.id);
       }
-    });
 
-    await this.sendReferenceCompletedEmail(inviteRecord.requester_id, reference);
+      try {
+        logger.info('Triggering HRScore recalculation after reference validation', {
+          reference_id: reference.id,
+          owner_id: inviteRecord.requester_id
+        });
 
-    return { success: true, reference_id: reference.id };
+        await hrscoreAutoTrigger(reference.id);
+
+        logger.debug('HRScore auto-trigger completed', {
+          reference_id: reference.id
+        });
+      } catch (hrscoreError) {
+        logger.warn('HRScore auto-trigger failed (non-blocking)', {
+          reference_id: reference.id,
+          owner_id: inviteRecord.requester_id,
+          error: hrscoreError.message,
+          stack: isProductionEnv ? undefined : hrscoreError.stack
+        });
+      }
+
+      await supabase
+        .from('reference_invites')
+        .update({ status: 'completed', completed_at: new Date().toISOString() })
+        .eq('id', inviteRecord.id);
+
+      await logEvent({
+        userId: inviteRecord.requester_id,
+        eventType: EventTypes.REFERENCE_SUBMITTED,
+        context: {
+          referenceId: reference.id,
+          overallRating: overall,
+          referrerEmail: inviteRecord.referee_email,
+          hasDetailedFeedback: !!(comments?.recommendation || comments?.strengths || comments?.improvements)
+        }
+      });
+
+      await this.sendReferenceCompletedEmail(inviteRecord.requester_id, reference);
+
+      return { success: true, reference_id: reference.id };
+    } catch (submitError) {
+      if (!referenceCreated && inviteRecord?.id) {
+        await supabase
+          .from('reference_invites')
+          .update({ status: 'pending' })
+          .eq('id', inviteRecord.id);
+      }
+      throw submitError;
+    }
   }
 
   static async getReferenceByToken(token) {
@@ -387,14 +435,14 @@ export class ReferenceService {
           service: 'resend',
           statusCode: res.status,
           error: errorText,
-          recipientEmail: email
+          recipientEmail: maskEmailForLogs(email)
         });
       }
     } catch (error) {
       logger.error('Failed to send referee invitation email', {
         service: 'resend',
         error: error.message,
-        recipientEmail: email
+        recipientEmail: maskEmailForLogs(email)
       });
     }
   }

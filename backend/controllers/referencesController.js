@@ -21,6 +21,15 @@ import {
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const isProductionEnv = process.env.NODE_ENV === 'production';
+
+const maskEmailForLogs = (email) => {
+  if (!email || typeof email !== 'string') return undefined;
+  const [local, domain] = email.split('@');
+  if (!domain) return `${email.slice(0, 2)}***`;
+  const visible = local.slice(0, 2);
+  return `${visible}${local.length > 2 ? '***' : ''}@${domain}`;
+};
 
 /**
  * GET /api/references/me
@@ -90,7 +99,7 @@ export async function getMyReferences(req, res) {
       requestId: req.requestId,
       userId: req.user?.id,
       error: err.message,
-      stack: err.stack
+      stack: isProductionEnv ? undefined : err.stack
     });
     return res.status(500).json({
       ok: false,
@@ -220,7 +229,7 @@ export async function getCandidateReferences(req, res) {
       candidateId: req.params?.candidateId,
       requesterId: req.user?.id,
       error: err.message,
-      stack: err.stack
+      stack: isProductionEnv ? undefined : err.stack
     });
     return res.status(500).json({
       ok: false,
@@ -286,7 +295,7 @@ export async function getMyPendingInvites(req, res) {
       requestId: req.requestId,
       userId: req.user?.id,
       error: err.message,
-      stack: err.stack
+      stack: isProductionEnv ? undefined : err.stack
     });
     return res.status(500).json({
       ok: false,
@@ -314,9 +323,9 @@ export async function requestReferenceInvite(req, res) {
     });
 
     if (!candidateId) {
-      return res.status(404).json({
-        error: 'Not found',
-        message: 'Candidate not found'
+      return res.status(202).json({
+        ok: true,
+        message: 'If the candidate is eligible, the reference request will be processed.'
       });
     }
 
@@ -363,9 +372,9 @@ export async function requestReferenceInvite(req, res) {
       requestId: req.requestId,
       requesterId: req.user?.id,
       candidateId: req.body.candidate_id,
-      refereeEmail: req.body.referee_email,
+      refereeEmail: maskEmailForLogs(req.body.referee_email),
       error: e.message,
-      stack: e.stack
+      stack: isProductionEnv ? undefined : e.stack
     });
     return res.status(500).json({ ok: false, error: 'Failed to create reference request' });
   }
@@ -399,6 +408,13 @@ export async function respondToReferenceInvite(req, res) {
       });
     }
 
+    if (invite.status === 'processing') {
+      return res.status(409).json({
+        ok: false,
+        error: 'Reference is already being processed'
+      });
+    }
+
     if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
       return res.status(422).json({
         ok: false,
@@ -415,16 +431,17 @@ export async function respondToReferenceInvite(req, res) {
 
     return res.json({ ok: true });
   } catch (e) {
+    const status = e.status || 500;
     // SECURITY: Never log raw tokens - use hash prefix only
     logger.error('Failed to submit reference response', {
       requestId: req.requestId,
       tokenHashPrefix: req.params.token ? hashInviteToken(req.params.token).slice(0, 12) : undefined,
       error: e.message,
-      stack: e.stack
+      stack: isProductionEnv ? undefined : e.stack
     });
-    return res.status(e.status || 500).json({
+    return res.status(status).json({
       ok: false,
-      error: e.status ? e.message : 'Failed to submit reference'
+      error: status >= 500 ? 'Failed to submit reference' : e.message
     });
   }
 }

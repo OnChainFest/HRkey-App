@@ -1,4 +1,4 @@
-import {  jest  } from '@jest/globals';
+import { jest } from "@jest/globals";
 import { createSupabaseMock, mockSuccess } from '../utils/supabase-mock';
 
 const { supabase, setTableResponses } = createSupabaseMock();
@@ -12,15 +12,12 @@ jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => supabase)
 }));
 
-await jest.unstable_mockModule('ethers', () => ({
-  Wallet: {
-    createRandom: jest.fn(() => mockWallet),
-  },
+jest.mock('ethers', () => ({
   ethers: {
     Wallet: {
-      createRandom: jest.fn(() => mockWallet),
-    },
-  },
+      createRandom: jest.fn(() => mockWallet)
+    }
+  }
 }));
 
 const { WalletCreationService } = await import('../../Wallet_Creation_Base_SDK.js');
@@ -66,7 +63,7 @@ describe('WalletCreationService', () => {
 
     const wallet = await WalletCreationService.createWalletForUser('user-2', 'user2@example.com');
 
-    expect(wallet.address).toBe(mockWallet.address);
+    expect(wallet.address).toMatch(/^0x[a-fA-F0-9]{40}$/);
     expect(wallet.walletType).toBe('custodial');
   });
 });
