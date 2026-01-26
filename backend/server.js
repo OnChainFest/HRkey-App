@@ -21,7 +21,6 @@ import companyController from './controllers/companyController.js';
 import signersController from './controllers/signersController.js';
 import auditController from './controllers/auditController.js';
 import dataAccessController from './controllers/dataAccessController.js';
-import revenueController from './controllers/revenueController.js';
 import kpiObservationsController from './controllers/kpiObservationsController.js';
 import candidateEvaluationController from './controllers/candidateEvaluation.controller.js';
 import tokenomicsPreviewController from './controllers/tokenomicsPreview.controller.js';
@@ -32,6 +31,9 @@ import analyticsController from './controllers/analyticsController.js';
 import hrscoreController from './controllers/hrscoreController.js';
 import referencesController from './controllers/referencesController.js';
 import aiRefineController from './controllers/aiRefine.controller.js';
+import walletsController from './controllers/walletsController.js';
+import notificationsController from './controllers/notificationsController.js';
+import billingController from './controllers/billingController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 import { getScoreSnapshots } from './services/hrscore/scoreSnapshots.js';
 
@@ -65,6 +67,8 @@ import {
 } from './schemas/reference.schema.js';
 import { createPaymentIntentSchema } from './schemas/payment.schema.js';
 import { refineReferenceSchema } from './schemas/aiRefine.schema.js';
+import { connectWalletSchema } from './schemas/wallets.schema.js';
+import { createCheckoutSessionSchema } from './schemas/billing.schema.js';
 
 dotenv.config();
 
@@ -896,6 +900,35 @@ app.post(
 );
 
 /* =========================
+   Wallets (Identity Only)
+   ========================= */
+app.post(
+  '/api/wallets/connect',
+  requireAuth,
+  strictLimiter,
+  validateBody(connectWalletSchema),
+  walletsController.connectWallet
+);
+app.get('/api/wallets/me', requireAuth, walletsController.getMyWallet);
+
+/* =========================
+   Notifications (In-App Only)
+   ========================= */
+app.get('/api/notifications', requireAuth, notificationsController.getNotifications);
+app.post('/api/notifications/:id/read', requireAuth, notificationsController.markAsRead);
+
+/* =========================
+   Billing (Stripe Checkout)
+   ========================= */
+app.post(
+  '/api/billing/create-checkout-session',
+  requireAuth,
+  authLimiter,
+  validateBody(createCheckoutSessionSchema),
+  billingController.createCheckoutSession
+);
+
+/* =========================
    Stripe Payments
    ========================= */
 app.post('/create-payment-intent', requireAuth, authLimiter, validateBody(createPaymentIntentSchema), async (req, res) => {
@@ -1018,6 +1051,51 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
         break;
       }
 
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        reqLogger.info('Processing checkout.session.completed', {
+          sessionId: session.id,
+          customerEmail: session.customer_email,
+          metadata: session.metadata
+        });
+
+        const result = await billingController.handleCheckoutSessionCompleted(session);
+
+        if (result.success) {
+          reqLogger.info('Checkout session processed successfully', {
+            sessionId: session.id,
+            userId: result.userId,
+            productCode: result.productCode
+          });
+        } else {
+          reqLogger.warn('Checkout session processed with issues', {
+            sessionId: session.id,
+            reason: result.reason
+          });
+        }
+
+        await webhookService.markEventProcessed(event.id, event.type, {
+          session_id: session.id,
+          success: result.success
+        });
+
+        break;
+      }
+
+      case 'checkout.session.expired': {
+        const session = event.data.object;
+        reqLogger.info('Processing checkout.session.expired', {
+          sessionId: session.id
+        });
+
+        await billingController.handleCheckoutSessionExpired(session);
+        await webhookService.markEventProcessed(event.id, event.type, {
+          session_id: session.id
+        });
+
+        break;
+      }
+
       default:
         reqLogger.info('Unsupported event type', {
           eventType: event.type,
@@ -1114,18 +1192,6 @@ app.get('/api/data-access/request/:requestId', requireAuth, dataAccessController
 app.post('/api/data-access/:requestId/approve', requireAuth, dataAccessController.approveDataAccessRequest);
 app.post('/api/data-access/:requestId/reject', requireAuth, dataAccessController.rejectDataAccessRequest);
 app.get('/api/data-access/:requestId/data', requireAuth, dataAccessController.getDataByRequestId);
-
-// ===== REVENUE SHARING ENDPOINTS =====
-app.get('/api/revenue/balance', requireAuth, revenueController.getUserBalance);
-app.get('/api/revenue/shares', requireAuth, revenueController.getRevenueShares);
-app.get('/api/revenue/transactions', requireAuth, revenueController.getTransactionHistory);
-app.get('/api/revenue/summary', requireAuth, revenueController.getEarningsSummary);
-app.post(
-  '/api/revenue/payout/request',
-  requireAuth,
-  requireWalletLinked({ message: 'You must have a linked wallet to request payouts' }),
-  revenueController.requestPayout
-);
 
 /* =========================
    KPI OBSERVATIONS ENDPOINTS (Proof of Correlation MVP)
