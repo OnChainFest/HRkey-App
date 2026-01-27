@@ -40,6 +40,7 @@ import { getScoreSnapshots } from './services/hrscore/scoreSnapshots.js';
 // Import services
 import * as webhookService from './services/webhookService.js';
 import { ReferenceService, hashInviteToken } from './services/references.service.js';
+import { checkReferenceAllowance, consumeReferenceAllowance } from './services/referenceGating.service.js';
 
 // Import logging
 import logger, { requestIdMiddleware, requestLoggingMiddleware } from './logger.js';
@@ -775,7 +776,44 @@ app.post('/api/reference/request', requireAuth, validateBody(createReferenceRequ
       });
     }
 
+    // Reference Gating: Check if user can request a reference
+    const allowance = await checkReferenceAllowance(userId);
+
+    if (!allowance.allowed) {
+      // User has used free reference and has no paid allowance
+      logger.info('Reference request blocked - payment required', {
+        requestId: req.requestId,
+        userId,
+        reason: allowance.reason
+      });
+      return res.status(402).json({
+        error: 'PAYMENT_REQUIRED',
+        product_code: 'additional_reference'
+      });
+    }
+
+    // Create the reference request
     const result = await ReferenceService.createReferenceRequest(req.body);
+
+    // Consume the allowance after successful creation
+    if (allowance.consumeType) {
+      const consumeResult = await consumeReferenceAllowance(
+        userId,
+        allowance.consumeType,
+        allowance.flagId
+      );
+
+      if (!consumeResult.success) {
+        // Log but don't fail the request - reference was created
+        logger.warn('Failed to consume reference allowance', {
+          requestId: req.requestId,
+          userId,
+          consumeType: allowance.consumeType,
+          error: consumeResult.error
+        });
+      }
+    }
+
     res.json(result);
   } catch (e) {
     logger.error('Failed to create reference request', {
