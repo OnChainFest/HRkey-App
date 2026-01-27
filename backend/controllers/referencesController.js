@@ -35,7 +35,13 @@ const maskEmailForLogs = (email) => {
  * GET /api/references/me
  * Returns all references for the authenticated user (self-only)
  *
+ * Query params:
+ * - usableOnly: boolean - If true, only return ACCEPTED references
+ * - pendingReviewOnly: boolean - If true, only return SUBMITTED/REVISION_REQUESTED
+ * - includeOmitted: boolean - If true, include OMITTED references
+ *
  * Authorization: Authenticated users only, returns own references
+ * FASE 1: Extended to support candidate review workflow statuses
  */
 export async function getMyReferences(req, res) {
   try {
@@ -49,9 +55,14 @@ export async function getMyReferences(req, res) {
       });
     }
 
-    // Fetch references where user is the owner
+    // Parse query parameters for filtering
+    const usableOnly = req.query.usableOnly === 'true';
+    const pendingReviewOnly = req.query.pendingReviewOnly === 'true';
+    const includeOmitted = req.query.includeOmitted === 'true';
+
+    // Build query with status filtering
     // SECURITY: Do NOT include referrer_email - only superadmins can see emails
-    const { data: references, error } = await supabase
+    let query = supabase
       .from('references')
       .select(`
         id,
@@ -69,11 +80,28 @@ export async function getMyReferences(req, res) {
         reference_type,
         correction_of,
         is_correction,
-        created_at
+        created_at,
+        accepted_at,
+        revision_requested_at,
+        revision_count
       `)
-      .eq('owner_id', userId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false });
+      .eq('owner_id', userId);
+
+    // Apply status filters based on query params
+    if (usableOnly) {
+      // Only ACCEPTED references are usable
+      query = query.eq('status', 'ACCEPTED');
+    } else if (pendingReviewOnly) {
+      // References awaiting candidate review
+      query = query.in('status', ['SUBMITTED', 'REVISION_REQUESTED']);
+    } else if (!includeOmitted) {
+      // Default: show active (legacy), SUBMITTED, REVISION_REQUESTED, ACCEPTED
+      // Exclude OMITTED unless explicitly requested
+      query = query.in('status', ['active', 'SUBMITTED', 'REVISION_REQUESTED', 'ACCEPTED']);
+    }
+    // If includeOmitted is true and no other filter, return all
+
+    const { data: references, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       logger.error('Failed to fetch user references', {
@@ -88,10 +116,27 @@ export async function getMyReferences(req, res) {
       });
     }
 
+    // Count by status for UI
+    const statusCounts = {
+      submitted: 0,
+      revision_requested: 0,
+      accepted: 0,
+      omitted: 0,
+      active: 0 // legacy
+    };
+
+    (references || []).forEach(ref => {
+      const status = ref.status?.toLowerCase();
+      if (status in statusCounts) {
+        statusCounts[status]++;
+      }
+    });
+
     return res.status(200).json({
       ok: true,
       references: references || [],
-      count: references?.length || 0
+      count: references?.length || 0,
+      statusCounts
     });
 
   } catch (err) {
@@ -619,6 +664,324 @@ export async function unhideReference(req, res) {
   }
 }
 
+/**
+ * POST /api/references/:referenceId/accept
+ * Accept a reference (candidate approves, making it usable)
+ *
+ * Authorization: Owner only
+ * FASE 1: Candidate controls references before they become usable
+ */
+export async function acceptReference(req, res) {
+  try {
+    const { referenceId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        ok: false,
+        error: 'UNAUTHORIZED',
+        message: 'Authentication required'
+      });
+    }
+
+    if (!referenceId) {
+      return res.status(400).json({
+        ok: false,
+        error: 'INVALID_REQUEST',
+        message: 'Reference ID is required'
+      });
+    }
+
+    // Call the database function
+    const { data, error } = await supabase.rpc('accept_reference', {
+      ref_id: referenceId,
+      user_id: userId
+    });
+
+    if (error) {
+      logger.error('Failed to accept reference', {
+        requestId: req.requestId,
+        userId,
+        referenceId,
+        error: error.message
+      });
+
+      // Check for permission/state errors
+      if (error.message.includes('Only the reference owner')) {
+        return res.status(403).json({
+          ok: false,
+          error: 'FORBIDDEN',
+          message: 'You do not have permission to accept this reference'
+        });
+      }
+
+      if (error.message.includes('cannot be accepted')) {
+        return res.status(422).json({
+          ok: false,
+          error: 'INVALID_STATE',
+          message: error.message
+        });
+      }
+
+      if (error.message.includes('not found')) {
+        return res.status(404).json({
+          ok: false,
+          error: 'NOT_FOUND',
+          message: 'Reference not found'
+        });
+      }
+
+      return res.status(500).json({
+        ok: false,
+        error: 'DATABASE_ERROR',
+        message: 'Failed to accept reference'
+      });
+    }
+
+    logger.info('Reference accepted successfully', {
+      requestId: req.requestId,
+      userId,
+      referenceId
+    });
+
+    return res.status(200).json({
+      ok: true,
+      message: 'Reference accepted successfully',
+      referenceId,
+      status: 'ACCEPTED'
+    });
+
+  } catch (err) {
+    logger.error('Exception in acceptReference', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      referenceId: req.params?.referenceId,
+      error: err.message,
+      stack: isProductionEnv ? undefined : err.stack
+    });
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred'
+    });
+  }
+}
+
+/**
+ * POST /api/references/:referenceId/request-revision
+ * Request revision for a reference (candidate asks for changes)
+ *
+ * Authorization: Owner only
+ * FASE 1: Candidate controls references before they become usable
+ */
+export async function requestRevision(req, res) {
+  try {
+    const { referenceId } = req.params;
+    const { reason } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        ok: false,
+        error: 'UNAUTHORIZED',
+        message: 'Authentication required'
+      });
+    }
+
+    if (!referenceId) {
+      return res.status(400).json({
+        ok: false,
+        error: 'INVALID_REQUEST',
+        message: 'Reference ID is required'
+      });
+    }
+
+    // Call the database function
+    const { data, error } = await supabase.rpc('request_reference_revision', {
+      ref_id: referenceId,
+      user_id: userId,
+      reason: reason || null
+    });
+
+    if (error) {
+      logger.error('Failed to request revision', {
+        requestId: req.requestId,
+        userId,
+        referenceId,
+        error: error.message
+      });
+
+      // Check for permission/state errors
+      if (error.message.includes('Only the reference owner')) {
+        return res.status(403).json({
+          ok: false,
+          error: 'FORBIDDEN',
+          message: 'You do not have permission to request revision for this reference'
+        });
+      }
+
+      if (error.message.includes('can only be requested')) {
+        return res.status(422).json({
+          ok: false,
+          error: 'INVALID_STATE',
+          message: error.message
+        });
+      }
+
+      if (error.message.includes('not found')) {
+        return res.status(404).json({
+          ok: false,
+          error: 'NOT_FOUND',
+          message: 'Reference not found'
+        });
+      }
+
+      return res.status(500).json({
+        ok: false,
+        error: 'DATABASE_ERROR',
+        message: 'Failed to request revision'
+      });
+    }
+
+    logger.info('Revision requested successfully', {
+      requestId: req.requestId,
+      userId,
+      referenceId,
+      hasReason: !!reason
+    });
+
+    // TODO: Later phase - send notification email to referee about revision request
+
+    return res.status(200).json({
+      ok: true,
+      message: 'Revision requested successfully',
+      referenceId,
+      status: 'REVISION_REQUESTED'
+    });
+
+  } catch (err) {
+    logger.error('Exception in requestRevision', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      referenceId: req.params?.referenceId,
+      error: err.message,
+      stack: isProductionEnv ? undefined : err.stack
+    });
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred'
+    });
+  }
+}
+
+/**
+ * POST /api/references/:referenceId/omit
+ * Omit a reference (candidate hides with visible strikethrough)
+ *
+ * Authorization: Owner only
+ * Philosophy: Hidden != erased. Strikethrough remains visible forever.
+ * FASE 1: Candidate controls references before they become usable
+ */
+export async function omitReference(req, res) {
+  try {
+    const { referenceId } = req.params;
+    const { reason } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        ok: false,
+        error: 'UNAUTHORIZED',
+        message: 'Authentication required'
+      });
+    }
+
+    if (!referenceId) {
+      return res.status(400).json({
+        ok: false,
+        error: 'INVALID_REQUEST',
+        message: 'Reference ID is required'
+      });
+    }
+
+    // Call the database function
+    const { data, error } = await supabase.rpc('omit_reference', {
+      ref_id: referenceId,
+      user_id: userId,
+      reason: reason || null
+    });
+
+    if (error) {
+      logger.error('Failed to omit reference', {
+        requestId: req.requestId,
+        userId,
+        referenceId,
+        error: error.message
+      });
+
+      // Check for permission/state errors
+      if (error.message.includes('Only the reference owner')) {
+        return res.status(403).json({
+          ok: false,
+          error: 'FORBIDDEN',
+          message: 'You do not have permission to omit this reference'
+        });
+      }
+
+      if (error.message.includes('cannot be omitted')) {
+        return res.status(422).json({
+          ok: false,
+          error: 'INVALID_STATE',
+          message: error.message
+        });
+      }
+
+      if (error.message.includes('not found')) {
+        return res.status(404).json({
+          ok: false,
+          error: 'NOT_FOUND',
+          message: 'Reference not found'
+        });
+      }
+
+      return res.status(500).json({
+        ok: false,
+        error: 'DATABASE_ERROR',
+        message: 'Failed to omit reference'
+      });
+    }
+
+    logger.info('Reference omitted successfully', {
+      requestId: req.requestId,
+      userId,
+      referenceId,
+      hasReason: !!reason
+    });
+
+    return res.status(200).json({
+      ok: true,
+      message: 'Reference omitted successfully',
+      referenceId,
+      status: 'OMITTED'
+    });
+
+  } catch (err) {
+    logger.error('Exception in omitReference', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      referenceId: req.params?.referenceId,
+      error: err.message,
+      stack: isProductionEnv ? undefined : err.stack
+    });
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred'
+    });
+  }
+}
+
 export default {
   getMyReferences,
   getCandidateReferences,
@@ -626,5 +989,9 @@ export default {
   requestReferenceInvite,
   respondToReferenceInvite,
   hideReference,
-  unhideReference
+  unhideReference,
+  // FASE 1: Candidate review workflow
+  acceptReference,
+  requestRevision,
+  omitReference
 };

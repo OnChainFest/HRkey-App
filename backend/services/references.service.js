@@ -121,21 +121,57 @@ export async function fetchInviteByToken(token) {
   return findInviteByTokenValue(token);
 }
 
-export async function fetchSelfReferences(userId) {
-  return supabase
+/**
+ * Fetch references for the authenticated user (self)
+ * @param {string} userId - User ID
+ * @param {Object} options - Filter options
+ * @param {boolean} options.usableOnly - If true, only return ACCEPTED references
+ * @param {boolean} options.pendingReviewOnly - If true, only return SUBMITTED/REVISION_REQUESTED
+ * @param {boolean} options.includeOmitted - If true, include OMITTED references
+ */
+export async function fetchSelfReferences(userId, options = {}) {
+  const { usableOnly = false, pendingReviewOnly = false, includeOmitted = false } = options;
+
+  let query = supabase
     .from('references')
-    .select('id, referrer_name, relationship, summary, overall_rating, kpi_ratings, status, created_at, validation_status, role_id')
-    .eq('owner_id', userId)
-    .eq('status', 'active')
-    .order('created_at', { ascending: false });
+    .select('id, referrer_name, relationship, summary, overall_rating, kpi_ratings, status, created_at, validation_status, role_id, is_hidden, hidden_at, reference_type, accepted_at, revision_requested_at, revision_count')
+    .eq('owner_id', userId);
+
+  if (usableOnly) {
+    // Only ACCEPTED references are usable
+    query = query.eq('status', 'ACCEPTED');
+  } else if (pendingReviewOnly) {
+    // References awaiting candidate review
+    query = query.in('status', ['SUBMITTED', 'REVISION_REQUESTED']);
+  } else if (!includeOmitted) {
+    // Default: show active, SUBMITTED, REVISION_REQUESTED, ACCEPTED (exclude OMITTED)
+    query = query.in('status', ['active', 'SUBMITTED', 'REVISION_REQUESTED', 'ACCEPTED']);
+  }
+  // If includeOmitted is true, no status filter - return all
+
+  return query.order('created_at', { ascending: false });
 }
 
-export async function fetchCandidateReferences(candidateId) {
-  return supabase
+/**
+ * Fetch references for a candidate (superadmin/company view)
+ * @param {string} candidateId - Candidate user ID
+ * @param {Object} options - Filter options
+ * @param {boolean} options.usableOnly - If true, only return ACCEPTED references
+ */
+export async function fetchCandidateReferences(candidateId, options = {}) {
+  const { usableOnly = false } = options;
+
+  let query = supabase
     .from('references')
-    .select('id, owner_id, referrer_name, referrer_email, relationship, summary, overall_rating, kpi_ratings, status, created_at, validation_status, role_id')
-    .eq('owner_id', candidateId)
-    .order('created_at', { ascending: false });
+    .select('id, owner_id, referrer_name, referrer_email, relationship, summary, overall_rating, kpi_ratings, status, created_at, validation_status, role_id, is_hidden, hidden_at, reference_type, accepted_at')
+    .eq('owner_id', candidateId);
+
+  if (usableOnly) {
+    // Only ACCEPTED references are usable for external viewers
+    query = query.eq('status', 'ACCEPTED');
+  }
+
+  return query.order('created_at', { ascending: false });
 }
 
 export class ReferenceService {
@@ -242,7 +278,8 @@ export class ReferenceService {
         overall_rating: overall,
         kpi_ratings: ratings,
         detailed_feedback: comments || {},
-        status: 'active',
+        // FASE 1: Reference enters SUBMITTED state, awaiting candidate review
+        status: 'SUBMITTED',
         created_at: new Date().toISOString(),
         invite_id: inviteRecord.id
       };

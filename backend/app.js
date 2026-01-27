@@ -1230,6 +1230,41 @@ app.post(
 );
 
 /* =========================
+   FASE 1: Candidate Review Workflow
+   - Candidate controls references before they become usable
+   ========================= */
+
+/**
+ * POST /api/references/:referenceId/accept
+ * Candidate accepts a reference, making it usable
+ */
+app.post('/api/references/:referenceId/accept', requireAuth, referencesController.acceptReference);
+
+/**
+ * POST /api/references/:referenceId/request-revision
+ * Candidate requests changes to a reference
+ */
+app.post('/api/references/:referenceId/request-revision', requireAuth, referencesController.requestRevision);
+
+/**
+ * POST /api/references/:referenceId/omit
+ * Candidate omits a reference (strikethrough display)
+ */
+app.post('/api/references/:referenceId/omit', requireAuth, referencesController.omitReference);
+
+/**
+ * POST /api/references/:referenceId/hide
+ * Hide a reference (legacy - now maps to omit)
+ */
+app.post('/api/references/:referenceId/hide', requireAuth, referencesController.hideReference);
+
+/**
+ * POST /api/references/:referenceId/unhide
+ * Unhide a previously hidden reference
+ */
+app.post('/api/references/:referenceId/unhide', requireAuth, referencesController.unhideReference);
+
+/* =========================
    AI Reference Refinement
    ========================= */
 app.post(
