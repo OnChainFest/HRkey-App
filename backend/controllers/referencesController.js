@@ -17,6 +17,12 @@ import {
   fetchInviteByToken,
   hashInviteToken
 } from '../services/references.service.js';
+import {
+  tattooReference as tattooReferenceService,
+  verifyReferenceIntegrity,
+  computeIntegrityStatus,
+  addIntegrityStatusToReferences
+} from '../services/referenceTattoo.service.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -69,7 +75,12 @@ export async function getMyReferences(req, res) {
         reference_type,
         correction_of,
         is_correction,
-        created_at
+        created_at,
+        tattoo_tx_hash,
+        tattoo_chain_id,
+        tattooed_at,
+        canonical_hash,
+        role_id
       `)
       .eq('owner_id', userId)
       .eq('status', 'active')
@@ -88,10 +99,13 @@ export async function getMyReferences(req, res) {
       });
     }
 
+    // Compute integrity_status for each reference
+    const referencesWithIntegrity = addIntegrityStatusToReferences(references || []);
+
     return res.status(200).json({
       ok: true,
-      references: references || [],
-      count: references?.length || 0
+      references: referencesWithIntegrity,
+      count: referencesWithIntegrity.length
     });
 
   } catch (err) {
@@ -619,6 +633,196 @@ export async function unhideReference(req, res) {
   }
 }
 
+/**
+ * POST /api/references/:referenceId/tattoo
+ * Tattoo a reference on-chain (immutable hash commitment)
+ *
+ * Authorization: Owner only
+ * Preconditions:
+ * - Reference exists
+ * - Reference is not hidden
+ * - Reference is not rejected
+ * - Reference is not already tattooed
+ *
+ * Philosophy: Tattoo is immutable. Once done, it cannot be undone.
+ * If the reference content changes after tattoo, integrity becomes INVALID.
+ */
+export async function tattooReference(req, res) {
+  try {
+    const { referenceId } = req.params;
+    const { force_confirmation } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        ok: false,
+        error: 'UNAUTHORIZED',
+        message: 'Authentication required'
+      });
+    }
+
+    if (!referenceId) {
+      return res.status(400).json({
+        ok: false,
+        error: 'INVALID_REQUEST',
+        message: 'Reference ID is required'
+      });
+    }
+
+    // UUID format validation
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(referenceId)) {
+      return res.status(400).json({
+        ok: false,
+        error: 'INVALID_REFERENCE_ID',
+        message: 'Invalid reference ID format'
+      });
+    }
+
+    logger.info('Tattoo reference request', {
+      requestId: req.requestId,
+      userId,
+      referenceId,
+      forceConfirmation: !!force_confirmation
+    });
+
+    // Call the tattoo service
+    const result = await tattooReferenceService(referenceId, userId, {
+      forceConfirmation: force_confirmation
+    });
+
+    logger.info('Reference tattooed successfully', {
+      requestId: req.requestId,
+      userId,
+      referenceId,
+      txHash: result.tattoo_tx_hash,
+      chainId: result.tattoo_chain_id
+    });
+
+    return res.status(200).json({
+      ok: true,
+      message: 'Reference tattooed successfully',
+      ...result
+    });
+
+  } catch (err) {
+    const status = err.status || 500;
+    const code = err.code || 'INTERNAL_ERROR';
+
+    logger.error('Failed to tattoo reference', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      referenceId: req.params?.referenceId,
+      error: err.message,
+      code,
+      stack: isProductionEnv ? undefined : err.stack
+    });
+
+    // Return specific error details for known errors
+    if (err.code === 'ALREADY_TATTOOED') {
+      return res.status(status).json({
+        ok: false,
+        error: code,
+        message: err.message,
+        details: err.details
+      });
+    }
+
+    if (err.code === 'BLOCKCHAIN_NOT_CONFIGURED') {
+      return res.status(status).json({
+        ok: false,
+        error: code,
+        message: 'Blockchain integration is not configured'
+      });
+    }
+
+    return res.status(status).json({
+      ok: false,
+      error: code,
+      message: status >= 500 ? 'Failed to tattoo reference' : err.message
+    });
+  }
+}
+
+/**
+ * GET /api/references/:referenceId/integrity
+ * Check the integrity of a tattooed reference
+ *
+ * Authorization: Owner or superadmin
+ * Returns detailed integrity verification including local/on-chain hash comparison
+ */
+export async function checkReferenceIntegrity(req, res) {
+  try {
+    const { referenceId } = req.params;
+    const { force_onchain_read } = req.query;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+
+    if (!userId) {
+      return res.status(401).json({
+        ok: false,
+        error: 'UNAUTHORIZED',
+        message: 'Authentication required'
+      });
+    }
+
+    // Fetch reference
+    const { data: reference, error: fetchError } = await supabase
+      .from('references')
+      .select('*')
+      .eq('id', referenceId)
+      .single();
+
+    if (fetchError || !reference) {
+      return res.status(404).json({
+        ok: false,
+        error: 'NOT_FOUND',
+        message: 'Reference not found'
+      });
+    }
+
+    // Check authorization (owner or superadmin)
+    const isSuperadmin = userRole === 'superadmin';
+    const isOwner = reference.owner_id === userId;
+
+    if (!isOwner && !isSuperadmin) {
+      return res.status(403).json({
+        ok: false,
+        error: 'FORBIDDEN',
+        message: 'You do not have permission to check this reference'
+      });
+    }
+
+    // Verify integrity
+    const integrity = await verifyReferenceIntegrity(reference, {
+      forceOnchainRead: force_onchain_read === 'true'
+    });
+
+    return res.status(200).json({
+      ok: true,
+      reference_id: referenceId,
+      ...integrity
+    });
+
+  } catch (err) {
+    const status = err.status || 500;
+
+    logger.error('Failed to check reference integrity', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      referenceId: req.params?.referenceId,
+      error: err.message,
+      stack: isProductionEnv ? undefined : err.stack
+    });
+
+    return res.status(status).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+      message: status >= 500 ? 'Failed to check integrity' : err.message
+    });
+  }
+}
+
 export default {
   getMyReferences,
   getCandidateReferences,
@@ -626,5 +830,7 @@ export default {
   requestReferenceInvite,
   respondToReferenceInvite,
   hideReference,
-  unhideReference
+  unhideReference,
+  tattooReference,
+  checkReferenceIntegrity
 };

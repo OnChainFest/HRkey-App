@@ -4,8 +4,16 @@ import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabaseClient";
 import { apiPost, ApiClientError } from "../../lib/apiClient";
+import { ReferenceIntegrityBadge } from "../../components/ReferenceIntegrityBadge";
 
-type Row = Record<string, any>
+type IntegrityStatus = "VALID" | "INVALID" | "UNKNOWN";
+
+type Row = Record<string, any> & {
+  integrity_status?: IntegrityStatus;
+  tattoo_tx_hash?: string | null;
+  tattoo_chain_id?: number | null;
+  tattooed_at?: string | null;
+}
 
 export default function Dashboard() {
   const router = useRouter()
@@ -194,6 +202,44 @@ export default function Dashboard() {
     }
   }
 
+  // Tattoo reference on-chain (immutable integrity commitment)
+  const tattooReference = async (id: string) => {
+    if (!confirm("¿Tatuar esta referencia en blockchain? Esta acción es IRREVERSIBLE. Si el contenido cambia después, la verificación mostrará 'Modificado'.")) return
+
+    setMsg("Tatuando referencia en blockchain…")
+    try {
+      const result = await apiPost(`/api/references/${id}/tattoo`, {}) as {
+        ok: boolean;
+        tattoo_tx_hash: string;
+        tattoo_chain_id: number;
+        tattooed_at: string;
+        integrity_status: string;
+      }
+
+      const explorerUrl = result.tattoo_chain_id === 8453
+        ? `https://basescan.org/tx/${result.tattoo_tx_hash}`
+        : `https://sepolia.basescan.org/tx/${result.tattoo_tx_hash}`
+
+      setMsg(`Referencia tatuada exitosamente.\n\nTx: ${result.tattoo_tx_hash}\n\nVer en explorer: ${explorerUrl}`)
+      await load()
+    } catch (err) {
+      if (err instanceof ApiClientError) {
+        if (err.status === 503) {
+          setMsg("⚠️ La integración blockchain no está configurada en este entorno.")
+          return
+        }
+        if (err.status === 409) {
+          setMsg("ℹ️ Esta referencia ya fue tatuada anteriormente.")
+          return
+        }
+      }
+      const errorMsg = err instanceof ApiClientError
+        ? err.message
+        : "Error al tatuar la referencia"
+      setMsg(`Error: ${errorMsg}`)
+    }
+  }
+
   // Enviar invitación y pasar a "submitted"
   const sendInvite = async (r: Row) => {
     setMsg("Creando invitación…")
@@ -333,6 +379,17 @@ export default function Dashboard() {
                   <div><div style={{ fontWeight: 600 }}>Creado</div><div>{fmt(r.created_at)}</div></div>
                 </div>
 
+                {/* Integrity Badge */}
+                <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontWeight: 600, fontSize: 14 }}>Integridad:</span>
+                  <ReferenceIntegrityBadge
+                    status={r.integrity_status || "UNKNOWN"}
+                    txHash={r.tattoo_tx_hash}
+                    chainId={r.tattoo_chain_id}
+                    tattooedAt={r.tattooed_at}
+                  />
+                </div>
+
                 <div style={{ marginTop: 10 }}>
                   <div style={{ fontWeight: 600, marginBottom: 4 }}>Resumen</div>
                   <div style={{ whiteSpace: "pre-wrap" }}>{r.summary ?? "—"}</div>
@@ -372,6 +429,16 @@ export default function Dashboard() {
                     ) : (
                       <button onClick={() => hideReference(r.id)} style={{ backgroundColor: "#64748b", color: "white" }}>
                         Ocultar
+                      </button>
+                    )}
+                    {/* Tattoo button - only show if not hidden and not already tattooed */}
+                    {!r.is_hidden && !r.tattoo_tx_hash && (
+                      <button
+                        onClick={() => tattooReference(r.id)}
+                        style={{ backgroundColor: "#7c3aed", color: "white" }}
+                        title="Guardar hash de esta referencia en blockchain (irreversible)"
+                      >
+                        Tatuar en blockchain
                       </button>
                     )}
                   </div>

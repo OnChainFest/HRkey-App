@@ -1230,6 +1230,34 @@ app.post(
 );
 
 /* =========================
+   Reference Tattoo & Integrity
+   ========================= */
+
+/**
+ * POST /api/references/:referenceId/tattoo
+ *
+ * Tattoo a reference on-chain (immutable hash commitment).
+ * Owner only. Once tattooed, content changes will mark integrity as INVALID.
+ */
+app.post(
+  '/api/references/:referenceId/tattoo',
+  requireAuth,
+  referencesController.tattooReference
+);
+
+/**
+ * GET /api/references/:referenceId/integrity
+ *
+ * Check the integrity of a tattooed reference.
+ * Compares local hash vs on-chain hash.
+ */
+app.get(
+  '/api/references/:referenceId/integrity',
+  requireAuth,
+  referencesController.checkReferenceIntegrity
+);
+
+/* =========================
    AI Reference Refinement
    ========================= */
 app.post(
