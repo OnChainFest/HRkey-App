@@ -37,3 +37,9 @@ nul
 **/nul
 **/nodemon
 **/hrkey-backend@1.0.0
+
+# Large media (do not commit)
+*.mp4
+*.mov
+*.mkv
+*.avi
