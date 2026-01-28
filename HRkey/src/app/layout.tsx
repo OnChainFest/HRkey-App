@@ -5,7 +5,7 @@ import Providers from "./providers";
 
 export const metadata: Metadata = {
   title: "HRKey",
-  description: "Own Your Professional Story",
+  description: "HRKey — Verified professional references under your control",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
