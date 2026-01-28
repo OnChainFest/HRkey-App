@@ -3,6 +3,8 @@
 import Head from "next/head";
 import { useEffect, useMemo, useState } from "react";
 
+import { useParams } from "next/navigation";
+
 const ENV_API_BASE =
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
@@ -36,18 +38,20 @@ type PublicProfileResponse = {
   hrScore: number;
   priceUsd: number;
 };
-
-type PageProps = {
-  params: { identifier: string };
-};
-
-export default function PublicProfilePage({ params }: PageProps) {
-  const { identifier } = params;
+export default function PublicProfilePage() {
+  const params = useParams<{ identifier?: string | string[] }>();
+  const identifier = Array.isArray(params?.identifier) ? params?.identifier[0] : params?.identifier;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<PublicProfileResponse | null>(null);
 
   useEffect(() => {
+    if (!identifier) {
+      setError("Missing profile identifier.");
+      setLoading(false);
+      return;
+    }
+
     const load = async () => {
       try {
         setLoading(true);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiGet } from "@/lib/apiClient";
 import { supabase } from "@/lib/supabaseClient";
@@ -33,18 +33,22 @@ type Request = {
   dataAccessedAt?: string;
   accessCount: number;
 };
+export default function DataAccessRequestStatusPage() {
+  const params = useParams<{ requestId?: string | string[] }>();
+  const requestId = Array.isArray(params?.requestId) ? params?.requestId[0] : params?.requestId;
 
-type PageProps = {
-  params: { requestId: string };
-};
-
-export default function DataAccessRequestStatusPage({ params }: PageProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [request, setRequest] = useState<Request | null>(null);
 
   useEffect(() => {
+    if (!requestId) {
+      setError("Missing data access request ID.");
+      setLoading(false);
+      return;
+    }
+
     const loadRequest = async () => {
       try {
         setLoading(true);
@@ -58,7 +62,7 @@ export default function DataAccessRequestStatusPage({ params }: PageProps) {
         }
 
         const result = await apiGet<{ success: boolean; request: Request }>(
-          `/api/data-access/request/${params.requestId}`
+          `/api/data-access/request/${requestId}`
         );
 
         if (result.success && result.request) {
@@ -79,7 +83,7 @@ export default function DataAccessRequestStatusPage({ params }: PageProps) {
     };
 
     loadRequest();
-  }, [params.requestId]);
+  }, [requestId]);
 
   const getStatusBadge = (status: string) => {
     const statusLower = status.toLowerCase();

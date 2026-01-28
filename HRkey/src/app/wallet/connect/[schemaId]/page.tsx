@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   buildViewAndConsent,
   encryptString,
@@ -54,6 +55,7 @@ export default function WalletConnectPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   const [message, setMessage] = useState<string>('');
 
+  const supabaseClient = supabase as SupabaseClient;
   const apiBase = useMemo(() => getApiBase(), []);
 
   useEffect(() => {
@@ -101,7 +103,7 @@ export default function WalletConnectPage() {
     const loadMatches = async () => {
       if (!schema || !subjectId) return;
       try {
-        const vaultIndex = new SupabaseVaultIndex({ subject: subjectId, supabase });
+        const vaultIndex = new SupabaseVaultIndex({ subject: subjectId, supabase: supabaseClient });
         const results = await matchMarketSchemaFields(schema, vaultIndex);
         setDecisions(results);
         const nextState: Record<string, FieldFormState> = {};
