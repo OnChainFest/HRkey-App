@@ -15,36 +15,25 @@ dist/
 .env.production
 .env.production.local
 backend/.env
-
 # Logs
 *.log
 logs/
 *.pid
 *.seed
 *.pid.lock
-
 # OS / editor
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
 *.swp
-
 # Vercel
 .vercel/
 .next/
-
 # TypeScript build
 *.tsbuildinfo
-
 # --- local junk (windows / node / accidental artifacts) ---
 nul
 **/nul
 **/nodemon
 **/hrkey-backend@1.0.0
-/WebDapp/
-!/HRkey/public/WebDapp/
-backend/env.js
-backend/utils/appUrl.js
-backend/utils/supabaseClient.js
-.next/
