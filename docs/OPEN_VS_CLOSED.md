@@ -2,6 +2,11 @@
 
 This repository contains both protocol-safe components (OPEN) and proprietary intelligence (CLOSED).
 
+> **Note:** OPEN protocol components have been exported to the dedicated public repository:
+> **[hrkey-protocol](https://github.com/OnChainFest/hrkey-protocol)**
+>
+> The protocol repo contains: smart contracts, SDL primitives, deploy scripts, and integration docs.
+
 ## OPEN (safe for public contribution)
 - Protocol rails, interfaces, and integration scaffolding
 - Consent & permission gates, schema definitions, verifiers, wallet adapters
