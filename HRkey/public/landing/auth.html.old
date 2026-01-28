@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base href="/WebDapp/">
+  
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HRKey - Sign Up / Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- 🔧 Variables de entorno (rellenar con tus valores reales) -->
+  <script>
+    // ⬇️ RELLENA con tu proyecto de Supabase (anon key es pública, NO uses service role)
+    window.__SUPABASE_URL__ = "https://wrervcydgdrlcndtjboy.supabase.co";
+    window.__SUPABASE_ANON_KEY__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXJ2Y3lkZ2RybGNuZHRqYm95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NzYxNTYsImV4cCI6MjA3MzU1MjE1Nn0.63M53sZW4LEYMOaxScvtLhQr_6VUj7rOaaGtlR745IM";
+  </script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Rubik', Arial, sans-serif;
+      background: linear-gradient(135deg, #000000 0%, #00C4C7 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 500px;
+      width: 100%;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+      padding: 40px;
+      text-align: center;
+    }
+    .logo { font-size: 48px; margin-bottom: 15px; }
+    .header h1 { color: #00C4C7; font-size: 28px; margin-bottom: 10px; }
+    .header p { color: #888; font-size: 14px; }
+    .content { padding: 40px; }
+
+    /* Referee banner */
+    .referee-banner {
+      background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+      border-left: 4px solid #00C4C7;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      display: none;
+    }
+    .referee-banner.active { display: block; animation: slideIn 0.5s ease; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .referee-banner h3 { color: #00C4C7; font-size: 18px; margin-bottom: 10px; }
+    .referee-banner p { color: #1e293b; font-size: 14px; line-height: 1.6; }
+
+    
+
+    .form-group { margin-bottom: 20px; }
+    label { display:block; font-weight:600; color:#334155; margin-bottom:8px; font-size:14px; }
+    input {
+      width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px;
+      font-family: 'Rubik', Arial, sans-serif; transition: border-color .3s;
+    }
+    input:focus { outline:none; border-color:#00C4C7; }
+
+    .btn-primary {
+      width:100%; padding:16px; background:linear-gradient(135deg,#00C4C7 0%,#00d2cc 100%); color:#000;
+      border:none; border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; transition:.3s;
+      box-shadow:0 4px 15px rgba(0,196,199,.4);
+    }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(0,196,199,.6); }
+
+    .btn-google {
+      width: 100%; padding: 16px; background: #fff; color:#000; border:2px solid #e2e8f0;
+      border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; transition:.3s; margin-top:15px;
+      box-shadow:0 2px 8px rgba(0,0,0,.1);
+    }
+    .btn-google:hover { background:#f8f9fa; box-shadow:0 4px 12px rgba(0,0,0,.15); transform:translateY(-1px); }
+
+    .btn-wallet {
+      width: 100%; padding: 16px; background: transparent; color:#00C4C7; border:2px solid #00C4C7;
+      border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; transition:.3s; margin-top:15px;
+    }
+    .btn-wallet:hover { background:#00C4C7; color:#000; }
+
+    .divider { text-align:center; margin:25px 0; color:#94a3b8; font-size:14px; position:relative; }
+    .divider::before, .divider::after {
+      content:''; position:absolute; top:50%; width:40%; height:1px; background:#e2e8f0;
+    }
+    .divider::before { left:0; } .divider::after { right:0; }
+
+    .benefits { margin-top:30px; padding-top:25px; border-top:1px solid #e2e8f0; }
+    .benefit-item { display:flex; align-items:center; margin-bottom:15px; font-size:14px; color:#64748b; }
+    .benefit-icon { font-size:20px; margin-right:12px; }
+    .footer-note { text-align:center; margin-top:25px; font-size:12px; color:#94a3b8; }
+  </style>
+
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">🔐</div>
+      <h1>Welcome to HRKey</h1>
+      <p id="headerSubtitle">Build your verified professional profile</p>
+    </div>
+
+    <div class="content">
+      <!-- Referee banner -->
+      <div class="referee-banner" id="refereeBanner">
+        <h3>🎉 Thanks for providing a reference!</h3>
+        <p>You've seen how HRKey works. Now create your own profile and start building your decentralized professional reputation with blockchain-verified references.</p>
+      </div>
+
+      <form id="authForm" novalidate>
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" placeholder="Enter your full name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" placeholder="your.email@company.com" required>
+        </div>
+
+        <button type="submit" class="btn-primary" id="submitBtn">🚀 Create Free Account</button>
+      </form>
+
+      <div class="divider">OR</div>
+
+      <button class="btn-google" id="googleBtn">🔐 Continue with Google</button>
+
+      <button class="btn-wallet" id="walletBtn">🦊 Connect with MetaMask</button>
+
+      <div class="benefits">
+        <div class="benefit-item"><span class="benefit-icon">✅</span><span>1 free blockchain-verified reference</span></div>
+        <div class="benefit-item"><span class="benefit-icon">⚡</span><span>Setup in less than 2 minutes</span></div>
+        <div class="benefit-item"><span class="benefit-icon">🔐</span><span>Secure & decentralized profile</span></div>
+        <div class="benefit-item"><span class="benefit-icon">🌐</span><span>Share with employers worldwide</span></div>
+      </div>
+
+      <div class="footer-note">
+        <p>By signing up, you agree to our Terms of Service</p>
+        <p style="margin-top: 5px;">Already have an account? <a href="/dashboard" style="color: #00C4C7; text-decoration: none;">Sign in</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tu módulo actual -->
+  <script type="module" src="js/wallet-auth.js"></script>
+
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    // ================== CONFIG ==================
+    const SUPABASE_URL = window.__SUPABASE_URL__;
+    const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    
+
+    const url = new URL(window.location.href);
+
+    // ============== HELPERS =====================
+    
+
+    const goToApp = (extraQuery = "") => {
+      const base = "/WebDapp/app.html";
+      const qs = extraQuery ? (extraQuery.startsWith("?") ? extraQuery : `?${extraQuery}`) : "";
+      window.location.replace(base + qs);
+    };
+
+    // ============== REFEREE BANNER ==============
+    const refereeInfo = localStorage.getItem("hrkey_referee_info");
+    if (refereeInfo) {
+      try {
+        const data = JSON.parse(refereeInfo);
+        if (data.hasProvidedReference) {
+          document.getElementById("refereeBanner").classList.add("active");
+          document.getElementById("headerSubtitle").textContent = "Now build your own verified profile!";
+        }
+      } catch {}
+    }
+
+    // ============== SUPABASE CALLBACK ============
+    const code = url.searchParams.get("code");
+    const errorDesc = url.searchParams.get("error_description");
+    if (errorDesc) console.error("Auth error:", errorDesc);
+
+    if (code) {
+      // Intercambia el code por sesión y manda a app.html
+      try {
+        const { error } = await supabase.auth.exchangeCodeForSession({ code });
+        if (error) {
+          console.error("exchangeCodeForSession error:", error);
+        } else {
+          const next = url.searchParams.get("next") || "/WebDapp/app.html";
+          history.replaceState({}, document.title, "/auth"); // limpia ?code
+          window.location.replace(next);
+        }
+      } catch (e) {
+        console.error("Exchange failed:", e);
+      }
+    } else {
+      // Si ya hay sesión, ir directo a app.html
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) window.location.replace("/WebDapp/app.html");
+    }
+
+    // ============== FORM HANDLERS =================
+    const form = document.getElementById("authForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const walletBtn = document.getElementById("walletBtn");
+
+    if (form && submitBtn) {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        const old = submitBtn.textContent;
+        submitBtn.textContent = "⏳ Creating account...";
+
+        // Simulación de alta local (demo)
+        const name = document.getElementById("name")?.value?.trim() || "";
+        const email = document.getElementById("email")?.value?.trim() || "";
+        const userData = {
+          name,
+          email,
+          wallet: "0x" + Math.random().toString(16).slice(2).padEnd(40, "0"),
+          authenticated: true,
+          loginDate: new Date().toISOString(),
+          source: refereeInfo ? "referee_conversion" : "direct_signup"
+        };
+        localStorage.setItem("hrkey_user_data", JSON.stringify(userData));
+        localStorage.setItem("hrkey_user_plan", JSON.stringify({
+          plan: "free",
+          features: { maxReferences: 1, canUseBlockchain: false, canExportPDF: false },
+          usage: { referencesUsed: 0 }
+        }));
+
+        // Ir al dashboard (manteniendo cupón si existe)
+        goToApp();
+        submitBtn.textContent = old;
+      });
+    }
+
+    // Google OAuth handler
+    const googleBtn = document.getElementById("googleBtn");
+    if (googleBtn) {
+      googleBtn.addEventListener("click", async () => {
+        googleBtn.disabled = true;
+        googleBtn.textContent = "⏳ Connecting to Google...";
+
+        try {
+          // Construir redirect URL con cupón si existe
+          const redirectTo = `${window.location.origin}/WebDapp/auth.html`;
+          const params = new URLSearchParams();
+          
+          params.set("next", "/WebDapp/app.html");
+          const finalRedirect = params.toString() ? `${redirectTo}?${params.toString()}` : redirectTo;
+
+          const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: finalRedirect
+            }
+          });
+
+          if (error) {
+            console.error("Google OAuth error:", error);
+            alert("Error connecting with Google: " + error.message);
+            googleBtn.textContent = "🔐 Continue with Google";
+            googleBtn.disabled = false;
+          }
+          // Si todo va bien, Supabase redirige automáticamente
+        } catch (e) {
+          console.error("Google OAuth failed:", e);
+          alert("Failed to connect with Google");
+          googleBtn.textContent = "🔐 Continue with Google";
+          googleBtn.disabled = false;
+        }
+      });
+    }
+
+    if (walletBtn) {
+      walletBtn.addEventListener("click", async () => {
+        walletBtn.disabled = true;
+        walletBtn.textContent = "⏳ Connecting...";
+        // Simulación (tu wallet-auth real puede sobreescribir esto)
+        setTimeout(() => {
+          const userData = {
+            name: "Web3 User",
+            email: "user@wallet.xyz",
+            wallet: "0x" + Math.random().toString(16).slice(2).padEnd(40, "0"),
+            authenticated: true,
+            loginDate: new Date().toISOString(),
+            source: refereeInfo ? "referee_conversion_wallet" : "direct_signup_wallet"
+          };
+          localStorage.setItem("hrkey_user_data", JSON.stringify(userData));
+          localStorage.setItem("hrkey_user_plan", JSON.stringify({
+            plan: "free",
+            features: { maxReferences: 1, canUseBlockchain: false, canExportPDF: false },
+            usage: { referencesUsed: 0 }
+          }));
+          goToApp();
+        }, 800);
+      });
+    }
+  </script>
+  <script>
+</script>
+
+  <script>console.log('[HRKey]', 'auth-build-20251107_140116');</script>
+
+<script>
+(function(){
+  const url=new URL(window.location.href);
+  document.addEventListener('DOMContentLoaded',function(){
+    document.getElementById('earlyAccessForm').addEventListener('submit',function(e){
+      e.preventDefault();
+      const name=(document.getElementById('userName').value||"").trim();
+      const email=(document.getElementById('userEmail').value||"").trim();
+      const okEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      if(!name||!okEmail){alert("Ingresá un nombre y un correo válido.");return;}
+    });
+  });
+})();
+</script>
+
+<script>
+(function(){
+  function norm(p){ if(!p) return "BLOCKCHAINJUNGLE"; p=String(p).trim(); return p.toUpperCase()==="JUNGLE"?"BLOCKCHAINJUNGLE":p; }
+  const u=new URL(window.location.href);
+  }
+})();
+</script>
+
+<script>(()=>{
+  document.addEventListener("DOMContentLoaded",()=>{
+    document.body.classList.add("hrk-gated");
+    function forceShow(el){ if(!el) return; el.classList.add("show"); el.style.display="block";
+    function openEarly(){
+      else{ forceShow(earlyEl); }
+    }
+    function openThanks(){
+      else{ forceShow(thanksEl); }
+    }
+    /* Mostrar al cargar (con pequeño delay por si bootstrap llega tarde) */
+    setTimeout(openEarly, 250);
+    /* Capturar submit y guardar localmente (lead simple) */
+    const form=document.getElementById("earlyAccessForm");
+    if(form){
+      form.addEventListener("submit", (e)=>{
+        e.preventDefault();
+        const name=(document.getElementById("userName")||{}).value||"";
+        const email=(document.getElementById("userEmail")||{}).value||"";
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ alert("Ingresá un correo válido"); return; }
+        const list=JSON.parse(localStorage.getItem("hrkEarlyLeads")||"[]");
+        localStorage.setItem("hrkEarlyLeads", JSON.stringify(list));
+        /* mostrar gracias */
+        openThanks();
+      });
+    }
+    document.addEventListener("click",(ev)=>{
+      const t=ev.target; if(!t) return;
+    }, true);
+  });
+})();</script>
+<script>(function(){
+  /* bloquear redirecciones del bundle viejo */
+  const stay=/\/auth(\?|$)/i;
+  const _assign=window.location.assign.bind(window.location);
+  const _replace=window.location.replace.bind(window.location);
+  window.location.assign=(u)=>{ try{ if(!u||String(u).match(stay)) return _assign(u); }catch(e){} return; };
+  window.location.replace=(u)=>{ try{ if(!u||String(u).match(stay)) return _replace(u); }catch(e){} return; };
+  const _open=window.open; window.open=(...a)=>{ try{ if(a[0] && !String(a[0]).match(stay)) return null; }catch(e){} return _open? _open(...a):null; };
+  document.addEventListener("DOMContentLoaded",function(){
+  });
+})();</script>
+</body>
+</html>

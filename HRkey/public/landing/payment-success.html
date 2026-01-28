@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Successful - HRKey</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Rubik', Arial, sans-serif;
+      background: linear-gradient(135deg, #000000 0%, #00C4C7 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      width: 100%;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      animation: slideUp 0.5s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .header {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      padding: 50px 40px;
+      text-align: center;
+    }
+    .success-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+      animation: bounceIn 0.6s ease;
+    }
+    @keyframes bounceIn {
+      0% { transform: scale(0); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    .header h1 {
+      color: white;
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+    .header p {
+      color: rgba(255,255,255,0.9);
+      font-size: 16px;
+    }
+    .content {
+      padding: 40px;
+    }
+    .pro-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: #000;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 18px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4);
+    }
+    .features {
+      background: #f8fafc;
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 30px;
+    }
+    .features h3 {
+      color: #1e293b;
+      font-size: 18px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .feature-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+      font-size: 15px;
+      color: #475569;
+    }
+    .feature-icon {
+      font-size: 24px;
+      margin-right: 15px;
+      flex-shrink: 0;
+    }
+    .info-box {
+      background: #ecfeff;
+      border-left: 4px solid #06b6d4;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+    }
+    .info-box p {
+      color: #0e7490;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .session-info {
+      background: #f1f5f9;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      font-size: 12px;
+      color: #64748b;
+      text-align: center;
+      font-family: monospace;
+    }
+    .actions {
+      display: flex;
+      gap: 15px;
+    }
+    .btn {
+      flex: 1;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      text-align: center;
+      display: block;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #00C4C7 0%, #00d2cc 100%);
+      color: #000;
+      box-shadow: 0 4px 15px rgba(0, 196, 199, 0.4);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 196, 199, 0.6);
+    }
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+    }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #e2e8f0;
+      border-top: 4px solid #00C4C7;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="success-icon">🎉</div>
+      <h1>Payment Successful!</h1>
+      <p>Welcome to HRKey PRO</p>
+    </div>
+
+    <div class="content" id="content">
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p style="color: #64748b;">Activating your PRO account...</p>
+      </div>
+
+      <div id="successContent" style="display: none;">
+        <div style="text-align: center; margin-bottom: 25px;">
+          <span class="pro-badge">⭐ PRO ACCOUNT ACTIVATED</span>
+        </div>
+
+        <div class="features">
+          <h3>Your PRO Features Are Now Active</h3>
+          <div class="feature-item">
+            <span class="feature-icon">✅</span>
+            <span><strong>Unlimited References</strong> - Request as many as you need</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-icon">📄</span>
+            <span><strong>PDF Export</strong> - Download professional reports</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-icon">⛓️</span>
+            <span><strong>Blockchain Publishing</strong> - Immutable verification</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-icon">💬</span>
+            <span><strong>Request Additional Context</strong> - Get more details</span>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <p><strong>🔐 Your payment was processed securely via Stripe.</strong><br>
+          A receipt has been sent to your email address.</p>
+        </div>
+
+        <div class="session-info" id="sessionInfo"></div>
+
+        <div class="actions">
+          <a href="/WebDapp/app.html" class="btn btn-secondary">← Dashboard</a>
+          <a href="/WebDapp/reference-management-page.html" class="btn btn-primary">Manage References →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== UPGRADE USER TO PRO =====
+    async function upgradeUserToPro(sessionId) {
+      try {
+        // Get current user data
+        const userData = JSON.parse(localStorage.getItem('hrkey_user_data') || '{}');
+
+        // Update user plan to PRO
+        const proPlan = {
+          plan: 'pro',
+          features: {
+            maxReferences: Infinity,
+            canUseBlockchain: true,
+            canExportPDF: true,
+            canRequestContext: true
+          },
+          usage: {
+            referencesUsed: 0
+          },
+          payment: {
+            stripeSessionId: sessionId,
+            amount: 0.50,
+            currency: 'USD',
+            date: new Date().toISOString(),
+            status: 'completed'
+          }
+        };
+
+        localStorage.setItem('hrkey_user_plan', JSON.stringify(proPlan));
+
+        // Mark user as PRO
+        userData.isPro = true;
+        userData.proSince = new Date().toISOString();
+        localStorage.setItem('hrkey_user_data', JSON.stringify(userData));
+
+        console.log('✅ User upgraded to PRO successfully');
+        return true;
+      } catch (err) {
+        console.error('Failed to upgrade user:', err);
+        return false;
+      }
+    }
+
+    // ===== INITIALIZE PAGE =====
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Get session ID from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionId = urlParams.get('session_id');
+
+      // Display session ID if available
+      if (sessionId) {
+        document.getElementById('sessionInfo').textContent =
+          `Session ID: ${sessionId.substring(0, 20)}...`;
+      }
+
+      // Simulate processing delay (for better UX)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Upgrade user to PRO
+      const success = await upgradeUserToPro(sessionId || 'preview_mode');
+
+      if (success) {
+        // Show success content
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('successContent').style.display = 'block';
+
+        // Track conversion (you can add analytics here)
+        console.log('PRO upgrade completed:', {
+          sessionId,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        // Handle error
+        document.getElementById('loading').innerHTML = `
+          <div style="color: #ef4444;">
+            <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
+            <p>Failed to activate PRO account. Please contact support.</p>
+            <button onclick="location.href='/WebDapp/app.html'" style="margin-top: 20px; padding: 12px 24px; background: #00C4C7; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+              Go to Dashboard
+            </button>
+          </div>
+        `;
+      }
+    });
+  </script>
+</body>
+</html>

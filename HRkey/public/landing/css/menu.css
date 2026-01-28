@@ -1,0 +1,126 @@
+/*
+ * Plugin: Web Slide Navigation System
+ * Demo Link: https://uxwing.com/webslide/
+ * Author: UXWing
+ * License: http://codecanyon.net/licenses/standard
+*/
+
+/*------------------------------------------*/
+/*  Desktop Base CSS
+--------------------------------------------*/
+
+.wsmenu html,
+.wsmenu body,
+.wsmenu iframe,
+.wsmenu h1,
+.wsmenu h2,
+.wsmenu h3,
+.wsmenu h4,
+.wsmenu h5,
+.wsmenu h6 {
+  /* Font rendering (válido) */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Ajuste de tamaño de texto (estándar) */
+  text-size-adjust: 100%;
+}
+
+.wsmenu .cl { clear: both; }
+
+.wsmenu img {
+  border: 0;
+  max-width: 100%;
+}
+
+.wsmenu a:focus { outline: none; }
+
+.wsmenu:before,
+.wsmenu:after {
+  content: "";
+  display: table;
+}
+.wsmenu:after { clear: both; }
+
+/*------------------------------------------*/
+/*  Desktop Main Menu CSS
+--------------------------------------------*/
+
+.wsmenucontainer {
+  background-size: cover;
+  overflow: hidden;
+  background-attachment: fixed;
+  background-position: 50% 0;
+  background-repeat: no-repeat;
+}
+
+.wsmainfull {
+  width: 100%;
+  height: auto;
+  background-color: #fff !important;
+  z-index: 999;
+  box-shadow: 0 2px 3px rgba(96, 96, 96, .1);
+  transition: all 450ms ease-in-out;
+}
+
+.wsmainwp {
+  margin: 0 auto;
+  max-width: 1140px;
+  padding: 0 15px;
+  position: relative;
+}
+
+/* Header Logo */
+.desktoplogo {
+  padding: 0;
+  margin: 0;
+  float: left;
+  line-height: 70px;
+}
+.desktoplogo img { vertical-align: middle; }
+
+/* Navigation Menu */
+.wsmenu {
+  padding: 0;
+  float: right;
+  display: block;
+}
+
+.wsmenu > .wsmenu-list {
+  text-align: left;
+  margin: 0 auto;
+  width: 100%;
+  display: block;
+  padding: 0;
+}
+
+.wsmenu > .wsmenu-list > li {
+  text-align: center;
+  display: block;
+  padding: 0;
+  margin: 0;
+  float: left;
+}
+
+.wsmenu > .wsmenu-list > li > a {
+  display: block;
+  color: #666;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 10px 32px 10px 18px;
+  line-height: 50px;
+  text-decoration: none;
+  position: relative;
+}
+
+.wsmenu > .wsmenu-list > li > a.last-link { padding: 10px 0; }
+.wsmenu > .wsmenu-list > li > a.callusbtn { font-size: 15px; }
+
+.wsmenu > .wsmenu-list > li > a.callusbtn i {
+  font-size: 13px;
+  margin-top: 1px;
+  margin-right: 1px;
+}
+
+.tra-menu .wsmenu >

@@ -1,0 +1,964 @@
+/* ===== Header siempre transparente: logo izq, menú centrado negro, CTA der ===== */
+.hrkey-header {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  background: transparent !important;
+  box-shadow: none;
+  z-index: 1000;
+}
+.hrkey-header-inner {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr; /* logo | nav | cta */
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+}
+.hrkey-logo {
+  position: absolute;
+  left: 32px;
+  top: 54%;
+  transform: translateY(-50%);
+}
+.hrkey-nav { justify-self: center; }
+.hrkey-nav .wsmenu-list {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin: 0; padding: 0;
+}
+.hrkey-nav .wsmenu-list > li > a {
+  color: #111111 !important;     /* negro */
+  font-weight: 600;
+  letter-spacing: .2px;
+  padding: 8px 0 !important;
+  line-height: 1;
+}
+.hrkey-nav .wsmenu-list > li > a:hover { color: #00C4C7 !important; }
+.hrkey-cta { justify-self: end; }
+.hrkey-cta .btn-hrkey {
+  padding: 10px 18px;
+  border-radius: 9999px;
+  background: #00C4C7;
+  color: #fff !important;
+  font-weight: 700;
+  box-shadow: 0 8px 16px rgba(0,196,199,.25);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.hrkey-cta .btn-hrkey:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(0,196,199,.32);
+}
+
+/* ===== Hero con SVG de fondo ===== */
+.hero-section.hero-has-bg {
+  position: relative;
+  min-height: 88vh;
+  padding: 140px 0 120px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+
+  background-image: url("../images/HRHERO.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.hero-section.hero-has-bg::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,.45) 0%,
+    rgba(0,0,0,.25) 35%,
+    rgba(0,0,0,.45) 100%
+  );
+  z-index: 0;
+}
+#HRKEY-HERO .container { position: relative; z-index: 1; }
+
+/* Tipografía/colores hero */
+.hero-title {
+  color: #ffffff;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 14px;
+  text-shadow: 0 3px 25px rgba(0,0,0,.5);
+}
+.text-teal { color: #00C4C7; }
+.btn-hrkey {
+  display: inline-block;
+  padding: 12px 22px;
+  border-radius: 9999px;
+  background: #00C4C7;
+  color: #fff !important;
+  font-weight: 700;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.btn-hrkey:hover { transform: translateY(-1px); box-shadow: 0 10px 18px rgba(0,196,199,.25); }
+
+/* Emojis features */
+.emoji-xxl { font-size: 60px; color: #00C4C7; margin-bottom: 20px; }
+
+/* ===== Pricing ===== */
+.pricing-section { padding: 80px 0; }
+.pricing-card {
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.05);
+}
+.pricing-card .card-body { padding: 28px; }
+.plan-badge {
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  font-weight: 700;
+  color: #00C4C7;
+  margin-bottom: 8px;
+}
+.price-title {
+  font-size: 44px;
+  font-weight: 800;
+  margin: 0;
+}
+.price-small { font-size: 18px; font-weight: 600; color: #666; }
+.price-sub { color: #667085; margin-bottom: 18px; }
+
+.price-list { list-style: none; padding: 0; margin: 0 0 22px 0; }
+.price-list li {
+  padding-left: 24px;
+  position: relative;
+  margin: 10px 0;
+}
+.price-list li::before {
+  content: "✓";
+  position: absolute; left: 0; top: 0;
+  color: #00C4C7; font-weight: 900;
+}
+.price-list .muted { color: #98A2B3; }
+.price-list .muted::before { content: "—"; color: #98A2B3; }
+
+/* Featured plan */
+.pricing-card.featured {
+  border: 2px solid #00C4C7;
+  box-shadow: 0 16px 32px rgba(0,196,199,.15);
+}
+.ribbon {
+  position: absolute; top: 16px; right: 16px;
+  background: #00C4C7; color: #fff;
+  padding: 6px 10px; border-radius: 9999px;
+  font-size: 12px; font-weight: 800; letter-spacing: .3px;
+}
+
+/* Responsive */
+@media (max-width: 991.98px) {
+  .hrkey-header-inner { padding: 12px 16px; }
+  .hero-section.hero-has-bg { padding: 120px 0 90px; min-height: 75vh; }
+}
+/* PEGA ESTE BLOQUE AL FINAL DE css/custom-hrkey.css */
+
+/* Header overlay fijo */
+.hrkey-header{
+  position:absolute; top:0; left:0; right:0; z-index:1000;
+  background:transparent !important;
+}
+.header-bar{
+  position:relative;
+  height:88px;                     /* altura del header */
+  padding:0 32px;                  /* espacio lateral */
+  display:block;
+}
+
+/* LOGO grande, proporcional al CTA */
+.hrkey-logo{ position:absolute; left:32px; top:50%; transform:translateY(-50%); }
+.hrkey-logo img{ height:56px; width:auto; display:block; }  /* ↑ ajusta si lo quieres aún más grande */
+
+/* MENÚ centrado perfectamente y bien desplegado */
+.hrkey-nav{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); }
+.hrkey-menu{
+  display:flex; align-items:center; justify-content:center;
+  gap:80px;                        /* separación amplia entre items */
+  margin:0; padding:0; list-style:none;
+}
+.hrkey-menu a{
+  color:#111 !important;
+  font-weight:800;
+  letter-spacing:.2px;
+  text-decoration:none;
+  padding:8px 0;
+}
+.hrkey-menu a:hover{ color:#00C4C7 !important; }
+
+/* CTA anclado a esquina superior derecha, alineado verticalmente */
+.hrkey-cta{
+  position:absolute; right:32px; top:50%;
+  transform:translateY(-50%);
+  padding:11px 22px; border-radius:9999px;
+  background:#00C4C7; color:#fff !important; font-weight:800;
+  box-shadow:0 10px 22px rgba(0,196,199,.25);
+  transition:transform .12s, box-shadow .12s;
+}
+.hrkey-cta:hover{ transform:translateY(-50%) translateY(-1px); box-shadow:0 14px 28px rgba(0,196,199,.32); }
+
+/* Asegura que el hero no quede tapado por el header */
+.hero-section.hero-has-bg{ padding-top:140px; }
+
+/* Responsive */
+@media (max-width:991.98px){
+  .header-bar{ height:72px; padding:0 16px; }
+  .hrkey-logo{ left:16px; }
+  .hrkey-logo img{ height:40px; }
+  .hrkey-nav{ position:static; transform:none; margin-top:8px; }
+  .hrkey-menu{ gap:28px; flex-wrap:wrap; }
+  .hrkey-cta{ right:16px; }
+}
+<!-- PEGA ESTE CSS AL FINAL DE css/custom-hrkey.css -->
+<style>
+.hrkey-header{
+  position:absolute; top:0; left:0; right:0; z-index:1000; background:transparent!important;
+}
+.header-bar{ position:relative; height:104px; padding:0 32px; display:block; }
+
+/* LOGO (doble tamaño respecto a 56px) */
+.hrkey-logo{ position:absolute; left:32px; top:50%; transform:translateY(-50%); }
+.hrkey-logo img{ height:112px; width:auto; display:block; }
+
+/* MENÚ centrado absoluto */
+.hrkey-nav{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); }
+.hrkey-menu{ display:flex; gap:84px; list-style:none; margin:0; padding:0; }
+
+/* CONTRASTE DINÁMICO: por defecto oscuro; en hero -> claro */
+.hrkey-menu a{ color:#111 !important; font-weight:800; letter-spacing:.2px; text-decoration:none; padding:8px 0; transition:color .15s ease; }
+.header-on-hero .hrkey-menu a{ color:#ffffff !important; text-shadow:0 2px 14px rgba(0,0,0,.45); }
+.hrkey-menu a:hover{ color:#00C4C7 !important; }
+
+/* CTA anclado esquina sup. derecha */
+.hrkey-cta{
+  position:absolute; right:32px; top:50%; transform:translateY(-50%);
+  padding:12px 24px; border-radius:9999px; background:#00C4C7; color:#fff !important; font-weight:800;
+  box-shadow:0 12px 22px rgba(0,196,199,.25); transition:transform .12s, box-shadow .12s;
+}
+.hrkey-cta:hover{ transform:translateY(-50%) translateY(-1px); box-shadow:0 16px 28px rgba(0,196,199,.32); }
+
+/* Espacio para que el header no tape el hero */
+.hero-section.hero-has-bg{ padding-top:180px; }
+
+/* Responsive */
+@media (max-width: 1199.98px){
+  .hrkey-menu{ gap:56px; }
+  .hrkey-logo img{ height:90px; }
+  .header-bar{ height:92px; }
+}
+@media (max-width: 991.98px){
+  .header-bar{ height:76px; padding:0 16px; }
+  .hrkey-logo{ left:16px; }
+  .hrkey-logo img{ height:56px; }
+  .hrkey-nav{ position:static; transform:none; margin-top:8px; }
+  .hrkey-menu{ gap:28px; flex-wrap:wrap; justify-content:center; }
+  .hrkey-cta{ right:16px; }
+  .hero-section.hero-has-bg{ padding-top:140px; }
+}
+</style>
+
+/* PEGA AL FINAL DE css/custom-hrkey.css */
+
+/* Header overlay */
+.hrkey-header{ position:absolute; top:0; left:0; right:0; z-index:1000; background:transparent!important; }
+.header-bar{ position:relative; height:104px; padding:0 32px; display:block; }
+
+/* Logo (aún más grande) */
+.hrkey-logo{ position:absolute; left:32px; top:50%; transform:translateY(-50%); }
+.hrkey-logo img{ height:120px; width:auto; display:block; }  /* ajusta si quieres más */
+
+/* Menú centrado absoluto */
+.hrkey-nav{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); }
+.hrkey-menu{ display:flex; gap:84px; list-style:none; margin:0; padding:0; }
+
+/* Estado por defecto (secciones claras) = negro */
+.hrkey-menu a{
+  color:#111 !important; font-weight:800; letter-spacing:.2px;
+  text-decoration:none; padding:8px 0; transition:color .15s ease, text-shadow .15s ease;
+}
+
+/* Cuando el header está sobre el HERO oscuro -> blanco con contorno para máxima legibilidad */
+.hrkey-header.on-hero .hrkey-menu a{
+  color:#fff !important;
+  /* “doble trazo” con sombras para que se lea sobre cualquier fondo */
+  text-shadow:
+    0 1px 0 rgba(0,0,0,.85),  1px 0 0 rgba(0,0,0,.85),
+    0 -1px 0 rgba(0,0,0,.85), -1px 0 0 rgba(0,0,0,.85),
+    1px 1px 0 rgba(0,0,0,.85), -1px 1px 0 rgba(0,0,0,.85),
+    1px -1px 0 rgba(0,0,0,.85), -1px -1px 0 rgba(0,0,0,.85);
+}
+
+.hrkey-menu a:hover{ color:#00C4C7 !important; }
+
+/* CTA anclado arriba derecha */
+.hrkey-cta{
+  position:absolute; right:32px; top:50%; transform:translateY(-50%);
+  padding:12px 24px; border-radius:9999px; background:#00C4C7; color:#fff !important; font-weight:800;
+  box-shadow:0 12px 22px rgba(0,196,199,.25); transition:transform .12s, box-shadow .12s;
+}
+.hrkey-cta:hover{ transform:translateY(-50%) translateY(-1px); box-shadow:0 16px 28px rgba(0,196,199,.32); }
+
+/* Espacio del hero bajo header */
+.hero-section.hero-has-bg{ padding-top:190px; }
+
+/* Responsive */
+@media (max-width:1199.98px){
+  .hrkey-logo img{ height:96px; }
+  .header-bar{ height:96px; }
+  .hrkey-menu{ gap:60px; }
+}
+@media (max-width:991.98px){
+  .header-bar{ height:76px; padding:0 16px; }
+  .hrkey-logo{ left:16px; }
+  .hrkey-logo img{ height:56px; }
+  .hrkey-nav{ position:static; transform:none; margin-top:8px; }
+  .hrkey-menu{ gap:28px; flex-wrap:wrap; justify-content:center; }
+  .hrkey-cta{ right:16px; }
+  .hero-section.hero-has-bg{ padding-top:150px; }
+}
+/* === Pega AL FINAL de css/custom-hrkey.css (sobrescribe reglas previas del header) === */
+
+/* LOGO aún más grande */
+.hrkey-logo img{
+  height:140px;   /* antes 120px */
+  width:auto;
+  display:block;
+}
+
+/* MENÚ SIEMPRE LEGIBLE sobre fondos oscuros y claros
+   - Texto blanco con trazo/contorno negro sutil
+   - Funciona sin JS ni cambios de clase */
+.hrkey-menu a{
+  color:#ffffff !important;
+  font-weight:800;
+  letter-spacing:.2px;
+  text-decoration:none;
+  padding:8px 0;
+  transition:transform .12s ease, text-shadow .12s ease;
+  /* contorno negro fino alrededor del texto */
+  -webkit-text-stroke: .6px rgba(0,0,0,.85);
+  text-shadow:
+    0 1px 0 rgba(0,0,0,.85),  1px 0 0 rgba(0,0,0,.85),
+    0 -1px 0 rgba(0,0,0,.85), -1px 0 0 rgba(0,0,0,.85);
+}
+
+/* Hover mantiene legibilidad y marca el teal */
+.hrkey-menu a:hover{
+  color:#00C4C7 !important;
+  -webkit-text-stroke: .6px rgba(0,0,0,.65);
+  text-shadow:
+    0 1px 0 rgba(0,0,0,.65),  1px 0 0 rgba(0,0,0,.65),
+    0 -1px 0 rgba(0,0,0,.65), -1px 0 0 rgba(0,0,0,.65);
+}
+
+/* CTA (sin cambios, solo para mantener posición fija arriba derecha) */
+.hrkey-cta{
+  position:absolute; right:32px; top:50%;
+  transform:translateY(-50%);
+  padding:12px 24px; border-radius:9999px;
+  background:#00C4C7; color:#fff !important; font-weight:800;
+  box-shadow:0 12px 22px rgba(0,196,199,.25);
+}
+.hrkey-cta:hover{ transform:translateY(-50%) translateY(-1px); box-shadow:0 16px 28px rgba(0,196,199,.32); }
+
+/* Espacio del hero bajo header para que no tape contenido */
+.hero-section.hero-has-bg{ padding-top:190px; }
+
+/* Responsive: ajusta tamaños para móviles */
+@media (max-width:1199.98px){
+  .hrkey-logo img{ height:110px; }
+}
+@media (max-width:991.98px){
+  .hrkey-logo img{ height:64px; }
+  .hero-section.hero-has-bg{ padding-top:150px; }
+}
+/* --- VIDEO SECTION STYLES --- */
+.hrkey-video-wrap{
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,.25);
+  background: #000;
+  aspect-ratio: 16/9;
+}
+.hrkey-video{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.hrkey-video-play{
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  background: radial-gradient(250px 250px at center, rgba(0,196,199,.25), rgba(0,0,0,.0));
+  border: 0; cursor: pointer;
+  transition: background .2s ease, opacity .2s ease;
+}
+.hrkey-video-play span{
+  display:inline-block;
+  font-size: 52px; line-height: 1;
+  padding: 18px 22px 18px 26px;
+  border-radius: 9999px;
+  background: #00C4C7; color: #fff;
+  box-shadow: 0 16px 36px rgba(0,196,199,.35);
+}
+.hrkey-video-play:hover{ background: radial-gradient(260px 260px at center, rgba(0,196,199,.35), rgba(0,0,0,.0)); }
+.hrkey-video-wrap.playing .hrkey-video-play{ opacity: 0; pointer-events: none; }
+/* Mantiene la proporción del video cover igual a la vista anterior */
+.video-preview img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(0,196,199,0.25);
+}
+/* Mantiene proporción 16:9 y limita el ancho máximo para que se vea más equilibrado */
+.video-preview img {
+  width: 80%;                /* antes era 100% */
+  max-width: 960px;          /* no pasa de este ancho en pantallas grandes */
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(0,196,199,0.25);
+  transition: transform 0.3s ease;
+}
+
+/* Efecto sutil de zoom al pasar el mouse (opcional y elegante) */
+.video-preview img:hover {
+  transform: scale(1.02);
+}
+/* === AJUSTE MINIMO (manteniendo tu CSS original) === */
+/* Portada del video: tamaño similar al de antes, centrado y 16:9 */
+.video-preview img {
+  width: 80%;
+  max-width: 960px;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(0,196,199,0.25);
+  transition: transform 0.3s ease;
+}
+.video-preview img:hover {
+  transform: scale(1.02);
+}
+
+@media (max-width: 991.98px) {
+  .video-preview img {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+/* === FIX: Sección de video muestra solo la mitad === */
+.video-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: visible;
+  padding: 40px 0; /* espacio arriba y abajo */
+}
+
+.video-preview img {
+  width: 100%;
+  max-width: 960px;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(0,196,199,0.25);
+  transition: transform 0.3s ease;
+}
+
+.video-preview img:hover {
+  transform: scale(1.02);
+}
+/* === HRKEY FOOTER === */
+.hrkey-footer {
+  background: #000;
+  color: #bbb;
+  text-align: center;
+  padding: 60px 20px 30px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.footer-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.footer-brand img {
+  height: 50px;
+  width: auto;
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+.footer-brand p {
+  margin: 0;
+  font-size: 14px;
+  color: #888;
+}
+
+.footer-links {
+  list-style: none;
+  display: flex;
+  gap: 32px;
+  padding: 0;
+  margin: 0;
+}
+.footer-links a {
+  color: #00C4C7;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.25s ease;
+}
+.footer-links a:hover {
+  color: #fff;
+}
+
+.footer-social {
+  display: flex;
+  gap: 22px;
+}
+.footer-social a svg {
+  transition: transform 0.25s ease, fill 0.25s ease;
+}
+.footer-social a:hover svg {
+  transform: scale(1.1);
+  fill: #fff;
+}
+
+.footer-bottom {
+  margin-top: 28px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding-top: 20px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .footer-links {
+    flex-direction: column;
+    gap: 14px;
+  }
+}
+/* === AJUSTE: Quitar espacio blanco entre video y footer === */
+.video-preview {
+  margin-bottom: 0 !important; /* elimina espacio extra */
+  padding-bottom: 0 !important;
+}
+.hrkey-footer {
+  margin-top: 0 !important; /* pega el footer al video */
+  background: #000;
+  color: #bbb;
+  text-align: center;
+  padding: 60px 20px 30px;
+  border-top: none; /* elimina cualquier línea divisoria blanca */
+}
+
+/* === ACTUALIZACIÓN: Logo blanco === */
+.footer-brand img {
+  content: url("images/logo-white(1).png");
+  height: 56px;
+  width: auto;
+  margin-bottom: 8px;
+  opacity: 0.95;
+}
+.footer-brand p {
+  margin: 0;
+  font-size: 14px;
+  color: #888;
+}
+
+/* Links y redes mantienen mismo estilo */
+.footer-links {
+  list-style: none;
+  display: flex;
+  gap: 32px;
+  padding: 0;
+  margin: 0;
+  justify-content: center;
+}
+.footer-links a {
+  color: #00C4C7;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.25s ease;
+}
+.footer-links a:hover {
+  color: #fff;
+}
+
+.footer-social {
+  display: flex;
+  gap: 22px;
+  justify-content: center;
+}
+.footer-social a svg {
+  transition: transform 0.25s ease, fill 0.25s ease;
+}
+.footer-social a:hover svg {
+  transform: scale(1.1);
+  fill: #fff;
+}
+
+/* Footer bottom */
+.footer-bottom {
+  margin-top: 28px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding-top: 20px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .footer-links {
+    flex-direction: column;
+    gap: 14px;
+  }
+  .footer-brand img {
+    height: 48px;
+  }
+}
+/* --- ELIMINAR GAP ENTRE VIDEO Y FOOTER --- */
+#content-9{
+  background:#000 !important;   /* el fondo de toda la sección en negro */
+  margin-bottom:0 !important;
+  padding-bottom:0 !important;
+}
+#content-9 .container{
+  margin-bottom:0 !important;
+  padding-bottom:0 !important;
+}
+.video-preview{
+  margin:0 !important;
+  padding:40px 0 0 !important;  /* si querés menos aire arriba, baja a 24px */
+  display:flex; justify-content:center; align-items:center;
+  overflow:visible;
+}
+/* por si hubiera una línea divisoria */
+hr.divider, .divider{ display:none !important; }
+
+/* el footer se pega inmediatamente */
+.hrkey-footer{ margin-top:0 !important; }
+/* fallback (no ideal) si no podés tocar HTML */
+.footer-brand img{
+  content: url("images/logo-white(1).png") !important;
+}
+/* --- LOGO FOOTER COMO BACKGROUND --- */
+.footer-logo-bg {
+  width: 160px;
+  height: 56px;
+  display: block;
+  background: url("images/logo-white(1).png") center/contain no-repeat;
+  margin: 0 auto 8px auto;
+  opacity: 0.95;
+  transition: opacity 0.25s ease;
+}
+.footer-logo-bg:hover {
+  opacity: 1;
+}
+/* === LOGO BLANCO DEL FOOTER === */
+.footer-logo-bg {
+  width: 160px;
+  height: 56px;
+  display: block;
+  background-image: url("../images/logo-white(1).png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  margin: 0 auto 8px;
+  opacity: 0.95;
+  transition: opacity 0.25s ease;
+}
+.footer-logo-bg:hover {
+  opacity: 1;
+}
+@keyframes slideInRight {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.title-animate {
+  animation: slideInRight 1s ease-out forwards;
+}
+
+.title-white {
+  color: #ffffff;   /* blanco */
+}
+
+.title-teal {
+  color: #00d2cc;  /* teal, ajusta al código exacto que usabas antes */
+}
+/* Contenedor del hero (ajusta el selector al tuyo) */
+.hero {
+  position: relative;
+  background: #bfbfbf; /* tu gris */
+  overflow: hidden;
+}
+
+/* La imagen/SVG del héroe */
+.hero__media {
+  display: block;
+  width: 100%;
+  height: auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* Capa de integración: degrade + leve noise */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  /* De gris a transparente y un toque teal radial para “pegarlo” */
+  background:
+    radial-gradient(60% 70% at 45% 50%, rgba(0,210,204,0.25) 0%, rgba(0,210,204,0.0) 60%),
+    linear-gradient(90deg, rgba(191,191,191,1) 0%, rgba(191,191,191,0.85) 18%, rgba(191,191,191,0) 36%);
+  mix-blend-mode: screen;   /* hace que el teal “ilumine” el gris */
+  opacity: .9;
+}
+
+/* (Opcional) Borde suave tipo viñeta para unificar */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(120% 120% at 30% 50%, rgba(0,0,0,0) 60%, rgba(0,0,0,.25) 100%);
+  mix-blend-mode: multiply;
+  opacity: .6;
+}
+
+/* Aplica al section que ya tenés */
+#HRKEY-HERO {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Capa de integración: degrade + toque teal */
+#HRKEY-HERO::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(60% 70% at 45% 50%, rgba(0,210,204,0.25) 0%, rgba(0,210,204,0) 60%),
+    linear-gradient(90deg, rgba(191,191,191,1) 0%, rgba(191,191,191,0.85) 18%, rgba(191,191,191,0) 36%);
+  mix-blend-mode: screen;
+  opacity: .9;
+}
+
+/* Viñeta suave para unificar bordes */
+#HRKEY-HERO::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(120% 120% at 30% 50%, rgba(0,0,0,0) 60%, rgba(0,0,0,.25) 100%);
+  mix-blend-mode: multiply;
+  opacity: .55;
+}
+
+/* Asegurá que el contenido quede por encima de las capas */
+#HRKEY-HERO .container {
+  position: relative;
+  z-index: 2;
+}
+/* SVG de chispas ocupando todo el héroe detrás del contenido */
+#HRKEY-HERO .hero-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;         /* debajo del contenido, encima del fondo */
+  pointer-events: none;
+  opacity: .9;        /* ajusta si querés más/menos presencia */
+}
+
+/* Pulso del núcleo */
+@keyframes pulseGlow {
+  0%   { transform: scale(1);   opacity: 0.9; }
+  50%  { transform: scale(1.25); opacity: 1;   }
+  100% { transform: scale(1);   opacity: 0.9; }
+}
+.star-core {
+  transform-origin: center;
+  animation: pulseGlow 1.8s ease-in-out infinite;
+}
+
+/* Chispas */
+@keyframes sparkle {
+  0%   { transform: scale(0.6); opacity: 0; }
+  20%  { transform: scale(1);   opacity: 1; }
+  100% { transform: scale(0.6); opacity: 0; }
+}
+.spark {
+  transform-origin: center;
+  animation: sparkle 1.6s ease-out infinite;
+  filter: drop-shadow(0 0 6px rgba(0,210,204,.9));
+}
+.spark:nth-of-type(1) { animation-delay: 0s; }
+.spark:nth-of-type(2) { animation-delay: .35s; }
+.spark:nth-of-type(3) { animation-delay: .7s; }
+
+/* Respeta “reducir movimiento” */
+@media (prefers-reduced-motion: reduce) {
+  .star-core, .spark { animation: none !important; }
+  #HRKEY-HERO::before, #HRKEY-HERO::after { opacity: .4; }
+}
+/* Pega al final de custom-hrkey.css */
+.hero-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, rgba(0,0,0,.55), rgba(0,0,0,.25));
+  z-index: 0;
+}
+.hero-section h1,
+.hero-section .hero-title,
+.hero-section .btn-hrkey {
+  position: relative;
+  z-index: 1;
+}
+/* --- HERO TITLE GRADIENT COLOR SPLIT --- */
+.hero-title {
+  background: linear-gradient(90deg, #111 0%, #111 45%, #fff 55%, #fff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+/* === HERO TITLE SPLIT COLOR === */
+.hero-title-split {
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.hero-title-split .part-left {
+  color: #111; /* negro para zona clara */
+  display: inline;
+}
+
+.hero-title-split .part-right {
+  color: #fff; /* blanco para zona oscura (SVG) */
+  display: inline;
+}
+
+.hero-title-split .text-teal {
+  color: #00C4C7; /* tu color teal */
+}
+
+@media (max-width: 768px) {
+  .hero-title-split .part-left,
+  .hero-title-split .part-right {
+    display: block;
+  }
+}
+/* ===== PRICING FIXES (desktop) ===== */
+
+/* 1) Centavos pequeños y subrayados solo en desktop */
+@media (min-width: 992px) {
+  .pricing-card .price-title sup {
+    font-size: 0.5em;        /* mitad del tamaño del número */
+    vertical-align: super;   /* sube los centavos */
+    text-decoration: underline;
+    margin-left: 2px;
+    line-height: 0;
+    font-weight: 700;
+  }
+}
+
+/* 2) Alinear botones de ambas tarjetas a la misma altura */
+.pricing-card .card-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.pricing-card .pricing-compare { 
+  flex-grow: 1;              /* empuja el botón hacia abajo */
+}
+.pricing-card .pricing-cta { 
+  margin-top: auto;          /* pega el botón al fondo */
+}
+
+/* Emparejar alturas de columnas en desktop */
+@media (min-width: 768px) {
+  #pricing-1 .row.row-cols-1.row-cols-md-2 > .col {
+    display: flex;
+  }
+  #pricing-1 .pricing-card {
+    width: 100%;
+  }
+}
+
+/* ===== PRICING FIXES (desktop) ===== */
+
+/* 1) Centavos pequeños y subrayados solo en desktop */
+@media (min-width: 992px) {
+  .pricing-card .price-title sup {
+    font-size: 0.5em;        /* mitad del tamaño del número */
+    vertical-align: super;   /* sube los centavos */
+    text-decoration: underline;
+    margin-left: 2px;
+    line-height: 0;
+    font-weight: 700;
+  }
+}
+
+/* 2) Alinear botones de ambas tarjetas a la misma altura */
+.pricing-card .card-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.pricing-card .pricing-compare { 
+  flex-grow: 1;              /* empuja el botón hacia abajo */
+}
+.pricing-card .pricing-cta { 
+  margin-top: auto;          /* pega el botón al fondo */
+}
+
+/* Emparejar alturas de columnas en desktop */
+@media (min-width: 768px) {
+  #pricing-1 .row.row-cols-1.row-cols-md-2 > .col {
+    display: flex;
+  }
+  #pricing-1 .pricing-card {
+    width: 100%;
+  }
+}
+
+/* ===== PRICING FIXES (desktop) ===== */
+@media (min-width: 992px) {
+  .pricing-card .price-title sup {
+    font-size: 0.5em;
+    vertical-align: super;
+    text-decoration: underline;
+    margin-left: 2px;
+    line-height: 0;
+    font-weight: 700;
+  }
+}
+.pricing-card .card-body { display:flex; flex-direction:column; height:100%; }
+.pricing-card .pricing-compare { flex-grow:1; }
+.pricing-card .pricing-cta { margin-top:auto; }
+@media (min-width: 768px) {
+  #pricing-1 .row.row-cols-1.row-cols-md-2 > .col { display:flex; }
+  #pricing-1 .pricing-card { width:100%; }
+}
