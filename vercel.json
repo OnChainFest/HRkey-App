@@ -2,5 +2,8 @@
   "version": 2,
   "builds": [
     { "src": "HRkey/package.json", "use": "@vercel/next" }
+  ],
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" }
   ]
 }
