@@ -26,3 +26,19 @@
 - [ ] Subir imagen hero a R2
 - [ ] Cambiar src en landing
 - [ ] Testear tiempos de carga
+
+## 2026-01-28 — Repo guardrails + cleanup de archivos pesados
+
+### PR #141 — OSS guardrails (OPEN vs CLOSED)
+- Se definieron boundaries OPEN/CLOSED/REVIEW en `docs/OPEN_VS_CLOSED.md`.
+- Se agregó `docs/REPO_GUARDRAILS.md` con recomendaciones de branch protections.
+- Se agregaron placeholders `/open` y `/closed` (staging de separación futura).
+- Se implementó enforcement con `.github/CODEOWNERS` para paths sensibles (scoring/pricing/ml/correlation + rails de pagos/webhooks/privileged clients).
+- Se agregaron PR/Issue templates para forzar declaración de boundaries y mejores reportes de seguridad.
+- Se agregaron `SECURITY.md` y `CONTRIBUTING.md`.
+- Se endureció `.gitignore` para evitar secretos y artefactos de datasets/modelos.
+
+### PR #142 — Cleanup de media pesado (CDN)
+- Se removió `HRkey/public/deprecated/WebDapp/images/HRkey Video.mp4` (~57MB) del repo (ya hosteado en Cloudflare).
+- Se agregaron ignores para formatos de video (`*.mp4`, `*.mov`, `*.mkv`, `*.avi`) para prevenir futuros commits grandes.
+
