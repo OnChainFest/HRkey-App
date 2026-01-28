@@ -1,0 +1,30 @@
+* @vicvalch
+
+/closed/ @vicvalch
+**/hrscore/** @vicvalch
+**/scoring/** @vicvalch
+**/pricing/** @vicvalch
+**/ml/** @vicvalch
+**/models/** @vicvalch
+**/datasets/** @vicvalch
+**/correlation/** @vicvalch
+**/anti-fraud/** @vicvalch
+**/anti-gaming/** @vicvalch
+
+# Security-sensitive REVIEW paths
+/pages/api/ @vicvalch
+/lib/ @vicvalch
+/heartbeat/ @vicvalch
+/database/ @vicvalch
+/scripts/ @vicvalch
+
+# Stripe-related paths
+/backend/controllers/billingController.js @vicvalch
+/backend/services/webhookService.js @vicvalch
+/backend/migrations/create_stripe_events_table.sql @vicvalch
+/backend/tests/revenue/ @vicvalch
+/HRkey/api/ @vicvalch
+/pages/api/checkout.ts @vicvalch
+/pages/api/portal.ts @vicvalch
+/pages/api/webhook.ts @vicvalch
+/public/WebDapp/checkout-ready.html @vicvalch
