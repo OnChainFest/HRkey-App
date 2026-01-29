@@ -42,3 +42,6 @@
 - Se removió `HRkey/public/deprecated/WebDapp/images/HRkey Video.mp4` (~57MB) del repo (ya hosteado en Cloudflare).
 - Se agregaron ignores para formatos de video (`*.mp4`, `*.mov`, `*.mkv`, `*.avi`) para prevenir futuros commits grandes.
 
+
+## TODO (Security)
+- Decide and execute repository privacy strategy (make repo private once billing enabled OR split crown-jewel code into private repo).
