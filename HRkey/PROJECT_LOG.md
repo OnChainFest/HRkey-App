@@ -45,3 +45,20 @@
 
 ## TODO (Security)
 - Decide and execute repository privacy strategy (make repo private once billing enabled OR split crown-jewel code into private repo).
+
+## Offramp Integration Pattern (Non-Custodial)
+
+HRKey does NOT provide fiat offramp services.
+
+Inside the app, a button labeled "Convert to local currency" will redirect users to third-party offramp providers.
+
+Example:
+- Provider A
+- Provider B
+- Provider C
+
+Disclaimer shown to user:
+"Third-party service. We do not process or custody fiat."
+
+Rationale:
+HRKey remains a non-custodial software infrastructure provider. All fiat conversion, KYC, and compliance responsibilities belong to the selected third-party provider.
