@@ -34,6 +34,7 @@ import aiRefineController from './controllers/aiRefine.controller.js';
 import walletsController from './controllers/walletsController.js';
 import notificationsController from './controllers/notificationsController.js';
 import billingController from './controllers/billingController.js';
+import aocController from './controllers/aocController.js';
 import hrkeyScoreService from './hrkeyScoreService.js';
 import { getScoreSnapshots } from './services/hrscore/scoreSnapshots.js';
 
@@ -1479,6 +1480,15 @@ app.get('/api/analytics/companies/activity', requireSuperadmin, analyticsControl
 app.get('/api/analytics/funnel', requireSuperadmin, analyticsController.getConversionFunnelEndpoint);
 app.get('/api/analytics/demand-trends', requireSuperadmin, analyticsController.getDemandTrendsEndpoint);
 app.get('/api/analytics/skills/trending', requireSuperadmin, analyticsController.getTrendingSkillsEndpoint);
+
+/* =========================
+   AOC PROTOCOL ENDPOINTS
+   ========================= */
+app.post('/api/aoc/packs/register', requireAuth, aocController.registerPack);
+app.post('/api/aoc/consents/grant', requireAuth, aocController.grantConsent);
+app.post('/api/aoc/capabilities/mint', requireAuth, aocController.mintCapability);
+app.post('/api/aoc/access/request', requireAuth, aocController.requestAccess);
+app.post('/api/aoc/capabilities/revoke', requireAuth, aocController.revokeCapability);
 
 /* =========================
    DEBUG ROUTE (Temporary - Remove after Sentry verification)
