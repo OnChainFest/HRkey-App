@@ -24,6 +24,20 @@ const config: HardhatUserConfig = {
       accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
     },
 
+    coston2: {
+      type: "http",
+      url: process.env.COSTON2_RPC_URL || "https://coston2-api.flare.network/ext/bc/C/rpc",
+      chainId: 114,
+      accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
+    },
+
+    opSepolia: {
+      type: "http",
+      url: process.env.OP_SEPOLIA_RPC_URL || "https://sepolia.optimism.io",
+      chainId: 11155420,
+      accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
+    },
+
     localhost: {
       type: "http",
       url: "http://127.0.0.1:8545",
