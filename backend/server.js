@@ -148,7 +148,14 @@ const BACKEND_PUBLIC_URL =
   getPublicBaseURL();
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrervcydgdrlcndtjboy.supabase.co';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+const SUPABASE_SERVICE_KEY =
+  process.env.SUPABASE_SERVICE_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_SERVICE_KEY) {
+  throw new Error("SUPABASE_SERVICE_KEY or SUPABASE_SERVICE_ROLE_KEY must be defined");
+}
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 // SECURITY: Validate Stripe secrets configuration
