@@ -1,5 +1,150 @@
 # Anchor Layer Implementation Status
 
+---
+
+## Multi-Chain Anchoring — Deployment Guide
+
+### Supported Networks
+
+| Network | Chain ID | Default RPC |
+|---|---|---|
+| `coston2` | 114 | `https://coston2-api.flare.network/ext/bc/C/rpc` |
+| `baseSepolia` | 84532 | `https://sepolia.base.org` |
+| `opSepolia` | 11155420 | `https://sepolia.optimism.io` |
+
+---
+
+### Environment Setup
+
+Create a `.env` file (never commit it — it is in `.gitignore`):
+
+```env
+# Required for all deployments and anchoring
+DEPLOYER_PRIVATE_KEY=0x<your-private-key>
+ANCHOR_PRIVATE_KEY=0x<signer-key>   # defaults to DEPLOYER_PRIVATE_KEY if omitted
+
+# Optional — fall back to public RPCs above if not set
+COSTON2_RPC_URL=https://coston2-api.flare.network/ext/bc/C/rpc
+BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
+OP_SEPOLIA_RPC_URL=https://sepolia.optimism.io
+
+# Required for the 'anchor' subcommand (DB-based anchoring)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=eyJ...
+```
+
+---
+
+### Step 1 — Compile the contract
+
+```bash
+npx hardhat compile
+```
+
+This populates `artifacts/contracts/ReferenceAnchor.sol/ReferenceAnchor.json`.
+
+---
+
+### Step 2 — Deploy to each network
+
+Deploy order: Coston2 → Base Sepolia → OP Sepolia.
+
+```bash
+# Flare Coston2
+npx hardhat run scripts/deployReferenceAnchor.ts --network coston2
+
+# Base Sepolia
+npx hardhat run scripts/deployReferenceAnchor.ts --network baseSepolia
+
+# OP Sepolia
+npx hardhat run scripts/deployReferenceAnchor.ts --network opSepolia
+```
+
+Each run:
+- Deploys `ReferenceAnchor.sol`
+- Anchors a synthetic smoke-test hash (`0xdeadbeef…c0ffee`) to verify liveness
+- Appends a record to `deployments/referenceAnchor.json`
+
+The resulting `deployments/referenceAnchor.json` looks like:
+
+```json
+{
+  "coston2":    { "chainId": 114,      "address": "0x…", "txHash": "0x…", "deployedAt": "…", "commit": "…" },
+  "baseSepolia": { "chainId": 84532,   "address": "0x…", "txHash": "0x…", "deployedAt": "…", "commit": "…" },
+  "opSepolia":  { "chainId": 11155420, "address": "0x…", "txHash": "0x…", "deployedAt": "…", "commit": "…" }
+}
+```
+
+---
+
+### Step 3 — Anchor a reference hash on each network
+
+#### Option A — DB-backed anchor (production use)
+
+The `anchor` subcommand fetches the reference from Supabase, canonicalizes it,
+and anchors the resulting keccak256 hash onchain.
+
+```bash
+# Requires SUPABASE_URL + SUPABASE_SERVICE_KEY and the correct RPC env var
+node scripts/anchorReference.ts anchor \
+  --referenceId <uuid> \
+  --network coston2
+
+node scripts/anchorReference.ts anchor \
+  --referenceId <uuid> \
+  --network baseSepolia
+
+node scripts/anchorReference.ts anchor \
+  --referenceId <uuid> \
+  --network opSepolia
+```
+
+The script will refuse to run if no deployment is recorded for the chosen network.
+
+#### Option B — Raw hash anchor (testing / verification)
+
+Use `anchor-hash` to anchor any arbitrary bytes32 hash without touching the database:
+
+```bash
+DUMMY=0xdeadbeef00000000000000000000000000000000000000000000000000c0ffee
+
+node scripts/anchorReference.ts anchor-hash \
+  --network coston2 \
+  --hash $DUMMY
+
+node scripts/anchorReference.ts anchor-hash \
+  --network baseSepolia \
+  --hash $DUMMY
+
+node scripts/anchorReference.ts anchor-hash \
+  --network opSepolia \
+  --hash $DUMMY
+```
+
+Prints: contract address, tx hash, block number.
+
+---
+
+### Deployment record schema
+
+`deployments/referenceAnchor.json` is the single source of truth for all
+deployed contract addresses. It is checked into git so CI and the anchor CLI
+can resolve addresses without additional configuration.
+
+```json
+{
+  "<networkName>": {
+    "chainId":    <number>,
+    "address":    "0x<contract-address>",
+    "txHash":     "0x<deploy-tx-hash>",
+    "deployedAt": "<ISO-8601 timestamp>",
+    "commit":     "<git-short-sha>"
+  }
+}
+```
+
+---
+
 **Date**: 2026-02-20
 **Branch**: claude/audit-hrkey-production-iliK4
 **Scope**: Onchain Anchor Layer for AOC Protocol
