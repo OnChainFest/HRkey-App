@@ -10,6 +10,8 @@
     "hh": "hardhat",
     "compile": "hardhat compile && node copy-abi.cjs",
     "deploy:base-sepolia": "hardhat run scripts/deploy.js --network baseSepolia && node copy-abi.cjs",
+    "deploy:anchor-registry:base-sepolia": "hardhat run scripts/deploy-anchor-registry.js --network baseSepolia && node copy-abi.cjs",
+    "deploy:anchor-registry:base": "hardhat run scripts/deploy-anchor-registry.js --network base && node copy-abi.cjs",
     "verify:base-sepolia": "hardhat verify --network baseSepolia",
     "test": "jest -c jest.config.cjs",
     "test:unit": "ALLOW_TEST_AUTH_BYPASS=true NODE_OPTIONS=--experimental-vm-modules jest -c jest.config.cjs --selectProjects backend --testPathPattern=unit --coverage",
