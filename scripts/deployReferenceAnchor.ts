@@ -21,6 +21,17 @@ import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
 
+// Configure undici global dispatcher to use the HTTPS proxy (if set).
+// This allows ethers' built-in fetch to reach external RPCs in environments
+// where direct DNS/TCP is blocked and a CONNECT proxy is required.
+{
+  const proxyUrl = process.env.https_proxy ?? process.env.HTTPS_PROXY;
+  if (proxyUrl) {
+    const { ProxyAgent, setGlobalDispatcher } = await import("undici");
+    setGlobalDispatcher(new ProxyAgent(proxyUrl));
+  }
+}
+
 // Network metadata table – single source of truth
 const NETWORK_META: Record<string, { chainId: number; rpcEnvKey: string; defaultRpc: string }> = {
   coston2: {
@@ -38,10 +49,18 @@ const NETWORK_META: Record<string, { chainId: number; rpcEnvKey: string; default
     rpcEnvKey: "OP_SEPOLIA_RPC_URL",
     defaultRpc: "https://sepolia.optimism.io",
   },
+  // localhost is used for integration testing / CI smoke tests
+  localhost: {
+    chainId: 31337,
+    rpcEnvKey: "LOCALHOST_RPC_URL",
+    defaultRpc: "http://127.0.0.1:8545",
+  },
 };
 
 async function main() {
-  const networkName = hre.network.name;
+  // Hardhat v3: hre.network is a NetworkManager; call connect() to get the connection
+  const connection = await hre.network.connect();
+  const networkName = connection.networkName;
   const meta = NETWORK_META[networkName];
 
   if (!meta) {
@@ -120,30 +139,8 @@ async function main() {
   console.log(`Deployed : ${deployedAt}`);
   console.log(`Commit   : ${commit}`);
 
-  // ── Test anchor (demo) ───────────────────────────────────────────────────────
-  // Anchor a clearly synthetic test hash to confirm the contract is live.
-  const TEST_HASH = "0xdeadbeef00000000000000000000000000000000000000000000000000c0ffee";
-  console.log("\n--- Post-deploy smoke anchor ---");
-  console.log(`Test hash: ${TEST_HASH}`);
-
-  const anchorContract = new ethers.Contract(
-    address,
-    ["function anchorReference(bytes32 referenceHash) external"],
-    deployer
-  );
-
-  const anchorTx = await anchorContract.anchorReference(TEST_HASH);
-  console.log(`Anchor tx: ${anchorTx.hash}`);
-  const anchorReceipt = await anchorTx.wait();
-  if (!anchorReceipt || anchorReceipt.status !== 1) {
-    console.error("⚠️  Smoke anchor failed – contract deployed but anchorReference reverted.");
-  } else {
-    console.log(`✅ Smoke anchor confirmed in block ${anchorReceipt.blockNumber}`);
-    console.log(`   Contract : ${address}`);
-    console.log(`   Tx hash  : ${anchorReceipt.hash}`);
-  }
-
   // ── Write deployment record ──────────────────────────────────────────────────
+  // Write BEFORE smoke anchor so the record is never lost on anchor failure.
   const deploymentsDir = path.join(process.cwd(), "deployments");
   const deploymentsFile = path.join(deploymentsDir, "referenceAnchor.json");
 
@@ -165,6 +162,35 @@ async function main() {
   fs.writeFileSync(deploymentsFile, JSON.stringify(existing, null, 2));
   console.log("\n📄 Deployment record saved to deployments/referenceAnchor.json");
   console.log(JSON.stringify(existing[networkName], null, 2));
+
+  // ── Post-deploy smoke anchor ─────────────────────────────────────────────────
+  // Anchor a clearly synthetic test hash to confirm the contract is live.
+  const TEST_HASH = "0xdeadbeef00000000000000000000000000000000000000000000000000c0ffee";
+  console.log("\n--- Post-deploy smoke anchor ---");
+  console.log(`Test hash: ${TEST_HASH}`);
+
+  const anchorContract = new ethers.Contract(
+    address,
+    ["function anchorReference(bytes32 referenceHash) external"],
+    deployer
+  );
+
+  try {
+    // Use "pending" nonce to avoid stale nonce after the deploy tx on fast-mining networks
+    const anchorNonce = await deployer.getNonce("pending");
+    const anchorTx = await anchorContract.anchorReference(TEST_HASH, { nonce: anchorNonce });
+    console.log(`Anchor tx: ${anchorTx.hash}`);
+    const anchorReceipt = await anchorTx.wait();
+    if (!anchorReceipt || anchorReceipt.status !== 1) {
+      console.warn("⚠️  Smoke anchor tx reverted.");
+    } else {
+      console.log(`✅ Smoke anchor confirmed in block ${anchorReceipt.blockNumber}`);
+      console.log(`   Contract : ${address}`);
+      console.log(`   Tx hash  : ${anchorReceipt.hash}`);
+    }
+  } catch (e: any) {
+    console.warn(`⚠️  Smoke anchor failed (non-fatal): ${e.message}`);
+  }
 }
 
 main()

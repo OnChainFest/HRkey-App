@@ -1,0 +1,62 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "ReferenceAnchor",
+  "sourceName": "contracts/ReferenceAnchor.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "referenceHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "anchoringAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "ReferenceAnchored",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "referenceHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "anchorReference",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalAnchored",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561000f575f80fd5b506101768061001d5f395ff3fe608060405234801561000f575f80fd5b5060043610610034575f3560e01c8063a212e36f14610038578063b73968bf14610052575b5f80fd5b6100405f5481565b60405190815260200160405180910390f35b610065610060366004610105565b610067565b005b806100b85760405162461bcd60e51b815260206004820152601a60248201527f5265666572656e6365416e63686f723a207a65726f2068617368000000000000604482015260640160405180910390fd5b5f805490806100c68361011c565b9091555050604051428152339082907fdaad282c3e1950ada45e9b07763c0704e9964b71e564d3302a866cb9241ecd5c9060200160405180910390a350565b5f60208284031215610115575f80fd5b5035919050565b5f6001820161013957634e487b7160e01b5f52601160045260245ffd5b506001019056fea2646970667358221220b62b6d779883e49ad7b118abec9b8acea4c41f9e9e0afe63a16767632abe25bb64736f6c63430008180033",
+  "deployedBytecode": "",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

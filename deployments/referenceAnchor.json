@@ -1,0 +1,9 @@
+{
+  "localhost": {
+    "chainId": 31337,
+    "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "txHash": "0x55906df0326017863e807d9f7df438c658b7353f3f447e2795b088e7d55a0598",
+    "deployedAt": "2026-02-20T16:17:38.041Z",
+    "commit": "ecefae7"
+  }
+}
