@@ -191,15 +191,17 @@ export class ReferenceService {
       if (!userId) throw new Error('userId is required');
       if (!email) throw new Error('referee email is required');
 
-      // Token único
+      // Generate a 256-bit random token (plaintext — only used for the email
+      // link; never stored in the database).
       const inviteToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(inviteToken).digest('hex');
 
-      // Guardar invitación
+      // Guardar invitación (stores hash only, not plaintext)
       const inviteRow = {
         requester_id: userId,
         referee_email: email,
         referee_name: name || null,
-        invite_token: inviteToken,
+        token_hash: tokenHash,
         status: 'pending',
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 días
         created_at: new Date().toISOString(),
@@ -240,14 +242,19 @@ export class ReferenceService {
       const { token, refereeData, ratings, comments } = submissionData || {};
       if (!token) throw new Error('token is required');
 
+      // Hash the incoming plaintext token before lookup — never compare plaintext
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
       const { data: invite, error: invErr } = await supabase
         .from('reference_invites')
         .select('*')
-        .eq('invite_token', token)
+        .eq('token_hash', tokenHash)
         .single();
 
-      if (invErr || !invite) throw new Error('Invalid or expired invitation token');
-      if (invite.status === 'completed') throw new Error('This reference has already been submitted');
+      // Generic error: do not reveal whether the token exists, is used, or expired
+      if (invErr || !invite || invite.status !== 'pending') {
+        throw new Error('Invalid or expired invite');
+      }
 
       const overall = this.calculateOverallRating(ratings);
 
@@ -296,19 +303,20 @@ export class ReferenceService {
    */
   static async getReferenceByToken(token) {
     try {
+      // Hash the incoming plaintext token before lookup
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
       const { data: invite, error } = await supabase
         .from('reference_invites')
         .select('*')
-        .eq('invite_token', token)
+        .eq('token_hash', tokenHash)
         .single();
 
-      if (error || !invite) throw new Error('Invalid invitation token');
+      if (error || !invite) throw new Error('Invalid or expired invite');
 
-      if (invite.status === 'completed') {
-        return { success: false, message: 'This reference has already been completed', status: 'completed' };
-      }
-      if (new Date(invite.expires_at) < new Date()) {
-        return { success: false, message: 'This invitation has expired', status: 'expired' };
+      // Generic failure: do not distinguish completed vs expired
+      if (invite.status === 'completed' || new Date(invite.expires_at) < new Date()) {
+        return { success: false, message: 'Invalid or expired invite' };
       }
 
       return {

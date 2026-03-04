@@ -7,6 +7,7 @@
  * - Superadmins can view all references
  */
 
+import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import logger from '../logger.js';
 import {
@@ -29,6 +30,28 @@ const maskEmailForLogs = (email) => {
   if (!domain) return `${email.slice(0, 2)}***`;
   const visible = local.slice(0, 2);
   return `${visible}${local.length > 2 ? '***' : ''}@${domain}`;
+};
+
+/**
+ * Extract the real client IP, respecting proxy forwarding headers.
+ * Mirrors the same logic used in middleware/rateLimit.js.
+ */
+const getClientIp = (req) => {
+  const fwd = req.headers['x-forwarded-for'];
+  if (typeof fwd === 'string' && fwd.trim().length > 0) {
+    return fwd.split(',')[0].trim();
+  }
+  return req.ip || 'unknown';
+};
+
+/**
+ * Hash a client IP with a server-side salt so the raw IP is never persisted.
+ * Set INVITE_IP_SALT in env to a random secret (min 32 chars recommended).
+ * Without a salt, IPv4 space (~4 billion values) is trivially reversible.
+ */
+const hashClientIp = (ip) => {
+  const salt = process.env.INVITE_IP_SALT || '';
+  return crypto.createHash('sha256').update(ip + salt).digest('hex');
 };
 
 /**
@@ -394,39 +417,42 @@ export async function respondToReferenceInvite(req, res) {
 
     const { data: invite, error: inviteError } = await fetchInviteByToken(token);
 
+    // SECURITY: Return a single generic message for all token failure cases
+    // (not found / expired / used / processing). Never reveal which condition
+    // applies — doing so enables enumeration of invite state.
     if (inviteError || !invite) {
       return res.status(404).json({
         ok: false,
-        error: 'Invitation not found'
+        error: 'Invalid or expired invite'
       });
     }
 
-    if (invite.status === 'completed') {
+    if (invite.status !== 'pending') {
       return res.status(422).json({
         ok: false,
-        error: 'Reference already submitted'
-      });
-    }
-
-    if (invite.status === 'processing') {
-      return res.status(409).json({
-        ok: false,
-        error: 'Reference is already being processed'
+        error: 'Invalid or expired invite'
       });
     }
 
     if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
       return res.status(422).json({
         ok: false,
-        error: 'Invitation expired'
+        error: 'Invalid or expired invite'
       });
     }
+
+    // Capture IP metadata for audit trail (#158).
+    // Raw IP is hashed with a server salt — never stored in plaintext.
+    const usedIpHash  = hashClientIp(getClientIp(req));
+    const userAgent   = (req.headers['user-agent'] || '').slice(0, 512);
 
     await ReferenceService.submitReference({
       token,
       invite,
       ratings,
-      comments
+      comments,
+      usedIpHash,
+      userAgent
     });
 
     return res.json({ ok: true });
@@ -439,9 +465,11 @@ export async function respondToReferenceInvite(req, res) {
       error: e.message,
       stack: isProductionEnv ? undefined : e.stack
     });
+    // SECURITY: Always return a generic message for any token-related failure
+    // (4xx or 5xx). Returning e.message for 4xx errors leaks invite state.
     return res.status(status).json({
       ok: false,
-      error: status >= 500 ? 'Failed to submit reference' : e.message
+      error: status >= 500 ? 'Failed to submit reference' : 'Invalid or expired invite'
     });
   }
 }

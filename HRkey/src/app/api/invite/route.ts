@@ -46,10 +46,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generar token único
+    // Generate a 256-bit cryptographically random token (plaintext, used for
+    // the verification URL only — never stored in the database).
     const token = crypto.randomBytes(32).toString("hex");
 
-    // Crear invitación en la base de datos
+    // Hash the token with SHA-256. Only the hash is persisted.
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    // Crear invitación en la base de datos (stores hash, not plaintext)
     const { data: invite, error: inviteError } = await supabase
       .from("reference_invites")
       .insert([
@@ -57,7 +64,7 @@ export async function POST(request: Request) {
           requester_id: userId,
           referee_email: email,
           referee_name: name,
-          invite_token: token,
+          token_hash: tokenHash,
           status: "pending",
           metadata: applicantData || {},
           created_at: new Date().toISOString(),

@@ -21,10 +21,8 @@ const maskEmailForLogs = (email) => {
   return `${visible}${local.length > 2 ? '***' : ''}@${domain}`;
 };
 
-function useHashedReferenceTokens() {
-  return process.env.USE_HASHED_REFERENCE_TOKENS === 'true';
-}
-
+// Tokens are ALWAYS stored as SHA-256 hashes. The plaintext token is only
+// held in memory long enough to build the verification URL and send the email.
 export function hashInviteToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
@@ -97,11 +95,11 @@ export async function hasApprovedReferenceAccess({ candidateId, companyIds }) {
   return !!data;
 }
 
-async function findInviteByTokenValue(tokenValue) {
+async function findInviteByTokenHash(tokenHash) {
   return supabase
     .from('reference_invites')
     .select('*')
-    .eq('invite_token', tokenValue)
+    .eq('token_hash', tokenHash)
     .maybeSingle();
 }
 
@@ -110,15 +108,10 @@ export async function fetchInviteByToken(token) {
     return { data: null, error: null };
   }
 
-  if (useHashedReferenceTokens()) {
-    const hashedToken = hashInviteToken(token);
-    const hashedResult = await findInviteByTokenValue(hashedToken);
-    if (hashedResult.data) {
-      return hashedResult;
-    }
-  }
-
-  return findInviteByTokenValue(token);
+  // Always hash the incoming plaintext token before DB lookup.
+  // The plaintext token is never stored; only the SHA-256 hash is persisted.
+  const tokenHash = hashInviteToken(token);
+  return findInviteByTokenHash(tokenHash);
 }
 
 export async function fetchSelfReferences(userId) {
@@ -141,14 +134,15 @@ export async function fetchCandidateReferences(candidateId) {
 export class ReferenceService {
   static async createReferenceRequest({ userId, email, name, applicantData, expiresInDays = 7 }) {
     const inviteToken = crypto.randomBytes(32).toString('hex');
-    const storedToken = useHashedReferenceTokens() ? hashInviteToken(inviteToken) : inviteToken;
-    // TODO: Default to hashed tokens once legacy raw tokens are fully migrated.
+    const tokenHash = hashInviteToken(inviteToken);
+    // Only the hash is stored. The plaintext token is used to build the email
+    // link and is never persisted to the database.
 
     const inviteRow = {
       requester_id: userId,
       referee_email: email,
       referee_name: name,
-      invite_token: storedToken,
+      token_hash: tokenHash,
       status: 'pending',
       expires_at: new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString(),
       created_at: new Date().toISOString(),
@@ -176,7 +170,7 @@ export class ReferenceService {
     return { success: true, reference_id: invite.id, token: inviteToken, verification_url: verificationUrl };
   }
 
-  static async submitReference({ token, invite, refereeData, ratings, comments }) {
+  static async submitReference({ token, invite, refereeData, ratings, comments, usedIpHash, userAgent }) {
     let inviteRecord = invite;
     let reference = null;
     let referenceCreated = false;
@@ -332,9 +326,16 @@ export class ReferenceService {
         });
       }
 
+      // Write IP metadata atomically with the completion status.
+      // usedIpHash is SHA-256(ip + salt) — raw IP is never stored here.
       await supabase
         .from('reference_invites')
-        .update({ status: 'completed', completed_at: new Date().toISOString() })
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          used_ip_hash: usedIpHash ?? null,
+          used_user_agent: userAgent ?? null
+        })
         .eq('id', inviteRecord.id);
 
       await logEvent({
@@ -365,13 +366,16 @@ export class ReferenceService {
   static async getReferenceByToken(token) {
     const { data: invite, error } = await fetchInviteByToken(token);
 
-    if (error || !invite) throw new Error('Invalid invitation token');
-
-    if (invite.status === 'completed') {
-      return { success: false, message: 'This reference has already been completed', status: 'completed' };
+    if (error || !invite) {
+      const notFound = new Error('Invalid or expired invite');
+      notFound.status = 404;
+      throw notFound;
     }
-    if (new Date(invite.expires_at) < new Date()) {
-      return { success: false, message: 'This invitation has expired', status: 'expired' };
+
+    // Return generic failure regardless of reason (completed vs expired) to
+    // prevent enumeration of invite state by external callers.
+    if (invite.status === 'completed' || new Date(invite.expires_at) < new Date()) {
+      return { success: false, message: 'Invalid or expired invite' };
     }
 
     return {
