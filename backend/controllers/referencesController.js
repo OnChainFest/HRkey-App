@@ -394,31 +394,27 @@ export async function respondToReferenceInvite(req, res) {
 
     const { data: invite, error: inviteError } = await fetchInviteByToken(token);
 
+    // SECURITY: Return a single generic message for all token failure cases
+    // (not found / expired / used / processing). Never reveal which condition
+    // applies — doing so enables enumeration of invite state.
     if (inviteError || !invite) {
       return res.status(404).json({
         ok: false,
-        error: 'Invitation not found'
+        error: 'Invalid or expired invite'
       });
     }
 
-    if (invite.status === 'completed') {
+    if (invite.status !== 'pending') {
       return res.status(422).json({
         ok: false,
-        error: 'Reference already submitted'
-      });
-    }
-
-    if (invite.status === 'processing') {
-      return res.status(409).json({
-        ok: false,
-        error: 'Reference is already being processed'
+        error: 'Invalid or expired invite'
       });
     }
 
     if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
       return res.status(422).json({
         ok: false,
-        error: 'Invitation expired'
+        error: 'Invalid or expired invite'
       });
     }
 
@@ -439,9 +435,11 @@ export async function respondToReferenceInvite(req, res) {
       error: e.message,
       stack: isProductionEnv ? undefined : e.stack
     });
+    // SECURITY: Always return a generic message for any token-related failure
+    // (4xx or 5xx). Returning e.message for 4xx errors leaks invite state.
     return res.status(status).json({
       ok: false,
-      error: status >= 500 ? 'Failed to submit reference' : e.message
+      error: status >= 500 ? 'Failed to submit reference' : 'Invalid or expired invite'
     });
   }
 }
