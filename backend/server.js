@@ -511,6 +511,15 @@ const tokenLimiter = createRateLimiter({
   keyPrefix: 'token'
 });
 
+// Dedicated limiter for the public, unauthenticated token-submission endpoint.
+// Uses a longer window than the global default to limit sustained brute-force
+// attempts against invite tokens. Configurable via env for ops flexibility.
+const submitLimiter = createRateLimiter({
+  windowMs: Number.parseInt(process.env.RATE_LIMIT_SUBMIT_WINDOW_MS || String(15 * 60 * 1000), 10),
+  max: Number.parseInt(process.env.RATE_LIMIT_SUBMIT_MAX || '10', 10),
+  keyPrefix: 'submit'
+});
+
 const hrscoreLimiter = createRateLimiter({
   windowMs: rateLimitWindowMs,
   max: Number.parseInt(process.env.RATE_LIMIT_HRSCORE_MAX || '60', 10),
@@ -889,7 +898,7 @@ app.post(
 
 app.post(
   '/api/references/respond/:token',
-  tokenLimiter,
+  submitLimiter,  // 10 req / 15 min per IP (stricter than shared tokenLimiter)
   optionalAuth,
   validateParams(getReferenceByTokenSchema),
   validateBody422(respondReferenceSchema),

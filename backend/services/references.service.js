@@ -170,7 +170,7 @@ export class ReferenceService {
     return { success: true, reference_id: invite.id, token: inviteToken, verification_url: verificationUrl };
   }
 
-  static async submitReference({ token, invite, refereeData, ratings, comments }) {
+  static async submitReference({ token, invite, refereeData, ratings, comments, usedIpHash, userAgent }) {
     let inviteRecord = invite;
     let reference = null;
     let referenceCreated = false;
@@ -326,9 +326,16 @@ export class ReferenceService {
         });
       }
 
+      // Write IP metadata atomically with the completion status.
+      // usedIpHash is SHA-256(ip + salt) — raw IP is never stored here.
       await supabase
         .from('reference_invites')
-        .update({ status: 'completed', completed_at: new Date().toISOString() })
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          used_ip_hash: usedIpHash ?? null,
+          used_user_agent: userAgent ?? null
+        })
         .eq('id', inviteRecord.id);
 
       await logEvent({
