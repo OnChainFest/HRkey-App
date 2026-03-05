@@ -5,6 +5,7 @@ import { makeRefereeLink, getFrontendBaseURL } from '../utils/appUrl.js';
 import { validateReference as validateReferenceRVL } from './validation/index.js';
 import { logEvent, EventTypes } from './analytics/eventTracker.js';
 import { onReferenceValidated as hrscoreAutoTrigger } from './hrscore/autoTrigger.js';
+import { buildReferencePack } from '../utils/referencePack.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrervcydgdrlcndtjboy.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -257,6 +258,36 @@ export class ReferenceService {
 
       reference = insertedReference;
       referenceCreated = true;
+
+      // -----------------------------------------------------------------------
+      // Reference Pack + deterministic hash
+      // Compute and store a SHA256 hash of the canonical Reference Pack.
+      // Non-blocking: a failure here must not prevent the reference from saving.
+      // Requires column: references.reference_hash (TEXT)
+      // Migration: sql/013_reference_pack_hash.sql
+      // -----------------------------------------------------------------------
+      try {
+        const { reference_hash } = buildReferencePack(reference);
+
+        const { error: hashErr } = await supabase
+          .from('references')
+          .update({ reference_hash })
+          .eq('id', reference.id);
+
+        if (hashErr) {
+          logger.warn('Failed to store reference_hash (column may not exist yet — run migration 013_reference_pack_hash.sql)', {
+            reference_id: reference.id,
+            error: hashErr.message
+          });
+        } else {
+          logger.info('reference_hash stored', { reference_id: reference.id, reference_hash });
+        }
+      } catch (packErr) {
+        logger.warn('buildReferencePack failed (non-blocking)', {
+          reference_id: reference.id,
+          error: packErr.message
+        });
+      }
 
       try {
         logger.info('Processing reference through RVL', { reference_id: reference.id });
