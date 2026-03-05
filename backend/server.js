@@ -1658,3 +1658,89 @@ if (process.env.NODE_ENV !== 'test') {
     await ensureSuperadmin();
   });
 }
+
+/* =========================
+   Reference Pack Proof Endpoints
+   ========================= */
+
+import { buildCanonicalReferencePack } from './services/referencePack.service.js';
+import { canonicalHash } from './utils/canonicalHash.js';
+
+const PROOF_CHAIN_ID = Number.parseInt(process.env.PROOF_CHAIN_ID || '84532', 10);
+const PROOF_CONTRACT_ADDRESS = process.env.PROOF_CONTRACT_ADDRESS;
+const PROOF_SIGNER_PRIVATE_KEY = process.env.PROOF_SIGNER_PRIVATE_KEY;
+const BASE_SEPOLIA_RPC_URL = process.env.BASE_SEPOLIA_RPC_URL;
+
+const REFERENCE_PACK_PROOF_ABI = [
+  'function recordReferencePackProof(bytes32 packHash, string candidateIdentifier) external returns (bool)',
+  'function getProof(bytes32 packHash) external view returns (address recorder, uint256 timestamp, string candidateIdentifier, bool exists)'
+];
+
+let _proofContract = null;
+
+function getReferencePackProofContract() {
+  if (_proofContract) return _proofContract;
+
+  const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC_URL);
+  const signer = new ethers.Wallet(PROOF_SIGNER_PRIVATE_KEY, provider);
+  _proofContract = new ethers.Contract(PROOF_CONTRACT_ADDRESS, REFERENCE_PACK_PROOF_ABI, signer);
+  return _proofContract;
+}
+
+app.post('/api/reference-pack/:identifier/commit', requireAuth, strictLimiter, async (req, res) => {
+  try {
+    const { identifier } = req.params;
+
+    const pack = await buildCanonicalReferencePack({
+      userId: req.user?.id,
+      identifier
+    });
+
+    const { hash: packHash } = canonicalHash(pack);
+
+    const contract = getReferencePackProofContract();
+    const tx = await contract.recordReferencePackProof(\`0x\${packHash}\`, identifier);
+    if (tx?.wait) await tx.wait();
+
+    return res.status(200).json({
+      pack_hash: packHash,
+      tx_hash: tx?.hash,
+      contract_address: PROOF_CONTRACT_ADDRESS,
+      chain_id: PROOF_CHAIN_ID,
+      recorded_at: new Date().toISOString()
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+      message: err.message
+    });
+  }
+});
+
+app.get('/api/reference-pack/proof/:packHash', requireAuth, strictLimiter, async (req, res) => {
+  try {
+    const { packHash } = req.params;
+
+    const contract = getReferencePackProofContract();
+    const [recorder, ts, candidateIdentifier, exists] =
+      await contract.getProof(\`0x\${packHash}\`);
+
+    return res.status(200).json({
+      exists: Boolean(exists),
+      recorder,
+      timestamp: Number(ts),
+      candidateIdentifier,
+      contract_address: PROOF_CONTRACT_ADDRESS,
+      chain_id: PROOF_CHAIN_ID
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+      message: err.message
+    });
+  }
+});
