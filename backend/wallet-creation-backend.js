@@ -219,7 +219,9 @@ class ReferenceService {
         requester_id: userId,
         referee_email: email,
         referee_name: name || null,
-        status: 'pending',
+        
+        token_hash: hashInviteToken(inviteToken),
+status: 'pending',
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 días
         created_at: new Date().toISOString(),
         metadata: applicantData || null,
