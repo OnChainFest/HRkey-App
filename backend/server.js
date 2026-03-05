@@ -646,13 +646,16 @@ app.get('/health/deep', async (req, res) => {
   try {
     const supabaseStartTime = Date.now();
 
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Supabase health check timeout')), 5000)
-    );
+    // ✅ FIX: avoid dangling timeout rejection (Jest crash) + make checkPromise always a real Promise
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('Supabase health check timeout')), 5000);
+    });
 
-    const checkPromise = supabase.from('users').select('count').limit(1);
+    const checkPromise = Promise.resolve().then(() => supabase.from('users').select('count').limit(1));
 
-    const { error } = await Promise.race([checkPromise, timeoutPromise]);
+    const result = await Promise.race([checkPromise, timeoutPromise]);
+    const { error } = result || {};
 
     const supabaseResponseTime = Date.now() - supabaseStartTime;
 
@@ -666,6 +669,8 @@ app.get('/health/deep', async (req, res) => {
     } else {
       healthcheck.checks.supabase = { status: 'ok', responseTime: supabaseResponseTime };
     }
+
+    clearTimeout(timeoutId);
   } catch (err) {
     healthcheck.status = 'degraded';
     healthcheck.checks.supabase = {
