@@ -15,10 +15,6 @@ import Stripe from 'stripe';
 import { makeRefereeLink as makeRefereeLinkUtil, getFrontendBaseURL } from './utils/appUrl.js';
 import * as Sentry from '@sentry/node';
 
-// ✅ Reference Pack Proof imports (needed by tests)
-import { buildCanonicalReferencePack } from './services/referencePack.service.js';
-import { canonicalHash } from './utils/canonicalHash.js';
-
 // Import new controllers
 import identityController from './controllers/identityController.js';
 import companyController from './controllers/companyController.js';
@@ -45,6 +41,10 @@ import { getScoreSnapshots } from './services/hrscore/scoreSnapshots.js';
 // Import services
 import * as webhookService from './services/webhookService.js';
 import { ReferenceService, hashInviteToken } from './services/references.service.js';
+
+// ✅ Reference Pack Proof deps (mockeados por tests)
+import { buildCanonicalReferencePack } from './services/referencePack.service.js';
+import { canonicalHash } from './utils/canonicalHash.js';
 
 // Import logging
 import logger, { requestIdMiddleware, requestLoggingMiddleware } from './logger.js';
@@ -153,8 +153,7 @@ const BACKEND_PUBLIC_URL =
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrervcydgdrlcndtjboy.supabase.co';
 
-const SUPABASE_SERVICE_KEY =
-  process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_SERVICE_KEY) {
   throw new Error('SUPABASE_SERVICE_KEY or SUPABASE_SERVICE_ROLE_KEY must be defined');
@@ -188,6 +187,41 @@ if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
 
 const stripe = new Stripe(STRIPE_SECRET_KEY || 'sk_test_placeholder');
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+/* =========================
+   Reference Pack Proof (Base Sepolia)
+   ========================= */
+
+const PROOF_CHAIN_ID = Number.parseInt(process.env.PROOF_CHAIN_ID || '84532', 10);
+const PROOF_CONTRACT_ADDRESS = process.env.PROOF_CONTRACT_ADDRESS;
+const PROOF_SIGNER_PRIVATE_KEY = process.env.PROOF_SIGNER_PRIVATE_KEY;
+const BASE_SEPOLIA_RPC_URL = process.env.BASE_SEPOLIA_RPC_URL;
+
+// ABI mínimo (solo lo que usa server.js)
+const REFERENCE_PACK_PROOF_ABI = [
+  'function recordReferencePackProof(bytes32 packHash, string candidateIdentifier) external returns (bool)',
+  'function getProof(bytes32 packHash) external view returns (address recorder, uint256 timestamp, string candidateIdentifier, bool exists)'
+];
+
+let _proofContract = null;
+
+function getReferencePackProofContract() {
+  if (_proofContract) return _proofContract;
+
+  if (!BASE_SEPOLIA_RPC_URL || !PROOF_CONTRACT_ADDRESS || !PROOF_SIGNER_PRIVATE_KEY) {
+    const missing = {
+      BASE_SEPOLIA_RPC_URL: !!BASE_SEPOLIA_RPC_URL,
+      PROOF_CONTRACT_ADDRESS: !!PROOF_CONTRACT_ADDRESS,
+      PROOF_SIGNER_PRIVATE_KEY: !!PROOF_SIGNER_PRIVATE_KEY
+    };
+    throw new Error(`Proof contract not configured: ${JSON.stringify(missing)}`);
+  }
+
+  const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC_URL);
+  const signer = new ethers.Wallet(PROOF_SIGNER_PRIVATE_KEY, provider);
+  _proofContract = new ethers.Contract(PROOF_CONTRACT_ADDRESS, REFERENCE_PACK_PROOF_ABI, signer);
+  return _proofContract;
+}
 
 /* =========================
    Admin Key Middleware (NO JWT)
@@ -856,26 +890,7 @@ app.get('/api/references/candidate/:candidateId', requireAuth, referencesControl
  * Feature flag: ENABLE_REFERENCE_HIDING
  */
 if (ENABLE_REFERENCE_HIDING) {
-  // ✅ If controller methods exist, wire them; otherwise return 501 (never crash server)
-  app.post('/api/references/:referenceId/hide', requireAuth, (req, res, next) => {
-    const fn = referencesController?.hideReference || referencesController?.hide;
-    if (typeof fn === 'function') return fn(req, res, next);
-    return res.status(501).json({
-      ok: false,
-      error: 'NOT_IMPLEMENTED',
-      message: 'Reference hiding enabled but handler not implemented'
-    });
-  });
-
-  app.post('/api/references/:referenceId/unhide', requireAuth, (req, res, next) => {
-    const fn = referencesController?.unhideReference || referencesController?.unhide;
-    if (typeof fn === 'function') return fn(req, res, next);
-    return res.status(501).json({
-      ok: false,
-      error: 'NOT_IMPLEMENTED',
-      message: 'Reference unhide enabled but handler not implemented'
-    });
-  });
+  // (si luego reactivas la feature aquí irían las rutas hide/unhide reales)
 } else {
   // Feature disabled - return 503 Service Unavailable
   app.post('/api/references/:referenceId/hide', requireAuth, (req, res) => {
@@ -925,106 +940,78 @@ app.post(
 );
 
 /* =========================
-   Reference Pack Proof (on-chain anchor) ✅ (needed by tests)
+   Reference Pack Proof Endpoints
    ========================= */
 
-const PROOF_CONTRACT_ADDRESS = process.env.PROOF_CONTRACT_ADDRESS;
-const BASE_SEPOLIA_CHAIN_ID = Number.parseInt(process.env.CHAIN_ID || '84532', 10);
-
-function isHex64(s) {
-  return typeof s === 'string' && /^[0-9a-f]{64}$/i.test(s);
-}
-
-function getProofContract() {
-  if (!PROOF_CONTRACT_ADDRESS) {
-    throw new Error('PROOF_CONTRACT_ADDRESS not configured');
-  }
-
-  // In tests, ethers.Contract is mocked and does not require a real provider/signer.
-  try {
-    const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL || process.env.RPC_URL;
-    const pk = process.env.PROOF_SIGNER_PRIVATE_KEY;
-
-    const provider = rpcUrl ? new ethers.JsonRpcProvider(rpcUrl) : null;
-    const signer = pk && provider ? new ethers.Wallet(pk, provider) : provider;
-
-    // Minimal ABI not required for mocked contract; safe empty.
-    const abi = [];
-    return new ethers.Contract(PROOF_CONTRACT_ADDRESS, abi, signer);
-  } catch (_) {
-    return new ethers.Contract(PROOF_CONTRACT_ADDRESS, [], {});
-  }
-}
-
 // POST /api/reference-pack/:identifier/commit
-app.post('/api/reference-pack/:identifier/commit', requireAuth, async (req, res) => {
+app.post('/api/reference-pack/:identifier/commit', requireAuth, strictLimiter, async (req, res) => {
   try {
-    const identifier = String(req.params.identifier || '').trim();
-    if (!identifier) return res.status(400).json({ error: 'Missing identifier' });
+    const { identifier } = req.params;
 
     const pack = await buildCanonicalReferencePack({
       userId: req.user?.id,
       identifier
     });
 
-    const { hash } = canonicalHash(pack);
+    const { hash: packHash } = canonicalHash(pack);
 
-    if (!isHex64(hash)) {
-      return res.status(500).json({ error: 'Invalid pack hash produced' });
-    }
+    const contract = getReferencePackProofContract();
+    const tx = await contract.recordReferencePackProof(`0x${packHash}`, identifier);
 
-    const contract = getProofContract();
-    const tx = await contract.recordReferencePackProof(`0x${hash}`, identifier);
-    await tx.wait?.();
+    if (tx?.wait) await tx.wait();
 
     return res.status(200).json({
-      pack_hash: hash,
-      tx_hash: tx.hash,
+      pack_hash: packHash,
+      tx_hash: tx?.hash,
       contract_address: PROOF_CONTRACT_ADDRESS,
-      chain_id: BASE_SEPOLIA_CHAIN_ID,
+      chain_id: PROOF_CHAIN_ID,
       recorded_at: new Date().toISOString()
     });
   } catch (err) {
     logger.error('Failed to commit reference pack proof', {
       requestId: req.requestId,
+      userId: req.user?.id,
+      identifier: req.params?.identifier,
       error: err.message,
       stack: err.stack
     });
-    return res.status(500).json({ error: 'Failed to commit proof' });
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+      message: err.message
+    });
   }
 });
 
 // GET /api/reference-pack/proof/:packHash
-app.get('/api/reference-pack/proof/:packHash', requireAuth, async (req, res) => {
+app.get('/api/reference-pack/proof/:packHash', requireAuth, strictLimiter, async (req, res) => {
   try {
-    const packHash = String(req.params.packHash || '')
-      .toLowerCase()
-      .replace(/^0x/, '');
-    if (!isHex64(packHash)) return res.status(400).json({ error: 'Invalid packHash' });
+    const { packHash } = req.params;
 
-    const contract = getProofContract();
-    const proof = await contract.getProof(`0x${packHash}`);
-
-    const recorder = proof?.[0];
-    const timestamp = proof?.[1];
-    const candidateIdentifier = proof?.[2];
-    const exists = Boolean(proof?.[3]);
+    const contract = getReferencePackProofContract();
+    const [recorder, ts, candidateIdentifier, exists] = await contract.getProof(`0x${packHash}`);
 
     return res.status(200).json({
-      exists,
+      exists: Boolean(exists),
       recorder,
-      timestamp: typeof timestamp === 'bigint' ? Number(timestamp) : Number(timestamp || 0),
+      timestamp: Number(ts),
       candidateIdentifier,
       contract_address: PROOF_CONTRACT_ADDRESS,
-      chain_id: BASE_SEPOLIA_CHAIN_ID
+      chain_id: PROOF_CHAIN_ID
     });
   } catch (err) {
-    logger.error('Failed to get reference pack proof', {
+    logger.error('Failed to fetch reference pack proof', {
       requestId: req.requestId,
+      userId: req.user?.id,
+      packHash: req.params?.packHash,
       error: err.message,
       stack: err.stack
     });
-    return res.status(500).json({ error: 'Failed to fetch proof' });
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+      message: err.message
+    });
   }
 });
 
@@ -1042,13 +1029,7 @@ app.post(
 /* =========================
    Wallets (Identity Only)
    ========================= */
-app.post(
-  '/api/wallets/connect',
-  requireAuth,
-  strictLimiter,
-  validateBody(connectWalletSchema),
-  walletsController.connectWallet
-);
+app.post('/api/wallets/connect', requireAuth, strictLimiter, validateBody(connectWalletSchema), walletsController.connectWallet);
 app.get('/api/wallets/me', requireAuth, walletsController.getMyWallet);
 
 /* =========================
@@ -1297,13 +1278,7 @@ app.patch('/api/company/:companyId', requireAuth, requireCompanySigner, companyC
 app.post('/api/company/:companyId/verify', requireAuth, requireSuperadmin, companyController.verifyCompany);
 
 // ===== COMPANY SIGNERS ENDPOINTS =====
-app.post(
-  '/api/company/:companyId/signers',
-  strictLimiter,
-  requireAuth,
-  requireCompanySigner,
-  signersController.inviteSigner
-);
+app.post('/api/company/:companyId/signers', strictLimiter, requireAuth, requireCompanySigner, signersController.inviteSigner);
 app.get('/api/company/:companyId/signers', requireAuth, requireCompanySigner, signersController.getSigners);
 app.patch(
   '/api/company/:companyId/signers/:signerId',
@@ -1311,7 +1286,12 @@ app.patch(
   requireCompanySigner,
   signersController.updateSigner
 );
-app.get('/api/company/:companyId/data-access/requests', requireAuth, requireCompanySigner, dataAccessController.getCompanyRequests);
+app.get(
+  '/api/company/:companyId/data-access/requests',
+  requireAuth,
+  requireCompanySigner,
+  dataAccessController.getCompanyRequests
+);
 
 // Signer invitation endpoints
 app.get('/api/signers/invite/:token', tokenLimiter, signersController.getInvitationByToken);
@@ -1455,9 +1435,7 @@ app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
   try {
     const format = (req.query.format || 'json').toString().toLowerCase();
     const includeHistoryRaw = req.query.include_history;
-    const includeHistory = ['true', '1', 'yes'].includes(
-      (includeHistoryRaw ?? 'false').toString().toLowerCase()
-    );
+    const includeHistory = ['true', '1', 'yes'].includes((includeHistoryRaw ?? 'false').toString().toLowerCase());
 
     if (!['json', 'csv'].includes(format)) {
       return res.status(400).json({
@@ -1543,12 +1521,7 @@ app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
 
       const header = ['user_id', 'score', 'trigger_source', 'created_at'].join(',');
       const rows = snapshots.map((snapshot) =>
-        [
-          escapeCsvValue(snapshot.user_id),
-          escapeCsvValue(snapshot.score),
-          escapeCsvValue(snapshot.trigger_source),
-          escapeCsvValue(snapshot.created_at)
-        ].join(',')
+        [escapeCsvValue(snapshot.user_id), escapeCsvValue(snapshot.score), escapeCsvValue(snapshot.trigger_source), escapeCsvValue(snapshot.created_at)].join(',')
       );
       const csvBody = [header, ...rows].join('\n');
 
