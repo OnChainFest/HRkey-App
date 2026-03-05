@@ -25,6 +25,10 @@ if (!SUPABASE_SERVICE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
+function hashInviteToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 /* ================================
    URL pública del frontend (robusta)
    ================================ */
@@ -191,15 +195,15 @@ export class ReferenceService {
       if (!userId) throw new Error('userId is required');
       if (!email) throw new Error('referee email is required');
 
-      // Token único
+      // Token único (SOLO para link/email/response)
       const inviteToken = crypto.randomBytes(32).toString('hex');
 
-      // Guardar invitación
+      // Guardar invitación (TOKEN_HASH-ONLY)
       const inviteRow = {
         requester_id: userId,
         referee_email: email,
         referee_name: name || null,
-        invite_token: inviteToken,
+        token_hash: hashInviteToken(inviteToken),
         status: 'pending',
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 días
         created_at: new Date().toISOString(),
@@ -222,7 +226,7 @@ export class ReferenceService {
       return {
         success: true,
         reference_id: invite.id,
-        token: inviteToken,
+        token: inviteToken, // plaintext permitido SOLO en response
         verification_url: verificationUrl,
       };
     } catch (err) {
@@ -243,7 +247,7 @@ export class ReferenceService {
       const { data: invite, error: invErr } = await supabase
         .from('reference_invites')
         .select('*')
-        .eq('invite_token', token)
+        .eq('token_hash', hashInviteToken(token))
         .single();
 
       if (invErr || !invite) throw new Error('Invalid or expired invitation token');
@@ -296,10 +300,12 @@ export class ReferenceService {
    */
   static async getReferenceByToken(token) {
     try {
+      if (!token) throw new Error('token is required');
+
       const { data: invite, error } = await supabase
         .from('reference_invites')
         .select('*')
-        .eq('invite_token', token)
+        .eq('token_hash', hashInviteToken(token))
         .single();
 
       if (error || !invite) throw new Error('Invalid invitation token');
@@ -417,4 +423,3 @@ export class ReferenceService {
       console.error('❌ sendReferenceCompletedEmail error:', err);
     }
   }
-}
