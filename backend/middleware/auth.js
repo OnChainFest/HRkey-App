@@ -7,18 +7,24 @@
 import { createClient } from '@supabase/supabase-js';
 import logger from '../logger.js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
-
 let supabaseClient;
 
 const getSupabaseClient = () => {
+  const supabaseUrl = process.env.SUPABASE_URL || 'https://example.supabase.co';
+  const supabaseServiceKey =
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    'test-service-role-key';
+
+  // In tests, always return a fresh client so Jest mocks are respected.
+  if (process.env.NODE_ENV === 'test') {
+    return createClient(supabaseUrl, supabaseServiceKey);
+  }
+
   if (!supabaseClient) {
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Supabase env missing: SUPABASE_URL / SUPABASE_SERVICE_KEY');
-    }
     supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
   }
+
   return supabaseClient;
 };
 
@@ -57,13 +63,14 @@ export async function requireAuth(req, res, next) {
       });
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
 
-    // Verify token with Supabase
+    const client = getSupabaseClient();
+
     const {
       data: { user },
       error
-    } = await getSupabaseClient().auth.getUser(token);
+    } = await client.auth.getUser(token);
 
     if (error || !user) {
       return res.status(401).json({
@@ -72,20 +79,19 @@ export async function requireAuth(req, res, next) {
       });
     }
 
-    // Fetch additional user data from users table
-    const { data: userData, error: userError } = await getSupabaseClient()
+    const { data: userData, error: userError } = await client
       .from('users')
-      .select('id, email, role, identity_verified, wallet_address')
+      .select('id, email, role, identity_verified, wallet_address, created_at')
       .eq('id', user.id)
       .single();
 
-    if (userError) {
+    if (userError || !userData) {
       logger.warn('Failed to fetch user data from users table', {
         requestId: req.requestId,
         userId: user.id,
-        error: userError.message
+        error: userError?.message
       });
-      // Use basic user data from auth if custom table query fails
+
       req.user = {
         id: user.id,
         email: user.email,
@@ -96,7 +102,7 @@ export async function requireAuth(req, res, next) {
       req.user = userData;
     }
 
-    next();
+    return next();
   } catch (error) {
     logger.error('Authentication middleware failed', {
       requestId: req.requestId,
@@ -105,6 +111,7 @@ export async function requireAuth(req, res, next) {
       error: error.message,
       stack: error.stack
     });
+
     return res.status(500).json({
       error: 'Authentication error',
       message: 'An error occurred during authentication'
@@ -131,7 +138,7 @@ export async function requireSuperadmin(req, res, next) {
     });
   }
 
-  next();
+  return next();
 }
 
 /**
@@ -149,7 +156,7 @@ export async function requireAdmin(req, res, next) {
     });
   }
 
-  next();
+  return next();
 }
 
 // ============================================================================
@@ -176,16 +183,16 @@ export async function requireCompanySigner(req, res, next) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Superadmins bypass signer check
     if (req.user.role === 'superadmin') {
       req.isSuperadmin = true;
       return next();
     }
 
-    // Check if user is an active signer for this company
-    const { data: signer, error } = await getSupabaseClient()
+    const client = getSupabaseClient();
+
+    const { data: signer, error } = await client
       .from('company_signers')
-      .select('id, role, is_active, company_id')
+      .select('id, role, is_active, company_id, user_id, created_at')
       .eq('company_id', companyId)
       .eq('user_id', req.user.id)
       .eq('is_active', true)
@@ -198,9 +205,8 @@ export async function requireCompanySigner(req, res, next) {
       });
     }
 
-    // Attach signer info to request
     req.signer = signer;
-    next();
+    return next();
   } catch (error) {
     logger.error('Company signer authorization failed', {
       requestId: req.requestId,
@@ -210,6 +216,7 @@ export async function requireCompanySigner(req, res, next) {
       error: error.message,
       stack: error.stack
     });
+
     return res.status(500).json({
       error: 'Authorization error',
       message: 'An error occurred checking company permissions'
@@ -226,27 +233,34 @@ export async function requireAnySigner(req, res, next) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Superadmins bypass
     if (req.user.role === 'superadmin') {
       return next();
     }
 
-    // Check if user is a signer of any company
-    const { data: signers, error } = await getSupabaseClient()
+    const client = getSupabaseClient();
+
+    const { data: signers, error } = await client
       .from('company_signers')
       .select('id, company_id')
       .eq('user_id', req.user.id)
       .eq('is_active', true)
       .limit(1);
 
-    if (error || !signers || signers.length === 0) {
+    if (error) {
       return res.status(403).json({
         error: 'Forbidden',
         message: 'You must be a company signer to access this resource'
       });
     }
 
-    next();
+    if (!signers || signers.length === 0) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You must be a company signer to access this resource'
+      });
+    }
+
+    return next();
   } catch (error) {
     logger.error('Signer authorization failed', {
       requestId: req.requestId,
@@ -255,6 +269,7 @@ export async function requireAnySigner(req, res, next) {
       error: error.message,
       stack: error.stack
     });
+
     return res.status(500).json({
       error: 'Authorization error'
     });
@@ -265,19 +280,6 @@ export async function requireAnySigner(req, res, next) {
 // RESOURCE-SCOPED AUTHORIZATION MIDDLEWARE
 // ============================================================================
 
-/**
- * Requires user to be the resource owner or a superadmin
- * Factory function that returns middleware checking req.user.id === req.params[paramName]
- *
- * @param {string} paramName - The route parameter name containing the user ID (default: 'userId')
- * @param {Object} options - Optional configuration
- * @param {string} options.message - Custom error message for 403 response
- * @returns {Function} Express middleware
- *
- * Usage:
- *   app.get('/api/identity/status/:userId', requireAuth, requireSelfOrSuperadmin('userId'), controller)
- *   app.get('/api/user/:id/profile', requireAuth, requireSelfOrSuperadmin('id', { message: 'Custom message' }), controller)
- */
 export function requireSelfOrSuperadmin(paramName = 'userId', options = {}) {
   const errorMessage = options.message || 'You can only access your own resources';
 
@@ -305,22 +307,10 @@ export function requireSelfOrSuperadmin(paramName = 'userId', options = {}) {
       });
     }
 
-    next();
+    return next();
   };
 }
 
-/**
- * Factory function that creates middleware requiring a linked wallet address
- * Returns 403 if req.user.wallet_address is missing or null
- *
- * @param {Object} options - Optional configuration
- * @param {string} options.message - Custom error message for 403 response
- * @returns {Function} Express middleware
- *
- * Usage:
- *   app.post('/api/kpi-observations', requireAuth, requireWalletLinked(), controller)
- *   app.post('/api/endpoint', requireAuth, requireWalletLinked({ message: 'Custom message' }), controller)
- */
 export function requireWalletLinked(options = {}) {
   const errorMessage = options.message || 'You must have a linked wallet to access this resource';
 
@@ -337,7 +327,7 @@ export function requireWalletLinked(options = {}) {
       });
     }
 
-    next();
+    return next();
   };
 }
 
@@ -345,21 +335,6 @@ export function requireWalletLinked(options = {}) {
 // WALLET-SCOPED AUTHORIZATION MIDDLEWARE
 // ============================================================================
 
-/**
- * Factory function that creates middleware requiring user's wallet to match a target wallet.
- * Superadmins bypass this check.
- *
- * The target wallet is extracted from the request body using the specified field name.
- *
- * @param {string} walletField - The request body field containing the target wallet (default: 'subject_wallet')
- * @param {Object} options - Optional configuration
- * @param {string} options.noWalletMessage - Error message when user has no wallet
- * @param {string} options.mismatchMessage - Error message when wallets don't match
- * @returns {Function} Express middleware
- *
- * Usage:
- *   app.post('/api/hrkey-score', requireAuth, requireOwnWallet('subject_wallet'), controller)
- */
 export function requireOwnWallet(walletField = 'subject_wallet', options = {}) {
   const noWalletMessage = options.noWalletMessage || 'You must have a linked wallet to access this resource';
   const mismatchMessage = options.mismatchMessage || 'You can only access your own wallet resources';
@@ -369,12 +344,10 @@ export function requireOwnWallet(walletField = 'subject_wallet', options = {}) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Superadmins bypass wallet check
     if (req.user.role === 'superadmin') {
       return next();
     }
 
-    // Non-superadmins must have a linked wallet
     if (!req.user.wallet_address) {
       return res.status(403).json({
         ok: false,
@@ -383,11 +356,9 @@ export function requireOwnWallet(walletField = 'subject_wallet', options = {}) {
       });
     }
 
-    // Get target wallet from request body
-    const targetWallet = req.body[walletField];
+    const targetWallet = req.body?.[walletField];
 
-    // If target wallet is provided, it must match user's wallet (case-insensitive)
-    if (targetWallet && req.user.wallet_address.toLowerCase() !== targetWallet.toLowerCase()) {
+    if (targetWallet && req.user.wallet_address.toLowerCase() !== String(targetWallet).toLowerCase()) {
       return res.status(403).json({
         ok: false,
         error: 'FORBIDDEN',
@@ -395,7 +366,7 @@ export function requireOwnWallet(walletField = 'subject_wallet', options = {}) {
       });
     }
 
-    next();
+    return next();
   };
 }
 
@@ -403,28 +374,8 @@ export function requireOwnWallet(walletField = 'subject_wallet', options = {}) {
 // OPTIONAL AUTH (for public/semi-public endpoints)
 // ============================================================================
 
-/**
- * Optionally extracts user if token provided, but doesn't require it
- * Useful for endpoints that behave differently for authenticated users
- */
 export async function optionalAuth(req, res, next) {
   try {
-    if (process.env.NODE_ENV === 'test' && process.env.ALLOW_TEST_AUTH_BYPASS === 'true') {
-      const testUserId = req.headers['x-test-user-id'] || 'test-user-id';
-      const testEmail = req.headers['x-test-user-email'] || 'test-user@example.com';
-      const testWalletAddress = req.headers['x-test-wallet-address'] || null;
-
-      req.user = {
-        id: testUserId,
-        email: testEmail,
-        role: req.headers['x-test-user-role'] || 'user',
-        identity_verified: true,
-        wallet_address: testWalletAddress
-      };
-
-      return next();
-    }
-
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
@@ -432,33 +383,45 @@ export async function optionalAuth(req, res, next) {
       return next();
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const client = getSupabaseClient();
+
     const {
       data: { user },
       error
-    } = await getSupabaseClient().auth.getUser(token);
+    } = await client.auth.getUser(token);
 
     if (error || !user) {
       req.user = null;
       return next();
     }
 
-    const { data: userData } = await getSupabaseClient()
+    const { data: userData, error: userError } = await client
       .from('users')
-      .select('id, email, role, identity_verified')
+      .select('id, email, role, identity_verified, wallet_address, created_at')
       .eq('id', user.id)
       .single();
 
-    req.user = userData || { id: user.id, email: user.email, role: 'user' };
-    next();
+    if (userError || !userData) {
+      req.user = {
+        id: user.id,
+        email: user.email,
+        role: 'user'
+      };
+    } else {
+      req.user = userData;
+    }
+
+    return next();
   } catch (error) {
     logger.warn('Optional authentication failed', {
       requestId: req.requestId,
       path: req.path,
       error: error.message
     });
+
     req.user = null;
-    next();
+    return next();
   }
 }
 
