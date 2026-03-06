@@ -14,6 +14,9 @@ let supabaseClient;
 
 const getSupabaseClient = () => {
   if (!supabaseClient) {
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase env missing: SUPABASE_URL / SUPABASE_SERVICE_KEY');
+    }
     supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
   }
   return supabaseClient;
@@ -57,7 +60,10 @@ export async function requireAuth(req, res, next) {
     const token = authHeader.replace('Bearer ', '');
 
     // Verify token with Supabase
-    const { data: { user }, error } = await getSupabaseClient().auth.getUser(token);
+    const {
+      data: { user },
+      error
+    } = await getSupabaseClient().auth.getUser(token);
 
     if (error || !user) {
       return res.status(401).json({
@@ -403,6 +409,22 @@ export function requireOwnWallet(walletField = 'subject_wallet', options = {}) {
  */
 export async function optionalAuth(req, res, next) {
   try {
+    if (process.env.NODE_ENV === 'test' && process.env.ALLOW_TEST_AUTH_BYPASS === 'true') {
+      const testUserId = req.headers['x-test-user-id'] || 'test-user-id';
+      const testEmail = req.headers['x-test-user-email'] || 'test-user@example.com';
+      const testWalletAddress = req.headers['x-test-wallet-address'] || null;
+
+      req.user = {
+        id: testUserId,
+        email: testEmail,
+        role: req.headers['x-test-user-role'] || 'user',
+        identity_verified: true,
+        wallet_address: testWalletAddress
+      };
+
+      return next();
+    }
+
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
@@ -411,7 +433,10 @@ export async function optionalAuth(req, res, next) {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error } = await getSupabaseClient().auth.getUser(token);
+    const {
+      data: { user },
+      error
+    } = await getSupabaseClient().auth.getUser(token);
 
     if (error || !user) {
       req.user = null;
