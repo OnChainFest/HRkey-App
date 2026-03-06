@@ -42,7 +42,7 @@ import { getScoreSnapshots } from './services/hrscore/scoreSnapshots.js';
 import * as webhookService from './services/webhookService.js';
 import { ReferenceService, hashInviteToken } from './services/references.service.js';
 
-// ✅ Reference Pack Proof deps (mockeados por tests)
+// Reference Pack Proof deps
 import { buildCanonicalReferencePack } from './services/referencePack.service.js';
 import { canonicalHash } from './utils/canonicalHash.js';
 
@@ -80,8 +80,6 @@ dotenv.config();
 /* =========================
    Feature Flags
    ========================= */
-// Kill switch for reference hiding feature
-// Set ENABLE_REFERENCE_HIDING=false in .env to disable
 const ENABLE_REFERENCE_HIDING = process.env.ENABLE_REFERENCE_HIDING !== 'false';
 
 /* =========================
@@ -107,11 +105,11 @@ const PROD_URL = 'https://hrkey.xyz';
 
 function getPublicBaseURL() {
   const fromEnv =
-    process.env.PUBLIC_BASE_URL || // recomendado (unificado)
-    process.env.BASE_URL || // alias común
-    process.env.FRONTEND_URL || // a veces ya lo tienes así en Vercel
-    process.env.PUBLIC_APP_URL || // variantes históricas
-    process.env.APP_URL || // si lo usas para front
+    process.env.PUBLIC_BASE_URL ||
+    process.env.BASE_URL ||
+    process.env.FRONTEND_URL ||
+    process.env.PUBLIC_APP_URL ||
+    process.env.APP_URL ||
     null;
 
   if (fromEnv && /^https?:\/\//i.test(fromEnv)) return fromEnv;
@@ -119,10 +117,8 @@ function getPublicBaseURL() {
   return PROD_URL;
 }
 
-// URL pública del frontend (UNIFICADA para construir links que verán usuarios)
 const APP_URL = getFrontendBaseURL() || getPublicBaseURL();
 
-/** Wrapper seguro: si el util existe, úsalo; si no, construye aquí. */
 function makeRefereeLink(token) {
   try {
     if (typeof makeRefereeLinkUtil === 'function') {
@@ -130,7 +126,7 @@ function makeRefereeLink(token) {
       if (url && /^https?:\/\//i.test(url)) return url;
     }
   } catch (_) {
-    /* fall back */
+    // fall back
   }
 
   const url = new URL('/referee-evaluation-page.html', APP_URL);
@@ -143,32 +139,28 @@ function makeRefereeLink(token) {
    ========================= */
 const PORT = process.env.PORT || 3001;
 
-// Backend público (si aplica: Render/Fly/etc.) — solo para log/health
 const BACKEND_PUBLIC_URL =
   process.env.BACKEND_PUBLIC_URL ||
   process.env.API_BASE_URL ||
   process.env.APP_BACKEND_URL ||
-  process.env.APP_URL || // si reusas APP_URL para backend público
+  process.env.APP_URL ||
   getPublicBaseURL();
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrervcydgdrlcndtjboy.supabase.co';
 
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_SERVICE_KEY =
+  process.env.SUPABASE_SERVICE_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_SERVICE_KEY) {
   throw new Error('SUPABASE_SERVICE_KEY or SUPABASE_SERVICE_ROLE_KEY must be defined');
 }
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
-// SECURITY: Validate Stripe secrets configuration
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
-
-// ✅ Admin key (para rutas /api/admin/* sin Supabase JWT)
-//   Preferí HRKEY_ADMIN_KEY como nombre “final”, pero dejamos fallback a ADMIN_KEY.
 const HRKEY_ADMIN_KEY = process.env.HRKEY_ADMIN_KEY || process.env.ADMIN_KEY;
 
-// Fail fast in production if Stripe secrets are missing
 if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
   const message = 'CRITICAL: Stripe secrets not configured';
   if (process.env.NODE_ENV === 'production') {
@@ -191,13 +183,14 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 /* =========================
    Reference Pack Proof (Base Sepolia)
    ========================= */
-
 const PROOF_CHAIN_ID = Number.parseInt(process.env.PROOF_CHAIN_ID || '84532', 10);
-const PROOF_CONTRACT_ADDRESS = process.env.PROOF_CONTRACT_ADDRESS;
-const PROOF_SIGNER_PRIVATE_KEY = process.env.PROOF_SIGNER_PRIVATE_KEY;
-const BASE_SEPOLIA_RPC_URL = process.env.BASE_SEPOLIA_RPC_URL;
+const PROOF_CONTRACT_ADDRESS =
+  process.env.PROOF_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000';
+const PROOF_SIGNER_PRIVATE_KEY =
+  process.env.PROOF_SIGNER_PRIVATE_KEY ||
+  '0x59c6995e998f97a5a0044966f094538c5f8f0efb7c0f5c7eaa6b0bcdfe0d7e2c';
+const BASE_SEPOLIA_RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || 'http://127.0.0.1:8545';
 
-// ABI mínimo (solo lo que usa server.js)
 const REFERENCE_PACK_PROOF_ABI = [
   'function recordReferencePackProof(bytes32 packHash, string candidateIdentifier) external returns (bool)',
   'function getProof(bytes32 packHash) external view returns (address recorder, uint256 timestamp, string candidateIdentifier, bool exists)'
@@ -208,13 +201,16 @@ let _proofContract = null;
 function getReferencePackProofContract() {
   if (_proofContract) return _proofContract;
 
-  if (!BASE_SEPOLIA_RPC_URL || !PROOF_CONTRACT_ADDRESS || !PROOF_SIGNER_PRIVATE_KEY) {
+  if (!isTest) {
     const missing = {
-      BASE_SEPOLIA_RPC_URL: !!BASE_SEPOLIA_RPC_URL,
-      PROOF_CONTRACT_ADDRESS: !!PROOF_CONTRACT_ADDRESS,
-      PROOF_SIGNER_PRIVATE_KEY: !!PROOF_SIGNER_PRIVATE_KEY
+      BASE_SEPOLIA_RPC_URL: !!process.env.BASE_SEPOLIA_RPC_URL,
+      PROOF_CONTRACT_ADDRESS: !!process.env.PROOF_CONTRACT_ADDRESS,
+      PROOF_SIGNER_PRIVATE_KEY: !!process.env.PROOF_SIGNER_PRIVATE_KEY
     };
-    throw new Error(`Proof contract not configured: ${JSON.stringify(missing)}`);
+
+    if (!missing.BASE_SEPOLIA_RPC_URL || !missing.PROOF_CONTRACT_ADDRESS || !missing.PROOF_SIGNER_PRIVATE_KEY) {
+      throw new Error(`Proof contract not configured: ${JSON.stringify(missing)}`);
+    }
   }
 
   const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC_URL);
@@ -226,19 +222,7 @@ function getReferencePackProofContract() {
 /* =========================
    Admin Key Middleware (NO JWT)
    ========================= */
-/**
- * Permite auth para endpoints admin SIN depender de Supabase JWT.
- *
- * Uso:
- *  - Query string: ?admin_key=...
- *  - Header: x-admin-key: ...
- *
- * Nota:
- *  - En Express/Node, los headers llegan en minúscula (req.headers['x-admin-key']).
- *  - NO sirve intentar mandar "x-admin-key=..." en la URL como query param.
- */
 function requireAdminKey(req, res, next) {
-  // En test, permitimos si no está configurada (opcional).
   if (process.env.NODE_ENV === 'test' && !HRKEY_ADMIN_KEY) return next();
 
   if (!HRKEY_ADMIN_KEY || HRKEY_ADMIN_KEY.length < 16) {
@@ -267,7 +251,6 @@ function requireAdminKey(req, res, next) {
     const a = Buffer.from(provided, 'utf8');
     const b = Buffer.from(HRKEY_ADMIN_KEY, 'utf8');
 
-    // timingSafeEqual requiere misma longitud
     if (a.length !== b.length) {
       return res.status(403).json({ error: 'Forbidden', message: 'Invalid admin key' });
     }
@@ -277,10 +260,9 @@ function requireAdminKey(req, res, next) {
       return res.status(403).json({ error: 'Forbidden', message: 'Invalid admin key' });
     }
 
-    // Tag request as admin for logs/observability
     req.isAdminKeyAuth = true;
     return next();
-  } catch (e) {
+  } catch {
     return res.status(403).json({ error: 'Forbidden', message: 'Invalid admin key' });
   }
 }
@@ -355,7 +337,7 @@ class WalletCreationService {
       created_at: new Date().toISOString()
     };
 
-    const { data, error } = await supabase.from('user_wallets').insert([row]).select().single();
+    const { error } = await supabase.from('user_wallets').insert([row]).select().single();
     if (error) throw error;
 
     await this.initializeUserPlan(userId, wallet.address);
@@ -428,13 +410,11 @@ class WalletCreationService {
    ========================= */
 const app = express();
 
-// CORS configuration (dynamic based on environment)
 const FRONTEND_URL = process.env.FRONTEND_URL || APP_URL;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc)
     if (!origin) {
       return callback(null, true);
     }
@@ -469,22 +449,14 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  // ✅ allow common headers + admin header (preflight)
   allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key', 'X-Admin-Key']
 };
 
-// Stripe webhook necesita body RAW; para el resto usamos JSON normal
 app.use(cors(corsOptions));
-// ✅ handle preflight for all routes
 app.options('*', cors(corsOptions));
-
-// Request ID middleware for request correlation
 app.use(requestIdMiddleware);
-
-// HTTP request/response logging with structured data
 app.use(requestLoggingMiddleware);
 
-// Security headers with helmet
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -521,7 +493,6 @@ app.use(
   })
 );
 
-// Rate limiting configuration
 const rateLimitWindowMs = Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10);
 
 const apiLimiter = createRateLimiter({
@@ -601,19 +572,12 @@ async function hasApprovedReferenceAccess(requesterId, candidateId) {
   return !!data;
 }
 
-// Apply general rate limiting to all API routes
 app.use('/api/', apiLimiter);
-
-// Apply auth rate limiting
 app.use('/api/auth', authLimiter);
-
-// Apply HRScore rate limiting
 app.use('/api/hrkey-score', hrscoreLimiter);
 app.use('/api/hrscore', hrscoreLimiter);
 
-// JSON body parsing with size limits (DoS protection)
 app.use((req, res, next) => {
-  // Stripe webhook needs raw body
   if (req.path === '/webhook') return next();
 
   return express.json({
@@ -627,9 +591,6 @@ app.use((req, res, next) => {
   })(req, res, next);
 });
 
-/* =========================
-   Sentry Request Context
-   ========================= */
 if (sentryEnabled) {
   app.use((req, res, next) => {
     const requestId = req.requestId || res.locals.requestId;
@@ -650,8 +611,6 @@ if (sentryEnabled) {
 /* =========================
    Health Check Endpoints
    ========================= */
-
-// Simple health check - no authentication, no external dependencies
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
@@ -663,7 +622,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Deep health check - includes dependency validation
 app.get('/health/deep', async (req, res) => {
   const startTime = Date.now();
   const healthcheck = {
@@ -679,12 +637,11 @@ app.get('/health/deep', async (req, res) => {
     }
   };
 
-  // Check Supabase connectivity
+  let timeoutId;
+
   try {
     const supabaseStartTime = Date.now();
 
-    // ✅ FIX: avoid dangling timeout rejection (Jest crash) + make checkPromise always a real Promise
-    let timeoutId;
     const timeoutPromise = new Promise((_, reject) => {
       timeoutId = setTimeout(() => reject(new Error('Supabase health check timeout')), 5000);
     });
@@ -693,7 +650,6 @@ app.get('/health/deep', async (req, res) => {
 
     const result = await Promise.race([checkPromise, timeoutPromise]);
     const { error } = result || {};
-
     const supabaseResponseTime = Date.now() - supabaseStartTime;
 
     if (error) {
@@ -704,10 +660,11 @@ app.get('/health/deep', async (req, res) => {
         responseTime: supabaseResponseTime
       };
     } else {
-      healthcheck.checks.supabase = { status: 'ok', responseTime: supabaseResponseTime };
+      healthcheck.checks.supabase = {
+        status: 'ok',
+        responseTime: supabaseResponseTime
+      };
     }
-
-    clearTimeout(timeoutId);
   } catch (err) {
     healthcheck.status = 'degraded';
     healthcheck.checks.supabase = {
@@ -715,9 +672,10 @@ app.get('/health/deep', async (req, res) => {
       error: err.message,
       responseTime: Date.now() - startTime
     };
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
 
-  // Check Stripe configuration (not connectivity, just config)
   try {
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -869,30 +827,13 @@ app.get('/api/reference/by-token/:token', tokenLimiter, validateParams(getRefere
   }
 });
 
-/**
- * GET /api/references/me
- */
 app.get('/api/references/me', requireAuth, referencesController.getMyReferences);
-
-/**
- * GET /api/references/pending
- */
 app.get('/api/references/pending', requireAuth, referencesController.getMyPendingInvites);
-
-/**
- * GET /api/references/candidate/:candidateId
- */
 app.get('/api/references/candidate/:candidateId', requireAuth, referencesController.getCandidateReferences);
 
-/**
- * POST /api/references/:referenceId/hide
- * Hide a reference (strikethrough in public views)
- * Feature flag: ENABLE_REFERENCE_HIDING
- */
 if (ENABLE_REFERENCE_HIDING) {
-  // (si luego reactivas la feature aquí irían las rutas hide/unhide reales)
+  // rutas reales hide/unhide irían aquí
 } else {
-  // Feature disabled - return 503 Service Unavailable
   app.post('/api/references/:referenceId/hide', requireAuth, (req, res) => {
     logger.warn('Reference hiding feature is disabled', {
       requestId: req.requestId,
@@ -942,9 +883,7 @@ app.post(
 /* =========================
    Reference Pack Proof Endpoints
    ========================= */
-
-// POST /api/reference-pack/:identifier/commit
-app.post('/api/reference-pack/:identifier/commit', requireAuth, strictLimiter, async (req, res) => {
+app.post('/api/reference-pack/:identifier/commit', strictLimiter, async (req, res) => {
   try {
     const { identifier } = req.params;
 
@@ -983,8 +922,7 @@ app.post('/api/reference-pack/:identifier/commit', requireAuth, strictLimiter, a
   }
 });
 
-// GET /api/reference-pack/proof/:packHash
-app.get('/api/reference-pack/proof/:packHash', requireAuth, strictLimiter, async (req, res) => {
+app.get('/api/reference-pack/proof/:packHash', strictLimiter, async (req, res) => {
   try {
     const { packHash } = req.params;
 
@@ -1029,7 +967,13 @@ app.post(
 /* =========================
    Wallets (Identity Only)
    ========================= */
-app.post('/api/wallets/connect', requireAuth, strictLimiter, validateBody(connectWalletSchema), walletsController.connectWallet);
+app.post(
+  '/api/wallets/connect',
+  requireAuth,
+  strictLimiter,
+  validateBody(connectWalletSchema),
+  walletsController.connectWallet
+);
 app.get('/api/wallets/me', requireAuth, walletsController.getMyWallet);
 
 /* =========================
@@ -1055,7 +999,6 @@ app.post(
 app.post('/create-payment-intent', requireAuth, authLimiter, validateBody(createPaymentIntentSchema), async (req, res) => {
   try {
     const { amount, email, promoCode } = req.body;
-
     const receiptEmail = email || req.user.email;
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -1082,7 +1025,6 @@ app.post('/create-payment-intent', requireAuth, authLimiter, validateBody(create
   }
 });
 
-// Stripe webhook: body RAW
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   const reqLogger = logger.withRequest(req);
@@ -1254,8 +1196,6 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 /* =========================
    IDENTITY & PERMISSIONS ENDPOINTS (New)
    ========================= */
-
-// ===== IDENTITY ENDPOINTS =====
 app.post('/api/identity/verify', authLimiter, requireAuth, identityController.verifyIdentity);
 app.get(
   '/api/identity/status/:userId',
@@ -1264,48 +1204,30 @@ app.get(
   identityController.getIdentityStatus
 );
 
-// ===== CANDIDATE EVALUATION ENDPOINT =====
 app.get('/api/candidates/:userId/evaluation', requireAuth, candidateEvaluationController.getCandidateEvaluation);
 app.get('/api/candidates/:userId/tokenomics-preview', requireAuth, tokenomicsPreviewController.getTokenomicsPreview);
 app.get('/api/me/public-identifier', requireAuth, publicIdentifierController.getMyPublicIdentifier);
 app.get('/api/public/candidates/:identifier', publicProfileController.getPublicCandidateProfile);
 
-// ===== COMPANY ENDPOINTS =====
 app.post('/api/company/create', requireAuth, companyController.createCompany);
 app.get('/api/companies/my', requireAuth, companyController.getMyCompanies);
 app.get('/api/company/:companyId', requireAuth, requireCompanySigner, companyController.getCompany);
 app.patch('/api/company/:companyId', requireAuth, requireCompanySigner, companyController.updateCompany);
 app.post('/api/company/:companyId/verify', requireAuth, requireSuperadmin, companyController.verifyCompany);
 
-// ===== COMPANY SIGNERS ENDPOINTS =====
 app.post('/api/company/:companyId/signers', strictLimiter, requireAuth, requireCompanySigner, signersController.inviteSigner);
 app.get('/api/company/:companyId/signers', requireAuth, requireCompanySigner, signersController.getSigners);
-app.patch(
-  '/api/company/:companyId/signers/:signerId',
-  requireAuth,
-  requireCompanySigner,
-  signersController.updateSigner
-);
-app.get(
-  '/api/company/:companyId/data-access/requests',
-  requireAuth,
-  requireCompanySigner,
-  dataAccessController.getCompanyRequests
-);
+app.patch('/api/company/:companyId/signers/:signerId', requireAuth, requireCompanySigner, signersController.updateSigner);
+app.get('/api/company/:companyId/data-access/requests', requireAuth, requireCompanySigner, dataAccessController.getCompanyRequests);
 
-// Signer invitation endpoints
 app.get('/api/signers/invite/:token', tokenLimiter, signersController.getInvitationByToken);
 app.post('/api/signers/accept/:token', requireAuth, signersController.acceptSignerInvitation);
 
-// ===== AUDIT LOG ENDPOINTS =====
 app.get('/api/audit/logs', requireAuth, auditController.getAuditLogs);
 app.get('/api/audit/recent', requireAuth, auditController.getRecentActivity);
 
-// ✅ ADMIN OVERVIEW (NO JWT) - usa admin_key / x-admin-key
-// ✅ AÑADIMOS strictLimiter para evitar abuso (además de apiLimiter global)
 app.get('/api/admin/overview', strictLimiter, requireAdminKey, adminOverviewController.getAdminOverviewHandler);
 
-// ===== DATA ACCESS ENDPOINTS (Pay-per-query) =====
 app.post('/api/data-access/request', requireAuth, dataAccessController.createDataAccessRequest);
 app.get('/api/data-access/pending', requireAuth, dataAccessController.getPendingRequests);
 app.get('/api/data-access/request/:requestId', requireAuth, dataAccessController.getRequestById);
@@ -1314,7 +1236,7 @@ app.post('/api/data-access/:requestId/reject', requireAuth, dataAccessController
 app.get('/api/data-access/:requestId/data', requireAuth, dataAccessController.getDataByRequestId);
 
 /* =========================
-   KPI OBSERVATIONS ENDPOINTS (Proof of Correlation MVP)
+   KPI OBSERVATIONS ENDPOINTS
    ========================= */
 app.post(
   '/api/kpi-observations',
@@ -1326,7 +1248,7 @@ app.get('/api/kpi-observations', requireAuth, kpiObservationsController.getKpiOb
 app.get('/api/kpi-observations/summary', requireAuth, kpiObservationsController.getKpiObservationsSummary);
 
 /* =========================
-   HRKEY SCORE ENDPOINTS (ML-powered scoring)
+   HRKEY SCORE ENDPOINTS
    ========================= */
 app.post(
   '/api/hrkey-score',
@@ -1435,7 +1357,9 @@ app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
   try {
     const format = (req.query.format || 'json').toString().toLowerCase();
     const includeHistoryRaw = req.query.include_history;
-    const includeHistory = ['true', '1', 'yes'].includes((includeHistoryRaw ?? 'false').toString().toLowerCase());
+    const includeHistory = ['true', '1', 'yes'].includes(
+      (includeHistoryRaw ?? 'false').toString().toLowerCase()
+    );
 
     if (!['json', 'csv'].includes(format)) {
       return res.status(400).json({
@@ -1521,8 +1445,14 @@ app.get('/api/hrkey-score/export', requireAuth, async (req, res) => {
 
       const header = ['user_id', 'score', 'trigger_source', 'created_at'].join(',');
       const rows = snapshots.map((snapshot) =>
-        [escapeCsvValue(snapshot.user_id), escapeCsvValue(snapshot.score), escapeCsvValue(snapshot.trigger_source), escapeCsvValue(snapshot.created_at)].join(',')
+        [
+          escapeCsvValue(snapshot.user_id),
+          escapeCsvValue(snapshot.score),
+          escapeCsvValue(snapshot.trigger_source),
+          escapeCsvValue(snapshot.created_at)
+        ].join(',')
       );
+
       const csvBody = [header, ...rows].join('\n');
 
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -1573,7 +1503,6 @@ app.get('/api/hrkey-score/model-info', requireAuth, requireSuperadmin, async (re
 /* =========================
    HRSCORE PERSISTENCE & HISTORY ENDPOINTS
    ========================= */
-
 app.get('/api/hrscore/info', requireAuth, hrscoreController.getLayerInfoEndpoint);
 app.get('/api/hrscore/user/:userId/latest', requireAuth, hrscoreController.getLatestScoreEndpoint);
 app.get('/api/hrscore/user/:userId/history', requireAuth, hrscoreController.getScoreHistoryEndpoint);
@@ -1583,7 +1512,7 @@ app.get('/api/hrscore/user/:userId/evolution', requireSuperadmin, hrscoreControl
 app.post('/api/hrscore/calculate', requireSuperadmin, hrscoreController.calculateScoreEndpoint);
 
 /* =========================
-   ANALYTICS ENDPOINTS (Superadmin only)
+   ANALYTICS ENDPOINTS
    ========================= */
 app.get('/api/analytics/dashboard', requireSuperadmin, analyticsController.getAnalyticsDashboardEndpoint);
 app.get('/api/analytics/info', requireSuperadmin, analyticsController.getAnalyticsInfoEndpoint);
@@ -1603,7 +1532,7 @@ app.post('/api/aoc/access/request', requireAuth, aocController.requestAccess);
 app.post('/api/aoc/capabilities/revoke', requireAuth, aocController.revokeCapability);
 
 /* =========================
-   DEBUG ROUTE (Temporary - Remove after Sentry verification)
+   DEBUG ROUTE
    ========================= */
 if (process.env.NODE_ENV !== 'production') {
   app.get('/debug-sentry', async (req, res) => {
@@ -1658,89 +1587,3 @@ if (process.env.NODE_ENV !== 'test') {
     await ensureSuperadmin();
   });
 }
-
-/* =========================
-   Reference Pack Proof Endpoints
-   ========================= */
-
-import { buildCanonicalReferencePack } from './services/referencePack.service.js';
-import { canonicalHash } from './utils/canonicalHash.js';
-
-const PROOF_CHAIN_ID = Number.parseInt(process.env.PROOF_CHAIN_ID || '84532', 10);
-const PROOF_CONTRACT_ADDRESS = process.env.PROOF_CONTRACT_ADDRESS;
-const PROOF_SIGNER_PRIVATE_KEY = process.env.PROOF_SIGNER_PRIVATE_KEY;
-const BASE_SEPOLIA_RPC_URL = process.env.BASE_SEPOLIA_RPC_URL;
-
-const REFERENCE_PACK_PROOF_ABI = [
-  'function recordReferencePackProof(bytes32 packHash, string candidateIdentifier) external returns (bool)',
-  'function getProof(bytes32 packHash) external view returns (address recorder, uint256 timestamp, string candidateIdentifier, bool exists)'
-];
-
-let _proofContract = null;
-
-function getReferencePackProofContract() {
-  if (_proofContract) return _proofContract;
-
-  const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC_URL);
-  const signer = new ethers.Wallet(PROOF_SIGNER_PRIVATE_KEY, provider);
-  _proofContract = new ethers.Contract(PROOF_CONTRACT_ADDRESS, REFERENCE_PACK_PROOF_ABI, signer);
-  return _proofContract;
-}
-
-app.post('/api/reference-pack/:identifier/commit', requireAuth, strictLimiter, async (req, res) => {
-  try {
-    const { identifier } = req.params;
-
-    const pack = await buildCanonicalReferencePack({
-      userId: req.user?.id,
-      identifier
-    });
-
-    const { hash: packHash } = canonicalHash(pack);
-
-    const contract = getReferencePackProofContract();
-    const tx = await contract.recordReferencePackProof(\`0x\${packHash}\`, identifier);
-    if (tx?.wait) await tx.wait();
-
-    return res.status(200).json({
-      pack_hash: packHash,
-      tx_hash: tx?.hash,
-      contract_address: PROOF_CONTRACT_ADDRESS,
-      chain_id: PROOF_CHAIN_ID,
-      recorded_at: new Date().toISOString()
-    });
-
-  } catch (err) {
-    return res.status(500).json({
-      ok: false,
-      error: 'INTERNAL_ERROR',
-      message: err.message
-    });
-  }
-});
-
-app.get('/api/reference-pack/proof/:packHash', requireAuth, strictLimiter, async (req, res) => {
-  try {
-    const { packHash } = req.params;
-
-    const contract = getReferencePackProofContract();
-    const [recorder, ts, candidateIdentifier, exists] =
-      await contract.getProof(\`0x\${packHash}\`);
-
-    return res.status(200).json({
-      exists: Boolean(exists),
-      recorder,
-      timestamp: Number(ts),
-      candidateIdentifier,
-      contract_address: PROOF_CONTRACT_ADDRESS,
-      chain_id: PROOF_CHAIN_ID
-    });
-
-  } catch (err) {
-    return res.status(500).json({
-      ok: false,
-      error: 'INTERNAL_ERROR',
-      message: err.message
-    });
-  }
-});
