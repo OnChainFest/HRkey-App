@@ -5,20 +5,24 @@
 // ============================================================================
 
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
-import { validateConsent, requireApprovedDataAccess } from '../../middleware/validateConsent.js';
-import * as consentManagerModule from '../../utils/consentManager.js';
 
 // ============================================================================
-// MOCKS
+// MOCKS (must be declared BEFORE dynamic imports)
 // ============================================================================
 
-// Mock consentManager module
 jest.unstable_mockModule('../../utils/consentManager.js', () => ({
   checkConsent: jest.fn(),
   createConsent: jest.fn(),
   revokeConsent: jest.fn(),
   logAuditEvent: jest.fn()
 }));
+
+// ============================================================================
+// DYNAMIC IMPORTS (after mock registration)
+// ============================================================================
+
+const consentManagerModule = await import('../../utils/consentManager.js');
+const { validateConsent, requireApprovedDataAccess } = await import('../../middleware/validateConsent.js');
 
 // ============================================================================
 // TEST DATA
@@ -102,15 +106,15 @@ let checkConsentMock;
 let logAuditEventMock;
 
 beforeEach(() => {
-
   checkConsentMock = consentManagerModule.checkConsent;
-
-  // Force mock to avoid ESM reference issues
-  logAuditEventMock = jest.fn().mockResolvedValue({ id: 'audit-event-123' });
-
-  consentManagerModule.logAuditEvent = logAuditEventMock;
+  logAuditEventMock = consentManagerModule.logAuditEvent;
 
   jest.clearAllMocks();
+
+  checkConsentMock.mockReset();
+  logAuditEventMock.mockReset();
+
+  logAuditEventMock.mockResolvedValue({ id: 'audit-event-123' });
 });
 
 // ============================================================================
@@ -118,9 +122,7 @@ beforeEach(() => {
 // ============================================================================
 
 describe('validateConsent middleware', () => {
-
   test('returns 403 when consent does not exist', async () => {
-
     checkConsentMock.mockResolvedValue({
       hasConsent: false,
       consent: null,
@@ -148,21 +150,27 @@ describe('validateConsent middleware', () => {
       message: 'You do not have consent to access this resource',
       reason: 'no_consent'
     });
-
     expect(next).not.toHaveBeenCalled();
 
-    expect(checkConsentMock).toHaveBeenCalled();
+    expect(checkConsentMock).toHaveBeenCalledWith({
+      subjectUserId: mockUsers.dataOwner.id,
+      grantedToOrg: null,
+      grantedToUser: mockUsers.requester.id,
+      resourceType: 'references',
+      resourceId: 'target-resource-id'
+    });
 
     expect(logAuditEventMock).toHaveBeenCalledWith(
       expect.objectContaining({
         actorUserId: mockUsers.requester.id,
-        result: 'denied'
+        result: 'denied',
+        reason: 'no_consent',
+        targetType: 'references'
       })
     );
   });
 
   test('returns 200 when consent is valid and active', async () => {
-
     checkConsentMock.mockResolvedValue({
       hasConsent: true,
       consent: mockConsent,
@@ -186,13 +194,20 @@ describe('validateConsent middleware', () => {
 
     expect(next).toHaveBeenCalled();
     expect(res.statusCode).toBeNull();
+    expect(req.consent).toBeDefined();
     expect(req.consent.id).toBe(mockConsent.id);
 
-    expect(logAuditEventMock).toHaveBeenCalled();
+    expect(logAuditEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: mockUsers.requester.id,
+        result: 'allowed',
+        reason: 'valid_consent',
+        consentId: mockConsent.id
+      })
+    );
   });
 
   test('returns 403 when consent is expired', async () => {
-
     checkConsentMock.mockResolvedValue({
       hasConsent: false,
       consent: null,
@@ -216,10 +231,10 @@ describe('validateConsent middleware', () => {
 
     expect(res.statusCode).toBe(403);
     expect(res.jsonData.reason).toBe('consent_expired');
+    expect(next).not.toHaveBeenCalled();
   });
 
   test('allows superadmin to bypass consent check', async () => {
-
     const middleware = validateConsent({
       resourceType: 'references',
       getTargetOwnerId: async () => mockUsers.dataOwner.id,
@@ -236,11 +251,19 @@ describe('validateConsent middleware', () => {
     await middleware(req, res, next);
 
     expect(next).toHaveBeenCalled();
+    expect(res.statusCode).toBeNull();
     expect(checkConsentMock).not.toHaveBeenCalled();
+
+    expect(logAuditEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: mockUsers.superadmin.id,
+        result: 'allowed',
+        reason: 'superadmin_override'
+      })
+    );
   });
 
   test('allows user to access their own data without consent', async () => {
-
     const middleware = validateConsent({
       resourceType: 'references',
       getTargetOwnerId: async () => mockUsers.dataOwner.id,
@@ -257,11 +280,59 @@ describe('validateConsent middleware', () => {
     await middleware(req, res, next);
 
     expect(next).toHaveBeenCalled();
+    expect(res.statusCode).toBeNull();
     expect(checkConsentMock).not.toHaveBeenCalled();
+
+    expect(logAuditEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: mockUsers.dataOwner.id,
+        result: 'allowed',
+        reason: 'self_access'
+      })
+    );
+  });
+
+  test('validates consent granted to company', async () => {
+    const companyConsent = {
+      ...mockConsent,
+      granted_to_org: mockCompany.id,
+      granted_to_user: null
+    };
+
+    checkConsentMock.mockResolvedValue({
+      hasConsent: true,
+      consent: companyConsent,
+      reason: 'valid_consent'
+    });
+
+    const middleware = validateConsent({
+      resourceType: 'references',
+      getTargetOwnerId: async () => mockUsers.dataOwner.id,
+      getTargetId: async () => null,
+      getGrantee: async () => ({ companyId: mockCompany.id, userId: null }),
+      allowSuperadmin: false,
+      allowSelf: false
+    });
+
+    const req = createMockRequest(mockUsers.requester);
+    const res = createMockResponse();
+    const next = jest.fn();
+
+    await middleware(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+    expect(res.statusCode).toBeNull();
+    expect(req.consent.id).toBe(companyConsent.id);
+
+    expect(checkConsentMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        grantedToOrg: mockCompany.id,
+        grantedToUser: null
+      })
+    );
   });
 
   test('returns 401 when user is not authenticated', async () => {
-
     const middleware = validateConsent({
       resourceType: 'references',
       getTargetOwnerId: async () => mockUsers.dataOwner.id,
@@ -278,10 +349,11 @@ describe('validateConsent middleware', () => {
     await middleware(req, res, next);
 
     expect(res.statusCode).toBe(401);
+    expect(res.jsonData.error).toBe('Authentication required');
+    expect(next).not.toHaveBeenCalled();
   });
 
   test('returns 500 on internal error and fails closed', async () => {
-
     checkConsentMock.mockRejectedValue(new Error('Database connection failed'));
 
     const middleware = validateConsent({
@@ -300,22 +372,62 @@ describe('validateConsent middleware', () => {
     await middleware(req, res, next);
 
     expect(res.statusCode).toBe(500);
+    expect(res.jsonData.error).toBe('Internal server error');
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  test('validates consent for different resource types', async () => {
+    checkConsentMock.mockResolvedValue({
+      hasConsent: true,
+      consent: { ...mockConsent, resource_type: 'kpi_observations' },
+      reason: 'valid_consent'
+    });
+
+    const middleware = validateConsent({
+      resourceType: 'kpi_observations',
+      getTargetOwnerId: async () => mockUsers.dataOwner.id,
+      getTargetId: async () => 'kpi-123',
+      getGrantee: async () => ({ companyId: null, userId: mockUsers.requester.id }),
+      allowSuperadmin: false,
+      allowSelf: false
+    });
+
+    const req = createMockRequest(mockUsers.requester);
+    const res = createMockResponse();
+    const next = jest.fn();
+
+    await middleware(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+
+    expect(checkConsentMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceType: 'kpi_observations',
+        resourceId: 'kpi-123'
+      })
+    );
+
+    expect(logAuditEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: 'kpi_observations',
+        targetId: 'kpi-123'
+      })
+    );
   });
 });
 
 // ============================================================================
-// CONFIG VALIDATION
+// TESTS: Middleware configuration validation
 // ============================================================================
 
 describe('validateConsent configuration', () => {
-
   test('throws error when resourceType is missing', () => {
     expect(() => {
       validateConsent({
         getTargetOwnerId: async () => 'user-id',
         getGrantee: async () => ({ companyId: null, userId: 'user-id' })
       });
-    }).toThrow();
+    }).toThrow('validateConsent: resourceType is required');
   });
 
   test('throws error when getTargetOwnerId is missing', () => {
@@ -324,7 +436,7 @@ describe('validateConsent configuration', () => {
         resourceType: 'references',
         getGrantee: async () => ({ companyId: null, userId: 'user-id' })
       });
-    }).toThrow();
+    }).toThrow('validateConsent: getTargetOwnerId function is required');
   });
 
   test('throws error when getGrantee is missing', () => {
@@ -333,7 +445,6 @@ describe('validateConsent configuration', () => {
         resourceType: 'references',
         getTargetOwnerId: async () => 'user-id'
       });
-    }).toThrow();
+    }).toThrow('validateConsent: getGrantee function is required');
   });
-
 });
