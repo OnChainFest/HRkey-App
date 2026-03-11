@@ -7,7 +7,19 @@
 import { createClient } from '@supabase/supabase-js';
 import logger from '../logger.js';
 
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
 let supabaseClient;
+
+export function __setSupabaseClientForTests(client) {
+  supabaseClient = client;
+}
+
+export function __resetSupabaseClientForTests() {
+  supabaseClient = undefined;
+}
 
 const getSupabaseClient = () => {
   const supabaseUrl = process.env.SUPABASE_URL || 'https://example.supabase.co';
@@ -28,6 +40,15 @@ const getSupabaseClient = () => {
   return supabaseClient;
 };
 
+function hasExplicitTestBypassHeaders(req) {
+  return Boolean(
+    req.headers['x-test-user-id'] ||
+      req.headers['x-test-user-email'] ||
+      req.headers['x-test-user-role'] ||
+      req.headers['x-test-wallet-address']
+  );
+}
+
 // ============================================================================
 // AUTHENTICATION MIDDLEWARE
 // ============================================================================
@@ -38,7 +59,12 @@ const getSupabaseClient = () => {
  */
 export async function requireAuth(req, res, next) {
   try {
-    if (process.env.NODE_ENV === 'test' && process.env.ALLOW_TEST_AUTH_BYPASS === 'true') {
+    const allowTestBypass =
+      process.env.NODE_ENV === 'test' &&
+      process.env.ALLOW_TEST_AUTH_BYPASS === 'true' &&
+      hasExplicitTestBypassHeaders(req);
+
+    if (allowTestBypass) {
       const testUserId = req.headers['x-test-user-id'] || 'test-user-id';
       const testEmail = req.headers['x-test-user-email'] || 'test-user@example.com';
       const testWalletAddress = req.headers['x-test-wallet-address'] || null;
@@ -211,7 +237,7 @@ export async function requireCompanySigner(req, res, next) {
     logger.error('Company signer authorization failed', {
       requestId: req.requestId,
       userId: req.user?.id,
-      companyId: req.params.companyId,
+      companyId: req.params?.companyId,
       path: req.path,
       error: error.message,
       stack: error.stack
@@ -438,5 +464,7 @@ export default {
   requireSelfOrSuperadmin,
   requireWalletLinked,
   requireOwnWallet,
-  optionalAuth
+  optionalAuth,
+  __setSupabaseClientForTests,
+  __resetSupabaseClientForTests
 };

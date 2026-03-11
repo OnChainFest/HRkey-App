@@ -1,250 +1,217 @@
-/**
- * AI Reference Refinement Controller
- * Handles AI-powered editorial refinement of referee feedback
- */
-
 import OpenAI from 'openai';
-import logger from '../logger.js';
+import { z } from 'zod';
 
-const buildOpenAIClient = () => {
-  if (!process.env.OPENAI_API_KEY) {
+const refineReferenceSchema = z.object({
+  experience: z.object({
+    role: z.string().min(1, 'role is required'),
+    company: z.string().min(1, 'company is required'),
+    startDate: z.string().min(1, 'startDate is required'),
+    endDate: z.string().min(1, 'endDate is required'),
+    visibility: z.string().optional().default('DEFAULT')
+  }),
+  draft: z.string().min(20, 'draft must be at least 20 characters')
+});
+
+function sanitizeMessage(message) {
+  if (!message) return 'Internal server error';
+
+  return String(message)
+    .replace(/sk-[A-Za-z0-9_-]+/g, '[REDACTED]')
+    .replace(/OPENAI_API_KEY/gi, '[REDACTED]');
+}
+
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
     return null;
   }
-  return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-  });
-};
 
-// Get model from env or use default
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+  const client = new OpenAI({ apiKey });
 
-// System prompt for the AI refinement tool
-const SYSTEM_PROMPT = `You are HRKey Reference Copilot.
+  // Defensive normalization for ESM/Jest interop cases
+  if (client?.chat?.completions?.create) {
+    return client;
+  }
 
-IMPORTANT:
-You are NOT a conversational assistant.
-You do NOT perform onboarding.
-You do NOT ask for basic context if it has already been provided.
+  if (client?.default?.chat?.completions?.create) {
+    return client.default;
+  }
 
-This tool is triggered AFTER the referee has already begun writing feedback.
+  return client;
+}
 
-Your responsibility is to help a professional (the referee) refine and structure
-a work reference that already exists, anchored to a specific professional experience.
+function getCreateCompletionFn(client) {
+  if (typeof client?.chat?.completions?.create === 'function') {
+    return client.chat.completions.create.bind(client.chat.completions);
+  }
 
-This reference is tied to a defined role, company, and time period from the
-candidate's CV.
+  if (typeof client?.default?.chat?.completions?.create === 'function') {
+    return client.default.chat.completions.create.bind(client.default.chat.completions);
+  }
 
-Your role is strictly editorial, professional, and risk-aware.
+  return null;
+}
 
-This is NOT performance scoring.
-This is NOT career coaching.
-This is NOT motivational writing.
-This is NOT a personality assessment.
-This is NOT an automated evaluation.
+function buildMessages({ experience, draft }) {
+  const visibility = experience.visibility || 'DEFAULT';
 
-CONTEXT PROVIDED (ALREADY AVAILABLE)
-Assume the following context is already known and must be respected:
-- Role / Position
-- Company / Organization
-- Time period (start date – end date or "present")
-- Visibility constraint (if any)
-
-Do NOT ask the user to restate this information.
-
-LEGAL, VISIBILITY & RISK CONSTRAINTS
-Some referees may be subject to company or legal restrictions.
-
-If potentially sensitive or confidential company information is detected:
-- Do NOT remove or censor content automatically.
-- Do NOT accuse or warn about legal violations.
-- Calmly flag the content as potentially sensitive.
-- Briefly explain why it may pose a risk if shared externally.
-- Suggest a safer reformulation focused on observable behavior or outcomes.
-- Leave the final decision entirely to the referee.
-
-Never imply company endorsement, approval, or awareness of the reference.
-
-WORKFLOW
-- Rewrite into a clearer, professional, well-structured reference.
-- If bullet points, organize them.
-- If insufficient info, ask ONLY focused follow-up questions about observable actions.
-
-OUTPUT
-Return ONLY valid JSON with this schema:
-{
-  "refined": "string",
-  "flags": [
+  return [
     {
-      "type": "POTENTIALLY_SENSITIVE_COMPANY_INFO" | "LEGAL_VISIBILITY_RISK" | "LOW_SPECIFICITY",
-      "excerpt": "string",
-      "suggestion": "string"
+      role: 'system',
+      content:
+        'You are an expert editorial assistant for professional references. Rewrite referee feedback to improve clarity, professionalism, specificity, and usefulness while preserving the original meaning. Return valid JSON with keys "refined" and "flags". "refined" must be a string. "flags" must be an array of objects with keys "type", "excerpt", and "suggestion".'
+    },
+    {
+      role: 'user',
+      content: [
+        'Please refine the following professional reference draft.',
+        '',
+        `Role: ${experience.role}`,
+        `Company: ${experience.company}`,
+        `Start Date: ${experience.startDate}`,
+        `End Date: ${experience.endDate}`,
+        `Visibility: ${visibility}`,
+        '',
+        'Draft:',
+        draft
+      ].join('\n')
     }
-  ]
-}
-No markdown. No extra text. Only JSON.`;
-
-/**
- * Build user message from experience context and draft
- */
-function buildUserMessage(experience, draft) {
-  const { role, company, startDate, endDate, visibility = 'DEFAULT' } = experience;
-
-  return `Experience Context:
-- Role: ${role}
-- Company: ${company}
-- Period: ${startDate} – ${endDate}
-- Visibility constraint: ${visibility}
-
-Referee draft (rewrite/refine this; do not ask for onboarding info):
-${draft}`;
+  ];
 }
 
-/**
- * POST /api/ai/reference/refine
- * Refines referee feedback using OpenAI
- */
-export async function refineReference(req, res) {
-  const requestId = req.requestId;
+function parseAiPayload(content) {
+  if (!content || typeof content !== 'string') {
+    return {
+      ok: false,
+      status: 502,
+      body: {
+        error: 'AI service error',
+        message: 'AI service returned empty response'
+      }
+    };
+  }
 
   try {
-    const { experience, draft } = req.body;
+    const parsed = JSON.parse(content);
 
-    const openai = buildOpenAIClient();
-    if (!openai) {
-      logger.error('OpenAI API key not configured', { requestId });
-      return res.status(503).json({
-        error: 'Service unavailable',
-        message: 'AI refinement service is not configured. Please contact the administrator.'
-      });
+    if (!parsed || typeof parsed.refined !== 'string' || !Array.isArray(parsed.flags)) {
+      return {
+        ok: false,
+        status: 502,
+        body: {
+          error: 'AI service error',
+          message: 'AI service returned malformed response'
+        }
+      };
     }
 
-    // Build the user message
-    const userMessage = buildUserMessage(experience, draft);
+    return {
+      ok: true,
+      data: {
+        refined: parsed.refined,
+        flags: parsed.flags
+      }
+    };
+  } catch {
+    return {
+      ok: false,
+      status: 502,
+      body: {
+        error: 'AI service error',
+        message: 'AI service returned invalid JSON',
+        rawSnippet: content.slice(0, 300)
+      }
+    };
+  }
+}
 
-    logger.info('AI refinement request started', {
-      requestId,
-      userId: req.user?.id,
-      draftLength: draft.length,
-      role: experience.role,
-      company: experience.company
+export async function refineReference(req, res) {
+  const parsed = refineReferenceSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: parsed.error.flatten()
     });
+  }
 
-    // Call OpenAI API
-    const completion = await openai.chat.completions.create({
-      model: OPENAI_MODEL,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userMessage }
-      ],
+  const { experience, draft } = parsed.data;
+
+  const openai = getOpenAIClient();
+
+  if (!openai) {
+    return res.status(503).json({
+      error: 'OpenAI configuration error',
+      message: 'AI refinement service configuration is unavailable'
+    });
+  }
+
+  const createCompletion = getCreateCompletionFn(openai);
+
+  if (!createCompletion) {
+    return res.status(503).json({
+      error: 'OpenAI configuration error',
+      message: 'AI refinement service configuration is unavailable'
+    });
+  }
+
+  try {
+    const completion = await createCompletion({
+      model: 'gpt-4.1-mini',
+      messages: buildMessages({ experience, draft }),
       temperature: 0.2,
       max_tokens: 900,
       response_format: { type: 'json_object' }
     });
 
-    const responseContent = completion.choices[0]?.message?.content;
-
-    if (!responseContent) {
-      logger.error('OpenAI returned empty response', { requestId });
+    if (!completion?.choices || completion.choices.length === 0) {
       return res.status(502).json({
         error: 'AI service error',
-        message: 'AI service returned an empty response'
+        message: 'AI service returned empty response'
       });
     }
 
-    // Parse JSON response
-    let aiResponse;
-    try {
-      aiResponse = JSON.parse(responseContent);
-    } catch (parseError) {
-      logger.error('Failed to parse OpenAI JSON response', {
-        requestId,
-        error: parseError.message,
-        responseSnippet: responseContent.substring(0, 200)
-      });
-      return res.status(502).json({
-        error: 'AI service error',
-        message: 'AI service returned invalid JSON',
-        rawSnippet: responseContent.substring(0, 200)
-      });
+    const content = completion?.choices?.[0]?.message?.content;
+    const parsedAi = parseAiPayload(content);
+
+    if (!parsedAi.ok) {
+      return res.status(parsedAi.status).json(parsedAi.body);
     }
 
-    // Validate response structure
-    if (!aiResponse.refined || typeof aiResponse.refined !== 'string') {
-      logger.error('OpenAI response missing refined field', {
-        requestId,
-        response: aiResponse
-      });
-      return res.status(502).json({
-        error: 'AI service error',
-        message: 'AI service returned malformed data'
-      });
-    }
-
-    // Ensure flags array exists
-    if (!Array.isArray(aiResponse.flags)) {
-      aiResponse.flags = [];
-    }
-
-    logger.info('AI refinement completed successfully', {
-      requestId,
-      userId: req.user?.id,
-      refinedLength: aiResponse.refined.length,
-      flagsCount: aiResponse.flags.length
-    });
-
-    // Return the refined content and flags
-    return res.json({
-      refined: aiResponse.refined,
-      flags: aiResponse.flags
-    });
-
+    return res.status(200).json(parsedAi.data);
   } catch (error) {
-    // Handle OpenAI API errors
-    if (error.status === 401) {
-      logger.error('OpenAI API authentication failed', {
-        requestId,
-        error: error.message
-      });
-      return res.status(503).json({
-        error: 'Service configuration error',
-        message: 'AI service authentication failed'
-      });
-    }
+    const sanitizedMessage = sanitizeMessage(error?.message);
 
-    if (error.status === 429) {
-      logger.warn('OpenAI API rate limit exceeded', {
-        requestId,
-        error: error.message
-      });
+    if (error?.status === 429) {
       return res.status(429).json({
         error: 'Rate limit exceeded',
-        message: 'AI service is temporarily unavailable due to high demand. Please try again later.'
+        message: 'Rate limit exceeded for AI refinement service'
       });
     }
 
-    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
-      logger.error('OpenAI API connection failed', {
-        requestId,
-        error: error.message,
-        code: error.code
-      });
+    if (error?.status === 401 || error?.status === 403) {
       return res.status(503).json({
-        error: 'Service unavailable',
-        message: 'AI service is temporarily unavailable'
+        error: 'OpenAI configuration error',
+        message: 'AI refinement service configuration is unavailable'
       });
     }
 
-    // Generic error handler
-    logger.error('AI refinement failed', {
-      requestId,
-      userId: req.user?.id,
-      error: error.message,
-      stack: error.stack
-    });
+    if (
+      error?.code === 'ETIMEDOUT' ||
+      error?.code === 'ECONNRESET' ||
+      error?.code === 'ENOTFOUND' ||
+      error?.code === 'ECONNREFUSED'
+    ) {
+      return res.status(503).json({
+        error: 'AI service unavailable',
+        message: 'AI refinement service is temporarily unavailable'
+      });
+    }
 
     return res.status(500).json({
       error: 'Internal server error',
-      message: 'Failed to refine reference. Please try again later.'
+      message: sanitizedMessage
     });
   }
 }
