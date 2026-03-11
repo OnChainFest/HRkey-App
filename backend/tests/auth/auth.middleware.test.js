@@ -33,6 +33,9 @@ jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
 }));
 
+// Important for ESM mock resolution consistency
+jest.resetModules();
+
 // Import middleware AFTER mocking Supabase
 const authMiddleware = await import('../../middleware/auth.js');
 const {
@@ -115,6 +118,7 @@ describe('Authentication Middleware', () => {
 
       await requireAuth(req, res, next);
 
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('invalid-token');
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
         error: 'Invalid token',
@@ -135,11 +139,13 @@ describe('Authentication Middleware', () => {
 
       await requireAuth(req, res, next);
 
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('expired-token');
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
         error: 'Invalid token',
         message: 'Your session has expired or is invalid'
       });
+      expect(next).not.toHaveBeenCalled();
     });
 
     test('T1.5: Should use fallback user data if database query fails', async () => {
@@ -167,6 +173,7 @@ describe('Authentication Middleware', () => {
         identity_verified: false
       });
       expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
     });
 
     test('T1.6: Should handle unexpected exceptions', async () => {
@@ -186,6 +193,7 @@ describe('Authentication Middleware', () => {
         error: 'Authentication error',
         message: 'An error occurred during authentication'
       });
+      expect(next).not.toHaveBeenCalled();
     });
   });
 
@@ -228,6 +236,7 @@ describe('Authentication Middleware', () => {
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({ error: 'Authentication required' });
+      expect(next).not.toHaveBeenCalled();
     });
   });
 
@@ -254,6 +263,7 @@ describe('Authentication Middleware', () => {
       await requireAdmin(req, res, next);
 
       expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
     });
 
     test('T3.3: Should reject regular user', async () => {
@@ -268,6 +278,7 @@ describe('Authentication Middleware', () => {
         error: 'Forbidden',
         message: 'Admin access required'
       });
+      expect(next).not.toHaveBeenCalled();
     });
 
     test('T3.4: Should reject if no user authenticated', async () => {
@@ -278,6 +289,8 @@ describe('Authentication Middleware', () => {
       await requireAdmin(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Authentication required' });
+      expect(next).not.toHaveBeenCalled();
     });
   });
 
@@ -341,6 +354,7 @@ describe('Authentication Middleware', () => {
         error: 'Forbidden',
         message: 'You must be an active signer of this company'
       });
+      expect(next).not.toHaveBeenCalled();
     });
 
     test('T4.4: Should reject if companyId is missing', async () => {
@@ -355,6 +369,7 @@ describe('Authentication Middleware', () => {
         error: 'Bad request',
         message: 'Company ID is required'
       });
+      expect(next).not.toHaveBeenCalled();
     });
 
     test('T4.5: Should reject inactive signer', async () => {
@@ -374,6 +389,7 @@ describe('Authentication Middleware', () => {
         error: 'Forbidden',
         message: 'You must be an active signer of this company'
       });
+      expect(next).not.toHaveBeenCalled();
     });
 
     test('T4.6: Should handle database errors gracefully', async () => {
@@ -393,6 +409,7 @@ describe('Authentication Middleware', () => {
         error: 'Authorization error',
         message: 'An error occurred checking company permissions'
       });
+      expect(next).not.toHaveBeenCalled();
     });
   });
 
@@ -447,6 +464,7 @@ describe('Authentication Middleware', () => {
         error: 'Forbidden',
         message: 'You must be a company signer to access this resource'
       });
+      expect(next).not.toHaveBeenCalled();
     });
 
     test('T5.4: Should reject if no user authenticated', async () => {
@@ -457,6 +475,8 @@ describe('Authentication Middleware', () => {
       await requireAnySigner(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Authentication required' });
+      expect(next).not.toHaveBeenCalled();
     });
 
     test('T5.5: Should handle database errors', async () => {
@@ -465,13 +485,17 @@ describe('Authentication Middleware', () => {
       const next = mockNext();
 
       // Mock database error
-      mockSupabaseClient.from().limit.mockResolvedValue(
-        mockDatabaseError('Query failed')
+      mockSupabaseClient.from().limit.mockRejectedValue(
+        new Error('Query failed')
       );
 
       await requireAnySigner(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Authorization error'
+      });
+      expect(next).not.toHaveBeenCalled();
     });
   });
 
@@ -496,6 +520,7 @@ describe('Authentication Middleware', () => {
 
       await optionalAuth(req, res, next);
 
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('valid-token');
       expect(req.user).toEqual(userData);
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
@@ -524,6 +549,7 @@ describe('Authentication Middleware', () => {
 
       await optionalAuth(req, res, next);
 
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('invalid-token');
       expect(req.user).toBeNull();
       expect(next).toHaveBeenCalled();
       // Should NOT return error response
@@ -552,6 +578,7 @@ describe('Authentication Middleware', () => {
         role: 'user'
       });
       expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
     });
 
     test('T6.5: Should handle unexpected errors gracefully', async () => {
