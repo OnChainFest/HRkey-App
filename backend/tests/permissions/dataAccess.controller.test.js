@@ -3,7 +3,7 @@
  * Focuses on authentication/authorization, IDOR prevention, and status codes.
  */
 
-import { jest } from '@jest/globals';
+import { jest, afterAll } from '@jest/globals';
 import request from 'supertest';
 import {
   createMockSupabaseClient,
@@ -52,6 +52,7 @@ jest.unstable_mockModule('../../services/candidateEvaluation.service.js', () => 
   evaluateCandidateForUser
 }));
 
+const authMiddleware = await import('../../middleware/auth.js');
 const { default: app } = await import('../../server.js');
 
 function buildTableMock({ singleResponses = [], maybeSingleResponses = [] } = {}) {
@@ -89,6 +90,12 @@ describe('Data Access Controller - Permission Tests', () => {
     jest.clearAllMocks();
     mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
     resetQueryBuilderMocks(mockQueryBuilder);
+    authMiddleware.__setSupabaseClientForTests(mockSupabaseClient);
+    mockSupabaseClient.auth.getUser.mockReset();
+  });
+
+  afterAll(() => {
+    authMiddleware.__resetSupabaseClientForTests();
   });
 
   describe('POST /api/data-access/request', () => {
@@ -98,7 +105,14 @@ describe('Data Access Controller - Permission Tests', () => {
       const requester = mockUserData({ id: 'signer-user-1' });
       const targetUser = mockUserData({ id: targetUserId, email: 'target@example.com' });
       const signerRecord = mockCompanySignerData({ company_id: companyId, user_id: requester.id });
-      const pricing = { id: 'price-1', price_amount: 25, currency: 'USD', platform_fee_percent: 40, user_fee_percent: 40, ref_creator_fee_percent: 20 };
+      const pricing = {
+        id: 'price-1',
+        price_amount: 25,
+        currency: 'USD',
+        platform_fee_percent: 40,
+        user_fee_percent: 40,
+        ref_creator_fee_percent: 20
+      };
       const createdRequest = {
         id: 'req-1',
         company_id: companyId,
@@ -113,10 +127,7 @@ describe('Data Access Controller - Permission Tests', () => {
       };
 
       const usersTable = buildTableMock({
-        singleResponses: [
-          mockDatabaseSuccess(requester),
-          mockDatabaseSuccess(targetUser)
-        ]
+        singleResponses: [mockDatabaseSuccess(requester), mockDatabaseSuccess(targetUser)]
       });
 
       const companySignersTable = buildTableMock({
@@ -207,10 +218,7 @@ describe('Data Access Controller - Permission Tests', () => {
       const pricing = { id: 'price-2', price_amount: 25, currency: 'USD' };
 
       const usersTable = buildTableMock({
-        singleResponses: [
-          mockDatabaseSuccess(requester),
-          mockDatabaseSuccess(targetUser)
-        ]
+        singleResponses: [mockDatabaseSuccess(requester), mockDatabaseSuccess(targetUser)]
       });
 
       const companySignersTable = buildTableMock({
@@ -350,12 +358,22 @@ describe('Data Access Controller - Permission Tests', () => {
         metadata: {}
       };
 
-      const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user), mockDatabaseSuccess({ email: 'requester@acme.com' })] });
-      const requestsTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(requestRecord), mockDatabaseSuccess({ ...requestRecord, status: 'APPROVED' })] });
-      const companiesTable = buildTableMock({ singleResponses: [mockDatabaseSuccess({ name: 'Approve Co' })] });
-      const revenueShareTable = buildTableMock({ singleResponses: [mockDatabaseSuccess({ id: 'rev-1' })] });
-      const ledgerTable = buildTableMock({ maybeSingleResponses: [{ data: null, error: null }] });
-      const userBalancesTable = ledgerTable; // reuse for both balance lookups
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(user), mockDatabaseSuccess({ email: 'requester@acme.com' })]
+      });
+      const requestsTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(requestRecord), mockDatabaseSuccess({ ...requestRecord, status: 'APPROVED' })]
+      });
+      const companiesTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess({ name: 'Approve Co' })]
+      });
+      const revenueShareTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess({ id: 'rev-1' })]
+      });
+      const ledgerTable = buildTableMock({
+        maybeSingleResponses: [{ data: null, error: null }]
+      });
+      const userBalancesTable = ledgerTable;
 
       configureTableMocks({
         users: usersTable,
@@ -399,7 +417,9 @@ describe('Data Access Controller - Permission Tests', () => {
     test('PERM-D14: returns 404 for non-existent requestId', async () => {
       const user = mockUserData({ id: 'missing-req-user' });
       const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
-      const requestsTable = buildTableMock({ singleResponses: [mockDatabaseError('No rows found', 'PGRST116')] });
+      const requestsTable = buildTableMock({
+        singleResponses: [mockDatabaseError('No rows found', 'PGRST116')]
+      });
 
       configureTableMocks({ users: usersTable, data_access_requests: requestsTable });
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(user.id));
@@ -417,10 +437,17 @@ describe('Data Access Controller - Permission Tests', () => {
   describe('POST /api/data-access/:requestId/reject', () => {
     test('PERM-D9: allows data owner to reject own request', async () => {
       const user = mockUserData({ id: 'reject-owner' });
-      const requestRecord = { id: 'req-reject-1', target_user_id: user.id, company_id: 'reject-co', status: 'PENDING' };
+      const requestRecord = {
+        id: 'req-reject-1',
+        target_user_id: user.id,
+        company_id: 'reject-co',
+        status: 'PENDING'
+      };
 
       const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
-      const requestsTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(requestRecord), mockDatabaseSuccess({ ...requestRecord, status: 'REJECTED' })] });
+      const requestsTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(requestRecord), mockDatabaseSuccess({ ...requestRecord, status: 'REJECTED' })]
+      });
 
       configureTableMocks({ users: usersTable, data_access_requests: requestsTable });
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(user.id));
@@ -472,8 +499,19 @@ describe('Data Access Controller - Permission Tests', () => {
         singleResponses: [mockDatabaseSuccess(signerUser), mockDatabaseSuccess(signerUser)]
       });
       const requestsTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(requestRecord)] });
-      const companySignersTable = buildTableMock({ maybeSingleResponses: [mockDatabaseSuccess(mockCompanySignerData({ company_id: requestRecord.company_id, user_id: signerUser.id }))] });
-      const referencesTable = buildTableMock({ singleResponses: [mockDatabaseSuccess({ id: 'ref-123', overall_rating: 5 })] });
+      const companySignersTable = buildTableMock({
+        maybeSingleResponses: [
+          mockDatabaseSuccess(
+            mockCompanySignerData({
+              company_id: requestRecord.company_id,
+              user_id: signerUser.id
+            })
+          )
+        ]
+      });
+      const referencesTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess({ id: 'ref-123', overall_rating: 5 })]
+      });
       const mockEvaluation = {
         userId: requestRecord.target_user_id,
         scoring: {
@@ -527,11 +565,27 @@ describe('Data Access Controller - Permission Tests', () => {
 
     test('PERM-D12: forbids access if request is not approved (403)', async () => {
       const signerUser = mockUserData({ id: 'signer-unapproved' });
-      const requestRecord = { id: requestId, company_id: 'company-data', target_user_id: 'target-data', status: 'PENDING', requested_data_type: 'reference', access_count: 0 };
+      const requestRecord = {
+        id: requestId,
+        company_id: 'company-data',
+        target_user_id: 'target-data',
+        status: 'PENDING',
+        requested_data_type: 'reference',
+        access_count: 0
+      };
 
       const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(signerUser)] });
       const requestsTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(requestRecord)] });
-      const companySignersTable = buildTableMock({ maybeSingleResponses: [mockDatabaseSuccess(mockCompanySignerData({ company_id: requestRecord.company_id, user_id: signerUser.id }))] });
+      const companySignersTable = buildTableMock({
+        maybeSingleResponses: [
+          mockDatabaseSuccess(
+            mockCompanySignerData({
+              company_id: requestRecord.company_id,
+              user_id: signerUser.id
+            })
+          )
+        ]
+      });
 
       configureTableMocks({
         users: usersTable,
@@ -552,7 +606,14 @@ describe('Data Access Controller - Permission Tests', () => {
 
     test('PERM-D13: forbids non-company-signer from accessing data (403)', async () => {
       const user = mockUserData({ id: 'not-signer-data' });
-      const requestRecord = { id: requestId, company_id: 'company-data', target_user_id: 'target-data', status: 'APPROVED', requested_data_type: 'reference', access_count: 0 };
+      const requestRecord = {
+        id: requestId,
+        company_id: 'company-data',
+        target_user_id: 'target-data',
+        status: 'APPROVED',
+        requested_data_type: 'reference',
+        access_count: 0
+      };
 
       const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
       const requestsTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(requestRecord)] });

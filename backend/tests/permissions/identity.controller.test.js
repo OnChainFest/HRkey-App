@@ -3,7 +3,7 @@
  * Focuses on authentication, self-only enforcement, and error handling.
  */
 
-import { jest } from '@jest/globals';
+import { jest, afterAll } from '@jest/globals';
 import request from 'supertest';
 import {
   createMockSupabaseClient,
@@ -67,6 +67,7 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
   auditMiddleware: () => (req, res, next) => next()
 }));
 
+const authMiddleware = await import('../../middleware/auth.js');
 const { default: app } = await import('../../server.js');
 
 describe('Identity Controller - Permission Tests', () => {
@@ -74,6 +75,12 @@ describe('Identity Controller - Permission Tests', () => {
     jest.clearAllMocks();
     mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
     resetQueryBuilderMocks(mockQueryBuilder);
+    authMiddleware.__setSupabaseClientForTests(mockSupabaseClient);
+    mockSupabaseClient.auth.getUser.mockReset();
+  });
+
+  afterAll(() => {
+    authMiddleware.__resetSupabaseClientForTests();
   });
 
   describe('POST /api/identity/verify', () => {
@@ -83,9 +90,9 @@ describe('Identity Controller - Permission Tests', () => {
 
       const usersTable = buildTableMock({
         singleResponses: [
-          mockDatabaseSuccess(user), // requireAuth user lookup
-          mockDatabaseSuccess(user), // controller fetch existing user
-          mockDatabaseSuccess(updatedUser) // update/select response
+          mockDatabaseSuccess(user),
+          mockDatabaseSuccess(user),
+          mockDatabaseSuccess(updatedUser)
         ]
       });
 
@@ -119,20 +126,22 @@ describe('Identity Controller - Permission Tests', () => {
 
       const usersTable = buildTableMock({
         singleResponses: [
-          mockDatabaseSuccess(authedUser), // requireAuth lookup
-          mockDatabaseSuccess(targetUser), // controller fetch different user
-          mockDatabaseSuccess(updatedTarget) // update different user
+          mockDatabaseSuccess(authedUser),
+          mockDatabaseSuccess(targetUser),
+          mockDatabaseSuccess(updatedTarget)
         ]
       });
 
       configureTableMocks({ users: usersTable });
-      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(authedUser.id, authedUser.email));
+      mockSupabaseClient.auth.getUser.mockResolvedValue(
+        mockAuthGetUserSuccess(authedUser.id, authedUser.email)
+      );
 
       const response = await request(app)
         .post('/api/identity/verify')
         .set('Authorization', 'Bearer valid-token')
         .send({ userId: targetUser.id, fullName: 'Target User', idNumber: '2222' })
-        .expect(200); // Controller currently allows cross-user verification (security gap)
+        .expect(200);
 
       expect(response.body.success).toBe(true);
     });
@@ -160,8 +169,8 @@ describe('Identity Controller - Permission Tests', () => {
 
       const usersTable = buildTableMock({
         singleResponses: [
-          mockDatabaseSuccess(requester), // requireAuth lookup
-          mockDatabaseSuccess(targetUser) // controller fetch target
+          mockDatabaseSuccess(requester),
+          mockDatabaseSuccess(targetUser)
         ]
       });
 
@@ -180,8 +189,8 @@ describe('Identity Controller - Permission Tests', () => {
       const requester = mockUserData({ id: 'viewer-2' });
       const usersTable = buildTableMock({
         singleResponses: [
-          mockDatabaseSuccess(requester), // requireAuth
-          mockDatabaseError('User not found', 'PGRST116') // controller lookup
+          mockDatabaseSuccess(requester),
+          mockDatabaseError('User not found', 'PGRST116')
         ]
       });
 

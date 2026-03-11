@@ -7,7 +7,7 @@
  * - POST /api/reference/request (now requires auth + self-authorization)
  */
 
-import { jest } from '@jest/globals';
+import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import request from 'supertest';
 import {
   createMockSupabaseClient,
@@ -18,17 +18,17 @@ import {
   mockUserData
 } from '../__mocks__/supabase.mock.js';
 
-// Mock Supabase before importing the app
+// Mock Supabase before importing app/auth modules
 const mockSupabaseClient = createMockSupabaseClient();
-
-// Store reference to query builder for re-establishing after clearAllMocks()
 const mockQueryBuilder = mockSupabaseClient.from();
 
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
 }));
 
-jest.resetModules();
+// Import auth middleware first so we can inject the mocked client directly
+const authMiddleware = await import('../../middleware/auth.js');
+const { __setSupabaseClientForTests, __resetSupabaseClientForTests } = authMiddleware;
 
 // Import app AFTER mocking dependencies
 const { default: app } = await import('../../server.js');
@@ -37,11 +37,23 @@ describe('Secured Endpoints - Authentication & Authorization Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Re-establish the query builder mock after clearing
-    mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
+    __resetSupabaseClientForTests();
+    __setSupabaseClientForTests(mockSupabaseClient);
 
-    // Re-establish all chainable method mocks
+    mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
     resetQueryBuilderMocks(mockQueryBuilder);
+
+    mockSupabaseClient.auth.getUser.mockReset();
+    mockQueryBuilder.single.mockReset();
+    mockQueryBuilder.maybeSingle?.mockReset?.();
+
+    mockQueryBuilder.select.mockReturnThis();
+    mockQueryBuilder.eq.mockReturnThis();
+    mockQueryBuilder.limit.mockReturnThis();
+    mockQueryBuilder.order?.mockReturnThis?.();
+    mockQueryBuilder.insert?.mockReturnThis?.();
+    mockQueryBuilder.update?.mockReturnThis?.();
+    mockQueryBuilder.delete?.mockReturnThis?.();
   });
 
   // =========================================================================
@@ -54,18 +66,13 @@ describe('Secured Endpoints - Authentication & Authorization Tests', () => {
     };
 
     test('SEC-W1: Should reject request without authentication token', async () => {
-      const response = await request(app)
-        .post('/api/wallet/create')
-        .send(validWalletPayload)
-        .expect(401);
+      const response = await request(app).post('/api/wallet/create').send(validWalletPayload).expect(401);
 
       expect(response.body.error).toBe('Authentication required');
     });
 
     test('SEC-W2: Should reject request with invalid token', async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserError('Invalid token')
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserError('Invalid token'));
 
       const response = await request(app)
         .post('/api/wallet/create')
@@ -75,12 +82,11 @@ describe('Secured Endpoints - Authentication & Authorization Tests', () => {
 
       expect(response.body.error).toBe('Invalid token');
       expect(response.body.message).toBe('Your session has expired or is invalid');
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('invalid-token');
     });
 
     test('SEC-W3: Should reject request with expired token', async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserError('JWT expired')
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserError('JWT expired'));
 
       const response = await request(app)
         .post('/api/wallet/create')
@@ -90,6 +96,7 @@ describe('Secured Endpoints - Authentication & Authorization Tests', () => {
 
       expect(response.body.error).toBe('Invalid token');
       expect(response.body.message).toBe('Your session has expired or is invalid');
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('expired-token');
     });
 
     test('SEC-W4: Should reject when authenticated user tries to create wallet for different user', async () => {
@@ -101,71 +108,56 @@ describe('Secured Endpoints - Authentication & Authorization Tests', () => {
         mockAuthGetUserSuccess(attackerUserId, 'attacker@example.com')
       );
 
-      mockSupabaseClient.from().single.mockResolvedValue(
-        mockDatabaseSuccess(authenticatedUser)
-      );
+      mockQueryBuilder.single.mockResolvedValueOnce(mockDatabaseSuccess(authenticatedUser));
 
       const response = await request(app)
         .post('/api/wallet/create')
         .set('Authorization', 'Bearer valid-token')
         .send({
-          userId: victimUserId, // Different from authenticated user
+          userId: victimUserId,
           email: 'victim@example.com'
         })
         .expect(403);
 
       expect(response.body.error).toBe('Forbidden');
       expect(response.body.message).toBe('You can only create a wallet for yourself');
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('valid-token');
     });
 
     test('SEC-W5: Should allow authenticated user to create wallet for themselves', async () => {
       const userId = '550e8400-e29b-41d4-a716-446655440000';
       const authenticatedUser = mockUserData({ id: userId, email: 'test@example.com' });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId, 'test@example.com')
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId, 'test@example.com'));
 
-      mockSupabaseClient.from().single.mockResolvedValue(
-        mockDatabaseSuccess(authenticatedUser)
-      );
+      mockQueryBuilder.single
+        .mockResolvedValueOnce(mockDatabaseSuccess(authenticatedUser))
+        .mockResolvedValueOnce(mockDatabaseSuccess(null));
 
       const response = await request(app)
         .post('/api/wallet/create')
         .set('Authorization', 'Bearer valid-token')
         .send(validWalletPayload);
 
-      // Auth passed - should NOT be 401 (unauthenticated) or 403 (unauthorized)
-      // Service might succeed (200) or fail (400/500), but auth worked
       expect(response.status).not.toBe(401);
       expect(response.status).not.toBe(403);
-
-      // Verify authentication was checked
-      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalled();
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('valid-token');
     });
 
     test('SEC-W6: Should enforce validation even with valid auth', async () => {
       const userId = '550e8400-e29b-41d4-a716-446655440000';
       const authenticatedUser = mockUserData({ id: userId });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+      mockQueryBuilder.single.mockResolvedValueOnce(mockDatabaseSuccess(authenticatedUser));
 
-      mockSupabaseClient.from().single.mockResolvedValue(
-        mockDatabaseSuccess(authenticatedUser)
-      );
-
-      // Missing email (validation should fail)
       const response = await request(app)
         .post('/api/wallet/create')
         .set('Authorization', 'Bearer valid-token')
-        .send({ userId: userId });
+        .send({ userId });
 
-      // Validation should fail (400), not auth (401/403)
       expect(response.status).toBe(400);
-      // Verify auth was checked first
-      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalled();
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('valid-token');
     });
   });
 
@@ -180,18 +172,13 @@ describe('Secured Endpoints - Authentication & Authorization Tests', () => {
     };
 
     test('SEC-R1: Should reject request without authentication token', async () => {
-      const response = await request(app)
-        .post('/api/reference/request')
-        .send(validReferencePayload)
-        .expect(401);
+      const response = await request(app).post('/api/reference/request').send(validReferencePayload).expect(401);
 
       expect(response.body.error).toBe('Authentication required');
     });
 
     test('SEC-R2: Should reject request with invalid token', async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserError('Invalid token')
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserError('Invalid token'));
 
       const response = await request(app)
         .post('/api/reference/request')
@@ -201,12 +188,11 @@ describe('Secured Endpoints - Authentication & Authorization Tests', () => {
 
       expect(response.body.error).toBe('Invalid token');
       expect(response.body.message).toBe('Your session has expired or is invalid');
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('invalid-token');
     });
 
     test('SEC-R3: Should reject request with expired token', async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserError('JWT expired')
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserError('JWT expired'));
 
       const response = await request(app)
         .post('/api/reference/request')
@@ -216,6 +202,7 @@ describe('Secured Endpoints - Authentication & Authorization Tests', () => {
 
       expect(response.body.error).toBe('Invalid token');
       expect(response.body.message).toBe('Your session has expired or is invalid');
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('expired-token');
     });
 
     test('SEC-R4: Should reject when authenticated user tries to request reference for different user', async () => {
@@ -227,15 +214,13 @@ describe('Secured Endpoints - Authentication & Authorization Tests', () => {
         mockAuthGetUserSuccess(attackerUserId, 'attacker@example.com')
       );
 
-      mockSupabaseClient.from().single.mockResolvedValue(
-        mockDatabaseSuccess(authenticatedUser)
-      );
+      mockQueryBuilder.single.mockResolvedValueOnce(mockDatabaseSuccess(authenticatedUser));
 
       const response = await request(app)
         .post('/api/reference/request')
         .set('Authorization', 'Bearer valid-token')
         .send({
-          userId: victimUserId, // Different from authenticated user
+          userId: victimUserId,
           email: 'referee@example.com',
           name: 'John Referee'
         })
@@ -243,60 +228,43 @@ describe('Secured Endpoints - Authentication & Authorization Tests', () => {
 
       expect(response.body.error).toBe('Forbidden');
       expect(response.body.message).toBe('You can only request references for yourself');
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('valid-token');
     });
 
     test('SEC-R5: Should allow authenticated user to request reference for themselves', async () => {
       const userId = '550e8400-e29b-41d4-a716-446655440000';
       const authenticatedUser = mockUserData({ id: userId });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
-
-      mockSupabaseClient.from().single.mockResolvedValue(
-        mockDatabaseSuccess(authenticatedUser)
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+      mockQueryBuilder.single.mockResolvedValueOnce(mockDatabaseSuccess(authenticatedUser));
 
       const response = await request(app)
         .post('/api/reference/request')
         .set('Authorization', 'Bearer valid-token')
         .send(validReferencePayload);
 
-      // Auth passed - should NOT be 401 (unauthenticated) or 403 (unauthorized)
-      // Service might succeed (200) or fail (400/500), but auth worked
       expect(response.status).not.toBe(401);
       expect(response.status).not.toBe(403);
-
-      // Verify authentication was checked
-      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalled();
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('valid-token');
     });
 
     test('SEC-R6: Should enforce validation even with valid auth', async () => {
       const userId = '550e8400-e29b-41d4-a716-446655440000';
       const authenticatedUser = mockUserData({ id: userId });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+      mockQueryBuilder.single.mockResolvedValueOnce(mockDatabaseSuccess(authenticatedUser));
 
-      mockSupabaseClient.from().single.mockResolvedValue(
-        mockDatabaseSuccess(authenticatedUser)
-      );
-
-      // Missing required field (name)
       const response = await request(app)
         .post('/api/reference/request')
         .set('Authorization', 'Bearer valid-token')
         .send({
-          userId: userId,
+          userId,
           email: 'referee@example.com'
-          // Missing name
         });
 
-      // Validation should fail (400), not auth (401/403)
       expect(response.status).toBe(400);
-      // Verify auth was checked first
-      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalled();
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('valid-token');
     });
   });
 });
