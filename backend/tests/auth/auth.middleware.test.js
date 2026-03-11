@@ -26,6 +26,10 @@ jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
 }));
 
+// Important for ESM mock resolution consistency
+jest.resetModules();
+
+// Import middleware AFTER mocking Supabase
 const authMiddleware = await import('../../middleware/auth.js');
 const {
   requireAuth,
@@ -113,6 +117,7 @@ describe('Authentication Middleware', () => {
 
       await requireAuth(req, res, next);
 
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('invalid-token');
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
         error: 'Invalid token',
@@ -133,6 +138,7 @@ describe('Authentication Middleware', () => {
 
       await requireAuth(req, res, next);
 
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('expired-token');
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
         error: 'Invalid token',
@@ -165,6 +171,7 @@ describe('Authentication Middleware', () => {
         identity_verified: false
       });
       expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
     });
 
     test('T1.6: Should handle unexpected exceptions', async () => {
@@ -181,6 +188,7 @@ describe('Authentication Middleware', () => {
         error: 'Authentication error',
         message: 'An error occurred during authentication'
       });
+      expect(next).not.toHaveBeenCalled();
     });
   });
 
@@ -242,6 +250,7 @@ describe('Authentication Middleware', () => {
       await requireAdmin(req, res, next);
 
       expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
     });
 
     test('T3.3: Should reject regular user', async () => {
@@ -340,6 +349,10 @@ describe('Authentication Middleware', () => {
       await requireCompanySigner(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Bad request',
+        message: 'Company ID is required'
+      });
       expect(next).not.toHaveBeenCalled();
     });
 
@@ -375,6 +388,10 @@ describe('Authentication Middleware', () => {
       await requireCompanySigner(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Authorization error',
+        message: 'An error occurred checking company permissions'
+      });
       expect(next).not.toHaveBeenCalled();
     });
   });
@@ -434,6 +451,7 @@ describe('Authentication Middleware', () => {
       await requireAnySigner(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Authentication required' });
       expect(next).not.toHaveBeenCalled();
     });
 
@@ -442,11 +460,17 @@ describe('Authentication Middleware', () => {
       const res = mockResponse();
       const next = mockNext();
 
-      mockQueryBuilder.limit.mockRejectedValue(new Error('DB error'));
+      // Mock database error
+      mockSupabaseClient.from().limit.mockRejectedValue(
+        new Error('Query failed')
+      );
 
       await requireAnySigner(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Authorization error'
+      });
       expect(next).not.toHaveBeenCalled();
     });
   });
@@ -477,6 +501,7 @@ describe('Authentication Middleware', () => {
 
       await optionalAuth(req, res, next);
 
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('valid-token');
       expect(req.user).toEqual(userData);
       expect(next).toHaveBeenCalled();
     });
@@ -504,6 +529,7 @@ describe('Authentication Middleware', () => {
 
       await optionalAuth(req, res, next);
 
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('invalid-token');
       expect(req.user).toBeNull();
       expect(next).toHaveBeenCalled();
     });
@@ -531,6 +557,7 @@ describe('Authentication Middleware', () => {
         role: 'user'
       });
       expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
     });
 
     test('T6.5: Should handle unexpected errors gracefully', async () => {

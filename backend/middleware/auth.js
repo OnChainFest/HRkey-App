@@ -22,9 +22,21 @@ export function __resetSupabaseClientForTests() {
 }
 
 const getSupabaseClient = () => {
+  const supabaseUrl = process.env.SUPABASE_URL || 'https://example.supabase.co';
+  const supabaseServiceKey =
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    'test-service-role-key';
+
+  // In tests, always return a fresh client so Jest mocks are respected.
+  if (process.env.NODE_ENV === 'test') {
+    return createClient(supabaseUrl, supabaseServiceKey);
+  }
+
   if (!supabaseClient) {
     supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
   }
+
   return supabaseClient;
 };
 
@@ -82,7 +94,7 @@ export async function requireAuth(req, res, next) {
     const client = getSupabaseClient();
 
     const {
-      data: { user } = {},
+      data: { user },
       error
     } = await client.auth.getUser(token);
 
@@ -95,7 +107,7 @@ export async function requireAuth(req, res, next) {
 
     const { data: userData, error: userError } = await client
       .from('users')
-      .select('id, email, role, identity_verified, wallet_address')
+      .select('id, email, role, identity_verified, wallet_address, created_at')
       .eq('id', user.id)
       .single();
 
@@ -202,9 +214,11 @@ export async function requireCompanySigner(req, res, next) {
       return next();
     }
 
-    const { data: signer, error } = await getSupabaseClient()
+    const client = getSupabaseClient();
+
+    const { data: signer, error } = await client
       .from('company_signers')
-      .select('id, role, is_active, company_id')
+      .select('id, role, is_active, company_id, user_id, created_at')
       .eq('company_id', companyId)
       .eq('user_id', req.user.id)
       .eq('is_active', true)
@@ -249,14 +263,23 @@ export async function requireAnySigner(req, res, next) {
       return next();
     }
 
-    const { data: signers, error } = await getSupabaseClient()
+    const client = getSupabaseClient();
+
+    const { data: signers, error } = await client
       .from('company_signers')
       .select('id, company_id')
       .eq('user_id', req.user.id)
       .eq('is_active', true)
       .limit(1);
 
-    if (error || !signers || signers.length === 0) {
+    if (error) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You must be a company signer to access this resource'
+      });
+    }
+
+    if (!signers || signers.length === 0) {
       return res.status(403).json({
         error: 'Forbidden',
         message: 'You must be a company signer to access this resource'
@@ -283,15 +306,6 @@ export async function requireAnySigner(req, res, next) {
 // RESOURCE-SCOPED AUTHORIZATION MIDDLEWARE
 // ============================================================================
 
-/**
- * Requires user to be the resource owner or a superadmin
- * Factory function that returns middleware checking req.user.id === req.params[paramName]
- *
- * @param {string} paramName - The route parameter name containing the user ID (default: 'userId')
- * @param {Object} options - Optional configuration
- * @param {string} options.message - Custom error message for 403 response
- * @returns {Function} Express middleware
- */
 export function requireSelfOrSuperadmin(paramName = 'userId', options = {}) {
   const errorMessage = options.message || 'You can only access your own resources';
 
@@ -323,14 +337,6 @@ export function requireSelfOrSuperadmin(paramName = 'userId', options = {}) {
   };
 }
 
-/**
- * Factory function that creates middleware requiring a linked wallet address
- * Returns 403 if req.user.wallet_address is missing or null
- *
- * @param {Object} options - Optional configuration
- * @param {string} options.message - Custom error message for 403 response
- * @returns {Function} Express middleware
- */
 export function requireWalletLinked(options = {}) {
   const errorMessage = options.message || 'You must have a linked wallet to access this resource';
 
@@ -355,16 +361,6 @@ export function requireWalletLinked(options = {}) {
 // WALLET-SCOPED AUTHORIZATION MIDDLEWARE
 // ============================================================================
 
-/**
- * Factory function that creates middleware requiring user's wallet to match a target wallet.
- * Superadmins bypass this check.
- *
- * @param {string} walletField - The request body field containing the target wallet
- * @param {Object} options - Optional configuration
- * @param {string} options.noWalletMessage - Error message when user has no wallet
- * @param {string} options.mismatchMessage - Error message when wallets don't match
- * @returns {Function} Express middleware
- */
 export function requireOwnWallet(walletField = 'subject_wallet', options = {}) {
   const noWalletMessage = options.noWalletMessage || 'You must have a linked wallet to access this resource';
   const mismatchMessage = options.mismatchMessage || 'You can only access your own wallet resources';
@@ -404,10 +400,6 @@ export function requireOwnWallet(walletField = 'subject_wallet', options = {}) {
 // OPTIONAL AUTH (for public/semi-public endpoints)
 // ============================================================================
 
-/**
- * Optionally extracts user if token provided, but doesn't require it
- * Useful for endpoints that behave differently for authenticated users
- */
 export async function optionalAuth(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
@@ -418,11 +410,10 @@ export async function optionalAuth(req, res, next) {
     }
 
     const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-
     const client = getSupabaseClient();
 
     const {
-      data: { user } = {},
+      data: { user },
       error
     } = await client.auth.getUser(token);
 
@@ -433,7 +424,7 @@ export async function optionalAuth(req, res, next) {
 
     const { data: userData, error: userError } = await client
       .from('users')
-      .select('id, email, role, identity_verified, wallet_address')
+      .select('id, email, role, identity_verified, wallet_address, created_at')
       .eq('id', user.id)
       .single();
 
