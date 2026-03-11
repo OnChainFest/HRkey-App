@@ -3,7 +3,7 @@
  * Tests for protected endpoints using supertest
  */
 
-import { jest } from '@jest/globals';
+import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import request from 'supertest';
 import {
   createMockSupabaseClient,
@@ -18,43 +18,48 @@ import {
 
 // Mock Supabase before importing the app
 const mockSupabaseClient = createMockSupabaseClient();
-
-// Store reference to query builder for re-establishing after clearAllMocks()
 const mockQueryBuilder = mockSupabaseClient.from();
 
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
 }));
 
-jest.resetModules();
+const authMiddleware = await import('../../middleware/auth.js');
+const { __setSupabaseClientForTests, __resetSupabaseClientForTests } = authMiddleware;
 
 // Import app AFTER mocking dependencies
 const { default: app } = await import('../../server.js');
 
 describe('Authentication Integration Tests', () => {
   beforeEach(() => {
-    // Clear mock call history but preserve mock implementations
     jest.clearAllMocks();
 
-    // Re-establish the query builder mock after clearing
-    mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
+    __setSupabaseClientForTests(mockSupabaseClient);
 
-    // Re-establish all chainable method mocks
+    mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
     resetQueryBuilderMocks(mockQueryBuilder);
+
+    mockSupabaseClient.auth.getUser.mockReset();
+    mockQueryBuilder.single.mockReset();
+    mockQueryBuilder.maybeSingle?.mockReset?.();
+
+    mockQueryBuilder.select.mockReturnThis();
+    mockQueryBuilder.eq.mockReturnThis();
+    mockQueryBuilder.limit.mockReturnThis();
+    mockQueryBuilder.order?.mockReturnThis?.();
+    mockQueryBuilder.insert?.mockReturnThis?.();
+    mockQueryBuilder.update?.mockReturnThis?.();
+    mockQueryBuilder.delete?.mockReturnThis?.();
   });
 
-  // =========================================================================
-  // TEST: Health Check (Public endpoint - no auth required)
-  // =========================================================================
+  afterEach(() => {
+    __resetSupabaseClientForTests();
+  });
+
   describe('GET /health', () => {
     test('IT-H1: Should return health status without authentication', async () => {
-      // Simple health check - no database dependency
-      const response = await request(app)
-        .get('/health')
-        .expect('Content-Type', /json/)
-        .expect(200);
+      const response = await request(app).get('/health').expect('Content-Type', /json/).expect(200);
 
-      // New simple health check format (status, version, timestamp)
       expect(response.body).toHaveProperty('status');
       expect(response.body).toHaveProperty('version');
       expect(response.body).toHaveProperty('timestamp');
@@ -62,9 +67,6 @@ describe('Authentication Integration Tests', () => {
     });
   });
 
-  // =========================================================================
-  // TEST: Protected Endpoint - requireAuth
-  // =========================================================================
   describe('GET /api/identity/status/:userId', () => {
     test('IT1: Should reject request without authentication token', async () => {
       const response = await request(app)
@@ -77,10 +79,7 @@ describe('Authentication Integration Tests', () => {
     });
 
     test('IT2: Should reject request with invalid token', async () => {
-      // Mock invalid token
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserError('Invalid token')
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserError('Invalid token'));
 
       const response = await request(app)
         .get('/api/identity/status/user-123')
@@ -89,6 +88,7 @@ describe('Authentication Integration Tests', () => {
         .expect(401);
 
       expect(response.body.error).toBe('Invalid token');
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('invalid-token');
     });
 
     test('IT3: Should accept request with valid token', async () => {
@@ -97,30 +97,23 @@ describe('Authentication Integration Tests', () => {
         email: 'test@example.com'
       });
 
-      // Mock successful auth
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess('user-123', 'test@example.com')
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-123', 'test@example.com'));
 
-      mockSupabaseClient.from().single.mockResolvedValue(
-        mockDatabaseSuccess(userData)
-      );
+      mockQueryBuilder.single
+        .mockResolvedValueOnce(mockDatabaseSuccess(userData))
+        .mockResolvedValueOnce(
+          mockDatabaseSuccess({
+            id: 'user-123',
+            identity_verified: true
+          })
+        );
 
-      // Note: The actual endpoint may return 404 or other status
-      // depending on whether the user exists. We're just testing
-      // that auth middleware passes through successfully.
-      await request(app)
-        .get('/api/identity/status/user-123')
-        .set('Authorization', 'Bearer valid-token');
+      await request(app).get('/api/identity/status/user-123').set('Authorization', 'Bearer valid-token');
 
-      // Verify auth.getUser was called
       expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('valid-token');
     });
   });
 
-  // =========================================================================
-  // TEST: Superadmin-only Endpoint
-  // =========================================================================
   describe('POST /api/company/:companyId/verify', () => {
     test('IT4: Should reject regular user for superadmin endpoint', async () => {
       const userData = mockUserData({
@@ -128,22 +121,19 @@ describe('Authentication Integration Tests', () => {
         role: 'user'
       });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess('user-123')
-      );
-
-      mockSupabaseClient.from().single.mockResolvedValue(
-        mockDatabaseSuccess(userData)
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-123'));
+      mockQueryBuilder.single.mockResolvedValueOnce(mockDatabaseSuccess(userData));
 
       const response = await request(app)
         .post('/api/company/company-123/verify')
         .set('Authorization', 'Bearer user-token')
+        .send({ verified: true })
         .expect('Content-Type', /json/)
         .expect(403);
 
       expect(response.body.error).toBe('Forbidden');
       expect(response.body.message).toBe('Superadmin access required');
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('user-token');
     });
 
     test('IT5: Should allow superadmin user', async () => {
@@ -157,24 +147,17 @@ describe('Authentication Integration Tests', () => {
         mockAuthGetUserSuccess('admin-123', 'admin@hrkey.xyz')
       );
 
-      mockSupabaseClient.from().single.mockResolvedValue(
-        mockDatabaseSuccess(superadminData)
-      );
+      mockQueryBuilder.single.mockResolvedValueOnce(mockDatabaseSuccess(superadminData));
 
-      // The endpoint may return 400/404 depending on company existence
-      // We're just testing that superadmin middleware passes
       await request(app)
         .post('/api/company/company-123/verify')
-        .set('Authorization', 'Bearer admin-token');
+        .set('Authorization', 'Bearer admin-token')
+        .send({ verified: true });
 
-      // Verify auth was called
-      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalled();
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('admin-token');
     });
   });
 
-  // =========================================================================
-  // TEST: Company Signer Endpoint
-  // =========================================================================
   describe('GET /api/company/:companyId/signers', () => {
     test('IT6: Should reject if user is not a signer of company', async () => {
       const userData = mockUserData({
@@ -182,14 +165,10 @@ describe('Authentication Integration Tests', () => {
         role: 'user'
       });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess('user-123')
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-123'));
 
-      // Mock users table query
-      mockSupabaseClient.from().single
+      mockQueryBuilder.single
         .mockResolvedValueOnce(mockDatabaseSuccess(userData))
-        // Mock company_signers query - no signer found
         .mockResolvedValueOnce(mockDatabaseError('No rows', 'PGRST116'));
 
       const response = await request(app)
@@ -200,6 +179,7 @@ describe('Authentication Integration Tests', () => {
 
       expect(response.body.error).toBe('Forbidden');
       expect(response.body.message).toContain('active signer');
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('user-token');
     });
 
     test('IT7: Should allow active signer of company', async () => {
@@ -214,22 +194,21 @@ describe('Authentication Integration Tests', () => {
         is_active: true
       });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess('user-123')
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-123'));
 
-      // Mock users table query, then company_signers query
-      mockSupabaseClient.from().single
+      mockQueryBuilder.single
         .mockResolvedValueOnce(mockDatabaseSuccess(userData))
-        .mockResolvedValueOnce(mockDatabaseSuccess(signerData));
+        .mockResolvedValueOnce(mockDatabaseSuccess(signerData))
+        .mockResolvedValueOnce(
+          mockDatabaseSuccess({
+            id: 'company-123',
+            name: 'Acme Inc'
+          })
+        );
 
-      // This should pass the middleware
-      // The endpoint may return 200 or other depending on data
-      await request(app)
-        .get('/api/company/company-123/signers')
-        .set('Authorization', 'Bearer signer-token');
+      await request(app).get('/api/company/company-123/signers').set('Authorization', 'Bearer signer-token');
 
-      // Verify company signer was checked
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('signer-token');
       expect(mockSupabaseClient.from).toHaveBeenCalled();
     });
 
@@ -239,27 +218,12 @@ describe('Authentication Integration Tests', () => {
         role: 'superadmin'
       });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess('admin-123')
-      );
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('admin-123'));
+      mockQueryBuilder.single.mockResolvedValueOnce(mockDatabaseSuccess(superadminData));
 
-      mockSupabaseClient.from().single.mockResolvedValue(
-        mockDatabaseSuccess(superadminData)
-      );
+      await request(app).get('/api/company/company-123/signers').set('Authorization', 'Bearer admin-token');
 
-      // Superadmin should bypass company signer check
-      await request(app)
-        .get('/api/company/company-123/signers')
-        .set('Authorization', 'Bearer admin-token');
-
-      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalled();
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('admin-token');
     });
   });
-
-  // =========================================================================
-  // NOTE: Validation tests for /api/wallet/create and /api/reference/request
-  // have been removed from this auth test suite. These endpoints currently
-  // don't require authentication (production issue to fix!) and validation
-  // testing should be in a separate validation test suite.
-  // =========================================================================
 });

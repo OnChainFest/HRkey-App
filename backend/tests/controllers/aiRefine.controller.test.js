@@ -10,39 +10,53 @@
  * RATE LIMITING: Uses strictLimiter
  */
 
-import { jest } from '@jest/globals';
+import { describe, test, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import request from 'supertest';
+import {
+  createMockSupabaseClient,
+  resetQueryBuilderMocks,
+  mockAuthGetUserSuccess,
+  mockAuthGetUserError,
+  mockDatabaseSuccess,
+  mockUserData
+} from '../__mocks__/supabase.mock.js';
 
-// Mock OpenAI before other imports
-jest.unstable_mockModule('openai', () => ({
-  default: jest.fn().mockImplementation(() => ({
-    chat: {
-      completions: {
-        create: jest.fn()
-      }
-    }
-  }))
-}));
+// Disable limiter before importing app
+process.env.RATE_LIMIT_ENABLED = 'false';
 
-// Mock Supabase before importing server
-jest.unstable_mockModule('@supabase/supabase-js', () => ({
-  createClient: jest.fn()
-}));
-
-// Import mocks
-const supabaseMock = await import('../__mocks__/supabase.mock.js');
-const { createMockSupabaseClient, mockUserData } = supabaseMock.default;
-
-// Create Supabase mock client
-const mockSupabaseClient = createMockSupabaseClient();
-const { createClient } = await import('@supabase/supabase-js');
-createClient.mockReturnValue(mockSupabaseClient);
-
-// Import OpenAI mock
-const OpenAI = (await import('openai')).default;
+// -----------------------------------------------------------------------------
+// OpenAI mock
+// -----------------------------------------------------------------------------
 let mockOpenAICreate;
 
-process.env.RATE_LIMIT_ENABLED = 'false';
+jest.unstable_mockModule('openai', () => {
+  class MockOpenAI {
+    constructor() {
+      this.chat = {
+        completions: {
+          create: (...args) => mockOpenAICreate(...args)
+        }
+      };
+    }
+  }
+
+  return {
+    default: MockOpenAI
+  };
+});
+
+// -----------------------------------------------------------------------------
+// Supabase mock
+// -----------------------------------------------------------------------------
+const mockSupabaseClient = createMockSupabaseClient();
+const mockQueryBuilder = mockSupabaseClient.from();
+
+jest.unstable_mockModule('@supabase/supabase-js', () => ({
+  createClient: jest.fn(() => mockSupabaseClient)
+}));
+
+// Import auth middleware after mocks so we can force the client used in tests
+const authMiddleware = await import('../../middleware/auth.js');
 
 // Import app after mocks
 const { default: app } = await import('../../server.js');
@@ -51,6 +65,7 @@ describe('AI Reference Refinement Controller', () => {
   const validAuthToken = 'valid-test-token-12345';
   const originalOpenAiKey = process.env.OPENAI_API_KEY;
   const originalRateLimit = process.env.RATE_LIMIT_ENABLED;
+
   const mockUser = mockUserData({
     id: 'test-user-id',
     email: 'referee@example.com'
@@ -68,7 +83,8 @@ describe('AI Reference Refinement Controller', () => {
   };
 
   const mockAIResponse = {
-    refined: 'John demonstrated exceptional technical skills during his tenure as a Senior Software Engineer. He consistently delivered high-quality results and showed strong problem-solving abilities.',
+    refined:
+      'John demonstrated exceptional technical skills during his tenure as a Senior Software Engineer. He consistently delivered high-quality results and showed strong problem-solving abilities.',
     flags: [
       {
         type: 'LOW_SPECIFICITY',
@@ -81,35 +97,38 @@ describe('AI Reference Refinement Controller', () => {
   beforeEach(() => {
     process.env.OPENAI_API_KEY = 'test-openai-key';
     process.env.RATE_LIMIT_ENABLED = 'false';
+
     jest.clearAllMocks();
 
     mockOpenAICreate = jest.fn();
-    OpenAI.mockImplementation(() => ({
-      chat: {
-        completions: {
-          create: mockOpenAICreate
-        }
-      }
-    }));
 
-    // Mock auth
-    mockSupabaseClient.auth.getUser.mockResolvedValue({
-      data: { user: mockUser },
-      error: null
-    });
+    mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
+    resetQueryBuilderMocks(mockQueryBuilder);
 
-    mockSupabaseClient.from.mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({
-          single: jest.fn().mockResolvedValue({
-            data: mockUser,
-            error: null
-          })
-        })
-      })
-    });
+    mockSupabaseClient.auth.getUser.mockReset();
+    mockQueryBuilder.single.mockReset();
+    mockQueryBuilder.maybeSingle?.mockReset?.();
 
-    // Mock successful OpenAI response by default
+    mockQueryBuilder.select.mockReturnThis();
+    mockQueryBuilder.eq.mockReturnThis();
+    mockQueryBuilder.limit.mockReturnThis();
+    mockQueryBuilder.order?.mockReturnThis?.();
+    mockQueryBuilder.insert?.mockReturnThis?.();
+    mockQueryBuilder.update?.mockReturnThis?.();
+    mockQueryBuilder.delete?.mockReturnThis?.();
+
+    // Force auth middleware to use this exact mocked client
+    authMiddleware.__setSupabaseClientForTests(mockSupabaseClient);
+
+    // Default auth: valid authenticated user
+    mockSupabaseClient.auth.getUser.mockResolvedValue(
+      mockAuthGetUserSuccess(mockUser.id, mockUser.email)
+    );
+
+    // Default users table lookup used by requireAuth middleware
+    mockQueryBuilder.single.mockResolvedValue(mockDatabaseSuccess(mockUser));
+
+    // Default OpenAI success response
     mockOpenAICreate.mockResolvedValue({
       choices: [
         {
@@ -124,12 +143,12 @@ describe('AI Reference Refinement Controller', () => {
   afterAll(() => {
     process.env.OPENAI_API_KEY = originalOpenAiKey;
     process.env.RATE_LIMIT_ENABLED = originalRateLimit;
+    authMiddleware.__resetSupabaseClientForTests();
   });
 
-  // ============================================================================
-  // POST /api/ai/reference/refine - Validation Tests
-  // ============================================================================
-
+  // ===========================================================================
+  // POST /api/ai/reference/refine - Validation
+  // ===========================================================================
   describe('POST /api/ai/reference/refine - Validation', () => {
     test('AI-REFINE-1: Should reject missing draft field (400)', async () => {
       const response = await request(app)
@@ -137,7 +156,6 @@ describe('AI Reference Refinement Controller', () => {
         .set('Authorization', `Bearer ${validAuthToken}`)
         .send({
           experience: validPayload.experience
-          // Missing draft
         })
         .expect(400);
 
@@ -150,7 +168,7 @@ describe('AI Reference Refinement Controller', () => {
         .set('Authorization', `Bearer ${validAuthToken}`)
         .send({
           experience: validPayload.experience,
-          draft: 'Too short' // Less than 10 characters
+          draft: 'Too short'
         })
         .expect(400);
 
@@ -164,7 +182,6 @@ describe('AI Reference Refinement Controller', () => {
         .send({
           experience: {
             role: 'Engineer'
-            // Missing company, startDate, endDate
           },
           draft: validPayload.draft
         })
@@ -174,15 +191,15 @@ describe('AI Reference Refinement Controller', () => {
     });
 
     test('AI-REFINE-4: Should accept valid payload (200)', async () => {
-      const response = await request(app)
-        .post('/api/ai/reference/refine')
-        .set('Authorization', `Bearer ${validAuthToken}`)
-        .send(validPayload)
-        .expect(200);
+  const response = await request(app)
+    .post('/api/ai/reference/refine')
+    .set('Authorization', `Bearer ${validAuthToken}`)
+    .send(validPayload)
+    .expect(200);
 
-      expect(response.body).toHaveProperty('refined');
-      expect(response.body).toHaveProperty('flags');
-    });
+  expect(response.body).toHaveProperty('refined');
+  expect(response.body).toHaveProperty('flags');
+});
 
     test('AI-REFINE-5: Should accept visibility as optional with default', async () => {
       const payloadWithoutVisibility = {
@@ -191,7 +208,6 @@ describe('AI Reference Refinement Controller', () => {
           company: 'Company Inc',
           startDate: '2020-01-01',
           endDate: '2023-12-31'
-          // visibility is optional
         },
         draft: validPayload.draft
       };
@@ -206,23 +222,16 @@ describe('AI Reference Refinement Controller', () => {
     });
   });
 
-  // ============================================================================
-  // POST /api/ai/reference/refine - Authentication Tests
-  // ============================================================================
-
+  // ===========================================================================
+  // POST /api/ai/reference/refine - Authentication
+  // ===========================================================================
   describe('POST /api/ai/reference/refine - Authentication', () => {
     test('AI-REFINE-6: Should reject missing auth token (401)', async () => {
-      await request(app)
-        .post('/api/ai/reference/refine')
-        .send(validPayload)
-        .expect(401);
+      await request(app).post('/api/ai/reference/refine').send(validPayload).expect(401);
     });
 
     test('AI-REFINE-7: Should reject invalid auth token (401)', async () => {
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: null },
-        error: { message: 'Invalid token' }
-      });
+      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserError('Invalid token'));
 
       await request(app)
         .post('/api/ai/reference/refine')
@@ -239,13 +248,13 @@ describe('AI Reference Refinement Controller', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('refined');
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith(validAuthToken);
     });
   });
 
-  // ============================================================================
-  // POST /api/ai/reference/refine - OpenAI Integration Tests
-  // ============================================================================
-
+  // ===========================================================================
+  // POST /api/ai/reference/refine - OpenAI Integration
+  // ===========================================================================
   describe('POST /api/ai/reference/refine - OpenAI Integration', () => {
     test('AI-REFINE-9: Should call OpenAI with correct parameters', async () => {
       await request(app)
@@ -389,7 +398,6 @@ describe('AI Reference Refinement Controller', () => {
           {
             message: {
               content: JSON.stringify({
-                // Missing 'refined' field
                 flags: []
               })
             }
@@ -408,10 +416,9 @@ describe('AI Reference Refinement Controller', () => {
     });
   });
 
-  // ============================================================================
-  // POST /api/ai/reference/refine - Experience Context Tests
-  // ============================================================================
-
+  // ===========================================================================
+  // POST /api/ai/reference/refine - Experience Context
+  // ===========================================================================
   describe('POST /api/ai/reference/refine - Experience Context', () => {
     test('AI-REFINE-18: Should include experience context in user message', async () => {
       await request(app)
@@ -465,10 +472,9 @@ describe('AI Reference Refinement Controller', () => {
     });
   });
 
-  // ============================================================================
-  // Security & Safety Tests
-  // ============================================================================
-
+  // ===========================================================================
+  // Security
+  // ===========================================================================
   describe('POST /api/ai/reference/refine - Security', () => {
     test('AI-REFINE-21: Should not expose OpenAI API key in responses', async () => {
       const response = await request(app)

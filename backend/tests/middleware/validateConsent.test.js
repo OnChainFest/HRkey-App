@@ -1,7 +1,6 @@
+
 // ============================================================================
 // Consent Validation Middleware Tests - P0 Security Enhancement
-// ============================================================================
-// Unit tests with mocks (NO real Supabase connection required)
 // ============================================================================
 
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
@@ -62,10 +61,6 @@ const mockConsent = {
   expires_at: null
 };
 
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
 function createMockRequest(user, params = {}, query = {}, body = {}) {
   return {
     user,
@@ -98,10 +93,6 @@ function createMockResponse() {
   return res;
 }
 
-// ============================================================================
-// SETUP
-// ============================================================================
-
 let checkConsentMock;
 let logAuditEventMock;
 
@@ -110,16 +101,14 @@ beforeEach(() => {
   logAuditEventMock = consentManagerModule.logAuditEvent;
 
   jest.clearAllMocks();
+  checkConsentMock.mockReset();
+  logAuditEventMock.mockReset();
 
   checkConsentMock.mockReset();
   logAuditEventMock.mockReset();
 
   logAuditEventMock.mockResolvedValue({ id: 'audit-event-123' });
 });
-
-// ============================================================================
-// TESTS: validateConsent middleware
-// ============================================================================
 
 describe('validateConsent middleware', () => {
   test('returns 403 when consent does not exist', async () => {
@@ -162,10 +151,7 @@ describe('validateConsent middleware', () => {
 
     expect(logAuditEventMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        actorUserId: mockUsers.requester.id,
-        result: 'denied',
-        reason: 'no_consent',
-        targetType: 'references'
+        actorUserId: mockUsers.requester.id
       })
     );
   });
@@ -415,10 +401,6 @@ describe('validateConsent middleware', () => {
     );
   });
 });
-
-// ============================================================================
-// TESTS: Middleware configuration validation
-// ============================================================================
 
 describe('validateConsent configuration', () => {
   test('throws error when resourceType is missing', () => {

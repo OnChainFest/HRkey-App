@@ -3,7 +3,7 @@
  * Focuses on authentication, payload validation, and data visibility.
  */
 
-import { jest } from '@jest/globals';
+import { jest, afterAll } from '@jest/globals';
 import request from 'supertest';
 import {
   createMockSupabaseClient,
@@ -77,6 +77,7 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
   auditMiddleware: () => (req, res, next) => next()
 }));
 
+const authMiddleware = await import('../../middleware/auth.js');
 const { default: app } = await import('../../server.js');
 
 describe('KPI Observations Controller - Permission Tests', () => {
@@ -84,6 +85,12 @@ describe('KPI Observations Controller - Permission Tests', () => {
     jest.clearAllMocks();
     mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
     resetQueryBuilderMocks(mockQueryBuilder);
+    authMiddleware.__setSupabaseClientForTests(mockSupabaseClient);
+    mockSupabaseClient.auth.getUser.mockReset();
+  });
+
+  afterAll(() => {
+    authMiddleware.__resetSupabaseClientForTests();
   });
 
   describe('POST /api/kpi-observations', () => {
@@ -96,11 +103,7 @@ describe('KPI Observations Controller - Permission Tests', () => {
       const inserted = [{ id: 'obs-1', kpi_name: 'quality', rating_value: 5 }];
 
       const usersTable = buildTableMock({
-        singleResponses: [
-          mockDatabaseSuccess(user),
-          mockDatabaseSuccess(user),
-          mockDatabaseSuccess(user)
-        ]
+        singleResponses: [mockDatabaseSuccess(user), mockDatabaseSuccess(user), mockDatabaseSuccess(user)]
       });
       const maybeUserLookup = buildTableMock({ maybeSingleResponses: [{ data: null, error: null }] });
       const observationsTable = buildTableMock({ selectResponse: mockDatabaseSuccess(inserted) });
@@ -135,10 +138,7 @@ describe('KPI Observations Controller - Permission Tests', () => {
     });
 
     test('PERM-K2: unauthenticated creation returns 401', async () => {
-      await request(app)
-        .post('/api/kpi-observations')
-        .send({ kpi_name: 'quality', rating_value: 5 })
-        .expect(401);
+      await request(app).post('/api/kpi-observations').send({ kpi_name: 'quality', rating_value: 5 }).expect(401);
     });
 
     test('PERM-K3: invalid KPI payload returns 400', async () => {
@@ -147,11 +147,7 @@ describe('KPI Observations Controller - Permission Tests', () => {
       configureTableMocks({ users: usersTable });
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(user.id, user.email));
 
-      await request(app)
-        .post('/api/kpi-observations')
-        .set('Authorization', 'Bearer valid-token')
-        .send({})
-        .expect(400);
+      await request(app).post('/api/kpi-observations').set('Authorization', 'Bearer valid-token').send({}).expect(400);
     });
   });
 
@@ -182,9 +178,7 @@ describe('KPI Observations Controller - Permission Tests', () => {
 
     test('PERM-K5: observations are filtered to the authenticated user', async () => {
       const user = mockUserData({ id: 'kpi-user-4' });
-      const observations = [
-        { id: 'obs-a', subject_user_id: user.id, kpi_name: 'quality', rating_value: 5 }
-      ];
+      const observations = [{ id: 'obs-a', subject_user_id: user.id, kpi_name: 'quality', rating_value: 5 }];
 
       const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
       const observationsTable = buildTableMock({
@@ -207,9 +201,7 @@ describe('KPI Observations Controller - Permission Tests', () => {
   describe('GET /api/kpi-observations/summary', () => {
     test('PERM-K4 (summary extension): authenticated user can query KPI summary', async () => {
       const user = mockUserData({ id: 'kpi-user-5', wallet_address: 'wallet-user-a' });
-      const summary = [
-        { subject_wallet: 'wallet-user-a', kpi_name: 'quality', observation_count: 2, avg_rating: 4.5 }
-      ];
+      const summary = [{ subject_wallet: 'wallet-user-a', kpi_name: 'quality', observation_count: 2, avg_rating: 4.5 }];
 
       const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
       const summaryTable = buildTableMock({
