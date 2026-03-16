@@ -15,21 +15,17 @@ const mockGetAllAuditLogs = jest.fn();
 const mockGetUserAuditLogs = jest.fn();
 const mockGetCompanyAuditLogs = jest.fn();
 
-const auditLoggerModulePath = new URL('../../utils/auditLogger.js', import.meta.url).href;
-const loggerModulePath = new URL('../../logger.js', import.meta.url).href;
-const controllerModulePath = new URL('../../controllers/auditController.js', import.meta.url).href;
-
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
 }));
 
-jest.unstable_mockModule(auditLoggerModulePath, () => ({
+jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
   getAllAuditLogs: mockGetAllAuditLogs,
   getUserAuditLogs: mockGetUserAuditLogs,
   getCompanyAuditLogs: mockGetCompanyAuditLogs
 }));
 
-jest.unstable_mockModule(loggerModulePath, () => ({
+jest.unstable_mockModule('../../logger.js', () => ({
   default: {
     error: jest.fn(),
     warn: jest.fn(),
@@ -44,7 +40,7 @@ jest.unstable_mockModule(loggerModulePath, () => ({
   }
 }));
 
-const { getAuditLogs, getRecentActivity } = await import(controllerModulePath);
+const { getAuditLogs, getRecentActivity } = await import('../../controllers/auditController.js');
 
 function createRes() {
   return {
@@ -65,6 +61,10 @@ function createReq(overrides = {}) {
   };
 }
 
+/**
+ * For controller path:
+ * client.from('company_signers').select(...).eq(...).eq(...).eq(...).single()
+ */
 function makeCompanySignerSingleBuilder({ data = null, error = null } = {}) {
   return {
     select: jest.fn().mockReturnThis(),
@@ -73,15 +73,28 @@ function makeCompanySignerSingleBuilder({ data = null, error = null } = {}) {
   };
 }
 
+/**
+ * For controller path:
+ * await client.from('company_signers').select(...).eq(...).eq(...)
+ * The second eq resolves the final payload.
+ */
 function makeCompanySignerListBuilder({ data = [], error = null } = {}) {
-  return {
+  const builder = {
     select: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    then: (resolve, reject) =>
-      Promise.resolve({ data, error }).then(resolve, reject)
+    eq: jest.fn()
   };
+
+  builder.eq
+    .mockImplementationOnce(() => builder)
+    .mockImplementationOnce(() => Promise.resolve({ data, error }));
+
+  return builder;
 }
 
+/**
+ * For controller path:
+ * client.from('audit_logs').select(...).in(...).order(...).limit(10)
+ */
 function makeAuditLogsBuilder({ data = [], error = null } = {}) {
   return {
     select: jest.fn().mockReturnThis(),
@@ -177,10 +190,7 @@ describe('Audit Log Controller - Permission Tests', () => {
 
       mockSupabaseClient.from.mockImplementation((table) => {
         if (table === 'company_signers') {
-          return makeCompanySignerSingleBuilder({
-            data: { id: 'cs-1' },
-            error: null
-          });
+          return makeCompanySignerSingleBuilder({ data: { id: 'cs-1' }, error: null });
         }
         throw new Error(`Unexpected table: ${table}`);
       });
@@ -212,10 +222,7 @@ describe('Audit Log Controller - Permission Tests', () => {
 
       mockSupabaseClient.from.mockImplementation((table) => {
         if (table === 'company_signers') {
-          return makeCompanySignerSingleBuilder({
-            data: null,
-            error: null
-          });
+          return makeCompanySignerSingleBuilder({ data: null, error: null });
         }
         throw new Error(`Unexpected table: ${table}`);
       });
