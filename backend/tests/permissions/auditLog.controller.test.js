@@ -61,27 +61,29 @@ function createReq(overrides = {}) {
   };
 }
 
+/**
+ * For:
+ * client.from('company_signers').select(...).eq(...).eq(...).eq(...).single()
+ */
 function makeCompanySignerSingleBuilder({ data = null, error = null } = {}) {
-  const builder = {
-    select: jest.fn(),
-    eq: jest.fn(),
-    single: jest.fn()
+  return {
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    single: jest.fn().mockResolvedValue({ data, error })
   };
-
-  builder.select.mockReturnValue(builder);
-  builder.eq.mockReturnValue(builder);
-  builder.single.mockResolvedValue({ data, error });
-
-  return builder;
 }
 
+/**
+ * For:
+ * await client.from('company_signers').select(...).eq(...).eq(...)
+ * The second eq resolves the awaited result.
+ */
 function makeCompanySignerListBuilder({ data = [], error = null } = {}) {
   const builder = {
-    select: jest.fn(),
+    select: jest.fn().mockReturnThis(),
     eq: jest.fn()
   };
 
-  builder.select.mockReturnValue(builder);
   builder.eq
     .mockImplementationOnce(() => builder)
     .mockImplementationOnce(() => Promise.resolve({ data, error }));
@@ -89,28 +91,25 @@ function makeCompanySignerListBuilder({ data = [], error = null } = {}) {
   return builder;
 }
 
+/**
+ * For:
+ * client.from('audit_logs').select(...).in(...).order(...).limit(10)
+ */
 function makeAuditLogsBuilder({ data = [], error = null } = {}) {
-  const builder = {
-    select: jest.fn(),
-    in: jest.fn(),
-    order: jest.fn(),
-    limit: jest.fn()
+  return {
+    select: jest.fn().mockReturnThis(),
+    in: jest.fn().mockReturnThis(),
+    order: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockResolvedValue({ data, error })
   };
-
-  builder.select.mockReturnValue(builder);
-  builder.in.mockReturnValue(builder);
-  builder.order.mockReturnValue(builder);
-  builder.limit.mockResolvedValue({ data, error });
-
-  return builder;
 }
 
 describe('Audit Log Controller - Permission Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    mockSupabaseClient.from.mockImplementation((table) => {
-      throw new Error(`Unexpected table access: ${table}`);
+    mockSupabaseClient.from.mockImplementation(() => {
+      throw new Error('Unexpected table access in test');
     });
   });
 
@@ -189,16 +188,11 @@ describe('Audit Log Controller - Permission Tests', () => {
       });
       const res = createRes();
 
-      const companySignersBuilder = makeCompanySignerSingleBuilder({
-        data: { id: 'cs-1' },
-        error: null
-      });
-
       mockSupabaseClient.from.mockImplementation((table) => {
         if (table === 'company_signers') {
-          return companySignersBuilder;
+          return makeCompanySignerSingleBuilder({ data: { id: 'cs-1' }, error: null });
         }
-        throw new Error(`Unexpected table access: ${table}`);
+        throw new Error(`Unexpected table: ${table}`);
       });
 
       mockGetCompanyAuditLogs.mockResolvedValue([
@@ -226,16 +220,11 @@ describe('Audit Log Controller - Permission Tests', () => {
       });
       const res = createRes();
 
-      const companySignersBuilder = makeCompanySignerSingleBuilder({
-        data: null,
-        error: null
-      });
-
       mockSupabaseClient.from.mockImplementation((table) => {
         if (table === 'company_signers') {
-          return companySignersBuilder;
+          return makeCompanySignerSingleBuilder({ data: null, error: null });
         }
-        throw new Error(`Unexpected table access: ${table}`);
+        throw new Error(`Unexpected table: ${table}`);
       });
 
       await getAuditLogs(req, res);
@@ -259,24 +248,22 @@ describe('Audit Log Controller - Permission Tests', () => {
       const req = createReq({ user });
       const res = createRes();
 
-      const companySignersBuilder = makeCompanySignerListBuilder({
-        data: [{ company_id: 'company-2' }],
-        error: null
-      });
-
-      const auditLogsBuilder = makeAuditLogsBuilder({
-        data: [{ id: 'log-recent', company_id: 'company-2' }],
-        error: null
-      });
-
       mockSupabaseClient.from.mockImplementation((table) => {
         if (table === 'company_signers') {
-          return companySignersBuilder;
+          return makeCompanySignerListBuilder({
+            data: [{ company_id: 'company-2' }],
+            error: null
+          });
         }
+
         if (table === 'audit_logs') {
-          return auditLogsBuilder;
+          return makeAuditLogsBuilder({
+            data: [{ id: 'log-recent', company_id: 'company-2' }],
+            error: null
+          });
         }
-        throw new Error(`Unexpected table access: ${table}`);
+
+        throw new Error(`Unexpected table: ${table}`);
       });
 
       await getRecentActivity(req, res);
@@ -293,16 +280,15 @@ describe('Audit Log Controller - Permission Tests', () => {
       const req = createReq({ user });
       const res = createRes();
 
-      const companySignersBuilder = makeCompanySignerListBuilder({
-        data: [],
-        error: null
-      });
-
       mockSupabaseClient.from.mockImplementation((table) => {
         if (table === 'company_signers') {
-          return companySignersBuilder;
+          return makeCompanySignerListBuilder({
+            data: [],
+            error: null
+          });
         }
-        throw new Error(`Unexpected table access: ${table}`);
+
+        throw new Error(`Unexpected table: ${table}`);
       });
 
       await getRecentActivity(req, res);
