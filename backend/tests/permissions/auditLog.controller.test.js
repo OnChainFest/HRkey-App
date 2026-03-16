@@ -15,17 +15,22 @@ const mockGetAllAuditLogs = jest.fn();
 const mockGetUserAuditLogs = jest.fn();
 const mockGetCompanyAuditLogs = jest.fn();
 
-jest.unstable_mockModule('@supabase/supabase-js', () => ({
+const supabaseModulePath = new URL('../../node_modules/@supabase/supabase-js/dist/module/index.js', import.meta.url).href;
+const auditLoggerModulePath = new URL('../../utils/auditLogger.js', import.meta.url).href;
+const loggerModulePath = new URL('../../logger.js', import.meta.url).href;
+const auditControllerModulePath = new URL('../../controllers/auditController.js', import.meta.url).href;
+
+jest.unstable_mockModule(supabaseModulePath, () => ({
   createClient: jest.fn(() => mockSupabaseClient)
 }));
 
-jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
+jest.unstable_mockModule(auditLoggerModulePath, () => ({
   getAllAuditLogs: mockGetAllAuditLogs,
   getUserAuditLogs: mockGetUserAuditLogs,
   getCompanyAuditLogs: mockGetCompanyAuditLogs
 }));
 
-jest.unstable_mockModule('../../logger.js', () => ({
+jest.unstable_mockModule(loggerModulePath, () => ({
   default: {
     error: jest.fn(),
     warn: jest.fn(),
@@ -40,7 +45,7 @@ jest.unstable_mockModule('../../logger.js', () => ({
   }
 }));
 
-const { getAuditLogs, getRecentActivity } = await import('../../controllers/auditController.js');
+const { getAuditLogs, getRecentActivity } = await import(auditControllerModulePath);
 
 function createRes() {
   return {
@@ -61,10 +66,6 @@ function createReq(overrides = {}) {
   };
 }
 
-/**
- * For:
- * client.from('company_signers').select(...).eq(...).eq(...).eq(...).single()
- */
 function makeCompanySignerSingleBuilder({ data = null, error = null } = {}) {
   return {
     select: jest.fn().mockReturnThis(),
@@ -73,28 +74,14 @@ function makeCompanySignerSingleBuilder({ data = null, error = null } = {}) {
   };
 }
 
-/**
- * For:
- * await client.from('company_signers').select(...).eq(...).eq(...)
- * The second eq resolves the awaited result.
- */
 function makeCompanySignerListBuilder({ data = [], error = null } = {}) {
-  const builder = {
+  return {
     select: jest.fn().mockReturnThis(),
-    eq: jest.fn()
+    eq: jest.fn().mockReturnThis(),
+    then: (resolve) => Promise.resolve(resolve({ data, error }))
   };
-
-  builder.eq
-    .mockImplementationOnce(() => builder)
-    .mockImplementationOnce(() => Promise.resolve({ data, error }));
-
-  return builder;
 }
 
-/**
- * For:
- * client.from('audit_logs').select(...).in(...).order(...).limit(10)
- */
 function makeAuditLogsBuilder({ data = [], error = null } = {}) {
   return {
     select: jest.fn().mockReturnThis(),
