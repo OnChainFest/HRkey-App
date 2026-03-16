@@ -317,10 +317,6 @@ export async function getRecentActivity(req, res) {
   }
 }
 
-// ============================================================================
-// EXPORT CONTROLLER METHODS
-// ============================================================================
-
 export default {
   getAuditLogs,
   getRecentActivity
