@@ -15,24 +15,21 @@ const mockGetAllAuditLogs = jest.fn();
 const mockGetUserAuditLogs = jest.fn();
 const mockGetCompanyAuditLogs = jest.fn();
 
-// IMPORTANT:
-// Use absolute file URLs for local modules so Jest does NOT try to resolve
-// them relative to tests/jest.setup.js.
-const auditLoggerPath = new URL('../../utils/auditLogger.js', import.meta.url).href;
-const loggerPath = new URL('../../logger.js', import.meta.url).href;
-const controllerPath = new URL('../../controllers/auditController.js', import.meta.url).href;
+const auditLoggerModulePath = new URL('../../utils/auditLogger.js', import.meta.url).href;
+const loggerModulePath = new URL('../../logger.js', import.meta.url).href;
+const controllerModulePath = new URL('../../controllers/auditController.js', import.meta.url).href;
 
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
 }));
 
-jest.unstable_mockModule(auditLoggerPath, () => ({
+jest.unstable_mockModule(auditLoggerModulePath, () => ({
   getAllAuditLogs: mockGetAllAuditLogs,
   getUserAuditLogs: mockGetUserAuditLogs,
   getCompanyAuditLogs: mockGetCompanyAuditLogs
 }));
 
-jest.unstable_mockModule(loggerPath, () => ({
+jest.unstable_mockModule(loggerModulePath, () => ({
   default: {
     error: jest.fn(),
     warn: jest.fn(),
@@ -47,7 +44,7 @@ jest.unstable_mockModule(loggerPath, () => ({
   }
 }));
 
-const { getAuditLogs, getRecentActivity } = await import(controllerPath);
+const { getAuditLogs, getRecentActivity } = await import(controllerModulePath);
 
 function createRes() {
   return {
@@ -77,14 +74,12 @@ function makeCompanySignerSingleBuilder({ data = null, error = null } = {}) {
 }
 
 function makeCompanySignerListBuilder({ data = [], error = null } = {}) {
-  const builder = {
+  return {
     select: jest.fn().mockReturnThis(),
     eq: jest.fn().mockReturnThis(),
     then: (resolve, reject) =>
       Promise.resolve({ data, error }).then(resolve, reject)
   };
-
-  return builder;
 }
 
 function makeAuditLogsBuilder({ data = [], error = null } = {}) {
