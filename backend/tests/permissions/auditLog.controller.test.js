@@ -61,10 +61,6 @@ function createReq(overrides = {}) {
   };
 }
 
-/**
- * For controller path:
- * client.from('company_signers').select(...).eq(...).eq(...).eq(...).single()
- */
 function makeCompanySignerSingleBuilder({ data = null, error = null } = {}) {
   return {
     select: jest.fn().mockReturnThis(),
@@ -73,11 +69,6 @@ function makeCompanySignerSingleBuilder({ data = null, error = null } = {}) {
   };
 }
 
-/**
- * For controller path:
- * await client.from('company_signers').select(...).eq(...).eq(...)
- * The second eq resolves the final payload.
- */
 function makeCompanySignerListBuilder({ data = [], error = null } = {}) {
   const builder = {
     select: jest.fn().mockReturnThis(),
@@ -91,10 +82,6 @@ function makeCompanySignerListBuilder({ data = [], error = null } = {}) {
   return builder;
 }
 
-/**
- * For controller path:
- * client.from('audit_logs').select(...).in(...).order(...).limit(10)
- */
 function makeAuditLogsBuilder({ data = [], error = null } = {}) {
   return {
     select: jest.fn().mockReturnThis(),
