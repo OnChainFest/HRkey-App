@@ -1,5 +1,5 @@
 /**
- * Wallet & Reference Controller Permission Tests (PERM-L1..PERM-L7)
+ * Wallet & Reference Controller Permission Tests (PERM-L1..PERM-L8)
  * Documents permission enforcement and known gaps.
  */
 
@@ -15,29 +15,69 @@ import {
 } from '../__mocks__/supabase.mock.js';
 
 const mockSupabaseClient = createMockSupabaseClient();
-mockSupabaseClient.auth.admin = {
-  getUserById: jest.fn().mockResolvedValue({ data: { user: { email: 'requester@example.com' } }, error: null })
-};
-const mockQueryBuilder = mockSupabaseClient.from();
+
+const mockCreateClient = jest.fn(() => mockSupabaseClient);
 const mockCreateRandom = jest.fn(() => ({ address: '0xWALLET', privateKey: '0xPRIVATE' }));
 
-function buildTableMock({ singleResponses = [], maybeSingleResponses = [] } = {}) {
+mockSupabaseClient.auth.admin = {
+  getUserById: jest
+    .fn()
+    .mockResolvedValue({ data: { user: { email: 'requester@example.com' } }, error: null })
+};
+
+const mockQueryBuilder = mockSupabaseClient.from();
+
+function buildTableMock({
+  singleResponses = [],
+  maybeSingleResponses = [],
+  selectResponses = []
+} = {}) {
+  let lastWriteOp = null;
+
   const builder = {
-    select: jest.fn().mockReturnThis(),
-    insert: jest.fn().mockReturnThis(),
-    update: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
+    select: jest.fn(),
+    insert: jest.fn(),
+    update: jest.fn(),
+    eq: jest.fn(),
     maybeSingle: jest.fn(),
     single: jest.fn()
   };
 
-  builder.single.mockImplementation(() =>
-    Promise.resolve(singleResponses.length ? singleResponses.shift() : mockDatabaseSuccess({}))
-  );
+  builder.insert.mockImplementation(() => {
+    lastWriteOp = 'insert';
+    return builder;
+  });
 
-  builder.maybeSingle.mockImplementation(() =>
-    Promise.resolve(maybeSingleResponses.length ? maybeSingleResponses.shift() : { data: null, error: null })
-  );
+  builder.update.mockImplementation(() => {
+    lastWriteOp = 'update';
+    return builder;
+  });
+
+  builder.eq.mockImplementation(() => builder);
+
+  builder.select.mockImplementation(() => {
+    if (lastWriteOp === 'update' && selectResponses.length > 0) {
+      const next = selectResponses.shift();
+      lastWriteOp = null;
+      return Promise.resolve(next);
+    }
+
+    return builder;
+  });
+
+  builder.single.mockImplementation(() => {
+    lastWriteOp = null;
+    return Promise.resolve(
+      singleResponses.length ? singleResponses.shift() : mockDatabaseSuccess({})
+    );
+  });
+
+  builder.maybeSingle.mockImplementation(() => {
+    lastWriteOp = null;
+    return Promise.resolve(
+      maybeSingleResponses.length ? maybeSingleResponses.shift() : { data: null, error: null }
+    );
+  });
 
   return builder;
 }
@@ -47,7 +87,7 @@ function configureTableMocks(tableMocks) {
 }
 
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
-  createClient: jest.fn(() => mockSupabaseClient)
+  createClient: mockCreateClient
 }));
 
 jest.unstable_mockModule('../../utils/emailService.js', () => ({
@@ -97,9 +137,30 @@ const { default: app } = await import('../../server.js');
 describe('Wallet & Reference - Permission Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    mockCreateClient.mockImplementation(() => mockSupabaseClient);
+
     mockCreateRandom.mockReturnValue({ address: '0xWALLET', privateKey: '0xPRIVATE' });
-    global.fetch = jest.fn(() => Promise.resolve({ ok: true, status: 200, json: async () => ({}) }));
-    mockSupabaseClient.auth.admin.getUserById.mockResolvedValue({ data: { user: { email: 'requester@example.com' } }, error: null });
+
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({})
+      })
+    );
+
+    mockSupabaseClient.auth.getUser = jest.fn().mockResolvedValue({
+      data: { user: null },
+      error: new Error('No auth token provided')
+    });
+
+    mockSupabaseClient.auth.admin = {
+      getUserById: jest
+        .fn()
+        .mockResolvedValue({ data: { user: { email: 'requester@example.com' } }, error: null })
+    };
+
     mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
     resetQueryBuilderMocks(mockQueryBuilder);
   });
@@ -122,14 +183,11 @@ describe('Wallet & Reference - Permission Tests', () => {
         .set('Authorization', 'Bearer valid-token')
         .send({ userId: user.id, email: user.email });
 
-      // Debug any unexpected failures
       if (response.status !== 200) {
-        // eslint-disable-next-line no-console
         console.log('Wallet create response', response.status, response.body);
       }
 
       expect(response.status).toBe(200);
-
       expect(response.body.success).toBe(true);
       expect(response.body.wallet.address).toBe('0xWALLET');
     });
@@ -169,7 +227,7 @@ describe('Wallet & Reference - Permission Tests', () => {
       expect(response.body.error).toBe('Authentication required');
     });
 
-    test('PERM-L4b: authenticated user cannot read another user\'s wallet (403)', async () => {
+    test("PERM-L4b: authenticated user cannot read another user's wallet (403)", async () => {
       const authedUser = mockUserData({ id: 'user-owner-1', email: 'owner@example.com' });
       const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(authedUser)] });
       configureTableMocks({ users: usersTable });
@@ -202,7 +260,7 @@ describe('Wallet & Reference - Permission Tests', () => {
       expect(response.body.wallet.address).toBe('0xSELF');
     });
 
-    test('PERM-L4d: superadmin can read another user\'s wallet', async () => {
+    test("PERM-L4d: superadmin can read another user's wallet", async () => {
       const authedUser = mockUserData({ id: 'superadmin-1', email: 'super@example.com', role: 'superadmin' });
       const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(authedUser)] });
       const userWalletsTable = buildTableMock({ singleResponses: [mockDatabaseSuccess({ address: '0xADMIN' })] });
@@ -235,12 +293,10 @@ describe('Wallet & Reference - Permission Tests', () => {
         .send({ userId: user.id, email: 'referee@example.com', name: 'Ref User' });
 
       if (response.status !== 200) {
-        // eslint-disable-next-line no-console
         console.log('Reference request response', response.status, response.body);
       }
 
       expect(response.status).toBe(200);
-
       expect(response.body.success).toBe(true);
     });
 
@@ -248,6 +304,7 @@ describe('Wallet & Reference - Permission Tests', () => {
       const user = mockUserData({ id: '660e8400-e29b-41d4-a716-446655440020' });
       const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
       configureTableMocks({ users: usersTable });
+
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(user.id));
 
       const response = await request(app)
@@ -273,22 +330,34 @@ describe('Wallet & Reference - Permission Tests', () => {
             status: 'pending',
             expires_at: '2099-01-01T00:00:00Z'
           })
+        ],
+        selectResponses: [
+          { data: [{ id: 'invite-1', status: 'processing' }], error: null }
         ]
       });
-      const referencesTable = buildTableMock({ singleResponses: [mockDatabaseSuccess({ id: 'reference-1' })] });
-      configureTableMocks({ reference_invites: invitesTable, references: referencesTable });
+
+      const referencesTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess({ id: 'reference-1' })]
+      });
+
+      configureTableMocks({
+        reference_invites: invitesTable,
+        references: referencesTable
+      });
 
       const response = await request(app)
         .post('/api/reference/submit')
-        .send({ token: 'a'.repeat(32), ratings: { professionalism: 5 }, comments: { recommendation: 'Great' } });
+        .send({
+          token: 'a'.repeat(32),
+          ratings: { professionalism: 5 },
+          comments: { recommendation: 'Great' }
+        });
 
       if (response.status !== 200) {
-        // eslint-disable-next-line no-console
         console.log('Reference submit response', response.status, response.body, response.text);
       }
 
       expect(response.status).toBe(200);
-
       expect(response.body.success).toBe(true);
     });
   });
