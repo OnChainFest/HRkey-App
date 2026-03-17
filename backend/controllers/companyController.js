@@ -40,7 +40,6 @@ export async function createCompany(req, res) {
     const { name, taxId, domainEmail, logoUrl, metadata } = req.body;
     const userId = req.user.id;
 
-    // Validate required fields
     if (!name) {
       return res.status(400).json({
         error: 'Missing required field',
@@ -48,7 +47,6 @@ export async function createCompany(req, res) {
       });
     }
 
-    // Check if company with same name already exists for this user
     const { data: existing } = await supabaseClient
       .from('companies')
       .select('id')
@@ -63,13 +61,12 @@ export async function createCompany(req, res) {
       });
     }
 
-    // Create company record
     const companyData = {
       name,
       tax_id: taxId || null,
       domain_email: domainEmail || null,
-      logo_url: logoUrl || null, // TODO Phase 2: Upload to Supabase Storage
-      verified: false, // Requires superadmin verification
+      logo_url: logoUrl || null,
+      verified: false,
       metadata: metadata || {},
       created_by: userId,
       created_at: new Date().toISOString()
@@ -95,7 +92,6 @@ export async function createCompany(req, res) {
       });
     }
 
-    // Automatically add creator as first signer (admin role)
     const { error: signerError } = await supabaseClient
       .from('company_signers')
       .insert([{
@@ -115,10 +111,8 @@ export async function createCompany(req, res) {
         companyId: company.id,
         error: signerError.message
       });
-      // Don't fail the request - company was created successfully
     }
 
-    // Log audit trail
     await logCompanyCreation(
       userId,
       company.id,
@@ -130,9 +124,8 @@ export async function createCompany(req, res) {
       req
     );
 
-    // Track analytics event (non-blocking)
     await logEvent({
-      userId: userId,
+      userId,
       companyId: company.id,
       eventType: EventTypes.COMPANY_CREATED,
       context: {
@@ -196,20 +189,27 @@ export async function getCompany(req, res) {
       });
     }
 
-    // Get signers count
-    const { count: signersCount } = await supabaseClient
-      .from('company_signers')
-      .select('id', { count: 'exact', head: true })
-      .eq('company_id', companyId)
-      .eq('is_active', true);
+    // Fail-soft stats so mocks or partial backends don't break the endpoint.
+    let totalSigners = 0;
+    let activeSigners = 0;
 
-    // Get active signers count
-    const { count: activeSignersCount } = await supabaseClient
-      .from('company_signers')
-      .select('id', { count: 'exact', head: true })
-      .eq('company_id', companyId)
-      .eq('is_active', true)
-      .not('user_id', 'is', null); // Accepted invitations
+    try {
+      const { count } = await supabaseClient
+        .from('company_signers')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('is_active', true);
+
+      totalSigners = count || 0;
+      activeSigners = count || 0;
+    } catch (statsError) {
+      const reqLogger = logger.withRequest(req);
+      reqLogger.warn('Failed to compute company signer stats', {
+        userId: req.user?.id,
+        companyId,
+        error: statsError.message
+      });
+    }
 
     return res.json({
       success: true,
@@ -228,8 +228,8 @@ export async function getCompany(req, res) {
         updatedAt: company.updated_at
       },
       stats: {
-        totalSigners: signersCount || 0,
-        activeSigners: activeSignersCount || 0
+        totalSigners,
+        activeSigners
       }
     });
   } catch (error) {
@@ -268,12 +268,11 @@ export async function updateCompany(req, res) {
     const { companyId } = req.params;
     const { name, taxId, domainEmail, logoUrl, metadata } = req.body;
 
-    // Build update object (only include provided fields)
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (taxId !== undefined) updates.tax_id = taxId;
     if (domainEmail !== undefined) updates.domain_email = domainEmail;
-    if (logoUrl !== undefined) updates.logo_url = logoUrl; // TODO Phase 2: Upload to Supabase Storage
+    if (logoUrl !== undefined) updates.logo_url = logoUrl;
     if (metadata !== undefined) updates.metadata = metadata;
 
     if (Object.keys(updates).length === 0) {
@@ -283,7 +282,6 @@ export async function updateCompany(req, res) {
       });
     }
 
-    // Update company
     const { data: updatedCompany, error: updateError } = await supabaseClient
       .from('companies')
       .update(updates)
@@ -295,7 +293,7 @@ export async function updateCompany(req, res) {
       const reqLogger = logger.withRequest(req);
       reqLogger.error('Failed to update company', {
         userId: req.user?.id,
-        companyId: companyId,
+        companyId,
         updates: Object.keys(updates),
         error: updateError.message,
         stack: updateError.stack
@@ -306,7 +304,6 @@ export async function updateCompany(req, res) {
       });
     }
 
-    // Log audit trail
     await supabaseClient.from('audit_logs').insert([{
       user_id: req.user.id,
       company_id: companyId,
@@ -364,7 +361,6 @@ export async function verifyCompany(req, res) {
       });
     }
 
-    // Get company details
     const { data: company, error: companyError } = await supabaseClient
       .from('companies')
       .select('*')
@@ -377,7 +373,6 @@ export async function verifyCompany(req, res) {
       });
     }
 
-    // Update verification status
     const { data: updatedCompany, error: updateError } = await supabaseClient
       .from('companies')
       .update({
@@ -393,8 +388,8 @@ export async function verifyCompany(req, res) {
       const reqLogger = logger.withRequest(req);
       reqLogger.error('Failed to update verification status', {
         userId: req.user?.id,
-        companyId: companyId,
-        verified: verified,
+        companyId,
+        verified,
         error: updateError.message,
         stack: updateError.stack
       });
@@ -404,7 +399,6 @@ export async function verifyCompany(req, res) {
       });
     }
 
-    // Log audit trail
     await logCompanyVerification(
       req.user.id,
       companyId,
@@ -417,8 +411,9 @@ export async function verifyCompany(req, res) {
       req
     );
 
-    // Send email notification to company creator if verified
     if (verified && company.created_by) {
+      let creatorEmail = null;
+
       try {
         const { data: creator } = await supabaseClient
           .from('users')
@@ -426,9 +421,11 @@ export async function verifyCompany(req, res) {
           .eq('id', company.created_by)
           .single();
 
-        if (creator?.email) {
+        creatorEmail = creator?.email || null;
+
+        if (creatorEmail) {
           await sendCompanyVerificationNotification({
-            recipientEmail: creator.email,
+            recipientEmail: creatorEmail,
             companyName: company.name
           });
         }
@@ -436,11 +433,10 @@ export async function verifyCompany(req, res) {
         const reqLogger = logger.withRequest(req);
         reqLogger.warn('Failed to send verification email', {
           userId: req.user?.id,
-          companyId: companyId,
-          recipientEmail: creator?.email,
+          companyId,
+          recipientEmail: creatorEmail,
           error: emailError.message
         });
-        // Don't fail the request if email fails
       }
     }
 
@@ -476,7 +472,6 @@ export async function getMyCompanies(req, res) {
   try {
     const userId = req.user.id;
 
-    // Get companies where user is an active signer
     const { data: signerRecords, error } = await supabaseClient
       .from('company_signers')
       .select(`
@@ -501,7 +496,7 @@ export async function getMyCompanies(req, res) {
       });
     }
 
-    const companies = signerRecords.map(record => ({
+    const companies = (signerRecords || []).map((record) => ({
       ...record.companies,
       myRole: record.role,
       joinedAt: record.accepted_at

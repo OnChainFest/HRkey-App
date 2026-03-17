@@ -11,12 +11,13 @@ import {
 
 const mockSupabaseClient = createMockSupabaseClient();
 
+const mockCreateClient = jest.fn(() => mockSupabaseClient);
 const mockGetAllAuditLogs = jest.fn();
 const mockGetUserAuditLogs = jest.fn();
 const mockGetCompanyAuditLogs = jest.fn();
 
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
-  createClient: jest.fn(() => mockSupabaseClient)
+  createClient: mockCreateClient
 }));
 
 jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
@@ -61,34 +62,74 @@ function createReq(overrides = {}) {
   };
 }
 
+/**
+ * For controller path:
+ * client.from('company_signers').select(...).eq(...).eq(...).eq(...).single()
+ */
 function makeCompanySignerSingleBuilder({ data = null, error = null } = {}) {
+  const builder = {
+    select: jest.fn(),
+    eq: jest.fn(),
+    single: jest.fn()
+  };
+
+  builder.select.mockImplementation(() => builder);
+  builder.eq.mockImplementation(() => builder);
+  builder.single.mockResolvedValue({ data, error });
+
+const { getAuditLogs, getRecentActivity } = await import('../../controllers/auditController.js');
+
+function createRes() {
   return {
-    select: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    single: jest.fn().mockResolvedValue({ data, error })
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn().mockReturnThis()
   };
 }
 
+/**
+ * For controller path:
+ * await client.from('company_signers').select(...).eq(...).eq(...)
+ */
 function makeCompanySignerListBuilder({ data = [], error = null } = {}) {
   const builder = {
-    select: jest.fn().mockReturnThis(),
+    select: jest.fn(),
     eq: jest.fn()
   };
 
-  builder.eq
-    .mockImplementationOnce(() => builder)
-    .mockImplementationOnce(() => Promise.resolve({ data, error }));
+  builder.select.mockImplementation(() => builder);
+
+  let eqCallCount = 0;
+  builder.eq.mockImplementation(() => {
+    eqCallCount += 1;
+
+    if (eqCallCount < 2) {
+      return builder;
+    }
+
+    return Promise.resolve({ data, error });
+  });
 
   return builder;
 }
 
+/**
+ * For controller path:
+ * client.from('audit_logs').select(...).in(...).order(...).limit(10)
+ */
 function makeAuditLogsBuilder({ data = [], error = null } = {}) {
-  return {
-    select: jest.fn().mockReturnThis(),
-    in: jest.fn().mockReturnThis(),
-    order: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockResolvedValue({ data, error })
+  const builder = {
+    select: jest.fn(),
+    in: jest.fn(),
+    order: jest.fn(),
+    limit: jest.fn()
   };
+
+  builder.select.mockImplementation(() => builder);
+  builder.in.mockImplementation(() => builder);
+  builder.order.mockImplementation(() => builder);
+  builder.limit.mockResolvedValue({ data, error });
+
+  return builder;
 }
 
 describe('Audit Log Controller - Permission Tests', () => {
@@ -209,6 +250,12 @@ describe('Audit Log Controller - Permission Tests', () => {
 
       mockSupabaseClient.from.mockImplementation((table) => {
         if (table === 'company_signers') {
+          return makeCompanySignerSingleBuilder({
+            data: null,
+            error: null
+          });
+        }
+
           return makeCompanySignerSingleBuilder({ data: null, error: null });
         }
         throw new Error(`Unexpected table: ${table}`);

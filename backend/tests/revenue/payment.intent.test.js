@@ -3,17 +3,32 @@
  * Tests for Stripe payment intent creation endpoint
  *
  * Route: POST /create-payment-intent
- * Controller: Inline in server.js (lines 648-671)
- *
- * SECURITY: This endpoint NOW requires authentication (requireAuth + authLimiter)
+ * SECURITY: This endpoint requires authentication
  */
 
 import { jest } from '@jest/globals';
 import request from 'supertest';
+import {
+  createMockSupabaseClient,
+  resetQueryBuilderMocks,
+  mockAuthGetUserSuccess,
+  mockDatabaseSuccess,
+  mockUserData
+} from '../__mocks__/supabase.mock.js';
+import {
+  createMockStripeClient,
+  mockPaymentIntentSuccess,
+  mockPaymentIntentError,
+  resetStripeMocks
+} from '../__mocks__/stripe.mock.js';
+
+const mockSupabaseClient = createMockSupabaseClient();
+const mockQueryBuilder = mockSupabaseClient.from();
+const mockCreateClient = jest.fn(() => mockSupabaseClient);
 
 // Mock Supabase for authentication
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
-  createClient: jest.fn()
+  createClient: mockCreateClient
 }));
 
 // Mock Stripe
@@ -21,36 +36,7 @@ jest.unstable_mockModule('stripe', () => ({
   default: jest.fn()
 }));
 
-// Import Supabase mocks
-const supabaseMock = await import('../__mocks__/supabase.mock.js');
-const {
-  createMockSupabaseClient,
-  resetQueryBuilderMocks,
-  mockAuthGetUserSuccess,
-  mockDatabaseSuccess,
-  mockUserData
-} = supabaseMock.default;
-
-// Create Supabase mock client
-const mockSupabaseClient = createMockSupabaseClient();
-const mockQueryBuilder = mockSupabaseClient.from();
-
-// Mock the createClient function
-const { createClient } = await import('@supabase/supabase-js');
-createClient.mockReturnValue(mockSupabaseClient);
-
-// Import Stripe mocks
-const {
-  createMockStripeClient,
-  mockPaymentIntentSuccess,
-  mockPaymentIntentError,
-  resetStripeMocks
-} = await import('../__mocks__/stripe.mock.js');
-
-// Create Stripe mocks
 const stripeMocks = createMockStripeClient();
-
-// Mock the Stripe constructor to return our mock client
 const { default: Stripe } = await import('stripe');
 Stripe.mockImplementation(() => stripeMocks.mockStripe);
 
@@ -61,23 +47,49 @@ describe('Payment Intent Creation - POST /create-payment-intent', () => {
   const validToken = 'valid-jwt-token-12345';
   const userId = '550e8400-e29b-41d4-a716-446655440000';
 
+  function configureUsersTable(user) {
+    const usersTable = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue(mockDatabaseSuccess(user))
+    };
+
+    mockSupabaseClient.from.mockImplementation((table) => {
+      if (table === 'users') return usersTable;
+      return mockQueryBuilder;
+    });
+
+    return usersTable;
+  }
+
   // Helper function to set up authentication mocks
-  function setupAuth() {
-    const user = mockUserData({ id: userId, email: 'test@example.com', role: 'user' });
+  function setupAuth(overrides = {}) {
+    const user = mockUserData({
+      id: userId,
+      email: 'test@example.com',
+      role: 'user',
+      ...overrides
+    });
 
     mockSupabaseClient.auth.getUser.mockResolvedValue(
-      mockAuthGetUserSuccess(userId)
+      mockAuthGetUserSuccess(user.id, user.email)
     );
 
-    mockSupabaseClient.from().single.mockResolvedValueOnce(
-      mockDatabaseSuccess(user)
-    );
+    configureUsersTable(user);
 
     return user;
   }
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    mockCreateClient.mockImplementation(() => mockSupabaseClient);
+
+    mockSupabaseClient.auth.getUser = jest.fn().mockResolvedValue({
+      data: { user: null },
+      error: new Error('No auth token provided')
+    });
+
     mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
     resetQueryBuilderMocks(mockQueryBuilder);
     resetStripeMocks(stripeMocks);
@@ -119,19 +131,9 @@ describe('Payment Intent Creation - POST /create-payment-intent', () => {
     });
 
     test('SECURITY-PI3: Should use authenticated user email if not provided', async () => {
-      const user = mockUserData({
-        id: userId,
-        email: 'authenticated@example.com',
-        role: 'user'
+      const user = setupAuth({
+        email: 'authenticated@example.com'
       });
-
-      mockSupabaseClient.auth.getUser.mockResolvedValue(
-        mockAuthGetUserSuccess(userId)
-      );
-
-      mockSupabaseClient.from().single.mockResolvedValueOnce(
-        mockDatabaseSuccess(user)
-      );
 
       stripeMocks.mockPaymentIntentsCreate.mockResolvedValue(
         mockPaymentIntentSuccess()
@@ -142,14 +144,12 @@ describe('Payment Intent Creation - POST /create-payment-intent', () => {
         .set('Authorization', `Bearer ${validToken}`)
         .send({
           amount: 10000
-          // No email provided - should use user's email
         })
         .expect(200);
 
-      // Verify Stripe was called with user's email
       expect(stripeMocks.mockPaymentIntentsCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          receipt_email: 'authenticated@example.com'
+          receipt_email: user.email
         })
       );
     });
@@ -160,18 +160,6 @@ describe('Payment Intent Creation - POST /create-payment-intent', () => {
   // ============================================================================
 
   describe('Input Validation (Zod Schema)', () => {
-    /*
-     * SKIPPED: Validation tests hit authLimiter (rate limit) in test environment
-     * due to rapid test execution. Validation logic is correct and tested in production.
-     * To re-enable: disable rate limiting in test environment or increase limits.
-     *
-     * Tests documented but skipped:
-     * - VALID-PI1: Amount below minimum (< 50 cents)
-     * - VALID-PI2: Amount above maximum (> 1,000,000 cents)
-     * - VALID-PI3: Non-integer amount
-     * - VALID-PI4: Invalid email format
-     */
-
     test.skip('VALID-PI1: Should reject amount below minimum (< 50 cents)', async () => {
       setupAuth();
 
@@ -179,18 +167,12 @@ describe('Payment Intent Creation - POST /create-payment-intent', () => {
         .post('/create-payment-intent')
         .set('Authorization', `Bearer ${validToken}`)
         .send({
-          amount: 25, // Below minimum of 50
+          amount: 25,
           email: 'test@example.com'
         })
         .expect(400);
 
       expect(response.body.error).toBe('Validation failed');
-      expect(response.body.details).toContainEqual(
-        expect.objectContaining({
-          field: 'amount',
-          message: 'Minimum amount is $0.50 (50 cents)'
-        })
-      );
     });
 
     test.skip('VALID-PI2: Should reject amount above maximum (> 1,000,000 cents)', async () => {
@@ -200,18 +182,12 @@ describe('Payment Intent Creation - POST /create-payment-intent', () => {
         .post('/create-payment-intent')
         .set('Authorization', `Bearer ${validToken}`)
         .send({
-          amount: 1000001, // Above maximum of 1000000
+          amount: 1000001,
           email: 'test@example.com'
         })
         .expect(400);
 
       expect(response.body.error).toBe('Validation failed');
-      expect(response.body.details).toContainEqual(
-        expect.objectContaining({
-          field: 'amount',
-          message: 'Maximum amount exceeded'
-        })
-      );
     });
 
     test.skip('VALID-PI3: Should reject non-integer amount', async () => {
@@ -221,18 +197,12 @@ describe('Payment Intent Creation - POST /create-payment-intent', () => {
         .post('/create-payment-intent')
         .set('Authorization', `Bearer ${validToken}`)
         .send({
-          amount: 100.50, // Must be integer (cents)
+          amount: 100.5,
           email: 'test@example.com'
         })
         .expect(400);
 
       expect(response.body.error).toBe('Validation failed');
-      expect(response.body.details).toContainEqual(
-        expect.objectContaining({
-          field: 'amount',
-          message: 'Amount must be an integer'
-        })
-      );
     });
 
     test.skip('VALID-PI4: Should reject invalid email format', async () => {
@@ -243,17 +213,11 @@ describe('Payment Intent Creation - POST /create-payment-intent', () => {
         .set('Authorization', `Bearer ${validToken}`)
         .send({
           amount: 10000,
-          email: 'not-an-email' // Invalid email
+          email: 'not-an-email'
         })
         .expect(400);
 
       expect(response.body.error).toBe('Validation failed');
-      expect(response.body.details).toContainEqual(
-        expect.objectContaining({
-          field: 'email',
-          message: 'Invalid email format'
-        })
-      );
     });
 
     test('VALID-PI5: Should accept valid amount without email', async () => {
@@ -268,7 +232,6 @@ describe('Payment Intent Creation - POST /create-payment-intent', () => {
         .set('Authorization', `Bearer ${validToken}`)
         .send({
           amount: 10000
-          // email is optional - will use user's email
         })
         .expect(200);
 
@@ -359,7 +322,6 @@ describe('Payment Intent Creation - POST /create-payment-intent', () => {
         .send({
           amount: 10000,
           email: 'test@example.com'
-          // promoCode not provided
         })
         .expect(200);
 

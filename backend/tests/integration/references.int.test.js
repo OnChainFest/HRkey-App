@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { jest, afterAll } from '@jest/globals';
 import request from 'supertest';
 import crypto from 'crypto';
 import {
@@ -11,6 +11,55 @@ import {
 
 const mockSupabaseClient = createMockSupabaseClient();
 const mockQueryBuilder = mockSupabaseClient.from();
+
+function buildTableMock({
+  singleResponses = [],
+  maybeSingleResponses = [],
+  orderResponses = [],
+  limitResponses = [],
+  selectResponse = null
+} = {}) {
+  const builder = {
+    select: jest.fn(),
+    insert: jest.fn().mockReturnThis(),
+    update: jest.fn().mockReturnThis(),
+    delete: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    neq: jest.fn().mockReturnThis(),
+    or: jest.fn().mockReturnThis(),
+    in: jest.fn().mockReturnThis(),
+    order: jest.fn(),
+    limit: jest.fn(),
+    single: jest.fn(),
+    maybeSingle: jest.fn()
+  };
+
+  builder.single.mockImplementation(() =>
+    Promise.resolve(singleResponses.length ? singleResponses.shift() : mockDatabaseSuccess({}))
+  );
+
+  builder.maybeSingle.mockImplementation(() =>
+    Promise.resolve(
+      maybeSingleResponses.length ? maybeSingleResponses.shift() : { data: null, error: null }
+    )
+  );
+
+  builder.order.mockImplementation(() =>
+    Promise.resolve(orderResponses.length ? orderResponses.shift() : mockDatabaseSuccess([]))
+  );
+
+  builder.limit.mockImplementation(() =>
+    Promise.resolve(limitResponses.length ? limitResponses.shift() : mockDatabaseSuccess([]))
+  );
+
+  builder.select.mockImplementation(() => (selectResponse ? Promise.resolve(selectResponse) : builder));
+
+  return builder;
+}
+
+function configureTableMocks(tableMocks) {
+  mockSupabaseClient.from.mockImplementation((table) => tableMocks[table] || mockQueryBuilder);
+}
 
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
@@ -62,6 +111,8 @@ jest.unstable_mockModule('../../services/hrscore/autoTrigger.js', () => ({
   onReferenceValidated: jest.fn().mockResolvedValue()
 }));
 
+const authMiddleware = await import('../../middleware/auth.js');
+
 // Import app after mocking
 const { default: app } = await import('../../server.js');
 
@@ -74,6 +125,12 @@ describe('References Workflow MVP Integration', () => {
     jest.clearAllMocks();
     mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
     resetQueryBuilderMocks(mockQueryBuilder);
+    authMiddleware.__setSupabaseClientForTests(mockSupabaseClient);
+    mockSupabaseClient.auth.getUser.mockReset();
+  });
+
+  afterAll(() => {
+    authMiddleware.__resetSupabaseClientForTests();
   });
 
   test('REF-INT-01: should return 401 for unauthenticated /api/references/me', async () => {
@@ -147,14 +204,27 @@ describe('References Workflow MVP Integration', () => {
   });
 
   test('REF-INT-06: should forbid company signer without approved access', async () => {
+    const authedUser = mockUserData({ id: 'user-1' });
+
+    const usersTable = buildTableMock({
+      singleResponses: [mockDatabaseSuccess(authedUser)]
+    });
+
+    const companySignersTable = buildTableMock({
+      orderResponses: [mockDatabaseSuccess([{ company_id: 'company-1' }])]
+    });
+
+    const dataAccessRequestsTable = buildTableMock({
+      maybeSingleResponses: [{ data: null, error: null }]
+    });
+
+    configureTableMocks({
+      users: usersTable,
+      company_signers: companySignersTable,
+      data_access_requests: dataAccessRequestsTable
+    });
+
     mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-1'));
-    mockQueryBuilder.single.mockResolvedValueOnce(
-      mockDatabaseSuccess(mockUserData({ id: 'user-1' }))
-    );
-    mockQueryBuilder.order.mockResolvedValueOnce(
-      mockDatabaseSuccess([{ company_id: 'company-1' }])
-    );
-    mockQueryBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
     const res = await request(app)
       .post('/api/references/request')
@@ -169,10 +239,12 @@ describe('References Workflow MVP Integration', () => {
   });
 
   test('REF-INT-07: should allow superadmin to fetch candidate references', async () => {
-    mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('admin-1'));
-    mockQueryBuilder.single.mockResolvedValueOnce(
-      mockDatabaseSuccess(mockUserData({ id: 'admin-1', role: 'superadmin' }))
-    );
+    const adminUser = mockUserData({ id: 'admin-1', role: 'superadmin' });
+
+    const usersTable = buildTableMock({
+      singleResponses: [mockDatabaseSuccess(adminUser)]
+    });
+
     const references = [
       {
         id: 'ref-1',
@@ -183,7 +255,17 @@ describe('References Workflow MVP Integration', () => {
         created_at: '2024-01-01T00:00:00Z'
       }
     ];
-    mockQueryBuilder.order.mockResolvedValueOnce(mockDatabaseSuccess(references));
+
+    const referencesTable = buildTableMock({
+      orderResponses: [mockDatabaseSuccess(references)]
+    });
+
+    configureTableMocks({
+      users: usersTable,
+      references: referencesTable
+    });
+
+    mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('admin-1'));
 
     const res = await request(app)
       .get('/api/references/candidate/33333333-3333-4333-8333-333333333333')
@@ -199,31 +281,47 @@ describe('References Workflow MVP Integration', () => {
   // --------------------------------------------------------------------------
 
   test('REF-INT-08: should not return referrer_email for /api/references/me', async () => {
+    const authedUser = mockUserData({ id: 'user-3' });
+
+    const usersTable = buildTableMock({
+      singleResponses: [mockDatabaseSuccess(authedUser)]
+    });
+
+    const referencesTable = buildTableMock({
+      orderResponses: [
+        mockDatabaseSuccess([
+          {
+            id: 'ref-2',
+            referrer_name: 'Ref B',
+            referrer_email: 'secret@example.com',
+            overall_rating: 5,
+            status: 'active',
+            created_at: '2024-01-02T00:00:00Z'
+          }
+        ])
+      ]
+    });
+
+    configureTableMocks({
+      users: usersTable,
+      references: referencesTable
+    });
+
     mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-3'));
-    mockQueryBuilder.single.mockResolvedValueOnce(
-      mockDatabaseSuccess(mockUserData({ id: 'user-3' }))
-    );
-    mockQueryBuilder.order.mockResolvedValueOnce(
-      mockDatabaseSuccess([
-        {
-          id: 'ref-2',
-          referrer_name: 'Ref B',
-          referrer_email: 'secret@example.com',
-          overall_rating: 5,
-          status: 'active',
-          created_at: '2024-01-02T00:00:00Z'
-        }
-      ])
-    );
 
     const res = await request(app)
       .get('/api/references/me')
       .set('Authorization', 'Bearer valid-token');
 
     expect(res.status).toBe(200);
-    // Verify the select query does NOT include referrer_email
-    const selectCalls = mockQueryBuilder.select.mock.calls.map((call) => call[0]);
-    expect(selectCalls.some((value) => typeof value === 'string' && value.includes('referrer_email'))).toBe(false);
+
+    const selectCalls = []
+      .concat(usersTable.select.mock.calls.map((call) => call[0]))
+      .concat(referencesTable.select.mock.calls.map((call) => call[0]));
+
+    expect(
+      selectCalls.some((value) => typeof value === 'string' && value.includes('referrer_email'))
+    ).toBe(false);
   });
 
   test('REF-INT-09: public token lookup should not expose internal IDs', async () => {
@@ -239,11 +337,11 @@ describe('References Workflow MVP Integration', () => {
       })
     );
 
-    const res = await request(app)
-      .get('/api/reference/by-token/legacy-token-000000000000000000000000');
+    const res = await request(app).get(
+      '/api/reference/by-token/legacy-token-000000000000000000000000'
+    );
 
     expect(res.status).toBe(200);
-    // Internal IDs should NOT be exposed
     expect(res.body.invite?.requester_id).toBeUndefined();
     expect(res.body.invite?.id).toBeUndefined();
   });
@@ -265,8 +363,7 @@ describe('References Workflow MVP Integration', () => {
         })
       );
 
-      const res = await request(app)
-        .get(`/api/reference/by-token/${token}`);
+      const res = await request(app).get(`/api/reference/by-token/${token}`);
 
       expect(res.status).toBe(200);
       expect(mockQueryBuilder.eq).toHaveBeenCalledWith('invite_token', hashed);

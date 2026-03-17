@@ -1,5 +1,5 @@
 /**
- * Notifications Controller Permission Tests
+ * Notifications Controller - Access Control Tests
  * Tests for notification access control - users can only access their own notifications
  */
 
@@ -16,53 +16,110 @@ import {
 
 const mockSupabaseClient = createMockSupabaseClient();
 const mockQueryBuilder = mockSupabaseClient.from();
+const mockCreateClient = jest.fn(() => mockSupabaseClient);
 
-function buildTableMock({ selectResponses = [], singleResponses = [], maybeSingleResponses = [], countResponse = null } = {}) {
+function buildTableMock({
+  listResponses = [],
+  singleResponses = [],
+  maybeSingleResponses = [],
+  countResponse = { count: 0, error: null },
+  updateResponse = { error: null }
+} = {}) {
+  let countMode = false;
+  let lastWriteOp = null;
+  let countEqCalls = 0;
+
   const builder = {
-    select: jest.fn().mockReturnThis(),
-    insert: jest.fn().mockReturnThis(),
-    update: jest.fn().mockReturnThis(),
-    delete: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    order: jest.fn().mockReturnThis(),
-    range: jest.fn().mockReturnThis(),
+    select: jest.fn(),
+    insert: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    eq: jest.fn(),
+    order: jest.fn(),
+    range: jest.fn(),
     maybeSingle: jest.fn(),
     single: jest.fn()
   };
 
-  // Handle select with count
-  builder.select.mockImplementation((columns, options) => {
-    if (options?.count === 'exact' && options?.head) {
-      // This is a count query
-      return {
-        eq: jest.fn().mockResolvedValue(countResponse || { count: 0, error: null })
-      };
-    }
+  builder.insert.mockImplementation(() => {
+    lastWriteOp = 'insert';
     return builder;
   });
 
-  // Handle range for list queries
-  builder.range.mockImplementation(() => {
-    return Promise.resolve(selectResponses.length ? selectResponses.shift() : { data: [], error: null, count: 0 });
+  builder.update.mockImplementation(() => {
+    lastWriteOp = 'update';
+    return builder;
   });
 
+  builder.delete.mockImplementation(() => {
+    lastWriteOp = 'delete';
+    return builder;
+  });
+
+  builder.select.mockImplementation((columns, options) => {
+    if (options?.count === 'exact' && options?.head) {
+      countMode = true;
+      countEqCalls = 0;
+      return builder;
+    }
+
+    countMode = false;
+    return builder;
+  });
+
+  builder.eq.mockImplementation(() => {
+    if (lastWriteOp === 'update') {
+      lastWriteOp = null;
+      return Promise.resolve(updateResponse);
+    }
+
+    if (countMode) {
+      countEqCalls += 1;
+      if (countEqCalls >= 2) {
+        countMode = false;
+        return Promise.resolve(countResponse);
+      }
+      return builder;
+    }
+
+    return builder;
+  });
+
+  builder.order.mockImplementation(() => builder);
+
+  builder.range.mockImplementation(() =>
+    Promise.resolve(
+      listResponses.length
+        ? listResponses.shift()
+        : { data: [], error: null, count: 0 }
+    )
+  );
+
   builder.single.mockImplementation(() =>
-    Promise.resolve(singleResponses.length ? singleResponses.shift() : mockDatabaseSuccess({}))
+    Promise.resolve(
+      singleResponses.length ? singleResponses.shift() : mockDatabaseSuccess({})
+    )
   );
 
   builder.maybeSingle.mockImplementation(() =>
-    Promise.resolve(maybeSingleResponses.length ? maybeSingleResponses.shift() : { data: null, error: null })
+    Promise.resolve(
+      maybeSingleResponses.length
+        ? maybeSingleResponses.shift()
+        : { data: null, error: null }
+    )
   );
 
   return builder;
 }
 
 function configureTableMocks(tableMocks) {
-  mockSupabaseClient.from.mockImplementation((table) => tableMocks[table] || mockQueryBuilder);
+  mockSupabaseClient.from.mockImplementation(
+    (table) => tableMocks[table] || mockQueryBuilder
+  );
 }
 
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
-  createClient: jest.fn(() => mockSupabaseClient)
+  createClient: mockCreateClient
 }));
 
 jest.unstable_mockModule('../../utils/emailService.js', () => ({
@@ -95,7 +152,10 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
 jest.unstable_mockModule('ethers', () => ({
   ethers: {
     Wallet: {
-      createRandom: jest.fn(() => ({ address: '0xWALLET', privateKey: '0xPRIVATE' }))
+      createRandom: jest.fn(() => ({
+        address: '0xWALLET',
+        privateKey: '0xPRIVATE'
+      }))
     },
     verifyMessage: jest.fn()
   }
@@ -106,6 +166,14 @@ const { default: app } = await import('../../server.js');
 describe('Notifications Controller - Access Control Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    mockCreateClient.mockImplementation(() => mockSupabaseClient);
+
+    mockSupabaseClient.auth.getUser = jest.fn().mockResolvedValue({
+      data: { user: null },
+      error: new Error('No auth token provided')
+    });
+
     mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
     resetQueryBuilderMocks(mockQueryBuilder);
   });
@@ -120,21 +188,41 @@ describe('Notifications Controller - Access Control Tests', () => {
     });
 
     test('NOTIF-P2: authenticated user can get their own notifications', async () => {
-      const user = mockUserData({ id: 'user-notif-1', email: 'notif@example.com' });
-      const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
+      const user = mockUserData({
+        id: 'user-notif-1',
+        email: 'notif@example.com'
+      });
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(user)]
+      });
       const notificationsTable = buildTableMock({
-        selectResponses: [{
-          data: [
-            { id: 'n1', type: 'test', title: 'Test', body: 'Test body', is_read: false, created_at: '2026-01-01T00:00:00Z' }
-          ],
-          error: null,
-          count: 1
-        }],
+        listResponses: [
+          {
+            data: [
+              {
+                id: 'n1',
+                type: 'test',
+                title: 'Test',
+                body: 'Test body',
+                is_read: false,
+                created_at: '2026-01-01T00:00:00Z'
+              }
+            ],
+            error: null,
+            count: 1
+          }
+        ],
         countResponse: { count: 1, error: null }
       });
-      configureTableMocks({ users: usersTable, notifications: notificationsTable });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(user.id, user.email));
+      configureTableMocks({
+        users: usersTable,
+        notifications: notificationsTable
+      });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue(
+        mockAuthGetUserSuccess(user.id, user.email)
+      );
 
       const response = await request(app)
         .get('/api/notifications')
@@ -143,29 +231,40 @@ describe('Notifications Controller - Access Control Tests', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.notifications).toBeDefined();
+      expect(response.body.total).toBe(1);
+      expect(response.body.unread_count).toBe(1);
     });
 
     test('NOTIF-P3: user cannot access other user notifications (RLS enforced)', async () => {
-      // This test verifies that even if someone tries to manipulate params,
-      // the controller always uses req.user.id from the authenticated session
-      const user = mockUserData({ id: 'user-notif-2', email: 'own@example.com' });
-      const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
+      const user = mockUserData({
+        id: 'user-notif-2',
+        email: 'own@example.com'
+      });
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(user)]
+      });
       const notificationsTable = buildTableMock({
-        selectResponses: [{ data: [], error: null, count: 0 }],
+        listResponses: [{ data: [], error: null, count: 0 }],
         countResponse: { count: 0, error: null }
       });
-      configureTableMocks({ users: usersTable, notifications: notificationsTable });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(user.id, user.email));
+      configureTableMocks({
+        users: usersTable,
+        notifications: notificationsTable
+      });
 
-      // Even if query params try to specify another user, it should be ignored
+      mockSupabaseClient.auth.getUser.mockResolvedValue(
+        mockAuthGetUserSuccess(user.id, user.email)
+      );
+
       const response = await request(app)
         .get('/api/notifications?user_id=other-user-id')
         .set('Authorization', 'Bearer valid-token')
         .expect(200);
 
-      // The controller uses req.user.id, not query params
       expect(response.body.success).toBe(true);
+      expect(response.body.notifications).toEqual([]);
+      expect(response.body.total).toBe(0);
     });
   });
 
@@ -181,8 +280,13 @@ describe('Notifications Controller - Access Control Tests', () => {
     test('NOTIF-P5: user can mark their own notification as read', async () => {
       const userId = 'user-notif-read-1';
       const notificationId = '11111111-2222-3333-4444-555555555555';
-      const user = mockUserData({ id: userId, email: 'readnotif@example.com' });
-      const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
+      const user = mockUserData({
+        id: userId,
+        email: 'readnotif@example.com'
+      });
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(user)]
+      });
       const notificationsTable = buildTableMock({
         singleResponses: [
           mockDatabaseSuccess({
@@ -190,11 +294,18 @@ describe('Notifications Controller - Access Control Tests', () => {
             user_id: userId,
             is_read: false
           })
-        ]
+        ],
+        updateResponse: { error: null }
       });
-      configureTableMocks({ users: usersTable, notifications: notificationsTable });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(user.id, user.email));
+      configureTableMocks({
+        users: usersTable,
+        notifications: notificationsTable
+      });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue(
+        mockAuthGetUserSuccess(user.id, user.email)
+      );
 
       const response = await request(app)
         .post(`/api/notifications/${notificationId}/read`)
@@ -204,24 +315,35 @@ describe('Notifications Controller - Access Control Tests', () => {
       expect(response.body.success).toBe(true);
     });
 
-    test('NOTIF-P6: user cannot mark another user\'s notification as read (403)', async () => {
+    test("NOTIF-P6: user cannot mark another user's notification as read (403)", async () => {
       const userId = 'user-notif-read-2';
       const otherUserId = 'other-user-id';
       const notificationId = '22222222-3333-4444-5555-666666666666';
-      const user = mockUserData({ id: userId, email: 'me@example.com' });
-      const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
+      const user = mockUserData({
+        id: userId,
+        email: 'me@example.com'
+      });
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(user)]
+      });
       const notificationsTable = buildTableMock({
         singleResponses: [
           mockDatabaseSuccess({
             id: notificationId,
-            user_id: otherUserId, // Belongs to another user
+            user_id: otherUserId,
             is_read: false
           })
         ]
       });
-      configureTableMocks({ users: usersTable, notifications: notificationsTable });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(user.id, user.email));
+      configureTableMocks({
+        users: usersTable,
+        notifications: notificationsTable
+      });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue(
+        mockAuthGetUserSuccess(user.id, user.email)
+      );
 
       const response = await request(app)
         .post(`/api/notifications/${notificationId}/read`)
@@ -229,20 +351,33 @@ describe('Notifications Controller - Access Control Tests', () => {
         .expect(403);
 
       expect(response.body.error).toBe('FORBIDDEN');
-      expect(response.body.message).toMatch(/only access your own notifications/);
+      expect(response.body.message).toMatch(
+        /only access your own notifications/
+      );
     });
 
     test('NOTIF-P7: returns 404 for non-existent notification', async () => {
       const userId = 'user-notif-read-3';
       const notificationId = '33333333-4444-5555-6666-777777777777';
-      const user = mockUserData({ id: userId, email: 'nonotif@example.com' });
-      const usersTable = buildTableMock({ singleResponses: [mockDatabaseSuccess(user)] });
+      const user = mockUserData({
+        id: userId,
+        email: 'nonotif@example.com'
+      });
+      const usersTable = buildTableMock({
+        singleResponses: [mockDatabaseSuccess(user)]
+      });
       const notificationsTable = buildTableMock({
         singleResponses: [mockDatabaseError('Not found', 'PGRST116')]
       });
-      configureTableMocks({ users: usersTable, notifications: notificationsTable });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(user.id, user.email));
+      configureTableMocks({
+        users: usersTable,
+        notifications: notificationsTable
+      });
+
+      mockSupabaseClient.auth.getUser.mockResolvedValue(
+        mockAuthGetUserSuccess(user.id, user.email)
+      );
 
       const response = await request(app)
         .post(`/api/notifications/${notificationId}/read`)

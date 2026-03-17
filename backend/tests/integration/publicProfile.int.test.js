@@ -13,7 +13,7 @@
  * DO NOT break backwards compatibility!
  */
 
-import { jest } from '@jest/globals';
+import { jest, afterAll } from '@jest/globals';
 import request from 'supertest';
 import {
   createMockSupabaseClient,
@@ -55,7 +55,9 @@ function buildTableMock({
   );
 
   builder.maybeSingle.mockImplementation(() =>
-    Promise.resolve(maybeSingleResponses.length ? maybeSingleResponses.shift() : { data: null, error: null })
+    Promise.resolve(
+      maybeSingleResponses.length ? maybeSingleResponses.shift() : { data: null, error: null }
+    )
   );
 
   builder.select.mockImplementation(() => (selectResponse ? Promise.resolve(selectResponse) : builder));
@@ -133,6 +135,8 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
   auditMiddleware: () => (req, res, next) => next()
 }));
 
+const authMiddleware = await import('../../middleware/auth.js');
+
 // Import app after mocking
 const { default: app } = await import('../../server.js');
 
@@ -145,11 +149,13 @@ describe('Public Profile Integration Tests', () => {
     jest.clearAllMocks();
     mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
     resetQueryBuilderMocks(mockQueryBuilder);
+    authMiddleware.__setSupabaseClientForTests(mockSupabaseClient);
+    mockSupabaseClient.auth.getUser.mockReset();
   });
 
-  // --------------------------------------------------------------------------
-  // SMOKE TESTS
-  // --------------------------------------------------------------------------
+  afterAll(() => {
+    authMiddleware.__resetSupabaseClientForTests();
+  });
 
   describe('Smoke Tests', () => {
     test('SMOKE-PP1: test framework is working', () => {
@@ -167,13 +173,8 @@ describe('Public Profile Integration Tests', () => {
     });
   });
 
-  // --------------------------------------------------------------------------
-  // GET /api/public/candidates/:identifier - Security Tests
-  // --------------------------------------------------------------------------
-
   describe('GET /api/public/candidates/:identifier', () => {
     test('INT-PP1: allows public access (no auth required)', async () => {
-      // Setup mock for public profile
       const publicProfile = {
         id: 'user-123',
         public_handle: 'john_doe',
@@ -196,8 +197,7 @@ describe('Public Profile Integration Tests', () => {
         analytics_events: analyticsTable
       });
 
-      const response = await request(app)
-        .get('/api/public/candidates/john_doe');
+      const response = await request(app).get('/api/public/candidates/john_doe');
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('userId', 'user-123');
@@ -206,12 +206,11 @@ describe('Public Profile Integration Tests', () => {
     });
 
     test('INT-PP2: respects is_public_profile flag (privacy control)', async () => {
-      // Profile with is_public_profile = false should return 404
       const privateProfile = {
         id: 'user-456',
         public_handle: 'private_user',
         full_name: 'Private User',
-        is_public_profile: false  // Privacy flag set to false
+        is_public_profile: false
       };
 
       const usersTable = buildTableMock({
@@ -220,10 +219,8 @@ describe('Public Profile Integration Tests', () => {
 
       configureTableMocks({ users: usersTable });
 
-      const response = await request(app)
-        .get('/api/public/candidates/private_user');
+      const response = await request(app).get('/api/public/candidates/private_user');
 
-      // Should return 404 to prevent information disclosure
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('error');
     });
@@ -235,17 +232,14 @@ describe('Public Profile Integration Tests', () => {
 
       configureTableMocks({ users: usersTable });
 
-      const response = await request(app)
-        .get('/api/public/candidates/nonexistent_user');
+      const response = await request(app).get('/api/public/candidates/nonexistent_user');
 
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('error');
     });
 
     test('INT-PP4: returns 400 for empty identifier', async () => {
-      // URL-encoded space (%20) ensures Express matches the route
-      const response = await request(app)
-        .get('/api/public/candidates/%20'); // Empty/whitespace identifier
+      const response = await request(app).get('/api/public/candidates/%20');
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error');
@@ -272,22 +266,17 @@ describe('Public Profile Integration Tests', () => {
         analytics_events: analyticsTable
       });
 
-      const response = await request(app)
-        .get('/api/public/candidates/jane_doe');
+      const response = await request(app).get('/api/public/candidates/jane_doe');
 
       expect(response.status).toBe(200);
-      // Core fields (backwards compatible)
       expect(response.body).toHaveProperty('userId');
       expect(response.body).toHaveProperty('handle');
       expect(response.body).toHaveProperty('fullName');
       expect(response.body).toHaveProperty('hrScore');
       expect(response.body).toHaveProperty('priceUsd');
+      expect(response.body).toHaveProperty('hrscore');
+      expect(response.body).toHaveProperty('metrics');
 
-      // New additive fields (from Public Profile Layer v1)
-      expect(response.body).toHaveProperty('hrscore'); // New nested object
-      expect(response.body).toHaveProperty('metrics'); // New nested object
-
-      // Verify structure doesn't break existing contract
       if (response.body.hrscore) {
         expect(response.body.hrscore).toHaveProperty('current');
       }
@@ -296,15 +285,7 @@ describe('Public Profile Integration Tests', () => {
       }
     });
 
-    // NOTE: Analytics view tracking tests
-    // The Public Profile Layer v1 includes optional view tracking
-    // View tracking should be:
-    // 1. Fail-soft (never block profile display)
-    // 2. Fire-and-forget (async, non-blocking)
-    // 3. Anonymous-friendly (viewerId can be null)
-
     test('INT-PP6: handles enrichment failures gracefully (fail-soft)', async () => {
-      // Mock enrichment failure
       const { evaluateCandidateForUser } = await import('../../services/candidateEvaluation.service.js');
       evaluateCandidateForUser.mockRejectedValueOnce(new Error('Evaluation service down'));
 
@@ -327,33 +308,24 @@ describe('Public Profile Integration Tests', () => {
         analytics_events: analyticsTable
       });
 
-      const response = await request(app)
-        .get('/api/public/candidates/test_user');
+      const response = await request(app).get('/api/public/candidates/test_user');
 
-      // Should still return 200 with degraded data
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('userId');
-
-      // Enrichment fields should have safe defaults
-      expect(response.body.hrScore).toBe(0); // Default
-      expect(response.body.priceUsd).toBe(0); // Default
+      expect(response.body.hrScore).toBe(0);
+      expect(response.body.priceUsd).toBe(0);
     });
   });
 
-  // --------------------------------------------------------------------------
-  // GET /api/me/public-identifier - Authentication Tests
-  // --------------------------------------------------------------------------
-
   describe('GET /api/me/public-identifier', () => {
     test('INT-PP7: requires authentication', async () => {
-      const response = await request(app)
-        .get('/api/me/public-identifier');
+      const response = await request(app).get('/api/me/public-identifier');
 
       expect(response.status).toBe(401);
       expect(response.body).toHaveProperty('error');
     });
 
-    test('INT-PP8: returns authenticated user\'s public identifier', async () => {
+    test("INT-PP8: returns authenticated user's public identifier", async () => {
       const user = mockUserData({
         id: 'auth-user-1',
         email: 'auth@example.com',
@@ -362,27 +334,30 @@ describe('Public Profile Integration Tests', () => {
 
       const usersTable = buildTableMock({
         singleResponses: [mockDatabaseSuccess(user)],
-        maybeSingleResponses: [mockDatabaseSuccess({
-          id: user.id,
-          public_handle: 'my_handle',
-          is_public_profile: true
-        })]
+        maybeSingleResponses: [
+          mockDatabaseSuccess({
+            id: user.id,
+            public_handle: 'my_handle',
+            is_public_profile: true
+          })
+        ]
       });
 
       configureTableMocks({ users: usersTable });
-      // Fix: mockAuthGetUserSuccess returns an object, set it on the mock
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: user.id, email: user.email } },
-        error: null
-      });
+      mockSupabaseClient.auth.getUser.mockResolvedValue(
+        mockAuthGetUserSuccess(user.id, user.email)
+      );
 
       const response = await request(app)
         .get('/api/me/public-identifier')
         .set('Authorization', 'Bearer mock-token');
 
+      console.log('INT-PP8 STATUS:', response.status);
+      console.log('INT-PP8 BODY:', response.body);
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('userId', user.id);
-      expect(response.body).toHaveProperty('identifier', 'my_handle'); // Prefers handle
+      expect(response.body).toHaveProperty('identifier', 'my_handle');
       expect(response.body).toHaveProperty('handle', 'my_handle');
       expect(response.body).toHaveProperty('isPublicProfile', true);
     });
@@ -395,60 +370,59 @@ describe('Public Profile Integration Tests', () => {
 
       const usersTable = buildTableMock({
         singleResponses: [mockDatabaseSuccess(user)],
-        maybeSingleResponses: [mockDatabaseSuccess({
-          id: user.id,
-          public_handle: null, // No handle
-          is_public_profile: true
-        })]
+        maybeSingleResponses: [
+          mockDatabaseSuccess({
+            id: user.id,
+            public_handle: null,
+            is_public_profile: true
+          })
+        ]
       });
 
       configureTableMocks({ users: usersTable });
-      // Fix: mockAuthGetUserSuccess returns an object, set it on the mock
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: user.id, email: user.email } },
-        error: null
-      });
+      mockSupabaseClient.auth.getUser.mockResolvedValue(
+        mockAuthGetUserSuccess(user.id, user.email)
+      );
 
       const response = await request(app)
         .get('/api/me/public-identifier')
         .set('Authorization', 'Bearer mock-token');
 
+      console.log('INT-PP9 STATUS:', response.status);
+      console.log('INT-PP9 BODY:', response.body);
+
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('identifier', user.id); // Falls back to ID
+      expect(response.body).toHaveProperty('identifier', user.id);
       expect(response.body).toHaveProperty('handle', null);
     });
 
     test('INT-PP10: returns 404 if user not found in database', async () => {
-      const user = mockUserData({ id: 'missing-user' });
+      const user = mockUserData({ id: 'missing-user', email: 'missing@example.com' });
 
       const usersTable = buildTableMock({
         singleResponses: [mockDatabaseSuccess(user)],
-        maybeSingleResponses: [{ data: null, error: null }] // User not in DB
+        maybeSingleResponses: [{ data: null, error: null }]
       });
 
       configureTableMocks({ users: usersTable });
-      // Fix: mockAuthGetUserSuccess returns an object, set it on the mock
-      mockSupabaseClient.auth.getUser.mockResolvedValue({
-        data: { user: { id: user.id, email: user.email } },
-        error: null
-      });
+      mockSupabaseClient.auth.getUser.mockResolvedValue(
+        mockAuthGetUserSuccess(user.id, user.email)
+      );
 
       const response = await request(app)
         .get('/api/me/public-identifier')
         .set('Authorization', 'Bearer mock-token');
+
+      console.log('INT-PP10 STATUS:', response.status);
+      console.log('INT-PP10 BODY:', response.body);
 
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('error');
     });
   });
 
-  // --------------------------------------------------------------------------
-  // FAIL-SOFT BEHAVIOR TESTS
-  // --------------------------------------------------------------------------
-
   describe('Fail-Soft Behavior', () => {
     test('INT-PP11: analytics failures do not block profile display', async () => {
-      // Mock analytics error
       const { logEvent } = await import('../../services/analytics/eventTracker.js');
       logEvent.mockRejectedValueOnce(new Error('Analytics service down'));
 
@@ -471,87 +445,31 @@ describe('Public Profile Integration Tests', () => {
         analytics_events: analyticsTable
       });
 
-      const response = await request(app)
-        .get('/api/public/candidates/analytics_test');
+      const response = await request(app).get('/api/public/candidates/analytics_test');
 
-      // Should succeed despite analytics failure
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('userId');
     });
 
     test('INT-PP12: database errors return safe error messages', async () => {
-      // Mock database error
       const usersTable = buildTableMock({
-        maybeSingleResponses: [{
-          data: null,
-          error: { message: 'Database connection failed', code: 'PGRST301' }
-        }]
+        maybeSingleResponses: [
+          {
+            data: null,
+            error: { message: 'Database connection failed', code: 'PGRST301' }
+          }
+        ]
       });
 
       configureTableMocks({ users: usersTable });
 
-      const response = await request(app)
-        .get('/api/public/candidates/db_error_test');
+      const response = await request(app).get('/api/public/candidates/db_error_test');
 
-      // Should return 404 (safe, doesn't leak DB details)
       expect(response.status).toBe(404);
       expect(response.body).not.toHaveProperty('stack');
       expect(response.body).not.toHaveProperty('code');
-      // Error message should be generic
       expect(response.body.error).not.toContain('database');
       expect(response.body.error).not.toContain('PGRST');
     });
   });
 });
-
-// ============================================================================
-// NOTES FOR FULL IMPLEMENTATION
-// ============================================================================
-
-/*
- * INTEGRATION WITH CODEX'S TESTS:
- *
- * These tests focus on security/permission aspects only.
- * Codex is implementing full integration tests in parallel branch for:
- * - GET /api/public/profile/:identifier (different path?)
- * - GET /api/public/identifier/:token
- * - GET /api/admin/overview
- *
- * IMPORTANT: DO NOT BREAK BACKWARDS COMPATIBILITY
- * - Keep GET /api/public/candidates/:identifier exactly as is
- * - Same HTTP methods, status codes, response shape
- * - Only additive changes allowed (hrscore, metrics fields)
- *
- * CURRENT ENDPOINT STATUS:
- * ✅ GET /api/public/candidates/:identifier - Exists, properly secured
- * ✅ GET /api/me/public-identifier - Exists, properly secured
- * ❌ GET /api/public/profile/:identifier - NOT IN THIS BRANCH
- * ❌ GET /api/public/identifier/:token - NOT IN THIS BRANCH
- *
- * FAIL-SOFT VERIFICATION CHECKLIST:
- * ✅ Profile resolution fails gracefully (returns null)
- * ✅ HRScore enrichment fails gracefully (returns defaults)
- * ✅ Analytics tracking fails gracefully (logs warning, continues)
- * ✅ View metrics query fails gracefully (returns null)
- * ✅ Database errors return safe error messages (no stack traces)
- *
- * PRIVACY VERIFICATION CHECKLIST:
- * ✅ is_public_profile flag respected
- * ✅ Private profiles return 404 (not 403 - prevents user enumeration)
- * ✅ No PII leaked in error messages
- * ✅ Analytics events don't block public access
- *
- * BACKWARDS COMPATIBILITY CHECKLIST:
- * ✅ All existing response fields preserved
- * ✅ New fields are additive only (hrscore, metrics)
- * ✅ Status codes unchanged (400/404/200/500)
- * ✅ URL paths unchanged
- * ✅ HTTP methods unchanged
- *
- * RECOMMENDED ADDITIONAL TESTS:
- * 1. Rate limiting behavior (if applicable)
- * 2. Large payload handling
- * 3. Special characters in identifiers
- * 4. SQL injection attempts (should be safe with Supabase parameterized queries)
- * 5. Performance under load (separate perf test suite)
- */

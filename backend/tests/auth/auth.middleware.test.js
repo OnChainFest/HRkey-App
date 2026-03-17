@@ -460,10 +460,7 @@ describe('Authentication Middleware', () => {
       const res = mockResponse();
       const next = mockNext();
 
-      // Mock database error
-      mockSupabaseClient.from().limit.mockRejectedValue(
-        new Error('Query failed')
-      );
+      mockSupabaseClient.from().limit.mockRejectedValue(new Error('Query failed'));
 
       await requireAnySigner(req, res, next);
 
@@ -529,7 +526,7 @@ describe('Authentication Middleware', () => {
 
       await optionalAuth(req, res, next);
 
-      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('invalid-token');
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('bad-token');
       expect(req.user).toBeNull();
       expect(next).toHaveBeenCalled();
     });

@@ -19,11 +19,61 @@ jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
 }));
 
-jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
-  getAllAuditLogs: mockGetAllAuditLogs,
-  getUserAuditLogs: mockGetUserAuditLogs,
-  getCompanyAuditLogs: mockGetCompanyAuditLogs
-}));
+let supabaseClient;
+
+function getSupabaseClient() {
+  const supabaseUrl = process.env.SUPABASE_URL || 'https://example.supabase.co';
+  const supabaseServiceKey =
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    'test-service-role-key';
+
+  if (process.env.NODE_ENV === 'test') {
+    return createClient(supabaseUrl, supabaseServiceKey);
+  }
+
+  if (!supabaseClient) {
+    supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+  }
+
+  return supabaseClient;
+}
+
+function createFallbackLogger() {
+  return {
+    error: () => {},
+    warn: () => {},
+    info: () => {},
+    debug: () => {}
+  };
+}
+
+function getReqLogger(req) {
+  try {
+    if (logger && typeof logger.withRequest === 'function') {
+      const contextualLogger = logger.withRequest(req);
+      if (
+        contextualLogger &&
+        typeof contextualLogger.error === 'function' &&
+        typeof contextualLogger.warn === 'function'
+      ) {
+        return contextualLogger;
+      }
+    }
+
+    if (
+      logger &&
+      typeof logger.error === 'function' &&
+      typeof logger.warn === 'function'
+    ) {
+      return logger;
+    }
+
+    return createFallbackLogger();
+  } catch {
+    return createFallbackLogger();
+  }
+}
 
 jest.unstable_mockModule('../../logger.js', () => ({
   default: {
@@ -65,12 +115,133 @@ function createReq(overrides = {}) {
  * For controller path:
  * client.from('company_signers').select(...).eq(...).eq(...).eq(...).single()
  */
-function makeCompanySignerSingleBuilder({ data = null, error = null } = {}) {
-  return {
-    select: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    single: jest.fn().mockResolvedValue({ data, error })
-  };
+export async function getAuditLogs(req, res) {
+  try {
+    const client = getSupabaseClient();
+
+    const {
+      userId,
+      companyId,
+      actionType,
+      limit = 50,
+      offset = 0
+    } = req.query;
+
+    const parsedLimit = Math.min(Number.parseInt(limit, 10) || 50, 100);
+    const parsedOffset = Number.parseInt(offset, 10) || 0;
+    const isSuperadmin = req.user?.role === 'superadmin';
+
+    if (!isSuperadmin) {
+      if (userId && userId !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          error: 'Forbidden',
+          message: 'You can only view your own audit logs'
+        });
+      }
+
+      if (companyId) {
+        const signerResult = await client
+          .from('company_signers')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('user_id', req.user.id)
+          .eq('is_active', true)
+          .single();
+
+        const signer = signerResult?.data || null;
+        const signerError = signerResult?.error || null;
+
+        if (signerError || !signer) {
+          return res.status(403).json({
+            success: false,
+            error: 'Forbidden',
+            message: 'You must be a signer of this company to view its audit logs'
+          });
+        }
+
+        const logs = await getCompanyAuditLogs(companyId, parsedLimit, parsedOffset);
+
+        return res.json({
+          success: true,
+          logs: Array.isArray(logs) ? logs : [],
+          total: Array.isArray(logs) ? logs.length : 0,
+          limit: parsedLimit,
+          offset: parsedOffset
+        });
+      }
+
+      const effectiveUserId = userId || req.user.id;
+      const logs = await getUserAuditLogs(effectiveUserId, parsedLimit, parsedOffset);
+
+      return res.json({
+        success: true,
+        logs: Array.isArray(logs) ? logs : [],
+        total: Array.isArray(logs) ? logs.length : 0,
+        limit: parsedLimit,
+        offset: parsedOffset
+      });
+    }
+
+    if (companyId && !userId) {
+      const logs = await getCompanyAuditLogs(companyId, parsedLimit, parsedOffset);
+
+      return res.json({
+        success: true,
+        logs: Array.isArray(logs) ? logs : [],
+        total: Array.isArray(logs) ? logs.length : 0,
+        limit: parsedLimit,
+        offset: parsedOffset
+      });
+    }
+
+    if (userId && !companyId) {
+      const logs = await getUserAuditLogs(userId, parsedLimit, parsedOffset);
+
+      return res.json({
+        success: true,
+        logs: Array.isArray(logs) ? logs : [],
+        total: Array.isArray(logs) ? logs.length : 0,
+        limit: parsedLimit,
+        offset: parsedOffset
+      });
+    }
+
+    const filters = {};
+    if (userId) filters.userId = userId;
+    if (companyId) filters.companyId = companyId;
+    if (actionType) filters.actionType = actionType;
+
+    const result = await getAllAuditLogs(filters, parsedLimit, parsedOffset);
+
+    return res.json({
+      success: true,
+      logs: Array.isArray(result?.logs) ? result.logs : [],
+      total:
+        typeof result?.total === 'number'
+          ? result.total
+          : Array.isArray(result?.logs)
+            ? result.logs.length
+            : 0,
+      limit: parsedLimit,
+      offset: parsedOffset
+    });
+  } catch (error) {
+    const reqLogger = getReqLogger(req);
+    reqLogger.error('Failed to get audit logs', {
+      userId: req.user?.id,
+      queryUserId: req.query?.userId,
+      queryCompanyId: req.query?.companyId,
+      error: error?.message,
+      stack: error?.stack
+    });
+
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'An error occurred while fetching audit logs'
+    });
+  }
 }
 
 /**
@@ -95,42 +266,36 @@ function makeCompanySignerListBuilder({ data = [], error = null } = {}) {
  * For controller path:
  * client.from('audit_logs').select(...).in(...).order(...).limit(10)
  */
-function makeAuditLogsBuilder({ data = [], error = null } = {}) {
-  return {
-    select: jest.fn().mockReturnThis(),
-    in: jest.fn().mockReturnThis(),
-    order: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockResolvedValue({ data, error })
-  };
-}
+export async function getRecentActivity(req, res) {
+  try {
+    const client = getSupabaseClient();
+    const userId = req.user.id;
 
-describe('Audit Log Controller - Permission Tests', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+    const signerResult = await client
+      .from('company_signers')
+      .select('company_id')
+      .eq('user_id', userId)
+      .eq('is_active', true);
 
-    mockSupabaseClient.from.mockImplementation(() => {
-      throw new Error('Unexpected table access in test');
-    });
-  });
+    const signerRecords = signerResult?.data || [];
+    const signerError = signerResult?.error || null;
 
-  describe('GET /api/audit/logs', () => {
-    test('PERM-A1: superadmin can query all audit logs', async () => {
-      const req = createReq({
-        user: mockUserData({ id: 'super-1', role: 'superadmin' }),
-        query: {}
-      });
-      const res = createRes();
-
-      mockGetAllAuditLogs.mockResolvedValue({
-        logs: [{ id: 'log-1', user_id: 'u1' }],
-        total: 1
+    if (signerError) {
+      const reqLogger = getReqLogger(req);
+      reqLogger.error('Failed to fetch signer records for recent activity', {
+        userId: req.user?.id,
+        error: signerError?.message,
+        stack: signerError?.stack
       });
 
-      await getAuditLogs(req, res);
+      return res.status(500).json({
+        success: false,
+        error: 'Database error'
+      });
+    }
 
-      expect(mockGetAllAuditLogs).toHaveBeenCalledWith({}, 50, 0);
-      expect(res.status).not.toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith({
+    if (!Array.isArray(signerRecords) || signerRecords.length === 0) {
+      return res.json({
         success: true,
         logs: [{ id: 'log-1', user_id: 'u1' }],
         total: 1,
@@ -170,75 +335,56 @@ describe('Audit Log Controller - Permission Tests', () => {
       });
       const res = createRes();
 
-      await getAuditLogs(req, res);
+    const companyIds = signerRecords
+      .map((record) => record.company_id)
+      .filter(Boolean);
 
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Forbidden',
-        message: 'You can only view your own audit logs'
-      });
-    });
-
-    test('PERM-A4: company signer can view logs for their company', async () => {
-      const signer = mockUserData({ id: 'signer-1', role: 'user' });
-      const req = createReq({
-        user: signer,
-        query: { companyId: 'company-1' }
-      });
-      const res = createRes();
-
-      mockSupabaseClient.from.mockImplementation((table) => {
-        if (table === 'company_signers') {
-          return makeCompanySignerSingleBuilder({ data: { id: 'cs-1' }, error: null });
-        }
-        throw new Error(`Unexpected table: ${table}`);
-      });
-
-      mockGetCompanyAuditLogs.mockResolvedValue([
-        { id: 'log-company', company_id: 'company-1' }
-      ]);
-
-      await getAuditLogs(req, res);
-
-      expect(mockGetCompanyAuditLogs).toHaveBeenCalledWith('company-1', 50, 0);
-      expect(res.status).not.toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith({
+    if (companyIds.length === 0) {
+      return res.json({
         success: true,
-        logs: [{ id: 'log-company', company_id: 'company-1' }],
-        total: 1,
-        limit: 50,
-        offset: 0
+        activity: []
       });
-    });
+    }
 
-    test('PERM-A5: non-signer cannot view company logs', async () => {
-      const user = mockUserData({ id: 'user-3', role: 'user' });
-      const req = createReq({
-        user,
-        query: { companyId: 'company-x' }
+    const logsResult = await client
+      .from('audit_logs')
+      .select('*')
+      .in('company_id', companyIds)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    const logs = logsResult?.data || [];
+    const logsError = logsResult?.error || null;
+
+    if (logsError) {
+      const reqLogger = getReqLogger(req);
+      reqLogger.error('Failed to fetch recent activity', {
+        userId: req.user?.id,
+        companyIds,
+        error: logsError?.message,
+        stack: logsError?.stack
       });
-      const res = createRes();
 
-      mockSupabaseClient.from.mockImplementation((table) => {
-        if (table === 'company_signers') {
-          return makeCompanySignerSingleBuilder({ data: null, error: null });
-        }
-        throw new Error(`Unexpected table: ${table}`);
-      });
-
-      await getAuditLogs(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({
+      return res.status(500).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You must be a signer of this company to view its audit logs'
+        error: 'Database error'
       });
+
+    return res.json({
+      success: true,
+      activity: Array.isArray(logs) ? logs : []
+    });
+  } catch (error) {
+    const reqLogger = getReqLogger(req);
+    reqLogger.error('Failed to get recent activity', {
+      userId: req.user?.id,
+      error: error?.message,
+      stack: error?.stack
     });
 
-    test('PERM-A6: unauthenticated requests to audit endpoints return 401 (documented at middleware layer)', async () => {
-      expect(true).toBe(true);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error'
     });
   });
 
