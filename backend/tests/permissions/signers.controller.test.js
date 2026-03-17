@@ -18,9 +18,10 @@ import {
 // Mock Supabase before importing the app
 const mockSupabaseClient = createMockSupabaseClient();
 const mockQueryBuilder = mockSupabaseClient.from();
+const mockCreateClient = jest.fn(() => mockSupabaseClient);
 
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
-  createClient: jest.fn(() => mockSupabaseClient)
+  createClient: mockCreateClient
 }));
 
 jest.unstable_mockModule('../../utils/emailService.js', () => ({
@@ -50,38 +51,52 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
   auditMiddleware: () => (req, res, next) => next()
 }));
 
-jest.resetModules();
-
-// Import app AFTER mocking dependencies
 const { default: app } = await import('../../server.js');
 
 describe('Signers Controller - Permission Tests', () => {
+  const companyId = '660e8400-e29b-41d4-a716-446655440001';
+
   beforeEach(() => {
     jest.clearAllMocks();
+
+    mockCreateClient.mockImplementation(() => mockSupabaseClient);
+
+    mockSupabaseClient.auth.getUser = jest.fn().mockResolvedValue({
+      data: { user: null },
+      error: new Error('No auth token provided')
+    });
+
     mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
     resetQueryBuilderMocks(mockQueryBuilder);
   });
-
-  const companyId = '660e8400-e29b-41d4-a716-446655440001';
 
   describe('POST /api/company/:companyId/signers (inviteSigner)', () => {
     test('allows active company signer to invite a new signer', async () => {
       const userId = 'user-signer-1';
       const authedUser = mockUserData({ id: userId });
-      const signerRecord = mockCompanySignerData({ company_id: companyId, user_id: userId, is_active: true });
+      const signerRecord = mockCompanySignerData({
+        company_id: companyId,
+        user_id: userId,
+        is_active: true
+      });
 
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+
       mockQueryBuilder.single
         .mockResolvedValueOnce(mockDatabaseSuccess(authedUser)) // requireAuth: users
         .mockResolvedValueOnce(mockDatabaseSuccess(signerRecord)) // requireCompanySigner
-        .mockResolvedValueOnce(mockDatabaseSuccess({ name: 'Acme Corp', domain_email: '@acme.com' })) // companies lookup
-        .mockResolvedValueOnce(mockDatabaseSuccess({
-          id: 'new-signer-id',
-          company_id: companyId,
-          email: 'new@acme.com',
-          role: 'HR Manager',
-          invite_token: 'token123'
-        })); // insert/select
+        .mockResolvedValueOnce(
+          mockDatabaseSuccess({ name: 'Acme Corp', domain_email: '@acme.com' })
+        ) // companies lookup
+        .mockResolvedValueOnce(
+          mockDatabaseSuccess({
+            id: 'new-signer-id',
+            company_id: companyId,
+            email: 'new@acme.com',
+            role: 'HR Manager',
+            invite_token: 'token123'
+          })
+        ); // insert/select
 
       mockQueryBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
@@ -99,6 +114,7 @@ describe('Signers Controller - Permission Tests', () => {
       const authedUser = mockUserData({ id: userId, role: 'user' });
 
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+
       mockQueryBuilder.single
         .mockResolvedValueOnce(mockDatabaseSuccess(authedUser)) // requireAuth
         .mockResolvedValueOnce(mockDatabaseError('No rows found', 'PGRST116')); // requireCompanySigner fails
@@ -116,9 +132,13 @@ describe('Signers Controller - Permission Tests', () => {
     test('returns 404 when company does not exist', async () => {
       const userId = 'user-signer-2';
       const authedUser = mockUserData({ id: userId });
-      const signerRecord = mockCompanySignerData({ company_id: companyId, user_id: userId });
+      const signerRecord = mockCompanySignerData({
+        company_id: companyId,
+        user_id: userId
+      });
 
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+
       mockQueryBuilder.single
         .mockResolvedValueOnce(mockDatabaseSuccess(authedUser))
         .mockResolvedValueOnce(mockDatabaseSuccess(signerRecord))
@@ -136,9 +156,13 @@ describe('Signers Controller - Permission Tests', () => {
     test('returns 400 when missing required fields', async () => {
       const userId = 'user-signer-3';
       const authedUser = mockUserData({ id: userId });
-      const signerRecord = mockCompanySignerData({ company_id: companyId, user_id: userId });
+      const signerRecord = mockCompanySignerData({
+        company_id: companyId,
+        user_id: userId
+      });
 
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+
       mockQueryBuilder.single
         .mockResolvedValueOnce(mockDatabaseSuccess(authedUser))
         .mockResolvedValueOnce(mockDatabaseSuccess(signerRecord));
@@ -207,9 +231,13 @@ describe('Signers Controller - Permission Tests', () => {
     test('returns 404 when target signer is not found in the company', async () => {
       const userId = 'user-signer-4';
       const authedUser = mockUserData({ id: userId });
-      const signerRecord = mockCompanySignerData({ company_id: companyId, user_id: userId });
+      const signerRecord = mockCompanySignerData({
+        company_id: companyId,
+        user_id: userId
+      });
 
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+
       mockQueryBuilder.single
         .mockResolvedValueOnce(mockDatabaseSuccess(authedUser))
         .mockResolvedValueOnce(mockDatabaseSuccess(signerRecord))
@@ -229,6 +257,7 @@ describe('Signers Controller - Permission Tests', () => {
       const authedUser = mockUserData({ id: userId });
 
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+
       mockQueryBuilder.single
         .mockResolvedValueOnce(mockDatabaseSuccess(authedUser))
         .mockResolvedValueOnce(mockDatabaseError('No rows found', 'PGRST116'));
@@ -245,10 +274,22 @@ describe('Signers Controller - Permission Tests', () => {
     test('PERM-S19: signer cannot deactivate themselves', async () => {
       const userId = 'self-signer-1';
       const authedUser = mockUserData({ id: userId });
-      const signerRecord = mockCompanySignerData({ company_id: companyId, user_id: userId, is_active: true });
-      const targetSigner = mockCompanySignerData({ id: signerId, company_id: companyId, user_id: userId, is_active: true });
+      const signerRecord = mockCompanySignerData({
+        company_id: companyId,
+        user_id: userId,
+        is_active: true
+      });
+      const targetSigner = mockCompanySignerData({
+        id: signerId,
+        company_id: companyId,
+        user_id: userId,
+        is_active: true
+      });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+      mockSupabaseClient.auth.getUser.mockResolvedValue(
+        mockAuthGetUserSuccess(userId)
+      );
+
       mockQueryBuilder.single
         .mockResolvedValueOnce(mockDatabaseSuccess(authedUser)) // requireAuth lookup
         .mockResolvedValueOnce(mockDatabaseSuccess(signerRecord)) // requireCompanySigner
@@ -280,6 +321,7 @@ describe('Signers Controller - Permission Tests', () => {
       const authedUser = mockUserData({ id: userId });
 
       mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId));
+
       mockQueryBuilder.single
         .mockResolvedValueOnce(mockDatabaseSuccess(authedUser))
         .mockResolvedValueOnce(mockDatabaseError('No rows found', 'PGRST116'));
@@ -294,7 +336,10 @@ describe('Signers Controller - Permission Tests', () => {
 
     test('PERM-S20: cannot accept invitation when authenticated email mismatches token email', async () => {
       const userId = 'user-mismatch';
-      const authedUser = mockUserData({ id: userId, email: 'other@example.com' });
+      const authedUser = mockUserData({
+        id: userId,
+        email: 'other@example.com'
+      });
       const invitationSigner = mockCompanySignerData({
         id: 'signer-invite-1',
         company_id: 'company-xyz',
@@ -303,7 +348,10 @@ describe('Signers Controller - Permission Tests', () => {
         invite_token: token
       });
 
-      mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess(userId, authedUser.email));
+      mockSupabaseClient.auth.getUser.mockResolvedValue(
+        mockAuthGetUserSuccess(userId, authedUser.email)
+      );
+
       mockQueryBuilder.single
         .mockResolvedValueOnce(mockDatabaseSuccess(authedUser)) // requireAuth user fetch
         .mockResolvedValueOnce(mockDatabaseSuccess(invitationSigner)) // fetch signer by token
