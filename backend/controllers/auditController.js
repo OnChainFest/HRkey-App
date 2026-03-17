@@ -13,9 +13,61 @@ import {
 } from '../utils/auditLogger.js';
 import logger from '../logger.js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
-const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+let supabaseClient;
+
+function getSupabaseClient() {
+  const supabaseUrl = process.env.SUPABASE_URL || 'https://example.supabase.co';
+  const supabaseServiceKey =
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    'test-service-role-key';
+
+  if (process.env.NODE_ENV === 'test') {
+    return createClient(supabaseUrl, supabaseServiceKey);
+  }
+
+  if (!supabaseClient) {
+    supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+  }
+
+  return supabaseClient;
+}
+
+function createFallbackLogger() {
+  return {
+    error: () => {},
+    warn: () => {},
+    info: () => {},
+    debug: () => {}
+  };
+}
+
+function getReqLogger(req) {
+  try {
+    if (logger && typeof logger.withRequest === 'function') {
+      const contextualLogger = logger.withRequest(req);
+      if (
+        contextualLogger &&
+        typeof contextualLogger.error === 'function' &&
+        typeof contextualLogger.warn === 'function'
+      ) {
+        return contextualLogger;
+      }
+    }
+
+    if (
+      logger &&
+      typeof logger.error === 'function' &&
+      typeof logger.warn === 'function'
+    ) {
+      return logger;
+    }
+
+    return createFallbackLogger();
+  } catch {
+    return createFallbackLogger();
+  }
+}
 
 // ============================================================================
 // GET AUDIT LOGS
@@ -39,6 +91,8 @@ const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
  */
 export async function getAuditLogs(req, res) {
   try {
+    const client = getSupabaseClient();
+
     const {
       userId,
       companyId,
@@ -47,26 +101,21 @@ export async function getAuditLogs(req, res) {
       offset = 0
     } = req.query;
 
-    // Parse and validate limit/offset
-    const parsedLimit = Math.min(parseInt(limit) || 50, 100);
-    const parsedOffset = parseInt(offset) || 0;
+    const parsedLimit = Math.min(Number.parseInt(limit, 10) || 50, 100);
+    const parsedOffset = Number.parseInt(offset, 10) || 0;
+    const isSuperadmin = req.user?.role === 'superadmin';
 
-    // Authorization checks
-    const isSuperadmin = req.user.role === 'superadmin';
-
-    // If not superadmin, enforce restrictions
     if (!isSuperadmin) {
-      // Users can only view their own logs or their companies' logs
       if (userId && userId !== req.user.id) {
         return res.status(403).json({
+          success: false,
           error: 'Forbidden',
           message: 'You can only view your own audit logs'
         });
       }
 
-      // If filtering by company, verify user is a signer
       if (companyId) {
-        const { data: signer } = await supabaseClient
+        const signerResult = await client
           .from('company_signers')
           .select('id')
           .eq('company_id', companyId)
@@ -74,88 +123,95 @@ export async function getAuditLogs(req, res) {
           .eq('is_active', true)
           .single();
 
-        if (!signer) {
+        const signer = signerResult?.data || null;
+        const signerError = signerResult?.error || null;
+
+        if (signerError || !signer) {
           return res.status(403).json({
+            success: false,
             error: 'Forbidden',
             message: 'You must be a signer of this company to view its audit logs'
           });
         }
-      } else {
-        // If no company filter, enforce user filter
-        // Non-superadmins can only see their own logs
-        if (!userId) {
-          // Default to current user's logs
-          const filters = {
-            userId: req.user.id,
-            actionType
-          };
-          const result = await getUserAuditLogs(req.user.id, parsedLimit, parsedOffset);
-          return res.json({
-            success: true,
-            logs: result,
-            total: result.length,
-            limit: parsedLimit,
-            offset: parsedOffset
-          });
-        }
+
+        const logs = await getCompanyAuditLogs(companyId, parsedLimit, parsedOffset);
+
+        return res.json({
+          success: true,
+          logs: Array.isArray(logs) ? logs : [],
+          total: Array.isArray(logs) ? logs.length : 0,
+          limit: parsedLimit,
+          offset: parsedOffset
+        });
       }
+
+      const effectiveUserId = userId || req.user.id;
+      const logs = await getUserAuditLogs(effectiveUserId, parsedLimit, parsedOffset);
+
+      return res.json({
+        success: true,
+        logs: Array.isArray(logs) ? logs : [],
+        total: Array.isArray(logs) ? logs.length : 0,
+        limit: parsedLimit,
+        offset: parsedOffset
+      });
     }
 
-    // Build filters object
+    if (companyId && !userId) {
+      const logs = await getCompanyAuditLogs(companyId, parsedLimit, parsedOffset);
+
+      return res.json({
+        success: true,
+        logs: Array.isArray(logs) ? logs : [],
+        total: Array.isArray(logs) ? logs.length : 0,
+        limit: parsedLimit,
+        offset: parsedOffset
+      });
+    }
+
+    if (userId && !companyId) {
+      const logs = await getUserAuditLogs(userId, parsedLimit, parsedOffset);
+
+      return res.json({
+        success: true,
+        logs: Array.isArray(logs) ? logs : [],
+        total: Array.isArray(logs) ? logs.length : 0,
+        limit: parsedLimit,
+        offset: parsedOffset
+      });
+    }
+
     const filters = {};
     if (userId) filters.userId = userId;
     if (companyId) filters.companyId = companyId;
     if (actionType) filters.actionType = actionType;
 
-    // Fetch logs based on filters
-    let result;
-    if (companyId && !userId) {
-      // Company-specific logs
-      result = await getCompanyAuditLogs(companyId, parsedLimit, parsedOffset);
-      return res.json({
-        success: true,
-        logs: result,
-        total: result.length,
-        limit: parsedLimit,
-        offset: parsedOffset
-      });
-    } else if (userId && !companyId) {
-      // User-specific logs
-      result = await getUserAuditLogs(userId, parsedLimit, parsedOffset);
-      return res.json({
-        success: true,
-        logs: result,
-        total: result.length,
-        limit: parsedLimit,
-        offset: parsedOffset
-      });
-    } else {
-      // General query (superadmin only)
-      if (!isSuperadmin) {
-        return res.status(403).json({
-          error: 'Forbidden',
-          message: 'Superadmin access required for unfiltered queries'
-        });
-      }
-      result = await getAllAuditLogs(filters, parsedLimit, parsedOffset);
-      return res.json({
-        success: true,
-        logs: result.logs,
-        total: result.total,
-        limit: parsedLimit,
-        offset: parsedOffset
-      });
-    }
+    const result = await getAllAuditLogs(filters, parsedLimit, parsedOffset);
+
+    return res.json({
+      success: true,
+      logs: Array.isArray(result?.logs) ? result.logs : [],
+      total:
+        typeof result?.total === 'number'
+          ? result.total
+          : Array.isArray(result?.logs)
+            ? result.logs.length
+            : 0,
+      limit: parsedLimit,
+      offset: parsedOffset
+    });
   } catch (error) {
-    const reqLogger = logger.withRequest(req);
+    const reqLogger = getReqLogger(req);
     reqLogger.error('Failed to get audit logs', {
       userId: req.user?.id,
       queryUserId: req.query?.userId,
       queryCompanyId: req.query?.companyId,
-      error: error.message,
-      stack: error.stack
+      error: error?.message,
+      stack: error?.stack
     });
+
     return res.status(500).json({
+      success: false,
       error: 'Internal server error',
       message: 'An error occurred while fetching audit logs'
     });
@@ -173,57 +229,89 @@ export async function getAuditLogs(req, res) {
  */
 export async function getRecentActivity(req, res) {
   try {
+    const client = getSupabaseClient();
     const userId = req.user.id;
 
-    // Get all companies where user is a signer
-    const { data: signerRecords } = await supabaseClient
+    const signerResult = await client
       .from('company_signers')
       .select('company_id')
       .eq('user_id', userId)
       .eq('is_active', true);
 
-    if (!signerRecords || signerRecords.length === 0) {
+    const signerRecords = signerResult?.data || [];
+    const signerError = signerResult?.error || null;
+
+    if (signerError) {
+      const reqLogger = getReqLogger(req);
+      reqLogger.error('Failed to fetch signer records for recent activity', {
+        userId: req.user?.id,
+        error: signerError?.message,
+        stack: signerError?.stack
+      });
+
+      return res.status(500).json({
+        success: false,
+        error: 'Database error'
+      });
+    }
+
+    if (!Array.isArray(signerRecords) || signerRecords.length === 0) {
       return res.json({
         success: true,
         activity: []
       });
     }
 
-    const companyIds = signerRecords.map(s => s.company_id);
+    const companyIds = signerRecords
+      .map((record) => record.company_id)
+      .filter(Boolean);
 
-    // Get recent audit logs for these companies
-    const { data: logs, error } = await supabaseClient
+    if (companyIds.length === 0) {
+      return res.json({
+        success: true,
+        activity: []
+      });
+    }
+
+    const logsResult = await client
       .from('audit_logs')
       .select('*')
       .in('company_id', companyIds)
       .order('created_at', { ascending: false })
       .limit(10);
 
-    if (error) {
-      const reqLogger = logger.withRequest(req);
+    const logs = logsResult?.data || [];
+    const logsError = logsResult?.error || null;
+
+    if (logsError) {
+      const reqLogger = getReqLogger(req);
       reqLogger.error('Failed to fetch recent activity', {
         userId: req.user?.id,
-        companyIds: companyIds,
-        error: error.message,
-        stack: error.stack
+        companyIds,
+        error: logsError?.message,
+        stack: logsError?.stack
       });
+
       return res.status(500).json({
+        success: false,
         error: 'Database error'
       });
     }
 
     return res.json({
       success: true,
-      activity: logs
+      activity: Array.isArray(logs) ? logs : []
     });
   } catch (error) {
-    const reqLogger = logger.withRequest(req);
+    const reqLogger = getReqLogger(req);
     reqLogger.error('Failed to get recent activity', {
       userId: req.user?.id,
-      error: error.message,
-      stack: error.stack
+      error: error?.message,
+      stack: error?.stack
     });
+
     return res.status(500).json({
+      success: false,
       error: 'Internal server error'
     });
   }

@@ -7,10 +7,6 @@
 import { createClient } from '@supabase/supabase-js';
 import logger from '../logger.js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey =
-  process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-
 let supabaseClient;
 
 export function __setSupabaseClientForTests(client) {
@@ -22,19 +18,24 @@ export function __resetSupabaseClientForTests() {
 }
 
 const getSupabaseClient = () => {
-  const supabaseUrl = process.env.SUPABASE_URL || 'https://example.supabase.co';
-  const supabaseServiceKey =
+  const resolvedSupabaseUrl = process.env.SUPABASE_URL || 'https://example.supabase.co';
+  const resolvedSupabaseServiceKey =
     process.env.SUPABASE_SERVICE_KEY ||
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     'test-service-role-key';
 
-  // In tests, always return a fresh client so Jest mocks are respected.
+  // In tests, prefer the explicitly injected mock client.
+  if (process.env.NODE_ENV === 'test' && supabaseClient) {
+    return supabaseClient;
+  }
+
+  // In tests without explicit injection, return a fresh mocked client.
   if (process.env.NODE_ENV === 'test') {
-    return createClient(supabaseUrl, supabaseServiceKey);
+    return createClient(resolvedSupabaseUrl, resolvedSupabaseServiceKey);
   }
 
   if (!supabaseClient) {
-    supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+    supabaseClient = createClient(resolvedSupabaseUrl, resolvedSupabaseServiceKey);
   }
 
   return supabaseClient;

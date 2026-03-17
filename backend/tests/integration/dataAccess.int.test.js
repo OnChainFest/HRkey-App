@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { jest, afterAll } from '@jest/globals';
 import request from 'supertest';
 import {
   createMockSupabaseClient,
@@ -12,6 +12,43 @@ import {
 const mockSupabaseClient = createMockSupabaseClient();
 const mockQueryBuilder = mockSupabaseClient.from();
 const evaluateCandidateForUser = jest.fn();
+
+function buildTableMock({ singleResponses = [], maybeSingleResponses = [], orderResponses = [] } = {}) {
+  const builder = {
+    select: jest.fn().mockReturnThis(),
+    insert: jest.fn().mockReturnThis(),
+    update: jest.fn().mockReturnThis(),
+    delete: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    gt: jest.fn().mockReturnThis(),
+    in: jest.fn().mockReturnThis(),
+    or: jest.fn().mockReturnThis(),
+    order: jest.fn(),
+    limit: jest.fn().mockReturnThis(),
+    single: jest.fn(),
+    maybeSingle: jest.fn()
+  };
+
+  builder.single.mockImplementation(() =>
+    Promise.resolve(singleResponses.length ? singleResponses.shift() : mockDatabaseSuccess({}))
+  );
+
+  builder.maybeSingle.mockImplementation(() =>
+    Promise.resolve(
+      maybeSingleResponses.length ? maybeSingleResponses.shift() : { data: null, error: null }
+    )
+  );
+
+  builder.order.mockImplementation(() =>
+    Promise.resolve(orderResponses.length ? orderResponses.shift() : mockDatabaseSuccess([]))
+  );
+
+  return builder;
+}
+
+function configureTableMocks(tableMocks) {
+  mockSupabaseClient.from.mockImplementation((table) => tableMocks[table] || mockQueryBuilder);
+}
 
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
@@ -46,6 +83,7 @@ jest.unstable_mockModule('../../services/candidateEvaluation.service.js', () => 
   evaluateCandidateForUser
 }));
 
+const authMiddleware = await import('../../middleware/auth.js');
 const { default: app } = await import('../../server.js');
 
 describe('Data Access Integration', () => {
@@ -53,6 +91,12 @@ describe('Data Access Integration', () => {
     jest.clearAllMocks();
     mockSupabaseClient.from.mockReturnValue(mockQueryBuilder);
     resetQueryBuilderMocks(mockQueryBuilder);
+    authMiddleware.__setSupabaseClientForTests(mockSupabaseClient);
+    mockSupabaseClient.auth.getUser.mockReset();
+  });
+
+  afterAll(() => {
+    authMiddleware.__resetSupabaseClientForTests();
   });
 
   test('DA-INT-01: should return 401 for unauthenticated user on pending list', async () => {
@@ -65,10 +109,14 @@ describe('Data Access Integration', () => {
   });
 
   test('DA-INT-02: should return 403 when non-signer requests approved data', async () => {
-    mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-1'));
-    mockQueryBuilder.single
-      .mockResolvedValueOnce(mockDatabaseSuccess(mockUserData({ id: 'user-1' })))
-      .mockResolvedValueOnce(
+    const authedUser = mockUserData({ id: 'user-1' });
+
+    const usersTable = buildTableMock({
+      singleResponses: [mockDatabaseSuccess(authedUser)]
+    });
+
+    const requestsTable = buildTableMock({
+      singleResponses: [
         mockDatabaseSuccess({
           id: 'req-1',
           company_id: 'company-1',
@@ -78,8 +126,20 @@ describe('Data Access Integration', () => {
           reference_id: null,
           access_count: 0
         })
-      );
-    mockQueryBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+      ]
+    });
+
+    const companySignersTable = buildTableMock({
+      maybeSingleResponses: [{ data: null, error: null }]
+    });
+
+    configureTableMocks({
+      users: usersTable,
+      data_access_requests: requestsTable,
+      company_signers: companySignersTable
+    });
+
+    mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-1'));
 
     const res = await request(app)
       .get('/api/data-access/req-1/data')
@@ -90,10 +150,11 @@ describe('Data Access Integration', () => {
   });
 
   test('DA-INT-03: should list pending requests for authenticated user', async () => {
-    mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-2'));
-    mockQueryBuilder.single.mockResolvedValueOnce(
-      mockDatabaseSuccess(mockUserData({ id: 'user-2' }))
-    );
+    const authedUser = mockUserData({ id: 'user-2' });
+
+    const usersTable = buildTableMock({
+      singleResponses: [mockDatabaseSuccess(authedUser)]
+    });
 
     const pendingRequests = [
       {
@@ -110,7 +171,16 @@ describe('Data Access Integration', () => {
       }
     ];
 
-    mockQueryBuilder.order.mockResolvedValueOnce(mockDatabaseSuccess(pendingRequests));
+    const dataAccessTable = buildTableMock({
+      orderResponses: [mockDatabaseSuccess(pendingRequests)]
+    });
+
+    configureTableMocks({
+      users: usersTable,
+      data_access_requests: dataAccessTable
+    });
+
+    mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-2'));
 
     const res = await request(app)
       .get('/api/data-access/pending')
@@ -123,7 +193,12 @@ describe('Data Access Integration', () => {
   });
 
   test('DA-INT-04: should allow target user to reject request', async () => {
-    mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('target-1'));
+    const authedUser = mockUserData({ id: 'target-1' });
+
+    const usersTable = buildTableMock({
+      singleResponses: [mockDatabaseSuccess(authedUser)]
+    });
+
     const requestRecord = {
       id: 'req-3',
       company_id: 'comp-2',
@@ -134,10 +209,19 @@ describe('Data Access Integration', () => {
       currency: 'USD'
     };
 
-    mockQueryBuilder.single
-      .mockResolvedValueOnce(mockDatabaseSuccess(mockUserData({ id: 'target-1' })))
-      .mockResolvedValueOnce(mockDatabaseSuccess(requestRecord))
-      .mockResolvedValueOnce(mockDatabaseSuccess({ ...requestRecord, status: 'REJECTED' }));
+    const dataAccessTable = buildTableMock({
+      singleResponses: [
+        mockDatabaseSuccess(requestRecord),
+        mockDatabaseSuccess({ ...requestRecord, status: 'REJECTED' })
+      ]
+    });
+
+    configureTableMocks({
+      users: usersTable,
+      data_access_requests: dataAccessTable
+    });
+
+    mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('target-1'));
 
     const res = await request(app)
       .post('/api/data-access/req-3/reject')
@@ -149,10 +233,17 @@ describe('Data Access Integration', () => {
   });
 
   test('DA-INT-05: should return 400 when approving without required fields', async () => {
+    const authedUser = mockUserData({ id: 'target-2' });
+
+    const usersTable = buildTableMock({
+      singleResponses: [mockDatabaseSuccess(authedUser)]
+    });
+
+    configureTableMocks({
+      users: usersTable
+    });
+
     mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('target-2'));
-    mockQueryBuilder.single.mockResolvedValueOnce(
-      mockDatabaseSuccess(mockUserData({ id: 'target-2' }))
-    );
 
     const res = await request(app)
       .post('/api/data-access/req-4/approve')
@@ -164,11 +255,22 @@ describe('Data Access Integration', () => {
   });
 
   test('DA-INT-06: should return 500 when pending fetch fails', async () => {
+    const authedUser = mockUserData({ id: 'user-5' });
+
+    const usersTable = buildTableMock({
+      singleResponses: [mockDatabaseSuccess(authedUser)]
+    });
+
+    const dataAccessTable = buildTableMock({
+      orderResponses: [{ data: null, error: { message: 'Database error' } }]
+    });
+
+    configureTableMocks({
+      users: usersTable,
+      data_access_requests: dataAccessTable
+    });
+
     mockSupabaseClient.auth.getUser.mockResolvedValue(mockAuthGetUserSuccess('user-5'));
-    mockQueryBuilder.single.mockResolvedValueOnce(
-      mockDatabaseSuccess(mockUserData({ id: 'user-5' }))
-    );
-    mockQueryBuilder.order.mockResolvedValueOnce({ data: null, error: { message: 'Database error' } });
 
     const res = await request(app)
       .get('/api/data-access/pending')
