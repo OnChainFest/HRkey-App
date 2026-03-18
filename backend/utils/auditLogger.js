@@ -37,6 +37,9 @@ export const AuditActionTypes = {
   // Reference actions (for future integration)
   APPROVE_REFERENCE: 'approve_reference',
   REJECT_REFERENCE: 'reject_reference',
+  SUBMIT_REFERENCE_ATTEMPT: 'submit_reference_attempt',
+  SUBMIT_REFERENCE_SUCCESS: 'submit_reference_success',
+  SUBMIT_REFERENCE_FAILURE: 'submit_reference_failure',
   VIEW_SENSITIVE_DATA: 'view_sensitive_data',
 
   // Data Access actions
@@ -90,7 +93,9 @@ export async function logAudit({
   resourceType = null,
   resourceId = null,
   details = {},
-  req = null
+  req = null,
+  ipAddress = null,
+  userAgent = null
 }) {
   try {
     // Validate required fields
@@ -100,8 +105,8 @@ export async function logAudit({
     }
 
     // Extract IP and user agent from request if provided
-    const ipAddress = req ? (req.ip || req.connection?.remoteAddress) : null;
-    const userAgent = req ? req.get('user-agent') : null;
+    const resolvedIpAddress = ipAddress ?? (req ? (req.ip || req.connection?.remoteAddress) : null);
+    const resolvedUserAgent = userAgent ?? (req ? req.get('user-agent') : null);
 
     // Prepare audit log entry
     const auditEntry = {
@@ -112,8 +117,8 @@ export async function logAudit({
       resource_type: resourceType,
       resource_id: resourceId,
       details: details,
-      ip_address: ipAddress,
-      user_agent: userAgent
+      ip_address: resolvedIpAddress,
+      user_agent: resolvedUserAgent
     };
 
     // Insert into audit_logs table
@@ -136,6 +141,43 @@ export async function logAudit({
     // Swallow error - audit failure should not break application flow
     return null;
   }
+}
+
+/**
+ * Log reference submission events through the canonical audit_logs path.
+ * This flow is public/token-based, so userId is often null by design.
+ */
+export async function logReferenceSubmissionAudit({
+  actionType,
+  referenceId = null,
+  inviteId = null,
+  tokenHashPrefix = null,
+  clientIpHash = null,
+  userAgent = null,
+  outcome = null,
+  errorCode = null,
+  ownerId = null
+}) {
+  const details = {
+    flow: 'reference_invite_token',
+    actor_type: 'public_invite_submitter'
+  };
+
+  if (outcome) details.outcome = outcome;
+  if (inviteId) details.invite_id = inviteId;
+  if (tokenHashPrefix) details.token_hash_prefix = tokenHashPrefix;
+  if (errorCode) details.error_code = errorCode;
+  if (clientIpHash) details.client_ip_hash = clientIpHash;
+
+  return logAudit({
+    userId: ownerId,
+    actionType,
+    resourceType: ResourceTypes.REFERENCE,
+    resourceId: referenceId,
+    details,
+    ipAddress: clientIpHash,
+    userAgent
+  });
 }
 
 // ============================================================================
@@ -365,6 +407,7 @@ export default {
   logSignerInvitation,
   logSignerAcceptance,
   logSignerStatusChange,
+  logReferenceSubmissionAudit,
   getUserAuditLogs,
   getCompanyAuditLogs,
   getAllAuditLogs,

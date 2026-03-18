@@ -1076,14 +1076,6 @@ app.post('/api/reference/request', requireAuth, validateBody(createReferenceRequ
   }
 });
 
-app.post('/api/reference/submit', (_req, res) => {
-  res.status(410).json({
-    success: false,
-    error: 'ENDPOINT_DEPRECATED',
-    message: 'Use /api/references/respond/:token'
-  });
-});
-
 app.get('/api/reference/by-token/:token', tokenLimiter, async (req, res) => {
   let hashInviteToken = () => undefined;
   try {

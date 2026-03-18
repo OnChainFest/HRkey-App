@@ -25,6 +25,12 @@ jest.unstable_mockModule('@supabase/supabase-js', () => ({
 }));
 
 jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
+  logReferenceSubmissionAudit: jest.fn().mockResolvedValue(),
+  AuditActionTypes: {
+    SUBMIT_REFERENCE_ATTEMPT: 'submit_reference_attempt',
+    SUBMIT_REFERENCE_SUCCESS: 'submit_reference_success',
+    SUBMIT_REFERENCE_FAILURE: 'submit_reference_failure'
+  },
   getAllAuditLogs: mockGetAllAuditLogs,
   getUserAuditLogs: mockGetUserAuditLogs,
   getCompanyAuditLogs: mockGetCompanyAuditLogs

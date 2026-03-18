@@ -91,8 +91,13 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
   logSignerInvitation: jest.fn().mockResolvedValue(),
   logSignerAcceptance: jest.fn().mockResolvedValue(),
   logSignerStatusChange: jest.fn().mockResolvedValue(),
+  logReferenceSubmissionAudit: jest.fn().mockResolvedValue(),
   logDataAccessAction: jest.fn().mockResolvedValue(),
-  AuditActionTypes: {},
+  AuditActionTypes: {
+    SUBMIT_REFERENCE_ATTEMPT: 'submit_reference_attempt',
+    SUBMIT_REFERENCE_SUCCESS: 'submit_reference_success',
+    SUBMIT_REFERENCE_FAILURE: 'submit_reference_failure'
+  },
   ResourceTypes: {},
   getUserAuditLogs: jest.fn().mockResolvedValue([]),
   getCompanyAuditLogs: jest.fn().mockResolvedValue([]),
@@ -121,6 +126,7 @@ jest.unstable_mockModule('../../services/hrscore/autoTrigger.js', () => ({
 
 const { default: app } = await import('../../server.js');
 const appModule = await import('../../app.js');
+const auditLogger = await import('../../utils/auditLogger.js');
 
 describe('Invite security remediation', () => {
   beforeEach(() => {
@@ -225,6 +231,24 @@ describe('Invite security remediation', () => {
     expect(rpcArgs.p_ip_hash).toBe(
       crypto.createHash('sha256').update('203.0.113.10test-invite-salt').digest('hex')
     );
+    expect(auditLogger.logReferenceSubmissionAudit).toHaveBeenCalledTimes(2);
+    expect(auditLogger.logReferenceSubmissionAudit).toHaveBeenNthCalledWith(1, {
+      actionType: 'submit_reference_attempt',
+      tokenHashPrefix: crypto.createHash('sha256').update('valid-token').digest('hex').slice(0, 12),
+      clientIpHash: rpcArgs.p_ip_hash,
+      userAgent: 'UnitTestAgent/1.0',
+      outcome: 'attempted'
+    });
+    expect(auditLogger.logReferenceSubmissionAudit).toHaveBeenNthCalledWith(2, {
+      actionType: 'submit_reference_success',
+      referenceId: 'reference-1',
+      inviteId: null,
+      tokenHashPrefix: crypto.createHash('sha256').update('valid-token').digest('hex').slice(0, 12),
+      clientIpHash: rpcArgs.p_ip_hash,
+      userAgent: 'UnitTestAgent/1.0',
+      outcome: 'succeeded',
+      ownerId: 'user-1'
+    });
   });
 
   test('returns a generic 404 when the authoritative RPC rejects expired or replayed submits', async () => {
@@ -239,6 +263,54 @@ describe('Invite security remediation', () => {
 
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ ok: false, error: 'Invalid or expired invite' });
+    expect(auditLogger.logReferenceSubmissionAudit).toHaveBeenCalledTimes(2);
+    expect(auditLogger.logReferenceSubmissionAudit).toHaveBeenNthCalledWith(1, {
+      actionType: 'submit_reference_attempt',
+      tokenHashPrefix: crypto.createHash('sha256').update('expired-or-used-token').digest('hex').slice(0, 12),
+      clientIpHash: expect.any(String),
+      userAgent: expect.any(String),
+      outcome: 'attempted'
+    });
+    expect(auditLogger.logReferenceSubmissionAudit).toHaveBeenNthCalledWith(2, {
+      actionType: 'submit_reference_failure',
+      tokenHashPrefix: crypto.createHash('sha256').update('expired-or-used-token').digest('hex').slice(0, 12),
+      clientIpHash: expect.any(String),
+      userAgent: expect.any(String),
+      outcome: 'failed',
+      errorCode: 'invalid_or_expired_invite'
+    });
+  });
+
+  test('consumes a token after success and rejects replay attempts on the same route', async () => {
+    mockSupabaseClient.rpc
+      .mockResolvedValueOnce({ data: [{ reference_id: 'reference-1' }], error: null })
+      .mockResolvedValueOnce({ data: [], error: null });
+
+    const first = await request(app)
+      .post('/api/references/respond/replay-token')
+      .send({
+        ratings: { professionalism: 5 },
+        comments: { recommendation: 'Strong hire' }
+      });
+
+    const second = await request(app)
+      .post('/api/references/respond/replay-token')
+      .send({
+        ratings: { professionalism: 5 },
+        comments: { recommendation: 'Strong hire' }
+      });
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(404);
+    expect(auditLogger.logReferenceSubmissionAudit).toHaveBeenCalledTimes(4);
+    expect(auditLogger.logReferenceSubmissionAudit).toHaveBeenNthCalledWith(4, {
+      actionType: 'submit_reference_failure',
+      tokenHashPrefix: crypto.createHash('sha256').update('replay-token').digest('hex').slice(0, 12),
+      clientIpHash: expect.any(String),
+      userAgent: expect.any(String),
+      outcome: 'failed',
+      errorCode: 'invalid_or_expired_invite'
+    });
   });
 
   test('rate limits the real submit endpoint on the runtime entrypoint', async () => {
@@ -260,7 +332,7 @@ describe('Invite security remediation', () => {
     expect(blocked.body).toEqual({ ok: false, error: 'RATE_LIMITED' });
   });
 
-  test('disables the legacy public submit endpoint', async () => {
+  test('removes the legacy public submit endpoint from runtime', async () => {
     const res = await request(app)
       .post('/api/reference/submit')
       .send({
@@ -268,12 +340,7 @@ describe('Invite security remediation', () => {
         ratings: { professionalism: 4 }
       });
 
-    expect(res.status).toBe(410);
-    expect(res.body).toEqual({
-      success: false,
-      error: 'ENDPOINT_DEPRECATED',
-      message: 'Use /api/references/respond/:token'
-    });
+    expect(res.status).toBe(404);
     expect(mockSupabaseClient.rpc).not.toHaveBeenCalled();
   });
 
