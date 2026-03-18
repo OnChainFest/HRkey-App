@@ -15,7 +15,6 @@ import {
   resolveCandidateId,
   getActiveSignerCompanyIds,
   hasApprovedReferenceAccess,
-  fetchInviteByToken,
   hashInviteToken
 } from '../services/references.service.js';
 
@@ -47,8 +46,22 @@ const getClientIp = (req) => {
  * Hash a client IP with a server-side salt so the raw IP is never persisted.
  * Set INVITE_IP_SALT in env to a random secret.
  */
+const getInviteIpSalt = () => {
+  const salt = process.env.INVITE_IP_SALT;
+  if (salt) return salt;
+
+  if (process.env.NODE_ENV === 'production') {
+    const err = new Error('INVITE_IP_SALT is required in production');
+    err.status = 500;
+    throw err;
+  }
+
+  logger.warn('INVITE_IP_SALT is not configured; using development fallback salt');
+  return 'development-only-invite-ip-salt';
+};
+
 const hashClientIp = (ip) => {
-  const salt = process.env.INVITE_IP_SALT || '';
+  const salt = getInviteIpSalt();
   return crypto.createHash('sha256').update(`${ip}${salt}`).digest('hex');
 };
 
@@ -410,30 +423,12 @@ export async function respondToReferenceInvite(req, res) {
     const { token } = req.params;
     const { ratings, comments } = req.body;
 
-    const { data: invite, error: inviteError } = await fetchInviteByToken(token);
-
-    // SECURITY: Return a single generic message for all token failure cases
-    // (not found / expired / used / processing). Never reveal which condition applies.
-    if (
-      inviteError ||
-      !invite ||
-      invite.status === 'completed' ||
-      invite.status === 'processing' ||
-      (invite.expires_at && new Date(invite.expires_at) < new Date())
-    ) {
-      return res.status(404).json({
-        ok: false,
-        error: 'Invalid or expired invite'
-      });
-    }
-
     const clientIp = getClientIp(req);
     const clientIpHash = hashClientIp(clientIp);
     const userAgent = req.get('user-agent')?.slice(0, 512) || null;
 
     await ReferenceService.submitReference({
       token,
-      invite,
       ratings,
       comments,
       clientIpHash,
