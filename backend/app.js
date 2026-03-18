@@ -90,8 +90,6 @@ import { validateBody, validateBody422, validateParams } from './middleware/vali
 import { createWalletSchema, getWalletParamsSchema } from './schemas/wallet.schema.js';
 import {
   createReferenceRequestSchema,
-  submitReferenceSchema,
-  getReferenceByTokenSchema,
   createReferenceInviteSchema,
   respondReferenceSchema
 } from './schemas/reference.schema.js';
@@ -1078,29 +1076,19 @@ app.post('/api/reference/request', requireAuth, validateBody(createReferenceRequ
   }
 });
 
-app.post('/api/reference/submit', tokenLimiter, validateBody(submitReferenceSchema), async (req, res) => {
-  try {
-    const { ReferenceService, hashInviteToken } = await loadReferenceService();
-    const result = await ReferenceService.submitReference(req.body);
-    res.json(result);
-  } catch (e) {
-    const status = e.status || 500;
-    logger.error('Failed to submit reference', {
-      requestId: req.requestId,
-      tokenHashPrefix: req.body.token ? hashInviteToken(req.body.token).slice(0, 12) : undefined,
-      error: e.message,
-      stack: isProductionEnv ? undefined : e.stack
-    });
-    res.status(status).json({
-      success: false,
-      error: status >= 500 ? 'Failed to submit reference' : e.message
-    });
-  }
+app.post('/api/reference/submit', (_req, res) => {
+  res.status(410).json({
+    success: false,
+    error: 'ENDPOINT_DEPRECATED',
+    message: 'Use /api/references/respond/:token'
+  });
 });
 
-app.get('/api/reference/by-token/:token', tokenLimiter, validateParams(getReferenceByTokenSchema), async (req, res) => {
+app.get('/api/reference/by-token/:token', tokenLimiter, async (req, res) => {
+  let hashInviteToken = () => undefined;
   try {
-    const { ReferenceService, hashInviteToken } = await loadReferenceService();
+    const { ReferenceService, hashInviteToken: loadedHashInviteToken } = await loadReferenceService();
+    hashInviteToken = loadedHashInviteToken;
     const result = await ReferenceService.getReferenceByToken(req.params.token);
     res.json(result);
   } catch (e) {
@@ -1111,9 +1099,9 @@ app.get('/api/reference/by-token/:token', tokenLimiter, validateParams(getRefere
       error: e.message,
       stack: isProductionEnv ? undefined : e.stack
     });
-    res.status(status).json({
+    res.status(status >= 500 ? 500 : 404).json({
       success: false,
-      error: status >= 500 ? 'Failed to get reference' : e.message
+      error: status >= 500 ? 'Failed to get reference' : 'Invalid or expired invite'
     });
   }
 });
@@ -1230,7 +1218,6 @@ app.post(
   '/api/references/respond/:token',
   submitLimiter,
   optionalAuth,
-  validateParams(getReferenceByTokenSchema),
   validateBody422(respondReferenceSchema),
   referencesController.respondToReferenceInvite
 );
@@ -1795,4 +1782,5 @@ if (process.env.NODE_ENV !== 'production') {
 /* =========================
    Export app for testing
    ========================= */
+export default app;
 export { app, ensureSuperadmin, BACKEND_PUBLIC_URL, APP_URL, STRIPE_SECRET_KEY, PORT };

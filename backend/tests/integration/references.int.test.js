@@ -152,7 +152,7 @@ describe('References Workflow MVP Integration', () => {
     expect(res.body.error).toBe('Authentication required');
   });
 
-  test('REF-INT-03: should return 404 for invalid token on respond', async () => {
+  test('REF-INT-03: should return generic 404 for invalid token on respond', async () => {
     mockQueryBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
     const res = await request(app)
@@ -162,17 +162,11 @@ describe('References Workflow MVP Integration', () => {
       });
 
     expect(res.status).toBe(404);
-    expect(res.body.error).toBe('Invitation not found');
+    expect(res.body.error).toBe('Invalid or expired invite');
   });
 
-  test('REF-INT-04: should return 422 for expired token', async () => {
-    mockQueryBuilder.maybeSingle.mockResolvedValueOnce(
-      mockDatabaseSuccess({
-        id: 'invite-1',
-        status: 'pending',
-        expires_at: '2000-01-01T00:00:00Z'
-      })
-    );
+  test('REF-INT-04: should return generic 404 for expired token', async () => {
+    mockSupabaseClient.rpc = jest.fn().mockResolvedValueOnce({ data: [], error: null });
 
     const res = await request(app)
       .post('/api/references/respond/expired-token-000000000000000000000')
@@ -180,18 +174,12 @@ describe('References Workflow MVP Integration', () => {
         ratings: { professionalism: 4 }
       });
 
-    expect(res.status).toBe(422);
-    expect(res.body.error).toBe('Invitation expired');
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('Invalid or expired invite');
   });
 
-  test('REF-INT-05: should reject already used token', async () => {
-    mockQueryBuilder.maybeSingle.mockResolvedValueOnce(
-      mockDatabaseSuccess({
-        id: 'invite-2',
-        status: 'completed',
-        expires_at: '2099-01-01T00:00:00Z'
-      })
-    );
+  test('REF-INT-05: should return generic 404 for already used token', async () => {
+    mockSupabaseClient.rpc = jest.fn().mockResolvedValueOnce({ data: [], error: null });
 
     const res = await request(app)
       .post('/api/references/respond/used-token-0000000000000000000000000')
@@ -199,8 +187,8 @@ describe('References Workflow MVP Integration', () => {
         ratings: { professionalism: 4 }
       });
 
-    expect(res.status).toBe(422);
-    expect(res.body.error).toBe('Reference already submitted');
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('Invalid or expired invite');
   });
 
   test('REF-INT-06: should forbid company signer without approved access', async () => {
@@ -346,29 +334,21 @@ describe('References Workflow MVP Integration', () => {
     expect(res.body.invite?.id).toBeUndefined();
   });
 
-  test('REF-INT-10: token lookup should hash when flag enabled', async () => {
+  test('REF-INT-10: token lookup should delegate to the hardened RPC', async () => {
     const token = 'hashed-token-000000000000000000000000';
-    const hashed = crypto.createHash('sha256').update(token).digest('hex');
-    process.env.USE_HASHED_REFERENCE_TOKENS = 'true';
+    mockSupabaseClient.rpc = jest.fn().mockResolvedValueOnce({
+      data: [{
+        reference_id: 'invite-6',
+        referrer_name: 'Ref D',
+        referrer_email: 'referee@example.com',
+        expires_at: '2099-01-01T00:00:00Z'
+      }],
+      error: null
+    });
 
-    try {
-      mockQueryBuilder.maybeSingle.mockResolvedValueOnce(
-        mockDatabaseSuccess({
-          id: 'invite-6',
-          referee_name: 'Ref D',
-          referee_email: 'referee@example.com',
-          metadata: null,
-          expires_at: '2099-01-01T00:00:00Z',
-          status: 'pending'
-        })
-      );
+    const res = await request(app).get(`/api/reference/by-token/${token}`);
 
-      const res = await request(app).get(`/api/reference/by-token/${token}`);
-
-      expect(res.status).toBe(200);
-      expect(mockQueryBuilder.eq).toHaveBeenCalledWith('invite_token', hashed);
-    } finally {
-      delete process.env.USE_HASHED_REFERENCE_TOKENS;
-    }
+    expect(res.status).toBe(200);
+    expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('get_invite_by_token', { p_token: token });
   });
 });

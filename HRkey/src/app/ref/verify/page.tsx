@@ -2,14 +2,12 @@
 
 import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
-import { supabase } from "../../../lib/supabaseClient"
+import { apiGet, apiPost, ApiClientError } from "../../../lib/apiClient"
 
 type InviteRow = {
-  reference_id: string
-  referrer_email: string | null
-  referrer_name: string | null
+  referee_email: string | null
+  referee_name: string | null
   expires_at: string | null
-  invite_status: string | null
 }
 
 function VerifyReferenceContent() {
@@ -28,31 +26,25 @@ function VerifyReferenceContent() {
       setMsg(null)
 
       if (!token) {
-        setMsg("Falta token.")
+        setMsg("This invite link is invalid or expired.")
         setLoading(false)
         return
       }
 
-      // get_invite_by_token retorna una fila; a veces PostgREST lo entrega como array
-      const res = await supabase.rpc("get_invite_by_token", { p_token: token })
-      if (res.error) {
-        setMsg(`Token inválido: ${res.error.message}`)
+      try {
+        const res = await apiGet<{ success: boolean; invite: InviteRow }>(`/api/reference/by-token/${encodeURIComponent(token)}`, {
+          auth: false,
+        })
+
+        setInvite(res.invite)
+      } catch (error) {
+        if (error instanceof ApiClientError && error.status === 429) {
+          setMsg("Too many attempts. Please try again later.")
+        } else {
+          setMsg("This invite link is invalid or expired.")
+        }
         setLoading(false)
         return
-      }
-
-      const row = Array.isArray(res.data) ? res.data[0] : res.data
-      if (!row) {
-        setMsg("Invitación no encontrada.")
-        setLoading(false)
-        return
-      }
-
-      const inviteRow = row as InviteRow
-      setInvite(inviteRow)
-
-      if ((row as any).invite_status !== "pending") {
-        setMsg(`Esta invitación ya no está activa (estado: ${(row as any).invite_status}).`)
       }
 
       setLoading(false)
@@ -62,45 +54,41 @@ function VerifyReferenceContent() {
   }, [token])
 
   const submit = async () => {
-    // guard rails: si ya no está activa, no reintentar
-    const statusNow = invite?.invite_status ?? "pending"
     const expiresNow = invite?.expires_at ? new Date(invite.expires_at) : null
     const expiredNow = expiresNow ? expiresNow.getTime() < Date.now() : false
 
-    if (expiredNow || statusNow !== "pending") {
-      setMsg("Esta invitación ya no está activa (ya fue usada o expiró).")
-      // por si el state estaba desfasado, aseguramos que quede bloqueada
-      setInvite((prev) => (prev ? { ...prev, invite_status: "completed" } : prev))
+    if (expiredNow) {
+      setMsg("This invite link is invalid or expired.")
       return
     }
 
-    setMsg("Enviando referencia…")
+    setMsg("Submitting reference…")
 
-    const { data, error } = await supabase.rpc("submit_reference_by_token", {
-      p_token: token,
-      p_summary: summary,
-      p_rating: rating,
-      // p_ip lo omitimos porque la RPC tiene default null
-    })
+    try {
+      const response = await apiPost<{ ok: boolean }>(
+        `/api/references/respond/${encodeURIComponent(token)}`,
+        {
+          ratings: { overall: rating },
+          comments: {
+            recommendation: summary,
+          },
+        },
+        { auth: false }
+      )
 
-    if (error) {
-      setMsg(`No se pudo enviar: ${error.message}`)
-      return
+      if (response.ok) {
+        setMsg("Thank you. Your reference was submitted successfully.")
+      } else {
+        setMsg("This invite link is invalid or expired.")
+      }
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 429) {
+        setMsg("Too many attempts. Please try again later.")
+        return
+      }
+
+      setMsg("This invite link is invalid or expired.")
     }
-
-    // Si no devolvió filas, significa: token no matcheó / no estaba pending / expiró
-    const first = Array.isArray(data) ? data[0] : data
-    const referenceId = first?.reference_id
-
-    if (!referenceId) {
-      setMsg("Esta invitación ya no está activa (probablemente ya fue usada). Abrí un link nuevo.")
-      setInvite((prev) => (prev ? { ...prev, invite_status: "completed" } : prev))
-      return
-    }
-
-    // Éxito: bloqueamos re-submit sin depender de refresh
-    setInvite((prev) => (prev ? { ...prev, invite_status: "completed" } : prev))
-    setMsg(`¡Gracias! Referencia verificada. ID: ${referenceId}`)
   }
 
   if (loading) {
@@ -118,8 +106,7 @@ function VerifyReferenceContent() {
 
   const expires = invite.expires_at ? new Date(invite.expires_at) : null
   const expired = expires ? expires.getTime() < Date.now() : false
-  const status = invite.invite_status ?? "pending"
-  const disabled = expired || status !== "pending"
+  const disabled = expired
 
   return (
     <div style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>
@@ -128,14 +115,11 @@ function VerifyReferenceContent() {
 
       <div style={{ marginTop: 16, padding: 12, border: "1px solid #eee", borderRadius: 8 }}>
         <div>
-          <b>Para:</b> {invite.referrer_name || "—"}{" "}
-          {invite.referrer_email ? `(${invite.referrer_email})` : ""}
+          <b>Para:</b> {invite.referee_name || "—"}{" "}
+          {invite.referee_email ? `(${invite.referee_email})` : ""}
         </div>
         <div>
           <b>Vence:</b> {expires ? expires.toLocaleString() : "—"}
-        </div>
-        <div>
-          <b>Estado de invitación:</b> {status}
         </div>
       </div>
 

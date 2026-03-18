@@ -19,7 +19,7 @@ export const createReferenceRequestSchema = z.object({
 
 // Submit reference schema
 export const submitReferenceSchema = z.object({
-  token: z.string().min(32, 'Invalid token'),
+  token: z.string().min(1, 'Token is required'),
   refereeData: z.object({
     name: z.string().optional(),
     email: z.string().email().optional()
@@ -37,7 +37,7 @@ export const submitReferenceSchema = z.object({
 
 // Get reference by token schema (params)
 export const getReferenceByTokenSchema = z.object({
-  token: z.string().min(32, 'Invalid token format')
+  token: z.string().min(1, 'Token is required')
 });
 
 // Reference invite request schema (references workflow MVP)
