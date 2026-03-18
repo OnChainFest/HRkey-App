@@ -1,23 +1,17 @@
-/**
- * Audit Log Controller - Permission Tests (PERM-A1..PERM-A8)
- * Direct controller tests with explicit Supabase chain mocks.
- */
+// ============================================================================
+// Audit Controller
+// ============================================================================
+// Handles audit log queries and retrieval
+// Provides endpoints for viewing audit trails
+// ============================================================================
 
-import { jest } from '@jest/globals';
+import { createClient } from '@supabase/supabase-js';
 import {
-  createMockSupabaseClient,
-  mockUserData
-} from '../__mocks__/supabase.mock.js';
-
-const mockSupabaseClient = createMockSupabaseClient();
-
-const mockGetAllAuditLogs = jest.fn();
-const mockGetUserAuditLogs = jest.fn();
-const mockGetCompanyAuditLogs = jest.fn();
-
-jest.unstable_mockModule('@supabase/supabase-js', () => ({
-  createClient: jest.fn(() => mockSupabaseClient)
-}));
+  getAllAuditLogs,
+  getUserAuditLogs,
+  getCompanyAuditLogs
+} from '../utils/auditLogger.js';
+import logger from '../logger.js';
 
 let supabaseClient;
 
@@ -75,45 +69,25 @@ function getReqLogger(req) {
   }
 }
 
-jest.unstable_mockModule('../../logger.js', () => ({
-  default: {
-    error: jest.fn(),
-    warn: jest.fn(),
-    info: jest.fn(),
-    debug: jest.fn(),
-    withRequest: jest.fn(() => ({
-      error: jest.fn(),
-      warn: jest.fn(),
-      info: jest.fn(),
-      debug: jest.fn()
-    }))
-  }
-}));
-
-const { getAuditLogs, getRecentActivity } = await import('../../controllers/auditController.js');
-
-function createRes() {
-  return {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis()
-  };
-}
-
-function createReq(overrides = {}) {
-  return {
-    user: mockUserData({ id: 'user-1', role: 'user', email: 'user@test.com' }),
-    query: {},
-    params: {},
-    body: {},
-    ip: '127.0.0.1',
-    get: jest.fn(() => 'jest'),
-    ...overrides
-  };
-}
+// ============================================================================
+// GET AUDIT LOGS
+// ============================================================================
 
 /**
- * For controller path:
- * client.from('company_signers').select(...).eq(...).eq(...).eq(...).single()
+ * GET /api/audit/logs
+ * Get audit logs with filtering
+ *
+ * Query params:
+ *   - userId: Filter by user ID
+ *   - companyId: Filter by company ID
+ *   - actionType: Filter by action type
+ *   - limit: Number of results (default 50, max 100)
+ *   - offset: Pagination offset (default 0)
+ *
+ * Access:
+ *   - Superadmins: Can view all logs with any filters
+ *   - Users: Can only view their own logs (userId filter is enforced)
+ *   - Company signers: Can view logs for their companies
  */
 export async function getAuditLogs(req, res) {
   try {
@@ -244,27 +218,14 @@ export async function getAuditLogs(req, res) {
   }
 }
 
-/**
- * For controller path:
- * await client.from('company_signers').select(...).eq(...).eq(...)
- * The second eq resolves the final payload.
- */
-function makeCompanySignerListBuilder({ data = [], error = null } = {}) {
-  const builder = {
-    select: jest.fn().mockReturnThis(),
-    eq: jest.fn()
-  };
-
-  builder.eq
-    .mockImplementationOnce(() => builder)
-    .mockImplementationOnce(() => Promise.resolve({ data, error }));
-
-  return builder;
-}
+// ============================================================================
+// GET RECENT ACTIVITY (for dashboards)
+// ============================================================================
 
 /**
- * For controller path:
- * client.from('audit_logs').select(...).in(...).order(...).limit(10)
+ * GET /api/audit/recent
+ * Get recent audit activity for current user's companies
+ * Returns last 10 actions across all companies user is a signer of
  */
 export async function getRecentActivity(req, res) {
   try {
@@ -297,43 +258,9 @@ export async function getRecentActivity(req, res) {
     if (!Array.isArray(signerRecords) || signerRecords.length === 0) {
       return res.json({
         success: true,
-        logs: [{ id: 'log-1', user_id: 'u1' }],
-        total: 1,
-        limit: 50,
-        offset: 0
+        activity: []
       });
-    });
-
-    test('PERM-A2: regular user can view only their own logs', async () => {
-      const user = mockUserData({ id: 'user-1', role: 'user' });
-      const req = createReq({
-        user,
-        query: { userId: user.id }
-      });
-      const res = createRes();
-
-      mockGetUserAuditLogs.mockResolvedValue([{ id: 'log-self', user_id: user.id }]);
-
-      await getAuditLogs(req, res);
-
-      expect(mockGetUserAuditLogs).toHaveBeenCalledWith(user.id, 50, 0);
-      expect(res.status).not.toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        logs: [{ id: 'log-self', user_id: user.id }],
-        total: 1,
-        limit: 50,
-        offset: 0
-      });
-    });
-
-    test("PERM-A3: regular user cannot view another user's logs (IDOR)", async () => {
-      const user = mockUserData({ id: 'user-2', role: 'user' });
-      const req = createReq({
-        user,
-        query: { userId: 'other-user' }
-      });
-      const res = createRes();
+    }
 
     const companyIds = signerRecords
       .map((record) => record.company_id)
@@ -369,6 +296,7 @@ export async function getRecentActivity(req, res) {
         success: false,
         error: 'Database error'
       });
+    }
 
     return res.json({
       success: true,
@@ -386,64 +314,10 @@ export async function getRecentActivity(req, res) {
       success: false,
       error: 'Internal server error'
     });
-  });
+  }
+}
 
-  describe('GET /api/audit/recent', () => {
-    test('PERM-A7: user can view recent activity for companies they belong to', async () => {
-      const user = mockUserData({ id: 'signer-recent', role: 'user' });
-      const req = createReq({ user });
-      const res = createRes();
-
-      mockSupabaseClient.from.mockImplementation((table) => {
-        if (table === 'company_signers') {
-          return makeCompanySignerListBuilder({
-            data: [{ company_id: 'company-2' }],
-            error: null
-          });
-        }
-
-        if (table === 'audit_logs') {
-          return makeAuditLogsBuilder({
-            data: [{ id: 'log-recent', company_id: 'company-2' }],
-            error: null
-          });
-        }
-
-        throw new Error(`Unexpected table: ${table}`);
-      });
-
-      await getRecentActivity(req, res);
-
-      expect(res.status).not.toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        activity: [{ id: 'log-recent', company_id: 'company-2' }]
-      });
-    });
-
-    test('PERM-A8: user not belonging to any company receives empty activity list (current behavior)', async () => {
-      const user = mockUserData({ id: 'no-company', role: 'user' });
-      const req = createReq({ user });
-      const res = createRes();
-
-      mockSupabaseClient.from.mockImplementation((table) => {
-        if (table === 'company_signers') {
-          return makeCompanySignerListBuilder({
-            data: [],
-            error: null
-          });
-        }
-
-        throw new Error(`Unexpected table: ${table}`);
-      });
-
-      await getRecentActivity(req, res);
-
-      expect(res.status).not.toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        activity: []
-      });
-    });
-  });
-});
+export default {
+  getAuditLogs,
+  getRecentActivity
+};
