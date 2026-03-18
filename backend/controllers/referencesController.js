@@ -7,6 +7,7 @@
  * - Superadmins can view all references
  */
 
+import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import logger from '../logger.js';
 import {
@@ -29,6 +30,26 @@ const maskEmailForLogs = (email) => {
   if (!domain) return `${email.slice(0, 2)}***`;
   const visible = local.slice(0, 2);
   return `${visible}${local.length > 2 ? '***' : ''}@${domain}`;
+};
+
+/**
+ * Extract the real client IP, respecting proxy forwarding headers.
+ */
+const getClientIp = (req) => {
+  const fwd = req.headers['x-forwarded-for'];
+  if (typeof fwd === 'string' && fwd.trim().length > 0) {
+    return fwd.split(',')[0].trim();
+  }
+  return req.ip || 'unknown';
+};
+
+/**
+ * Hash a client IP with a server-side salt so the raw IP is never persisted.
+ * Set INVITE_IP_SALT in env to a random secret.
+ */
+const hashClientIp = (ip) => {
+  const salt = process.env.INVITE_IP_SALT || '';
+  return crypto.createHash('sha256').update(`${ip}${salt}`).digest('hex');
 };
 
 /**
@@ -93,7 +114,6 @@ export async function getMyReferences(req, res) {
       references: references || [],
       count: references?.length || 0
     });
-
   } catch (err) {
     logger.error('Exception in getMyReferences', {
       requestId: req.requestId,
@@ -222,7 +242,6 @@ export async function getCandidateReferences(req, res) {
       error: 'FORBIDDEN',
       message: 'You do not have permission to view this candidate\'s references'
     });
-
   } catch (err) {
     logger.error('Exception in getCandidateReferences', {
       requestId: req.requestId,
@@ -289,7 +308,6 @@ export async function getMyPendingInvites(req, res) {
       invites: invites || [],
       count: invites?.length || 0
     });
-
   } catch (err) {
     logger.error('Exception in getMyPendingInvites', {
       requestId: req.requestId,
@@ -394,39 +412,32 @@ export async function respondToReferenceInvite(req, res) {
 
     const { data: invite, error: inviteError } = await fetchInviteByToken(token);
 
-    if (inviteError || !invite) {
+    // SECURITY: Return a single generic message for all token failure cases
+    // (not found / expired / used / processing). Never reveal which condition applies.
+    if (
+      inviteError ||
+      !invite ||
+      invite.status === 'completed' ||
+      invite.status === 'processing' ||
+      (invite.expires_at && new Date(invite.expires_at) < new Date())
+    ) {
       return res.status(404).json({
         ok: false,
-        error: 'Invitation not found'
+        error: 'Invalid or expired invite'
       });
     }
 
-    if (invite.status === 'completed') {
-      return res.status(422).json({
-        ok: false,
-        error: 'Reference already submitted'
-      });
-    }
-
-    if (invite.status === 'processing') {
-      return res.status(409).json({
-        ok: false,
-        error: 'Reference is already being processed'
-      });
-    }
-
-    if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-      return res.status(422).json({
-        ok: false,
-        error: 'Invitation expired'
-      });
-    }
+    const clientIp = getClientIp(req);
+    const clientIpHash = hashClientIp(clientIp);
+    const userAgent = req.get('user-agent')?.slice(0, 512) || null;
 
     await ReferenceService.submitReference({
       token,
       invite,
       ratings,
-      comments
+      comments,
+      clientIpHash,
+      userAgent
     });
 
     return res.json({ ok: true });
@@ -439,9 +450,9 @@ export async function respondToReferenceInvite(req, res) {
       error: e.message,
       stack: isProductionEnv ? undefined : e.stack
     });
-    return res.status(status).json({
+    return res.status(status >= 500 ? 500 : 404).json({
       ok: false,
-      error: status >= 500 ? 'Failed to submit reference' : e.message
+      error: status >= 500 ? 'Failed to submit reference' : 'Invalid or expired invite'
     });
   }
 }
@@ -518,7 +529,6 @@ export async function hideReference(req, res) {
       message: 'Reference hidden successfully',
       referenceId
     });
-
   } catch (err) {
     logger.error('Exception in hideReference', {
       requestId: req.requestId,
@@ -602,7 +612,6 @@ export async function unhideReference(req, res) {
       message: 'Reference unhidden successfully',
       referenceId
     });
-
   } catch (err) {
     logger.error('Exception in unhideReference', {
       requestId: req.requestId,
