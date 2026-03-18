@@ -22,10 +22,8 @@ const maskEmailForLogs = (email) => {
   return `${visible}${local.length > 2 ? '***' : ''}@${domain}`;
 };
 
-function useHashedReferenceTokens() {
-  return process.env.USE_HASHED_REFERENCE_TOKENS === 'true';
-}
-
+// Tokens are ALWAYS stored as SHA-256 hashes. The plaintext token is only
+// held in memory long enough to build the verification URL and send the email.
 export function hashInviteToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
@@ -98,11 +96,11 @@ export async function hasApprovedReferenceAccess({ candidateId, companyIds }) {
   return !!data;
 }
 
-async function findInviteByTokenValue(tokenValue) {
+async function findInviteByTokenHash(tokenHash) {
   return supabase
     .from('reference_invites')
     .select('*')
-    .eq('invite_token', tokenValue)
+    .eq('token_hash', tokenHash)
     .maybeSingle();
 }
 
@@ -111,15 +109,8 @@ export async function fetchInviteByToken(token) {
     return { data: null, error: null };
   }
 
-  if (useHashedReferenceTokens()) {
-    const hashedToken = hashInviteToken(token);
-    const hashedResult = await findInviteByTokenValue(hashedToken);
-    if (hashedResult.data) {
-      return hashedResult;
-    }
-  }
-
-  return findInviteByTokenValue(token);
+  // Always hash the incoming plaintext token before DB lookup.
+  return findInviteByTokenHash(hashInviteToken(token));
 }
 
 export async function fetchSelfReferences(userId) {
@@ -142,14 +133,13 @@ export async function fetchCandidateReferences(candidateId) {
 export class ReferenceService {
   static async createReferenceRequest({ userId, email, name, applicantData, expiresInDays = 7 }) {
     const inviteToken = crypto.randomBytes(32).toString('hex');
-    const storedToken = useHashedReferenceTokens() ? hashInviteToken(inviteToken) : inviteToken;
-    // TODO: Default to hashed tokens once legacy raw tokens are fully migrated.
+    const tokenHash = hashInviteToken(inviteToken);
 
     const inviteRow = {
       requester_id: userId,
       referee_email: email,
       referee_name: name,
-      invite_token: storedToken,
+      token_hash: tokenHash,
       status: 'pending',
       expires_at: new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString(),
       created_at: new Date().toISOString(),
@@ -177,7 +167,15 @@ export class ReferenceService {
     return { success: true, reference_id: invite.id, token: inviteToken, verification_url: verificationUrl };
   }
 
-  static async submitReference({ token, invite, refereeData, ratings, comments }) {
+  static async submitReference({
+    token,
+    invite,
+    refereeData,
+    ratings,
+    comments,
+    clientIpHash = null,
+    userAgent = null
+  }) {
     let inviteRecord = invite;
     let reference = null;
     let referenceCreated = false;
@@ -187,7 +185,7 @@ export class ReferenceService {
         const { data: inviteData, error: invErr } = await fetchInviteByToken(token);
 
         if (invErr || !inviteData) {
-          const notFoundError = new Error('Invalid invitation token');
+          const notFoundError = new Error('Invalid or expired invite');
           notFoundError.status = 404;
           throw notFoundError;
         }
@@ -196,20 +194,20 @@ export class ReferenceService {
       }
 
       if (inviteRecord.status === 'completed') {
-        const usedError = new Error('This reference has already been submitted');
-        usedError.status = 422;
+        const usedError = new Error('Invalid or expired invite');
+        usedError.status = 404;
         throw usedError;
       }
 
       if (inviteRecord.status === 'processing') {
-        const processingError = new Error('Reference is already being processed');
-        processingError.status = 409;
+        const processingError = new Error('Invalid or expired invite');
+        processingError.status = 404;
         throw processingError;
       }
 
       if (inviteRecord.expires_at && new Date(inviteRecord.expires_at) < new Date()) {
-        const expiredError = new Error('This invitation has expired');
-        expiredError.status = 422;
+        const expiredError = new Error('Invalid or expired invite');
+        expiredError.status = 404;
         throw expiredError;
       }
 
@@ -227,8 +225,8 @@ export class ReferenceService {
       }
 
       if (!claimData || claimData.length === 0) {
-        const claimConflict = new Error('Reference is already being processed');
-        claimConflict.status = 409;
+        const claimConflict = new Error('Invalid or expired invite');
+        claimConflict.status = 404;
         throw claimConflict;
       }
 
@@ -293,16 +291,19 @@ export class ReferenceService {
           .eq('status', 'active')
           .limit(10);
 
-        const validatedData = await validateReferenceRVL({
-          summary: refRow.summary,
-          kpi_ratings: refRow.kpi_ratings,
-          detailed_feedback: refRow.detailed_feedback,
-          owner_id: refRow.owner_id,
-          referrer_email: refRow.referrer_email
-        }, {
-          previousReferences: previousRefs || [],
-          skipEmbeddings: process.env.NODE_ENV === 'test'
-        });
+        const validatedData = await validateReferenceRVL(
+          {
+            summary: refRow.summary,
+            kpi_ratings: refRow.kpi_ratings,
+            detailed_feedback: refRow.detailed_feedback,
+            owner_id: refRow.owner_id,
+            referrer_email: refRow.referrer_email
+          },
+          {
+            previousReferences: previousRefs || [],
+            skipEmbeddings: process.env.NODE_ENV === 'test'
+          }
+        );
 
         await supabase
           .from('references')
@@ -356,9 +357,22 @@ export class ReferenceService {
         });
       }
 
+      const inviteUpdate = {
+        status: 'completed',
+        completed_at: new Date().toISOString()
+      };
+
+      if (clientIpHash) {
+        inviteUpdate.used_ip_hash = clientIpHash;
+      }
+
+      if (userAgent) {
+        inviteUpdate.used_user_agent = userAgent;
+      }
+
       await supabase
         .from('reference_invites')
-        .update({ status: 'completed', completed_at: new Date().toISOString() })
+        .update(inviteUpdate)
         .eq('id', inviteRecord.id);
 
       await logEvent({
@@ -389,13 +403,17 @@ export class ReferenceService {
   static async getReferenceByToken(token) {
     const { data: invite, error } = await fetchInviteByToken(token);
 
-    if (error || !invite) throw new Error('Invalid invitation token');
+    if (error || !invite) {
+      const err = new Error('Invalid or expired invite');
+      err.status = 404;
+      throw err;
+    }
 
     if (invite.status === 'completed') {
-      return { success: false, message: 'This reference has already been completed', status: 'completed' };
+      return { success: false, message: 'Invalid or expired invite', status: 'completed' };
     }
     if (new Date(invite.expires_at) < new Date()) {
-      return { success: false, message: 'This invitation has expired', status: 'expired' };
+      return { success: false, message: 'Invalid or expired invite', status: 'expired' };
     }
 
     return {

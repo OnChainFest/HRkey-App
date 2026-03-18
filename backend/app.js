@@ -598,6 +598,12 @@ const tokenLimiter = createRateLimiter({
   keyPrefix: 'token'
 });
 
+const submitLimiter = createRateLimiter({
+  windowMs: Number.parseInt(process.env.RATE_LIMIT_SUBMIT_WINDOW_MS || String(15 * 60 * 1000), 10),
+  max: Number.parseInt(process.env.RATE_LIMIT_SUBMIT_MAX || '10', 10),
+  keyPrefix: 'submit'
+});
+
 const hrscoreLimiter = createRateLimiter({
   windowMs: rateLimitWindowMs,
   max: Number.parseInt(process.env.RATE_LIMIT_HRSCORE_MAX || '60', 10),
@@ -1222,7 +1228,7 @@ app.post(
 
 app.post(
   '/api/references/respond/:token',
-  tokenLimiter,
+  submitLimiter,
   optionalAuth,
   validateParams(getReferenceByTokenSchema),
   validateBody422(respondReferenceSchema),
