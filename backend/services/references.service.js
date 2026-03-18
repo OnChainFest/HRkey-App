@@ -511,7 +511,7 @@ export class ReferenceService {
     const userEmail = userRes?.user?.email || userRes?.email;
     if (!userEmail) return;
 
-    await fetch('https://api.resend.com/emails', {
+    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${RESEND_API_KEY}`,
@@ -535,5 +535,19 @@ export class ReferenceService {
         `
       })
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error('Failed to send reference completion email', {
+        service: 'resend',
+        statusCode: response.status,
+        error: errorText,
+        ownerId: userId,
+        recipientEmail: maskEmailForLogs(userEmail),
+        referenceId: reference?.id
+      });
+
+      throw new Error(`Failed to send reference completion email: ${response.status}`);
+    }
   }
 }
