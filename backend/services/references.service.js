@@ -6,6 +6,10 @@ import { validateReference as validateReferenceRVL } from './validation/index.js
 import { logEvent, EventTypes } from './analytics/eventTracker.js';
 import { onReferenceValidated as hrscoreAutoTrigger } from './hrscore/autoTrigger.js';
 import { buildReferencePack } from '../utils/referencePack.js';
+import {
+  logReferenceSubmissionAudit,
+  AuditActionTypes
+} from '../utils/auditLogger.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrervcydgdrlcndtjboy.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -199,9 +203,18 @@ export class ReferenceService {
     clientIpHash = null,
     userAgent = null
   }) {
+    const tokenHashPrefix = token ? hashInviteToken(token).slice(0, 12) : null;
     const overall = this.calculateOverallRating(ratings);
     const safeRatings = ratings || {};
     const safeComments = comments || {};
+
+    await logReferenceSubmissionAudit({
+      actionType: AuditActionTypes.SUBMIT_REFERENCE_ATTEMPT,
+      tokenHashPrefix,
+      clientIpHash,
+      userAgent,
+      outcome: 'attempted'
+    });
 
     const { data, error } = await supabase.rpc('submit_reference_by_token', {
       p_token: token,
@@ -214,8 +227,17 @@ export class ReferenceService {
     });
 
     if (error) {
+      await logReferenceSubmissionAudit({
+        actionType: AuditActionTypes.SUBMIT_REFERENCE_FAILURE,
+        tokenHashPrefix,
+        clientIpHash,
+        userAgent,
+        outcome: 'failed',
+        errorCode: 'rpc_error'
+      });
+
       logger.error('submit_reference_by_token RPC failed', {
-        tokenHashPrefix: token ? hashInviteToken(token).slice(0, 12) : undefined,
+        tokenHashPrefix,
         error: error.message
       });
       const rpcError = new Error('Failed to submit reference');
@@ -227,6 +249,15 @@ export class ReferenceService {
     const referenceId = row?.reference_id;
 
     if (!referenceId) {
+      await logReferenceSubmissionAudit({
+        actionType: AuditActionTypes.SUBMIT_REFERENCE_FAILURE,
+        tokenHashPrefix,
+        clientIpHash,
+        userAgent,
+        outcome: 'failed',
+        errorCode: 'invalid_or_expired_invite'
+      });
+
       const genericError = new Error('Invalid or expired invite');
       genericError.status = 404;
       throw genericError;
@@ -234,12 +265,33 @@ export class ReferenceService {
 
     const { data: reference, error: referenceError } = await fetchReferenceById(referenceId);
     if (referenceError || !reference) {
+      await logReferenceSubmissionAudit({
+        actionType: AuditActionTypes.SUBMIT_REFERENCE_FAILURE,
+        referenceId,
+        tokenHashPrefix,
+        clientIpHash,
+        userAgent,
+        outcome: 'failed',
+        errorCode: 'reference_followup_fetch_failed'
+      });
+
       logger.warn('Reference created via RPC but could not be fetched for follow-up processing', {
         reference_id: referenceId,
         error: referenceError?.message
       });
       return { success: true, reference_id: referenceId };
     }
+
+    await logReferenceSubmissionAudit({
+      actionType: AuditActionTypes.SUBMIT_REFERENCE_SUCCESS,
+      referenceId: reference.id,
+      inviteId: reference.invite_id || null,
+      tokenHashPrefix,
+      clientIpHash,
+      userAgent,
+      outcome: 'succeeded',
+      ownerId: reference.owner_id
+    });
 
     // Issue #156: Create canonical Reference Pack + deterministic reference_hash
     // Non-blocking: must NOT break invite flow.

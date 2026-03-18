@@ -108,8 +108,13 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
   logSignerInvitation: jest.fn().mockResolvedValue(),
   logSignerAcceptance: jest.fn().mockResolvedValue(),
   logSignerStatusChange: jest.fn().mockResolvedValue(),
+  logReferenceSubmissionAudit: jest.fn().mockResolvedValue(),
   logDataAccessAction: jest.fn().mockResolvedValue(),
-  AuditActionTypes: {},
+  AuditActionTypes: {
+    SUBMIT_REFERENCE_ATTEMPT: 'submit_reference_attempt',
+    SUBMIT_REFERENCE_SUCCESS: 'submit_reference_success',
+    SUBMIT_REFERENCE_FAILURE: 'submit_reference_failure'
+  },
   ResourceTypes: {},
   getUserAuditLogs: jest.fn().mockResolvedValue([]),
   getCompanyAuditLogs: jest.fn().mockResolvedValue([]),
@@ -318,33 +323,7 @@ describe('Wallet & Reference - Permission Tests', () => {
   });
 
   describe('POST /api/reference/submit', () => {
-    test('PERM-L7: public can submit reference with a valid token', async () => {
-      const invitesTable = buildTableMock({
-        maybeSingleResponses: [
-          mockDatabaseSuccess({
-            id: 'invite-1',
-            requester_id: '660e8400-e29b-41d4-a716-446655440010',
-            referee_email: 'ref@example.com',
-            referee_name: 'Referee',
-            metadata: {},
-            status: 'pending',
-            expires_at: '2099-01-01T00:00:00Z'
-          })
-        ],
-        selectResponses: [
-          { data: [{ id: 'invite-1', status: 'processing' }], error: null }
-        ]
-      });
-
-      const referencesTable = buildTableMock({
-        singleResponses: [mockDatabaseSuccess({ id: 'reference-1' })]
-      });
-
-      configureTableMocks({
-        reference_invites: invitesTable,
-        references: referencesTable
-      });
-
+    test('PERM-L7: legacy reference submit route is no longer reachable', async () => {
       const response = await request(app)
         .post('/api/reference/submit')
         .send({
@@ -353,12 +332,7 @@ describe('Wallet & Reference - Permission Tests', () => {
           comments: { recommendation: 'Great' }
         });
 
-      if (response.status !== 200) {
-        console.log('Reference submit response', response.status, response.body, response.text);
-      }
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
+      expect(response.status).toBe(404);
     });
   });
 

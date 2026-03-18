@@ -81,8 +81,13 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
   logSignerInvitation: jest.fn().mockResolvedValue(),
   logSignerAcceptance: jest.fn().mockResolvedValue(),
   logSignerStatusChange: jest.fn().mockResolvedValue(),
+  logReferenceSubmissionAudit: jest.fn().mockResolvedValue(),
   logDataAccessAction: jest.fn().mockResolvedValue(),
-  AuditActionTypes: {},
+  AuditActionTypes: {
+    SUBMIT_REFERENCE_ATTEMPT: 'submit_reference_attempt',
+    SUBMIT_REFERENCE_SUCCESS: 'submit_reference_success',
+    SUBMIT_REFERENCE_FAILURE: 'submit_reference_failure'
+  },
   ResourceTypes: {},
   getUserAuditLogs: jest.fn().mockResolvedValue([]),
   getCompanyAuditLogs: jest.fn().mockResolvedValue([]),
