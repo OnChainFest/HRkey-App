@@ -15,7 +15,6 @@ import {
   resolveCandidateId,
   hashInviteToken
 } from '../services/references.service.js';
-import { assertRecruiterCanAccessReferencePack } from '../services/referenceAccess.service.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || 'https://example.supabase.co';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || 'test-service-role-key';
@@ -165,7 +164,7 @@ export async function getCandidateReferences(req, res) {
   try {
     const { candidateId } = req.params;
     const requesterId = req.user?.id;
-    const requesterRole = req.user?.role;
+    const accessLevel = req.referenceAccess?.accessLevel;
 
     if (!requesterId) {
       return res.status(401).json({
@@ -184,7 +183,7 @@ export async function getCandidateReferences(req, res) {
       });
     }
 
-    const isSuperadmin = requesterRole === 'superadmin';
+    const isSuperadmin = accessLevel === 'superadmin';
 
     // Self-access: redirect to /api/references/me
     if (requesterId === candidateId) {
@@ -242,12 +241,6 @@ export async function getCandidateReferences(req, res) {
       });
     }
 
-    await assertRecruiterCanAccessReferencePack({
-      candidateUserId: candidateId,
-      recruiterUserId: requesterId,
-      req
-    });
-
     const { data: references, error } = await getSupabaseClient()
       .from('references')
       .select(`
@@ -289,7 +282,7 @@ export async function getCandidateReferences(req, res) {
       candidateId,
       references: references || [],
       count: references?.length || 0,
-      accessLevel: 'explicit_grant'
+      accessLevel
     });
   } catch (err) {
     logger.error('Exception in getCandidateReferences', {

@@ -85,6 +85,10 @@ import {
   requireOwnWallet,
   optionalAuth
 } from './middleware/auth.js';
+import {
+  requireReferenceAccessPermission,
+  requireReferenceAccessForDataAccessRequest
+} from './middleware/referenceAccess.js';
 import { validateBody, validateBody422, validateParams } from './middleware/validate.js';
 
 // Import validation schemas
@@ -1112,7 +1116,22 @@ app.get('/api/references/pending', requireAuth, referencesController.getMyPendin
 /**
  * GET /api/references/candidate/:candidateId
  */
-app.get('/api/references/candidate/:candidateId', requireAuth, referencesController.getCandidateReferences);
+app.get(
+  '/api/references/candidate/:candidateId',
+  requireAuth,
+  requireReferenceAccessPermission({
+    resolveSubject: async (req) => ({
+      candidateUserId: req.params.candidateId
+    }),
+    allowSuperadmin: true,
+    onError: (error, _req, res) => res.status(error.status || 500).json({
+      ok: false,
+      error: error.status && error.status < 500 ? 'FORBIDDEN' : 'INTERNAL_ERROR',
+      message: error.status && error.status < 500 ? error.message : 'An unexpected error occurred'
+    })
+  }),
+  referencesController.getCandidateReferences
+);
 
 app.post('/api/reference-access/grants', requireAuth, referenceAccessController.grantRecruiterReferenceAccess);
 app.delete('/api/reference-access/grants/:recruiterUserId', requireAuth, referenceAccessController.revokeRecruiterReferenceAccess);
@@ -1124,20 +1143,22 @@ app.get('/api/reference-access/status/:candidateUserId', requireAuth, referenceA
  *
  * Returns canonical reference pack and hash for a candidate.
  */
-app.get('/api/reference-pack/:identifier', requireAuth, async (req, res) => {
-  try {
+app.get('/api/reference-pack/:identifier', requireAuth, requireReferenceAccessPermission({
+  resolveSubject: async (req) => {
     const { buildCanonicalReferencePack } = await loadReferencePack();
-    const { canonicalHash } = await loadCanonicalHash();
-    const { assertRecruiterCanAccessReferencePack } = await import('./services/referenceAccess.service.js');
     const pack = await buildCanonicalReferencePack(req.params.identifier);
 
-    if (req.user?.role !== 'superadmin' && req.user?.id !== pack.candidate_id) {
-      await assertRecruiterCanAccessReferencePack({
-        candidateUserId: pack.candidate_id,
-        recruiterUserId: req.user?.id,
-        req
-      });
-    }
+    return {
+      candidateUserId: pack.candidate_id,
+      targetId: req.params.identifier,
+      pack
+    };
+  },
+  allowSuperadmin: true
+}), async (req, res) => {
+  try {
+    const { canonicalHash } = await loadCanonicalHash();
+    const pack = req.referenceAccess?.pack;
 
     const { hash } = canonicalHash(pack);
     return res.json({ pack, pack_hash: hash, generated_at: new Date().toISOString() });
@@ -1155,20 +1176,22 @@ app.get('/api/reference-pack/:identifier', requireAuth, async (req, res) => {
  *
  * Anchors the canonical pack hash on Base Sepolia.
  */
-app.post('/api/reference-pack/:identifier/commit', requireAuth, async (req, res) => {
-  try {
+app.post('/api/reference-pack/:identifier/commit', requireAuth, requireReferenceAccessPermission({
+  resolveSubject: async (req) => {
     const { buildCanonicalReferencePack } = await loadReferencePack();
-    const { canonicalHash } = await loadCanonicalHash();
-    const { assertRecruiterCanAccessReferencePack } = await import('./services/referenceAccess.service.js');
     const pack = await buildCanonicalReferencePack(req.params.identifier);
 
-    if (req.user?.role !== 'superadmin' && req.user?.id !== pack.candidate_id) {
-      await assertRecruiterCanAccessReferencePack({
-        candidateUserId: pack.candidate_id,
-        recruiterUserId: req.user?.id,
-        req
-      });
-    }
+    return {
+      candidateUserId: pack.candidate_id,
+      targetId: req.params.identifier,
+      pack
+    };
+  },
+  allowSuperadmin: true
+}), async (req, res) => {
+  try {
+    const { canonicalHash } = await loadCanonicalHash();
+    const pack = req.referenceAccess?.pack;
 
     const { hash } = canonicalHash(pack);
     const packHashHex = normalizePackHash(hash);
@@ -1470,7 +1493,12 @@ app.get('/api/data-access/pending', requireAuth, dataAccessController.getPending
 app.get('/api/data-access/request/:requestId', requireAuth, dataAccessController.getRequestById);
 app.post('/api/data-access/:requestId/approve', requireAuth, dataAccessController.approveDataAccessRequest);
 app.post('/api/data-access/:requestId/reject', requireAuth, dataAccessController.rejectDataAccessRequest);
-app.get('/api/data-access/:requestId/data', requireAuth, dataAccessController.getDataByRequestId);
+app.get(
+  '/api/data-access/:requestId/data',
+  requireAuth,
+  requireReferenceAccessForDataAccessRequest(),
+  dataAccessController.getDataByRequestId
+);
 
 /* =========================
    KPI OBSERVATIONS ENDPOINTS (Proof of Correlation MVP)

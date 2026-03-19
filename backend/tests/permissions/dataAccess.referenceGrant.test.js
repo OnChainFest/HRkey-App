@@ -46,6 +46,12 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
 const dataAccessControllerModule = await import('../../controllers/dataAccessController.js');
 const { getDataByRequestId, __setSupabaseClientForTests } = dataAccessControllerModule;
 __setSupabaseClientForTests(mockSupabaseClient);
+const referenceAccessMiddlewareModule = await import('../../middleware/referenceAccess.js');
+const {
+  requireReferenceAccessForDataAccessRequest,
+  __setSupabaseClientForTests: __setReferenceAccessSupabaseClientForTests
+} = referenceAccessMiddlewareModule;
+__setReferenceAccessSupabaseClientForTests(mockSupabaseClient);
 
 function createBuilder({ singleQueue = [], maybeSingleQueue = [], orderResponse = { data: [], error: null } } = {}) {
   const builder = {
@@ -75,6 +81,14 @@ function createRes() {
       return this;
     }
   };
+}
+
+async function runMiddleware(middleware, req, res) {
+  let nextCalled = false;
+  await middleware(req, res, () => {
+    nextCalled = true;
+  });
+  return nextCalled;
 }
 
 describe('dataAccessController explicit reference grant enforcement', () => {
@@ -112,9 +126,11 @@ describe('dataAccessController explicit reference grant enforcement', () => {
 
     const req = { params: { requestId: 'req-1' }, user: { id: 'recruiter-1' }, requestId: 'req-1' };
     const res = createRes();
+    const middleware = requireReferenceAccessForDataAccessRequest();
 
-    await getDataByRequestId(req, res);
+    const nextCalled = await runMiddleware(middleware, req, res);
 
+    expect(nextCalled).toBe(false);
     expect(res.statusCode).toBe(403);
     expect(res.body).toMatchObject({ error: 'Access denied', message: 'Explicit reference access is required' });
     expect(recordAccessDecisionMock).toHaveBeenCalledWith(expect.objectContaining({
@@ -156,7 +172,10 @@ describe('dataAccessController explicit reference grant enforcement', () => {
 
     const req = { params: { requestId: 'req-2' }, user: { id: 'recruiter-1' }, requestId: 'req-2' };
     const res = createRes();
+    const middleware = requireReferenceAccessForDataAccessRequest();
 
+    const nextCalled = await runMiddleware(middleware, req, res);
+    expect(nextCalled).toBe(true);
     await getDataByRequestId(req, res);
 
     expect(res.statusCode).toBe(200);
