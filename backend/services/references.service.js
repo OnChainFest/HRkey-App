@@ -131,12 +131,15 @@ async function syncReferenceRequestGraph({ candidateId }) {
 async function syncSubmittedReferenceGraph(reference) {
   try {
     const { ReputationGraphService } = await import('./reputationGraph.service.js');
+    const { syncReferenceRelationships } = await import('./graphRelationshipExtraction.service.js');
     await ReputationGraphService.ensureNode('candidate', reference.owner_id);
     await ReputationGraphService.ensureNode('reference', reference.id);
 
     if (reference.role_id) {
       await ReputationGraphService.ensureNode('role', reference.role_id);
     }
+
+    await syncReferenceRelationships(reference);
   } catch (error) {
     logger.warn('Failed to sync submitted reference into reputation graph', {
       referenceId: reference?.id,
