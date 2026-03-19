@@ -13,14 +13,23 @@ import logger from '../logger.js';
 import {
   ReferenceService,
   resolveCandidateId,
-  getActiveSignerCompanyIds,
-  hasApprovedReferenceAccess,
   hashInviteToken
 } from '../services/references.service.js';
+import { assertRecruiterCanAccessReferencePack } from '../services/referenceAccess.service.js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const supabaseUrl = process.env.SUPABASE_URL || 'https://example.supabase.co';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || 'test-service-role-key';
+let supabaseClient;
+
+export function __setSupabaseClientForTests(client) {
+  supabaseClient = client;
+}
+
+function getSupabaseClient() {
+  if (supabaseClient) return supabaseClient;
+  supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+  return supabaseClient;
+}
 const isProductionEnv = process.env.NODE_ENV === 'production';
 
 const maskEmailForLogs = (email) => {
@@ -85,7 +94,7 @@ export async function getMyReferences(req, res) {
 
     // Fetch references where user is the owner
     // SECURITY: Do NOT include referrer_email - only superadmins can see emails
-    const { data: references, error } = await supabase
+    const { data: references, error } = await getSupabaseClient()
       .from('references')
       .select(`
         id,
@@ -188,7 +197,7 @@ export async function getCandidateReferences(req, res) {
 
     // Superadmin bypass
     if (isSuperadmin) {
-      const { data: references, error } = await supabase
+      const { data: references, error } = await getSupabaseClient()
         .from('references')
         .select(`
           id,
@@ -233,18 +242,54 @@ export async function getCandidateReferences(req, res) {
       });
     }
 
-    // TODO: Check for approved data-access request for company users
-    logger.warn('Unauthorized attempt to access candidate references', {
-      requestId: req.requestId,
-      requesterId,
-      candidateId,
-      requesterRole
+    await assertRecruiterCanAccessReferencePack({
+      candidateUserId: candidateId,
+      recruiterUserId: requesterId,
+      req
     });
 
-    return res.status(403).json({
-      ok: false,
-      error: 'FORBIDDEN',
-      message: 'You do not have permission to view this candidate\'s references'
+    const { data: references, error } = await getSupabaseClient()
+      .from('references')
+      .select(`
+        id,
+        owner_id,
+        referrer_name,
+        relationship,
+        summary,
+        overall_rating,
+        kpi_ratings,
+        detailed_feedback,
+        status,
+        validation_status,
+        fraud_score,
+        consistency_score,
+        created_at,
+        validated_at
+      `)
+      .eq('owner_id', candidateId)
+      .in('status', ['active', 'approved'])
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      logger.error('Failed to fetch candidate references (explicit grant)', {
+        requestId: req.requestId,
+        candidateId,
+        requesterId,
+        error: error.message
+      });
+      return res.status(500).json({
+        ok: false,
+        error: 'DATABASE_ERROR',
+        message: 'Failed to fetch references'
+      });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      candidateId,
+      references: references || [],
+      count: references?.length || 0,
+      accessLevel: 'explicit_grant'
     });
   } catch (err) {
     logger.error('Exception in getCandidateReferences', {
@@ -254,10 +299,10 @@ export async function getCandidateReferences(req, res) {
       error: err.message,
       stack: isProductionEnv ? undefined : err.stack
     });
-    return res.status(500).json({
+    return res.status(err.status || 500).json({
       ok: false,
-      error: 'INTERNAL_ERROR',
-      message: 'An unexpected error occurred'
+      error: err.status && err.status < 500 ? 'FORBIDDEN' : 'INTERNAL_ERROR',
+      message: err.status && err.status < 500 ? err.message : 'An unexpected error occurred'
     });
   }
 }
@@ -280,7 +325,7 @@ export async function getMyPendingInvites(req, res) {
       });
     }
 
-    const { data: invites, error } = await supabase
+    const { data: invites, error } = await getSupabaseClient()
       .from('reference_invites')
       .select(`
         id,

@@ -12,10 +12,15 @@ import { evaluateCandidateForUser } from '../services/candidateEvaluation.servic
 import { getRequiredTierForDataType, getStakeTierStatus, hasRequiredTier } from '../services/stakingTier.service.js';
 import logger from '../logger.js';
 import { logEvent, EventTypes } from '../services/analytics/eventTracker.js';
+import { assertRecruiterCanAccessReferencePack } from '../services/referenceAccess.service.js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
-const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+const supabaseUrl = process.env.SUPABASE_URL || 'https://example.supabase.co';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || 'test-service-role-key';
+let supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+
+export function __setSupabaseClientForTests(client) {
+  supabaseClient = client;
+}
 
 // ============================================================================
 // CREATE DATA ACCESS REQUEST
@@ -357,8 +362,9 @@ export async function getPendingRequests(req, res) {
       error: error.message,
       stack: error.stack
     });
-    return res.status(500).json({
-      error: 'Internal server error'
+    return res.status(error.status || 500).json({
+      error: error.status && error.status < 500 ? 'Access denied' : 'Internal server error',
+      message: error.status && error.status < 500 ? error.message : undefined
     });
   }
 }
@@ -538,8 +544,9 @@ export async function approveDataAccessRequest(req, res) {
       error: error.message,
       stack: error.stack
     });
-    return res.status(500).json({
-      error: 'Internal server error'
+    return res.status(error.status || 500).json({
+      error: error.status && error.status < 500 ? 'Access denied' : 'Internal server error',
+      message: error.status && error.status < 500 ? error.message : undefined
     });
   }
 }
@@ -646,8 +653,9 @@ export async function rejectDataAccessRequest(req, res) {
       error: error.message,
       stack: error.stack
     });
-    return res.status(500).json({
-      error: 'Internal server error'
+    return res.status(error.status || 500).json({
+      error: error.status && error.status < 500 ? 'Access denied' : 'Internal server error',
+      message: error.status && error.status < 500 ? error.message : undefined
     });
   }
 }
@@ -726,6 +734,16 @@ export async function getDataByRequestId(req, res) {
       return res.status(403).json({
         error: 'Insufficient stake tier',
         message: `Required tier: ${requiredTier}`
+      });
+    }
+
+    // Explicit candidate-managed recruiter grant is required for any reference payload.
+    if (request.reference_id || ['reference', 'profile', 'full_data'].includes(request.requested_data_type)) {
+      await assertRecruiterCanAccessReferencePack({
+        candidateUserId: request.target_user_id,
+        recruiterUserId: userId,
+        req,
+        targetId: request.reference_id || request.id
       });
     }
 
@@ -813,8 +831,9 @@ export async function getDataByRequestId(req, res) {
       error: error.message,
       stack: error.stack
     });
-    return res.status(500).json({
-      error: 'Internal server error'
+    return res.status(error.status || 500).json({
+      error: error.status && error.status < 500 ? 'Access denied' : 'Internal server error',
+      message: error.status && error.status < 500 ? error.message : undefined
     });
   }
 }
@@ -908,8 +927,9 @@ export async function getRequestById(req, res) {
       error: error.message,
       stack: error.stack
     });
-    return res.status(500).json({
-      error: 'Internal server error'
+    return res.status(error.status || 500).json({
+      error: error.status && error.status < 500 ? 'Access denied' : 'Internal server error',
+      message: error.status && error.status < 500 ? error.message : undefined
     });
   }
 }
@@ -993,8 +1013,9 @@ export async function getCompanyRequests(req, res) {
       error: error.message,
       stack: error.stack
     });
-    return res.status(500).json({
-      error: 'Internal server error'
+    return res.status(error.status || 500).json({
+      error: error.status && error.status < 500 ? 'Access denied' : 'Internal server error',
+      message: error.status && error.status < 500 ? error.message : undefined
     });
   }
 }
