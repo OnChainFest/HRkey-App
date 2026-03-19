@@ -121,7 +121,6 @@ export async function fetchInviteByToken(token) {
     return { data: null, error: null };
   }
 
-  // Always hash the incoming plaintext token before DB lookup.
   return findInviteByTokenHash(hashInviteToken(token));
 }
 
@@ -145,9 +144,9 @@ export async function fetchPublicInviteByToken(token) {
 export async function fetchSelfReferences(userId) {
   return supabase
     .from('references')
-    .select('id, referrer_name, relationship, summary, overall_rating, kpi_ratings, status, created_at, validation_status, role_id')
+    .select('id, referrer_name, relationship, summary, overall_rating, kpi_ratings, status, created_at, validation_status, role_id, reference_hash')
     .eq('owner_id', userId)
-    .eq('status', 'active')
+    .in('status', ['active', 'approved'])
     .order('created_at', { ascending: false });
 }
 
@@ -293,8 +292,6 @@ export class ReferenceService {
       ownerId: reference.owner_id
     });
 
-    // Issue #156: Create canonical Reference Pack + deterministic reference_hash
-    // Non-blocking: must NOT break invite flow.
     try {
       const { reference_hash } = buildReferencePack(reference);
 
@@ -324,7 +321,7 @@ export class ReferenceService {
         .select('summary, kpi_ratings, validated_data')
         .eq('owner_id', reference.owner_id)
         .neq('id', reference.id)
-        .eq('status', 'active')
+        .in('status', ['active', 'approved'])
         .limit(10);
 
       const validatedData = await validateReferenceRVL(
@@ -458,6 +455,7 @@ export class ReferenceService {
       });
       return;
     }
+
     try {
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -487,6 +485,7 @@ export class ReferenceService {
           `
         })
       });
+
       if (!res.ok) {
         const errorText = await res.text();
         logger.error('Failed to send referee invitation email', {
@@ -507,6 +506,7 @@ export class ReferenceService {
 
   static async sendReferenceCompletedEmail(userId, reference) {
     if (!RESEND_API_KEY) return;
+
     const { data: userRes } = await supabase.auth.admin.getUserById(userId);
     const userEmail = userRes?.user?.email || userRes?.email;
     if (!userEmail) return;

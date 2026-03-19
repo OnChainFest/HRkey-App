@@ -97,6 +97,7 @@ export async function getMyReferences(req, res) {
         detailed_feedback,
         status,
         validation_status,
+        reference_hash,
         is_hidden,
         hidden_at,
         hide_reason,
@@ -106,7 +107,7 @@ export async function getMyReferences(req, res) {
         created_at
       `)
       .eq('owner_id', userId)
-      .eq('status', 'active')
+      .in('status', ['active', 'approved'])
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -233,16 +234,6 @@ export async function getCandidateReferences(req, res) {
     }
 
     // TODO: Check for approved data-access request for company users
-    // For now, deny all non-superadmin access to other users' references
-    //
-    // Future implementation:
-    // 1. Check if requester is a company signer
-    // 2. Check data_access_requests table for approved request
-    // 3. If approved, return limited reference data
-    //
-    // const hasApprovedAccess = await checkDataAccessApproval(requesterId, candidateId);
-    // if (hasApprovedAccess) { return references with company-scoped fields }
-
     logger.warn('Unauthorized attempt to access candidate references', {
       requestId: req.requestId,
       requesterId,
@@ -438,7 +429,6 @@ export async function respondToReferenceInvite(req, res) {
     return res.json({ ok: true });
   } catch (e) {
     const status = e.status || 500;
-    // SECURITY: Never log raw tokens - use hash prefix only
     logger.error('Failed to submit reference response', {
       requestId: req.requestId,
       tokenHashPrefix: req.params.token ? hashInviteToken(req.params.token).slice(0, 12) : undefined,
@@ -481,8 +471,7 @@ export async function hideReference(req, res) {
       });
     }
 
-    // Call the database function
-    const { data, error } = await supabase.rpc('hide_reference', {
+    const { error } = await supabase.rpc('hide_reference', {
       ref_id: referenceId,
       user_id: userId,
       reason: reason || null
@@ -496,7 +485,6 @@ export async function hideReference(req, res) {
         error: error.message
       });
 
-      // Check for permission errors
       if (error.message.includes('Only the reference owner')) {
         return res.status(403).json({
           ok: false,
@@ -567,8 +555,7 @@ export async function unhideReference(req, res) {
       });
     }
 
-    // Call the database function
-    const { data, error } = await supabase.rpc('unhide_reference', {
+    const { error } = await supabase.rpc('unhide_reference', {
       ref_id: referenceId,
       user_id: userId
     });
