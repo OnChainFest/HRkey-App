@@ -1,6 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import logger from '../logger.js';
 import { assertRecruiterCanAccessReferencePack } from '../services/referenceAccess.service.js';
+import {
+  extractCapabilityToken,
+  validateCapabilityToken,
+  CapabilityActions,
+  CapabilityResourceTypes
+} from '../services/capabilityToken.service.js';
 
 let supabaseClient;
 
@@ -88,7 +94,10 @@ export function requireReferenceAccessPermission({
   resolveSubject,
   allowOwner = true,
   allowSuperadmin = false,
-  onError = null
+  onError = null,
+  allowCapabilityToken = true,
+  capabilityAction = CapabilityActions.READ_REFERENCES,
+  capabilityResourceType = CapabilityResourceTypes.CANDIDATE_REFERENCE_DATA
 } = {}) {
   if (typeof resolveSubject !== 'function') {
     throw new Error('requireReferenceAccessPermission requires a resolveSubject function');
@@ -96,13 +105,6 @@ export function requireReferenceAccessPermission({
 
   return async function referenceAccessPermissionMiddleware(req, res, next) {
     try {
-      if (!req.user?.id) {
-        return res.status(401).json({
-          error: 'Authentication required',
-          message: 'Please provide an authorization token'
-        });
-      }
-
       const resolvedSubject = await resolveSubject(req);
       const subject = typeof resolvedSubject === 'string'
         ? { candidateUserId: resolvedSubject }
@@ -126,14 +128,37 @@ export function requireReferenceAccessPermission({
         return next();
       }
 
-      if (allowOwner && req.user.id === candidateUserId) {
+      if (allowOwner && req.user?.id === candidateUserId) {
         req.referenceAccess.accessLevel = 'owner';
         return next();
       }
 
-      if (allowSuperadmin && req.user.role === 'superadmin') {
+      if (allowSuperadmin && req.user?.role === 'superadmin') {
         req.referenceAccess.accessLevel = 'superadmin';
         return next();
+      }
+
+      const capabilityToken = allowCapabilityToken ? extractCapabilityToken(req) : null;
+      if (capabilityToken) {
+        const validated = await validateCapabilityToken({
+          token: capabilityToken,
+          action: capabilityAction,
+          resourceType: capabilityResourceType,
+          resourceId: subject.capabilityResourceId || candidateUserId,
+          candidateUserId,
+          req
+        });
+
+        req.referenceAccess.accessLevel = 'capability_token';
+        req.referenceAccess.capability = validated;
+        req.referenceAccess.grant = validated.grant;
+        return next();
+      }
+
+      if (!req.user?.id) {
+        const error = new Error('Access denied');
+        error.status = 403;
+        throw error;
       }
 
       const grant = await assertRecruiterCanAccessReferencePack({

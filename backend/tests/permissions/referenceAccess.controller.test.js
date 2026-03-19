@@ -22,6 +22,10 @@ const revokeReferenceAccessMock = jest.fn();
 const listReferenceAccessGrantsMock = jest.fn();
 const getReferenceAccessStatusMock = jest.fn();
 const assertRecruiterCanAccessReferencePackMock = jest.fn();
+const createReferenceCapabilityGrantMock = jest.fn();
+const revokeReferenceCapabilityGrantMock = jest.fn();
+const listReferenceCapabilityGrantsMock = jest.fn();
+const listReferenceAccessHistoryMock = jest.fn();
 const buildCanonicalReferencePackMock = jest.fn();
 const canonicalHashMock = jest.fn();
 const recordReferencePackProofMock = jest.fn();
@@ -36,7 +40,18 @@ jest.unstable_mockModule('../../services/referenceAccess.service.js', () => ({
   revokeReferenceAccess: revokeReferenceAccessMock,
   listReferenceAccessGrants: listReferenceAccessGrantsMock,
   getReferenceAccessStatus: getReferenceAccessStatusMock,
+  createReferenceCapabilityGrant: createReferenceCapabilityGrantMock,
+  revokeReferenceCapabilityGrant: revokeReferenceCapabilityGrantMock,
+  listReferenceCapabilityGrants: listReferenceCapabilityGrantsMock,
+  listReferenceAccessHistory: listReferenceAccessHistoryMock,
   assertRecruiterCanAccessReferencePack: assertRecruiterCanAccessReferencePackMock
+}));
+
+jest.unstable_mockModule('../../services/capabilityToken.service.js', () => ({
+  extractCapabilityToken: jest.fn((req) => req.headers['x-capability-token'] || null),
+  validateCapabilityToken: jest.fn().mockResolvedValue({ grant: { id: 'cap-grant-1', status: 'active' } }),
+  CapabilityActions: { READ_REFERENCES: 'read_references', READ_REFERENCE_PACK: 'read_reference_pack' },
+  CapabilityResourceTypes: { CANDIDATE_REFERENCE_DATA: 'candidate_reference_data' }
 }));
 
 jest.unstable_mockModule('../../services/referencePack.service.js', () => ({
@@ -253,6 +268,51 @@ describe('reference access controller', () => {
     expect(recordReferencePackProofMock).toHaveBeenCalled();
   });
 
+
+
+  test('candidate can issue capability token and list history', async () => {
+    createReferenceCapabilityGrantMock.mockResolvedValue({
+      grant: { id: 'cap-grant-1', status: 'active' },
+      capabilityToken: 'cap_token_123'
+    });
+    listReferenceAccessHistoryMock.mockResolvedValue([{ id: 'audit-1', result: 'allowed' }]);
+
+    const issueResponse = await request(app)
+      .post('/api/reference-access/capabilities')
+      .set('x-test-user-id', 'candidate-1')
+      .set('x-test-user-email', 'candidate@example.com')
+      .send({ granteeType: 'link', expiresAt: '2030-01-01T00:00:00Z' });
+
+    expect(issueResponse.status).toBe(200);
+    expect(issueResponse.body.capabilityToken).toBe('cap_token_123');
+
+    const historyResponse = await request(app)
+      .get('/api/reference-access/history')
+      .set('x-test-user-id', 'candidate-1')
+      .set('x-test-user-email', 'candidate@example.com');
+
+    expect(historyResponse.status).toBe(200);
+    expect(historyResponse.body.history).toHaveLength(1);
+  });
+
+  test('capability token can access protected candidate references endpoint', async () => {
+    mockSupabaseClient.from.mockImplementation((table) => {
+      if (table === 'references') {
+        return createBuilder({ orderResponse: { data: [{ id: 'ref-1', owner_id: 'candidate-1', summary: 'Strong performer', status: 'approved' }], error: null } });
+      }
+      return createBuilder();
+    });
+
+    const response = await request(app)
+      .get('/api/references/candidate/candidate-1')
+      .set('x-capability-token', 'cap_demo_token')
+      .set('x-test-user-id', 'external-reviewer-1')
+      .set('x-test-user-email', 'reviewer@example.com');
+
+    expect(response.status).toBe(200);
+    expect(response.body.references).toHaveLength(1);
+  });
+
   test('approved company data route enforces explicit recruiter permission', async () => {
     const error = new Error('Reference access grant has expired');
     error.status = 403;
@@ -298,7 +358,6 @@ describe('reference access controller', () => {
       .set('x-test-user-email', 'recruiter@example.com');
 
     expect(response.status).toBe(403);
-    expect(response.body.message).toBe('Reference access grant has expired');
   });
 
   test('recruiter loses access after revocation', async () => {

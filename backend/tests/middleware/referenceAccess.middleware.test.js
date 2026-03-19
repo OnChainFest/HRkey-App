@@ -9,6 +9,8 @@ const mockSupabaseClient = {
 };
 
 const assertRecruiterCanAccessReferencePackMock = jest.fn();
+const validateCapabilityTokenMock = jest.fn();
+const extractCapabilityTokenMock = jest.fn();
 
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
@@ -16,6 +18,13 @@ jest.unstable_mockModule('@supabase/supabase-js', () => ({
 
 jest.unstable_mockModule('../../services/referenceAccess.service.js', () => ({
   assertRecruiterCanAccessReferencePack: assertRecruiterCanAccessReferencePackMock
+}));
+
+jest.unstable_mockModule('../../services/capabilityToken.service.js', () => ({
+  extractCapabilityToken: extractCapabilityTokenMock,
+  validateCapabilityToken: validateCapabilityTokenMock,
+  CapabilityActions: { READ_REFERENCES: 'read_references', READ_REFERENCE_PACK: 'read_reference_pack' },
+  CapabilityResourceTypes: { CANDIDATE_REFERENCE_DATA: 'candidate_reference_data' }
 }));
 
 const middlewareModule = await import('../../middleware/referenceAccess.js');
@@ -53,6 +62,7 @@ describe('reference access middleware', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     __setSupabaseClientForTests(mockSupabaseClient);
+    extractCapabilityTokenMock.mockReturnValue(null);
   });
 
   test('allows candidate owner access', async () => {
@@ -159,6 +169,31 @@ describe('reference access middleware', () => {
     expect(next).toHaveBeenCalled();
     expect(req.referenceAccess.accessLevel).toBe('explicit_grant');
     expect(req.referenceAccess.grant).toEqual({ id: 'grant-1', status: 'active' });
+  });
+
+
+
+  test('allows access with valid capability token without authenticated user', async () => {
+    extractCapabilityTokenMock.mockReturnValue('cap_token');
+    validateCapabilityTokenMock.mockResolvedValue({ grant: { id: 'grant-cap', status: 'active' } });
+
+    const middleware = requireReferenceAccessPermission({
+      resolveSubject: async () => ({ candidateUserId: 'candidate-1' }),
+      capabilityAction: 'read_references'
+    });
+    const req = { user: null, headers: { 'x-capability-token': 'cap_token' }, params: {}, path: '/test' };
+    const res = createRes();
+    const next = jest.fn();
+
+    await middleware(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+    expect(req.referenceAccess.accessLevel).toBe('capability_token');
+    expect(validateCapabilityTokenMock).toHaveBeenCalledWith(expect.objectContaining({
+      token: 'cap_token',
+      action: 'read_references',
+      candidateUserId: 'candidate-1'
+    }));
   });
 
   test('denies inactive recruiter identity via service enforcement', async () => {

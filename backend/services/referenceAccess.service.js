@@ -2,6 +2,15 @@ import { createClient } from '@supabase/supabase-js';
 import logger from '../logger.js';
 import { recordAccessDecision } from './accessDecisionAudit.service.js';
 import { AccessDecisionReasons } from './accessDecisionReasons.js';
+import {
+  issueCapabilityGrant,
+  revokeCapabilityGrant,
+  listCapabilityGrants,
+  listCapabilityAccessHistory,
+  CapabilityGranteeTypes,
+  CapabilityActions,
+  CapabilityResourceTypes
+} from './capabilityToken.service.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://example.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || 'test-service-role-key';
@@ -259,6 +268,74 @@ export async function grantReferenceAccess({
   return storedGrant;
 }
 
+
+export async function createReferenceCapabilityGrant({
+  candidateUserId,
+  recruiterUserId = null,
+  granteeType = null,
+  recipientId = null,
+  allowedActions = [CapabilityActions.READ_REFERENCES, CapabilityActions.READ_REFERENCE_PACK],
+  expiresAt = null,
+  metadata = null,
+  req = null
+}) {
+  const resolvedGranteeType = recruiterUserId
+    ? CapabilityGranteeTypes.RECRUITER_USER
+    : (granteeType || CapabilityGranteeTypes.LINK);
+  const resolvedRecipientId = recruiterUserId || recipientId || null;
+
+  if (recruiterUserId) {
+    const recruiter = await fetchUser(recruiterUserId);
+    if (!recruiter) {
+      const error = new Error('Recruiter not found');
+      error.status = 400;
+      throw error;
+    }
+
+    const recruiterStatus = await isActiveRecruiter(recruiterUserId);
+    if (!recruiterStatus.isRecruiter) {
+      const error = new Error('Recruiter must be an active company signer');
+      error.status = 400;
+      throw error;
+    }
+  }
+
+  return issueCapabilityGrant({
+    candidateUserId,
+    ownerUserId: candidateUserId,
+    resourceType: CapabilityResourceTypes.CANDIDATE_REFERENCE_DATA,
+    resourceId: candidateUserId,
+    granteeType: resolvedGranteeType,
+    granteeId: resolvedRecipientId,
+    allowedActions,
+    expiresAt,
+    metadata,
+    req
+  });
+}
+
+export async function revokeReferenceCapabilityGrant({
+  candidateUserId,
+  grantId,
+  revokedByUserId,
+  req = null
+}) {
+  return revokeCapabilityGrant({
+    grantId,
+    candidateUserId,
+    revokedByUserId,
+    req
+  });
+}
+
+export async function listReferenceCapabilityGrants({ candidateUserId }) {
+  return listCapabilityGrants({ candidateUserId });
+}
+
+export async function listReferenceAccessHistory({ candidateUserId, limit = 100 }) {
+  return listCapabilityAccessHistory({ candidateUserId, limit });
+}
+
 export async function revokeReferenceAccess({
   candidateUserId,
   recruiterUserId,
@@ -420,5 +497,9 @@ export default {
   revokeReferenceAccess,
   getReferenceAccessStatus,
   listReferenceAccessGrants,
+  createReferenceCapabilityGrant,
+  revokeReferenceCapabilityGrant,
+  listReferenceCapabilityGrants,
+  listReferenceAccessHistory,
   assertRecruiterCanAccessReferencePack
 };

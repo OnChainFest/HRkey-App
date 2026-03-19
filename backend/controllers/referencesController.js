@@ -166,7 +166,7 @@ export async function getCandidateReferences(req, res) {
     const requesterId = req.user?.id;
     const accessLevel = req.referenceAccess?.accessLevel;
 
-    if (!requesterId) {
+    if (!requesterId && accessLevel !== 'capability_token') {
       return res.status(401).json({
         ok: false,
         error: 'UNAUTHORIZED',
