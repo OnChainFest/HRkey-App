@@ -10,6 +10,7 @@ import {
   logReferenceSubmissionAudit,
   AuditActionTypes
 } from '../utils/auditLogger.js';
+import { ensureCanonicalRefereeIdentity } from './refereeIdentity.service.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrervcydgdrlcndtjboy.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -128,6 +129,54 @@ async function syncReferenceRequestGraph({ candidateId }) {
   }
 }
 
+async function maybeMaterializeCanonicalRelationship({ reference, refereeIdentity }) {
+  const shouldMaterialize = process.env.ENABLE_CANONICAL_REFEREE_RELATIONSHIP_EDGES === 'true';
+  const relationshipValue = reference?.relationship ? String(reference.relationship).trim() : null;
+
+  if (!shouldMaterialize || !relationshipValue || refereeIdentity?.confidence !== 'high') {
+    return null;
+  }
+
+  try {
+    const { extractRelationshipsFromReference } = await import('./graphRelationshipExtraction.service.js');
+    const { ReputationGraphService, ReputationGraphError } = await import('./reputationGraph.service.js');
+    const extracted = extractRelationshipsFromReference(reference);
+
+    if (!extracted.inferredRelationshipType) {
+      return null;
+    }
+
+    return await ReputationGraphService.upsertEdge({
+      source: { entityType: 'referee', entityId: refereeIdentity.refereeId },
+      target: { entityType: 'candidate', entityId: reference.owner_id },
+      edgeType: extracted.inferredRelationshipType,
+      metadata: {
+        extraction_source: 'reference_submission',
+        materialized_from: 'canonical_referee_identity',
+        reference_id: reference.id,
+        normalized_relationship_value: extracted.normalizedRelationshipValue,
+        referee_resolution_strategy: refereeIdentity.resolutionStrategy,
+        referee_resolution_confidence: refereeIdentity.confidence
+      },
+      referenceId: reference.id,
+      confidenceScore: extracted.confidenceScore,
+      active: true
+    });
+  } catch (error) {
+    if (error?.code === 'INVALID_EDGE_TYPE' || error?.code === 'ENTITY_NOT_FOUND' || error?.code === 'NODE_UPSERT_FAILED') {
+      logger.warn('Skipped canonical referee relationship materialization', {
+        referenceId: reference?.id,
+        refereeId: refereeIdentity?.refereeId,
+        error: error.message,
+        code: error.code
+      });
+      return null;
+    }
+
+    throw error;
+  }
+}
+
 async function syncSubmittedReferenceGraph(reference) {
   try {
     const { ReputationGraphService } = await import('./reputationGraph.service.js');
@@ -135,11 +184,35 @@ async function syncSubmittedReferenceGraph(reference) {
     await ReputationGraphService.ensureNode('candidate', reference.owner_id);
     await ReputationGraphService.ensureNode('reference', reference.id);
 
+    const refereeIdentity = await ensureCanonicalRefereeIdentity(reference);
+
+    const { error: refereeLinkError } = await supabase
+      .from('references')
+      .update({
+        referee_id: refereeIdentity.refereeId,
+        referee_resolution_strategy: refereeIdentity.resolutionStrategy,
+        referee_resolution_confidence: refereeIdentity.confidence,
+        referee_resolution_metadata: refereeIdentity.auditMetadata
+      })
+      .eq('id', reference.id);
+
+    if (refereeLinkError) {
+      throw refereeLinkError;
+    }
+
+    reference.referee_id = refereeIdentity.refereeId;
+    reference.referee_resolution_strategy = refereeIdentity.resolutionStrategy;
+    reference.referee_resolution_confidence = refereeIdentity.confidence;
+    reference.referee_resolution_metadata = refereeIdentity.auditMetadata;
+
+    await ReputationGraphService.ensureNode('referee', refereeIdentity.refereeId);
+
     if (reference.role_id) {
       await ReputationGraphService.ensureNode('role', reference.role_id);
     }
 
     await syncReferenceRelationships(reference);
+    await maybeMaterializeCanonicalRelationship({ reference, refereeIdentity });
   } catch (error) {
     logger.warn('Failed to sync submitted reference into reputation graph', {
       referenceId: reference?.id,

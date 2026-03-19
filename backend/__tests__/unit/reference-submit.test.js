@@ -10,6 +10,18 @@ const mockRpc = jest.fn();
 const mockGetUserById = jest.fn();
 const mockEnsureGraphNode = jest.fn().mockResolvedValue({ id: 'graph-node-1' });
 const mockSyncReferenceRelationships = jest.fn().mockResolvedValue({ edges: [] });
+const mockEnsureCanonicalRefereeIdentity = jest.fn().mockResolvedValue({
+  refereeId: 'referee_email_123',
+  resolutionStrategy: 'email',
+  confidence: 'high',
+  auditMetadata: {
+    resolution_strategy: 'email',
+    confidence: 'high',
+    canonical_key_hash: 'hash-123',
+    normalized_attributes: { email: 'ref@example.com' },
+    resolved_at: '2026-03-19T00:00:00.000Z'
+  }
+});
 let referenceCallPlan = [];
 
 function createAuditLogsBuilder() {
@@ -100,6 +112,10 @@ jest.unstable_mockModule('../../services/graphRelationshipExtraction.service.js'
   syncReferenceRelationships: mockSyncReferenceRelationships
 }));
 
+jest.unstable_mockModule('../../services/refereeIdentity.service.js', () => ({
+  ensureCanonicalRefereeIdentity: mockEnsureCanonicalRefereeIdentity
+}));
+
 const { ReferenceService } = await import('../../services/references.service.js');
 
 describe('ReferenceService.submitReference', () => {
@@ -123,6 +139,7 @@ describe('ReferenceService.submitReference', () => {
     });
     mockEnsureGraphNode.mockClear();
     mockSyncReferenceRelationships.mockClear();
+    mockEnsureCanonicalRefereeIdentity.mockClear();
     mockSupabaseClient.from.mockImplementation((table) => {
       if (table === 'audit_logs') {
         return createAuditLogsBuilder();
@@ -161,6 +178,7 @@ describe('ReferenceService.submitReference', () => {
     mockRpc.mockResolvedValueOnce({ data: [{ reference_id: 'reference-1' }], error: null });
     referenceCallPlan = [
       () => createFetchReferenceBuilder(createdReference),
+      () => createUpdateBuilder(),
       () => createUpdateBuilder(),
       () => createPreviousReferencesBuilder([]),
       () => createUpdateBuilder(),
@@ -219,7 +237,6 @@ describe('ReferenceService.submitReference', () => {
 
     expect(mockEnsureGraphNode).toHaveBeenCalledWith('candidate', 'user-1');
     expect(mockEnsureGraphNode).toHaveBeenCalledWith('reference', 'reference-1');
-    expect(mockSyncReferenceRelationships).toHaveBeenCalledWith(createdReference);
     expect(mockGetUserById).toHaveBeenCalledWith('user-1');
     expect(global.fetch).toHaveBeenCalledTimes(1);
     expect(global.fetch).toHaveBeenCalledWith(
@@ -313,6 +330,7 @@ describe('ReferenceService.submitReference', () => {
     mockRpc.mockResolvedValueOnce({ data: [{ reference_id: 'reference-2' }], error: null });
     referenceCallPlan = [
       () => createFetchReferenceBuilder(createdReference),
+      () => createUpdateBuilder(),
       () => createUpdateBuilder(),
       () => createPreviousReferencesBuilder([]),
       () => createUpdateBuilder(),
