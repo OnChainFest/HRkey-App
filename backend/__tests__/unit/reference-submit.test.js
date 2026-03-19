@@ -8,6 +8,8 @@ process.env.NODE_ENV = 'test';
 const auditEntries = [];
 const mockRpc = jest.fn();
 const mockGetUserById = jest.fn();
+const mockEnsureGraphNode = jest.fn().mockResolvedValue({ id: 'graph-node-1' });
+const mockSyncReferenceRelationships = jest.fn().mockResolvedValue({ edges: [] });
 let referenceCallPlan = [];
 
 function createAuditLogsBuilder() {
@@ -88,6 +90,16 @@ jest.unstable_mockModule('../../services/hrscore/autoTrigger.js', () => ({
   onReferenceValidated: jest.fn().mockResolvedValue()
 }));
 
+jest.unstable_mockModule('../../services/reputationGraph.service.js', () => ({
+  ReputationGraphService: {
+    ensureNode: mockEnsureGraphNode
+  }
+}));
+
+jest.unstable_mockModule('../../services/graphRelationshipExtraction.service.js', () => ({
+  syncReferenceRelationships: mockSyncReferenceRelationships
+}));
+
 const { ReferenceService } = await import('../../services/references.service.js');
 
 describe('ReferenceService.submitReference', () => {
@@ -109,6 +121,8 @@ describe('ReferenceService.submitReference', () => {
         }
       }
     });
+    mockEnsureGraphNode.mockClear();
+    mockSyncReferenceRelationships.mockClear();
     mockSupabaseClient.from.mockImplementation((table) => {
       if (table === 'audit_logs') {
         return createAuditLogsBuilder();
@@ -203,6 +217,9 @@ describe('ReferenceService.submitReference', () => {
       client_ip_hash: 'hashed-ip'
     });
 
+    expect(mockEnsureGraphNode).toHaveBeenCalledWith('candidate', 'user-1');
+    expect(mockEnsureGraphNode).toHaveBeenCalledWith('reference', 'reference-1');
+    expect(mockSyncReferenceRelationships).toHaveBeenCalledWith(createdReference);
     expect(mockGetUserById).toHaveBeenCalledWith('user-1');
     expect(global.fetch).toHaveBeenCalledTimes(1);
     expect(global.fetch).toHaveBeenCalledWith(

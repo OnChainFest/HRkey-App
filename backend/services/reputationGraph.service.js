@@ -2,7 +2,19 @@ import { createClient } from '@supabase/supabase-js';
 import logger from '../logger.js';
 
 const ENTITY_TYPES = Object.freeze(['candidate', 'referee', 'company', 'role', 'reference']);
-const EDGE_TYPES = Object.freeze(['worked_with', 'managed_by', 'reviewed_by', 'reported_to']);
+// Human relationship edge types are reserved for canonical actor-based graph population.
+// Reference-driven extraction currently persists only REFERENCED evidence edges.
+const EDGE_TYPES = Object.freeze([
+  'worked_with',
+  'managed_by',
+  'reviewed_by',
+  'reported_to',
+  'MANAGER_OF',
+  'DIRECT_REPORT_OF',
+  'PEER_OF',
+  'COLLABORATED_WITH',
+  'REFERENCED'
+]);
 
 const ENTITY_TABLES = Object.freeze({
   candidate: ['users'],
@@ -202,7 +214,7 @@ export class ReputationGraphService {
     return getNodeRecordById(normalizedNodeId);
   }
 
-  static async createEdge({ source, target, edgeType, metadata = null, weight = null }) {
+  static async createEdge({ source, target, edgeType, metadata = null, weight = null, referenceId = null, confidenceScore = null }) {
     assertValidEdgeType(edgeType);
 
     const sourceNode = await this.ensureNode(source.entityType, source.entityId);
@@ -239,6 +251,8 @@ export class ReputationGraphService {
         edge_type: edgeType,
         weight,
         metadata: safeMetadata,
+        reference_id: referenceId,
+        confidence_score: confidenceScore,
         active: true
       })
       .select('*')
@@ -257,7 +271,7 @@ export class ReputationGraphService {
     return data;
   }
 
-  static async upsertEdge({ source, target, edgeType, metadata = null, weight = null, active = true }) {
+  static async upsertEdge({ source, target, edgeType, metadata = null, weight = null, referenceId = null, confidenceScore = null, active = true }) {
     assertValidEdgeType(edgeType);
 
     const sourceNode = await this.ensureNode(source.entityType, source.entityId);
@@ -278,6 +292,8 @@ export class ReputationGraphService {
           edge_type: edgeType,
           weight,
           metadata: safeMetadata,
+          reference_id: referenceId,
+          confidence_score: confidenceScore,
           active
         },
         {
