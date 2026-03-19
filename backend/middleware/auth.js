@@ -403,6 +403,22 @@ export function requireOwnWallet(walletField = 'subject_wallet', options = {}) {
 
 export async function optionalAuth(req, res, next) {
   try {
+    const allowTestBypass =
+      process.env.NODE_ENV === 'test' &&
+      process.env.ALLOW_TEST_AUTH_BYPASS === 'true' &&
+      hasExplicitTestBypassHeaders(req);
+
+    if (allowTestBypass) {
+      req.user = {
+        id: req.headers['x-test-user-id'] || 'test-user-id',
+        email: req.headers['x-test-user-email'] || 'test-user@example.com',
+        role: req.headers['x-test-user-role'] || 'user',
+        identity_verified: true,
+        wallet_address: req.headers['x-test-wallet-address'] || null
+      };
+      return next();
+    }
+
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {

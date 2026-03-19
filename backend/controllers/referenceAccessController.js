@@ -3,7 +3,11 @@ import {
   grantReferenceAccess,
   revokeReferenceAccess,
   listReferenceAccessGrants,
-  getReferenceAccessStatus
+  getReferenceAccessStatus,
+  createReferenceCapabilityGrant,
+  revokeReferenceCapabilityGrant,
+  listReferenceCapabilityGrants,
+  listReferenceAccessHistory
 } from '../services/referenceAccess.service.js';
 
 function badRequest(res, error, message) {
@@ -147,9 +151,142 @@ export async function getMyReferenceAccessStatus(req, res) {
   }
 }
 
+
+
+export async function createCapabilityGrant(req, res) {
+  try {
+    const candidateUserId = req.user?.id;
+    const {
+      recruiterUserId = null,
+      granteeType = null,
+      recipientId = null,
+      expiresAt = null,
+      allowedActions = null,
+      metadata = null
+    } = req.body || {};
+
+    if (!candidateUserId) {
+      return res.status(401).json({ ok: false, error: 'UNAUTHORIZED', message: 'Authentication required' });
+    }
+
+    const issued = await createReferenceCapabilityGrant({
+      candidateUserId,
+      recruiterUserId,
+      granteeType,
+      recipientId,
+      allowedActions: allowedActions || undefined,
+      expiresAt,
+      metadata,
+      req
+    });
+
+    return res.status(200).json({ ok: true, grant: issued.grant, capabilityToken: issued.capabilityToken });
+  } catch (error) {
+    logger.warn('Failed to create reference capability grant', {
+      requestId: req.requestId,
+      candidateUserId: req.user?.id,
+      error: error.message
+    });
+
+    return res.status(error.status || 500).json({
+      ok: false,
+      error: error.status && error.status < 500 ? 'CAPABILITY_GRANT_FAILED' : 'INTERNAL_ERROR',
+      message: error.status && error.status < 500 ? error.message : 'Failed to create capability grant'
+    });
+  }
+}
+
+export async function revokeCapabilityGrantById(req, res) {
+  try {
+    const candidateUserId = req.user?.id;
+    const grantId = req.params?.grantId;
+
+    if (!candidateUserId) {
+      return res.status(401).json({ ok: false, error: 'UNAUTHORIZED', message: 'Authentication required' });
+    }
+
+    if (!grantId) {
+      return badRequest(res, 'INVALID_GRANT_ID', 'Valid grant ID is required');
+    }
+
+    const grant = await revokeReferenceCapabilityGrant({
+      candidateUserId,
+      grantId,
+      revokedByUserId: candidateUserId,
+      req
+    });
+
+    return res.status(200).json({ ok: true, grant });
+  } catch (error) {
+    logger.warn('Failed to revoke reference capability grant', {
+      requestId: req.requestId,
+      candidateUserId: req.user?.id,
+      grantId: req.params?.grantId,
+      error: error.message
+    });
+
+    return res.status(error.status || 500).json({
+      ok: false,
+      error: error.status && error.status < 500 ? 'CAPABILITY_GRANT_REVOKE_FAILED' : 'INTERNAL_ERROR',
+      message: error.status && error.status < 500 ? error.message : 'Failed to revoke capability grant'
+    });
+  }
+}
+
+export async function listMyCapabilityGrants(req, res) {
+  try {
+    const candidateUserId = req.user?.id;
+
+    if (!candidateUserId) {
+      return res.status(401).json({ ok: false, error: 'UNAUTHORIZED', message: 'Authentication required' });
+    }
+
+    const grants = await listReferenceCapabilityGrants({ candidateUserId });
+    return res.status(200).json({ ok: true, grants, count: grants.length });
+  } catch (error) {
+    logger.error('Failed to list capability grants', {
+      requestId: req.requestId,
+      candidateUserId: req.user?.id,
+      error: error.message
+    });
+
+    return res.status(500).json({ ok: false, error: 'INTERNAL_ERROR', message: 'Failed to list capability grants' });
+  }
+}
+
+export async function getMyAccessHistory(req, res) {
+  try {
+    const candidateUserId = req.user?.id;
+    const limit = Number.parseInt(req.query?.limit || '100', 10);
+
+    if (!candidateUserId) {
+      return res.status(401).json({ ok: false, error: 'UNAUTHORIZED', message: 'Authentication required' });
+    }
+
+    const history = await listReferenceAccessHistory({
+      candidateUserId,
+      limit: Number.isFinite(limit) && limit > 0 ? Math.min(limit, 250) : 100
+    });
+
+    return res.status(200).json({ ok: true, history, count: history.length });
+  } catch (error) {
+    logger.error('Failed to list reference access history', {
+      requestId: req.requestId,
+      candidateUserId: req.user?.id,
+      error: error.message
+    });
+
+    return res.status(500).json({ ok: false, error: 'INTERNAL_ERROR', message: 'Failed to list access history' });
+  }
+}
+
 export default {
   grantRecruiterReferenceAccess,
   revokeRecruiterReferenceAccess,
   listMyReferenceAccessGrants,
-  getMyReferenceAccessStatus
+  getMyReferenceAccessStatus,
+  createCapabilityGrant,
+  revokeCapabilityGrantById,
+  listMyCapabilityGrants,
+  getMyAccessHistory
 };

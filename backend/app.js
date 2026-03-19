@@ -1118,8 +1118,9 @@ app.get('/api/references/pending', requireAuth, referencesController.getMyPendin
  */
 app.get(
   '/api/references/candidate/:candidateId',
-  requireAuth,
+  optionalAuth,
   requireReferenceAccessPermission({
+    capabilityAction: 'read_references',
     resolveSubject: async (req) => ({
       candidateUserId: req.params.candidateId
     }),
@@ -1137,13 +1138,18 @@ app.post('/api/reference-access/grants', requireAuth, referenceAccessController.
 app.delete('/api/reference-access/grants/:recruiterUserId', requireAuth, referenceAccessController.revokeRecruiterReferenceAccess);
 app.get('/api/reference-access/grants', requireAuth, referenceAccessController.listMyReferenceAccessGrants);
 app.get('/api/reference-access/status/:candidateUserId', requireAuth, referenceAccessController.getMyReferenceAccessStatus);
+app.post('/api/reference-access/capabilities', requireAuth, referenceAccessController.createCapabilityGrant);
+app.post('/api/reference-access/capabilities/:grantId/revoke', requireAuth, referenceAccessController.revokeCapabilityGrantById);
+app.get('/api/reference-access/capabilities', requireAuth, referenceAccessController.listMyCapabilityGrants);
+app.get('/api/reference-access/history', requireAuth, referenceAccessController.getMyAccessHistory);
 
 /**
  * GET /api/reference-pack/:identifier
  *
  * Returns canonical reference pack and hash for a candidate.
  */
-app.get('/api/reference-pack/:identifier', requireAuth, requireReferenceAccessPermission({
+app.get('/api/reference-pack/:identifier', optionalAuth, requireReferenceAccessPermission({
+  capabilityAction: 'read_reference_pack',
   resolveSubject: async (req) => {
     const { buildCanonicalReferencePack } = await loadReferencePack();
     const pack = await buildCanonicalReferencePack(req.params.identifier);
