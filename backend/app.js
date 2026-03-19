@@ -62,6 +62,7 @@ const adminOverviewController = lazyController(() => import('./controllers/admin
 const analyticsController = lazyController(() => import('./controllers/analyticsController.js'));
 const hrscoreController = lazyController(() => import('./controllers/hrscoreController.js'));
 const referencesController = lazyController(() => import('./controllers/referencesController.js'));
+const referenceAccessController = lazyController(() => import('./controllers/referenceAccessController.js'));
 const aiRefineController = lazyController(() => import('./controllers/aiRefine.controller.js'));
 
 const loadHrkeyScoreService = lazyModule(() => import('./hrkeyScoreService.js'));
@@ -1113,6 +1114,11 @@ app.get('/api/references/pending', requireAuth, referencesController.getMyPendin
  */
 app.get('/api/references/candidate/:candidateId', requireAuth, referencesController.getCandidateReferences);
 
+app.post('/api/reference-access/grants', requireAuth, referenceAccessController.grantRecruiterReferenceAccess);
+app.delete('/api/reference-access/grants/:recruiterUserId', requireAuth, referenceAccessController.revokeRecruiterReferenceAccess);
+app.get('/api/reference-access/grants', requireAuth, referenceAccessController.listMyReferenceAccessGrants);
+app.get('/api/reference-access/status/:candidateUserId', requireAuth, referenceAccessController.getMyReferenceAccessStatus);
+
 /**
  * GET /api/reference-pack/:identifier
  *
@@ -1122,7 +1128,17 @@ app.get('/api/reference-pack/:identifier', requireAuth, async (req, res) => {
   try {
     const { buildCanonicalReferencePack } = await loadReferencePack();
     const { canonicalHash } = await loadCanonicalHash();
+    const { assertRecruiterCanAccessReferencePack } = await import('./services/referenceAccess.service.js');
     const pack = await buildCanonicalReferencePack(req.params.identifier);
+
+    if (req.user?.role !== 'superadmin' && req.user?.id !== pack.candidate_id) {
+      await assertRecruiterCanAccessReferencePack({
+        candidateUserId: pack.candidate_id,
+        recruiterUserId: req.user?.id,
+        req
+      });
+    }
+
     const { hash } = canonicalHash(pack);
     return res.json({ pack, pack_hash: hash, generated_at: new Date().toISOString() });
   } catch (error) {
@@ -1143,7 +1159,17 @@ app.post('/api/reference-pack/:identifier/commit', requireAuth, async (req, res)
   try {
     const { buildCanonicalReferencePack } = await loadReferencePack();
     const { canonicalHash } = await loadCanonicalHash();
+    const { assertRecruiterCanAccessReferencePack } = await import('./services/referenceAccess.service.js');
     const pack = await buildCanonicalReferencePack(req.params.identifier);
+
+    if (req.user?.role !== 'superadmin' && req.user?.id !== pack.candidate_id) {
+      await assertRecruiterCanAccessReferencePack({
+        candidateUserId: pack.candidate_id,
+        recruiterUserId: req.user?.id,
+        req
+      });
+    }
+
     const { hash } = canonicalHash(pack);
     const packHashHex = normalizePackHash(hash);
     const { contract, chainId, contractAddress } = getReferenceProofWriteContract();
