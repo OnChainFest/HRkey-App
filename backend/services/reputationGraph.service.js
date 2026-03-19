@@ -18,7 +18,7 @@ const EDGE_TYPES = Object.freeze([
 
 const ENTITY_TABLES = Object.freeze({
   candidate: ['users'],
-  referee: ['users', 'company_signers', 'reference_invites'],
+  referee: ['referee_identities', 'users', 'company_signers', 'reference_invites'],
   company: ['companies'],
   role: ['roles'],
   reference: ['references']
