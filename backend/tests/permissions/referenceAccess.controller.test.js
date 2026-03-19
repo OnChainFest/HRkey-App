@@ -5,6 +5,9 @@ process.env.NODE_ENV = 'test';
 process.env.ALLOW_TEST_AUTH_BYPASS = 'true';
 process.env.SUPABASE_URL = 'https://test.supabase.co';
 process.env.SUPABASE_SERVICE_KEY = 'test-service-key';
+process.env.BASE_SEPOLIA_RPC_URL = 'https://base-sepolia.example';
+process.env.PROOF_CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000001';
+process.env.PROOF_SIGNER_PRIVATE_KEY = '0x'.padEnd(66, '1');
 
 const mockSupabaseClient = {
   from: jest.fn(),
@@ -19,6 +22,10 @@ const revokeReferenceAccessMock = jest.fn();
 const listReferenceAccessGrantsMock = jest.fn();
 const getReferenceAccessStatusMock = jest.fn();
 const assertRecruiterCanAccessReferencePackMock = jest.fn();
+const buildCanonicalReferencePackMock = jest.fn();
+const canonicalHashMock = jest.fn();
+const recordReferencePackProofMock = jest.fn();
+const waitForProofTxMock = jest.fn();
 
 jest.unstable_mockModule('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabaseClient)
@@ -30,6 +37,14 @@ jest.unstable_mockModule('../../services/referenceAccess.service.js', () => ({
   listReferenceAccessGrants: listReferenceAccessGrantsMock,
   getReferenceAccessStatus: getReferenceAccessStatusMock,
   assertRecruiterCanAccessReferencePack: assertRecruiterCanAccessReferencePackMock
+}));
+
+jest.unstable_mockModule('../../services/referencePack.service.js', () => ({
+  buildCanonicalReferencePack: buildCanonicalReferencePackMock
+}));
+
+jest.unstable_mockModule('../../utils/canonicalHash.js', () => ({
+  canonicalHash: canonicalHashMock
 }));
 
 jest.unstable_mockModule('../../utils/emailService.js', () => ({
@@ -64,19 +79,34 @@ jest.unstable_mockModule('../../utils/auditLogger.js', () => ({
   auditMiddleware: () => (req, res, next) => next()
 }));
 
+jest.unstable_mockModule('ethers', () => ({
+  ethers: {
+    JsonRpcProvider: jest.fn(),
+    Wallet: jest.fn(),
+    Contract: function MockContract() {
+      this.recordReferencePackProof = recordReferencePackProofMock;
+      this.getProof = jest.fn();
+    }
+  }
+}));
+
 const referencesControllerModule = await import('../../controllers/referencesController.js');
 referencesControllerModule.__setSupabaseClientForTests(mockSupabaseClient);
 const { default: app } = await import('../../server.js');
 
-function createBuilder({ orderResponse = { data: [], error: null } } = {}) {
+function createBuilder({
+  orderResponse = { data: [], error: null },
+  singleQueue = [],
+  maybeSingleQueue = []
+} = {}) {
   const builder = {
     select: jest.fn(() => builder),
     insert: jest.fn(() => builder),
     update: jest.fn(() => builder),
     eq: jest.fn(() => builder),
     in: jest.fn(() => builder),
-    maybeSingle: jest.fn(async () => ({ data: null, error: null })),
-    single: jest.fn(async () => ({ data: null, error: null })),
+    maybeSingle: jest.fn(async () => (maybeSingleQueue.length ? maybeSingleQueue.shift() : { data: null, error: null })),
+    single: jest.fn(async () => (singleQueue.length ? singleQueue.shift() : { data: null, error: null })),
     order: jest.fn(async () => orderResponse)
   };
   return builder;
@@ -86,6 +116,10 @@ describe('reference access controller', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockSupabaseClient.from.mockImplementation(() => createBuilder());
+    buildCanonicalReferencePackMock.mockResolvedValue({ candidate_id: 'candidate-1', references: [] });
+    canonicalHashMock.mockReturnValue({ hash: 'a'.repeat(64), canonicalJson: '{}' });
+    waitForProofTxMock.mockResolvedValue({ blockNumber: 1 });
+    recordReferencePackProofMock.mockResolvedValue({ hash: '0xtx', wait: waitForProofTxMock });
   });
 
   test('authenticated candidate can grant access', async () => {
@@ -188,6 +222,83 @@ describe('reference access controller', () => {
     expect(response.status).toBe(200);
     expect(response.body.accessLevel).toBe('explicit_grant');
     expect(response.body.references).toHaveLength(1);
+  });
+
+  test('reference pack endpoint enforces explicit recruiter permission', async () => {
+    const error = new Error('Explicit reference access is required');
+    error.status = 403;
+    assertRecruiterCanAccessReferencePackMock.mockRejectedValue(error);
+
+    const response = await request(app)
+      .get('/api/reference-pack/candidate-1')
+      .set('x-test-user-id', 'recruiter-1')
+      .set('x-test-user-email', 'recruiter@example.com');
+
+    expect(response.status).toBe(403);
+    expect(assertRecruiterCanAccessReferencePackMock).toHaveBeenCalledWith(expect.objectContaining({
+      candidateUserId: 'candidate-1',
+      recruiterUserId: 'recruiter-1',
+      targetId: 'candidate-1'
+    }));
+  });
+
+  test('reference pack commit preserves owner access without recruiter grant', async () => {
+    const response = await request(app)
+      .post('/api/reference-pack/candidate-1/commit')
+      .set('x-test-user-id', 'candidate-1')
+      .set('x-test-user-email', 'candidate@example.com');
+
+    expect(response.status).toBe(200);
+    expect(assertRecruiterCanAccessReferencePackMock).not.toHaveBeenCalled();
+    expect(recordReferencePackProofMock).toHaveBeenCalled();
+  });
+
+  test('approved company data route enforces explicit recruiter permission', async () => {
+    const error = new Error('Reference access grant has expired');
+    error.status = 403;
+    assertRecruiterCanAccessReferencePackMock.mockRejectedValue(error);
+
+    mockSupabaseClient.from.mockImplementation((table) => {
+      if (table === 'data_access_requests') {
+        return createBuilder({
+          singleQueue: [
+            {
+              data: {
+                id: 'req-1',
+                company_id: 'company-1',
+                target_user_id: 'candidate-1',
+                requested_data_type: 'reference',
+                reference_id: 'ref-1',
+                status: 'APPROVED',
+                access_count: 0
+              },
+              error: null
+            }
+          ]
+        });
+      }
+      if (table === 'company_signers') {
+        return createBuilder({ maybeSingleQueue: [{ data: { id: 'signer-1' }, error: null }] });
+      }
+      if (table === 'users') {
+        return createBuilder({ singleQueue: [{ data: { id: 'recruiter-1', wallet_address: '0xabc' }, error: null }] });
+      }
+      if (table === 'staking_tiers') {
+        return createBuilder({ maybeSingleQueue: [{ data: { tier: 'platinum', updated_at: new Date().toISOString() }, error: null }] });
+      }
+      if (table === 'references') {
+        return createBuilder({ singleQueue: [{ data: { id: 'ref-1' }, error: null }] });
+      }
+      return createBuilder();
+    });
+
+    const response = await request(app)
+      .get('/api/data-access/req-1/data')
+      .set('x-test-user-id', 'recruiter-1')
+      .set('x-test-user-email', 'recruiter@example.com');
+
+    expect(response.status).toBe(403);
+    expect(response.body.message).toBe('Reference access grant has expired');
   });
 
   test('recruiter loses access after revocation', async () => {

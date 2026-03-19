@@ -12,7 +12,6 @@ import { evaluateCandidateForUser } from '../services/candidateEvaluation.servic
 import { getRequiredTierForDataType, getStakeTierStatus, hasRequiredTier } from '../services/stakingTier.service.js';
 import logger from '../logger.js';
 import { logEvent, EventTypes } from '../services/analytics/eventTracker.js';
-import { assertRecruiterCanAccessReferencePack } from '../services/referenceAccess.service.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || 'https://example.supabase.co';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || 'test-service-role-key';
@@ -674,11 +673,19 @@ export async function getDataByRequestId(req, res) {
     const userId = req.user.id;
 
     // Get the request
-    const { data: request, error: requestError } = await supabaseClient
-      .from('data_access_requests')
-      .select('*')
-      .eq('id', requestId)
-      .single();
+    let request = req.referenceAccess?.dataAccessRequest;
+    let requestError = null;
+
+    if (!request) {
+      const response = await supabaseClient
+        .from('data_access_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+      request = response.data;
+      requestError = response.error;
+    }
 
     if (requestError || !request) {
       return res.status(404).json({
@@ -734,16 +741,6 @@ export async function getDataByRequestId(req, res) {
       return res.status(403).json({
         error: 'Insufficient stake tier',
         message: `Required tier: ${requiredTier}`
-      });
-    }
-
-    // Explicit candidate-managed recruiter grant is required for any reference payload.
-    if (request.reference_id || ['reference', 'profile', 'full_data'].includes(request.requested_data_type)) {
-      await assertRecruiterCanAccessReferencePack({
-        candidateUserId: request.target_user_id,
-        recruiterUserId: userId,
-        req,
-        targetId: request.reference_id || request.id
       });
     }
 

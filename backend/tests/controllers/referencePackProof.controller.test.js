@@ -9,6 +9,7 @@ process.env.PROOF_SIGNER_PRIVATE_KEY = '0x'.padEnd(66, '1');
 
 const mockBuildCanonicalReferencePack = jest.fn();
 const mockCanonicalHash = jest.fn();
+const assertRecruiterCanAccessReferencePackMock = jest.fn();
 
 const mockRecordReferencePackProof = jest.fn();
 const mockGetProof = jest.fn();
@@ -20,6 +21,10 @@ jest.unstable_mockModule('../../services/referencePack.service.js', () => ({
 
 jest.unstable_mockModule('../../utils/canonicalHash.js', () => ({
   canonicalHash: mockCanonicalHash
+}));
+
+jest.unstable_mockModule('../../services/referenceAccess.service.js', () => ({
+  assertRecruiterCanAccessReferencePack: assertRecruiterCanAccessReferencePackMock
 }));
 
 jest.unstable_mockModule('../../middleware/auth.js', () => ({
@@ -62,6 +67,7 @@ describe('Reference Pack Proof Endpoints', () => {
   beforeEach(() => {
     mockBuildCanonicalReferencePack.mockReset();
     mockCanonicalHash.mockReset();
+    assertRecruiterCanAccessReferencePackMock.mockReset();
     mockRecordReferencePackProof.mockReset();
     mockGetProof.mockReset();
     mockWait.mockReset();
@@ -69,8 +75,9 @@ describe('Reference Pack Proof Endpoints', () => {
 
   test('POST /api/reference-pack/:identifier/commit returns expected payload', async () => {
     const packHash = 'a'.repeat(64);
-    mockBuildCanonicalReferencePack.mockResolvedValue({ schema: 'hrkey.reference_pack.v1' });
+    mockBuildCanonicalReferencePack.mockResolvedValue({ schema: 'hrkey.reference_pack.v1', candidate_id: 'candidate-123' });
     mockCanonicalHash.mockReturnValue({ hash: packHash, canonicalJson: '{}' });
+    assertRecruiterCanAccessReferencePackMock.mockResolvedValue({ id: 'grant-1', status: 'active' });
     mockWait.mockResolvedValue({ blockNumber: 123 });
     mockRecordReferencePackProof.mockResolvedValue({ hash: '0xtxhash', wait: mockWait });
 
