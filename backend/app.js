@@ -64,6 +64,7 @@ const hrscoreController = lazyController(() => import('./controllers/hrscoreCont
 const referencesController = lazyController(() => import('./controllers/referencesController.js'));
 const referenceAccessController = lazyController(() => import('./controllers/referenceAccessController.js'));
 const aiRefineController = lazyController(() => import('./controllers/aiRefine.controller.js'));
+const reputationGraphController = lazyController(() => import('./controllers/reputationGraph.controller.js'));
 
 const loadHrkeyScoreService = lazyModule(() => import('./hrkeyScoreService.js'));
 const loadScoreSnapshots = lazyModule(() => import('./services/hrscore/scoreSnapshots.js'));
@@ -1112,6 +1113,16 @@ app.get('/api/references/me', requireAuth, referencesController.getMyReferences)
  * GET /api/references/pending
  */
 app.get('/api/references/pending', requireAuth, referencesController.getMyPendingInvites);
+
+/**
+ * GET /api/reputation-graph/:entityType/:entityId
+ */
+app.get('/api/reputation-graph/:entityType/:entityId', requireAuth, reputationGraphController.getEntityGraph);
+
+/**
+ * GET /api/reputation-graph/node/:nodeId/edges
+ */
+app.get('/api/reputation-graph/node/:nodeId/edges', requireAuth, reputationGraphController.getNodeEdges);
 
 /**
  * GET /api/references/candidate/:candidateId

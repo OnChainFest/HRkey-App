@@ -116,6 +116,36 @@ async function fetchReferenceById(referenceId) {
     .single();
 }
 
+async function syncReferenceRequestGraph({ candidateId }) {
+  try {
+    const { ReputationGraphService } = await import('./reputationGraph.service.js');
+    await ReputationGraphService.ensureNode('candidate', candidateId);
+  } catch (error) {
+    logger.warn('Failed to sync reference request into reputation graph', {
+      candidateId,
+      error: error.message
+    });
+  }
+}
+
+async function syncSubmittedReferenceGraph(reference) {
+  try {
+    const { ReputationGraphService } = await import('./reputationGraph.service.js');
+    await ReputationGraphService.ensureNode('candidate', reference.owner_id);
+    await ReputationGraphService.ensureNode('reference', reference.id);
+
+    if (reference.role_id) {
+      await ReputationGraphService.ensureNode('role', reference.role_id);
+    }
+  } catch (error) {
+    logger.warn('Failed to sync submitted reference into reputation graph', {
+      referenceId: reference?.id,
+      ownerId: reference?.owner_id,
+      error: error.message
+    });
+  }
+}
+
 export async function fetchInviteByToken(token) {
   if (!token) {
     return { data: null, error: null };
@@ -191,6 +221,7 @@ export class ReferenceService {
     });
 
     await this.sendRefereeInviteEmail(email, name, applicantData, verificationUrl, expiresInDays);
+    await syncReferenceRequestGraph({ candidateId: userId });
 
     return { success: true, reference_id: invite.id, token: inviteToken, verification_url: verificationUrl };
   }
@@ -312,6 +343,8 @@ export class ReferenceService {
         error: packErr.message || String(packErr)
       });
     }
+
+    await syncSubmittedReferenceGraph(reference);
 
     try {
       logger.info('Processing reference through RVL', { reference_id: reference.id });
