@@ -73,6 +73,7 @@ const roleFitController = lazyController(() => import('./controllers/roleFit.con
 const performancePredictionController = lazyController(() => import('./controllers/performancePrediction.controller.js'));
 const careerTrajectoryController = lazyController(() => import('./controllers/careerTrajectory.controller.js'));
 const candidateBenchmarkController = lazyController(() => import('./controllers/candidateBenchmark.controller.js'));
+const louAgentController = lazyController(() => import('./controllers/louAgent.controller.js'));
 
 const loadHrkeyScoreService = lazyModule(() => import('./hrkeyScoreService.js'));
 const loadScoreSnapshots = lazyModule(() => import('./services/hrscore/scoreSnapshots.js'));
@@ -1692,6 +1693,12 @@ app.post(
 );
 app.get('/api/kpi-observations', requireAuth, kpiObservationsController.getKpiObservations);
 app.get('/api/kpi-observations/summary', requireAuth, kpiObservationsController.getKpiObservationsSummary);
+
+/* =========================
+   LOU AGENT ENDPOINTS
+   ========================= */
+app.post('/api/lou-agent/start', requireAuth, louAgentController.startLouConversation);
+app.post('/api/lou-agent/message', requireAuth, louAgentController.sendLouMessage);
 
 /* =========================
    HRKEY SCORE ENDPOINTS (ML-powered scoring)
