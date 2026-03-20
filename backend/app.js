@@ -67,6 +67,7 @@ const aiRefineController = lazyController(() => import('./controllers/aiRefine.c
 const reputationGraphController = lazyController(() => import('./controllers/reputationGraph.controller.js'));
 const reputationPropagationController = lazyController(() => import('./controllers/reputationPropagation.controller.js'));
 const reputationTrustWeightingController = lazyController(() => import('./controllers/reputationTrustWeighting.controller.js'));
+const recruiterGraphInsightsController = lazyController(() => import('./controllers/recruiterGraphInsights.controller.js'));
 
 const loadHrkeyScoreService = lazyModule(() => import('./hrkeyScoreService.js'));
 const loadScoreSnapshots = lazyModule(() => import('./services/hrscore/scoreSnapshots.js'));
@@ -1156,6 +1157,11 @@ app.get('/api/reputation-trust-weighting/candidate/:candidateId', requireAuth, r
  * GET /api/reputation-trust-weighting/referee/:refereeId
  */
 app.get('/api/reputation-trust-weighting/referee/:refereeId', requireAuth, requireSuperadmin, reputationTrustWeightingController.getRefereeTrustWeighting);
+
+/**
+ * GET /api/recruiter-graph-insights/candidate/:candidateId
+ */
+app.get('/api/recruiter-graph-insights/candidate/:candidateId', requireAuth, requireSelfOrSuperadmin('candidateId'), recruiterGraphInsightsController.getCandidateRecruiterGraphInsights);
 
 /**
  * GET /api/references/candidate/:candidateId
