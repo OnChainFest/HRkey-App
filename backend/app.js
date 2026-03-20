@@ -66,6 +66,7 @@ const referenceAccessController = lazyController(() => import('./controllers/ref
 const aiRefineController = lazyController(() => import('./controllers/aiRefine.controller.js'));
 const reputationGraphController = lazyController(() => import('./controllers/reputationGraph.controller.js'));
 const reputationPropagationController = lazyController(() => import('./controllers/reputationPropagation.controller.js'));
+const reputationTrustWeightingController = lazyController(() => import('./controllers/reputationTrustWeighting.controller.js'));
 
 const loadHrkeyScoreService = lazyModule(() => import('./hrkeyScoreService.js'));
 const loadScoreSnapshots = lazyModule(() => import('./services/hrscore/scoreSnapshots.js'));
@@ -1144,6 +1145,17 @@ app.get('/api/reputation-propagation/referee/:refereeId', requireAuth, requireSu
  * GET /api/reputation-propagation/node/:nodeId
  */
 app.get('/api/reputation-propagation/node/:nodeId', requireAuth, requireSuperadmin, reputationPropagationController.getNodePropagation);
+
+
+/**
+ * GET /api/reputation-trust-weighting/candidate/:candidateId
+ */
+app.get('/api/reputation-trust-weighting/candidate/:candidateId', requireAuth, requireSelfOrSuperadmin('candidateId'), reputationTrustWeightingController.getCandidateTrustWeighting);
+
+/**
+ * GET /api/reputation-trust-weighting/referee/:refereeId
+ */
+app.get('/api/reputation-trust-weighting/referee/:refereeId', requireAuth, requireSuperadmin, reputationTrustWeightingController.getRefereeTrustWeighting);
 
 /**
  * GET /api/references/candidate/:candidateId
