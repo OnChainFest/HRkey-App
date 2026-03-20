@@ -50,18 +50,16 @@ function getSupabaseClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     'test-service-role-key';
 
-  if (process.env.NODE_ENV === 'test' && supabaseClient) {
+  if (supabaseClient) {
     return supabaseClient;
   }
 
   if (process.env.NODE_ENV === 'test') {
-    return createClient(resolvedSupabaseUrl, resolvedSupabaseServiceKey);
-  }
-
-  if (!supabaseClient) {
     supabaseClient = createClient(resolvedSupabaseUrl, resolvedSupabaseServiceKey);
+    return supabaseClient;
   }
 
+  supabaseClient = createClient(resolvedSupabaseUrl, resolvedSupabaseServiceKey);
   return supabaseClient;
 }
 
