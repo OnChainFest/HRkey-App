@@ -68,6 +68,7 @@ const reputationGraphController = lazyController(() => import('./controllers/rep
 const reputationPropagationController = lazyController(() => import('./controllers/reputationPropagation.controller.js'));
 const reputationTrustWeightingController = lazyController(() => import('./controllers/reputationTrustWeighting.controller.js'));
 const recruiterGraphInsightsController = lazyController(() => import('./controllers/recruiterGraphInsights.controller.js'));
+const referenceQualityController = lazyController(() => import('./controllers/referenceQuality.controller.js'));
 
 const loadHrkeyScoreService = lazyModule(() => import('./hrkeyScoreService.js'));
 const loadScoreSnapshots = lazyModule(() => import('./services/hrscore/scoreSnapshots.js'));
@@ -1162,6 +1163,42 @@ app.get('/api/reputation-trust-weighting/referee/:refereeId', requireAuth, requi
  * GET /api/recruiter-graph-insights/candidate/:candidateId
  */
 app.get('/api/recruiter-graph-insights/candidate/:candidateId', requireAuth, requireSelfOrSuperadmin('candidateId'), recruiterGraphInsightsController.getCandidateRecruiterGraphInsights);
+
+/**
+ * GET /api/reference-quality/:referenceId
+ */
+app.get(
+  '/api/reference-quality/:referenceId',
+  requireAuth,
+  requireReferenceAccessPermission({
+    capabilityAction: 'read_references',
+    resolveSubject: async (req) => {
+      const { data, error } = await getSupabase()
+        .from('references')
+        .select('id, owner_id')
+        .eq('id', req.params.referenceId)
+        .single();
+
+      if (error || !data?.owner_id) {
+        const lookupError = new Error('Reference not found');
+        lookupError.status = 404;
+        throw lookupError;
+      }
+
+      return {
+        candidateUserId: data.owner_id,
+        targetId: data.id
+      };
+    },
+    allowSuperadmin: true,
+    onError: (error, _req, res) => res.status(error.status || 500).json({
+      ok: false,
+      error: error.status === 404 ? 'REFERENCE_NOT_FOUND' : (error.status && error.status < 500 ? 'FORBIDDEN' : 'INTERNAL_ERROR'),
+      message: error.status && error.status < 500 ? error.message : 'An unexpected error occurred'
+    })
+  }),
+  referenceQualityController.getReferenceQuality
+);
 
 /**
  * GET /api/references/candidate/:candidateId
