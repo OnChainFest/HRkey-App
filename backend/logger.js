@@ -66,6 +66,11 @@ const logger = winston.createLogger({
   exitOnError: false
 });
 
+
+if (typeof logger.http !== 'function') {
+  logger.http = typeof logger.info === 'function' ? logger.info.bind(logger) : () => {};
+}
+
 /**
  * Create a child logger with request context
  * @param {object} req - Express request object

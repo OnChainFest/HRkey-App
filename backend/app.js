@@ -1115,6 +1115,11 @@ app.get('/api/references/me', requireAuth, referencesController.getMyReferences)
 app.get('/api/references/pending', requireAuth, referencesController.getMyPendingInvites);
 
 /**
+ * GET /api/reputation-graph/candidate/:candidateId/visualization
+ */
+app.get('/api/reputation-graph/candidate/:candidateId/visualization', requireAuth, reputationGraphController.getCandidateVisualization);
+
+/**
  * GET /api/reputation-graph/:entityType/:entityId
  */
 app.get('/api/reputation-graph/:entityType/:entityId', requireAuth, reputationGraphController.getEntityGraph);

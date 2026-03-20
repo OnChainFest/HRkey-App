@@ -210,19 +210,19 @@ export default function CandidateEvaluationPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Your HRKey Evaluation</h1>
           <p className="text-slate-600 text-sm mt-1">
             Based on your verified references and profile signals.
           </p>
         </div>
-        <button
-          onClick={() => location.reload()}
-          className="px-3 py-2 text-sm border rounded-lg shadow-sm bg-white hover:bg-slate-50"
+        <a
+          href="/candidate/network"
+          className="inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm shadow-sm bg-white hover:bg-slate-50"
         >
-          Refresh
-        </button>
+          View relationship network
+        </a>
       </div>
 
       {loading && (
