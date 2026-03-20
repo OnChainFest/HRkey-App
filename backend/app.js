@@ -65,6 +65,7 @@ const referencesController = lazyController(() => import('./controllers/referenc
 const referenceAccessController = lazyController(() => import('./controllers/referenceAccessController.js'));
 const aiRefineController = lazyController(() => import('./controllers/aiRefine.controller.js'));
 const reputationGraphController = lazyController(() => import('./controllers/reputationGraph.controller.js'));
+const reputationPropagationController = lazyController(() => import('./controllers/reputationPropagation.controller.js'));
 
 const loadHrkeyScoreService = lazyModule(() => import('./hrkeyScoreService.js'));
 const loadScoreSnapshots = lazyModule(() => import('./services/hrscore/scoreSnapshots.js'));
@@ -1128,6 +1129,21 @@ app.get('/api/reputation-graph/:entityType/:entityId', requireAuth, reputationGr
  * GET /api/reputation-graph/node/:nodeId/edges
  */
 app.get('/api/reputation-graph/node/:nodeId/edges', requireAuth, reputationGraphController.getNodeEdges);
+
+/**
+ * GET /api/reputation-propagation/candidate/:candidateId
+ */
+app.get('/api/reputation-propagation/candidate/:candidateId', requireAuth, requireSelfOrSuperadmin('candidateId'), reputationPropagationController.getCandidatePropagation);
+
+/**
+ * GET /api/reputation-propagation/referee/:refereeId
+ */
+app.get('/api/reputation-propagation/referee/:refereeId', requireAuth, requireSuperadmin, reputationPropagationController.getRefereePropagation);
+
+/**
+ * GET /api/reputation-propagation/node/:nodeId
+ */
+app.get('/api/reputation-propagation/node/:nodeId', requireAuth, requireSuperadmin, reputationPropagationController.getNodePropagation);
 
 /**
  * GET /api/references/candidate/:candidateId
