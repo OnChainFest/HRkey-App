@@ -29,6 +29,9 @@ module.exports = {
       },
       moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/HRkey/src/$1',
+        '^react$': '<rootDir>/node_modules/react',
+        '^react-dom$': '<rootDir>/node_modules/react-dom',
+        '^react/jsx-runtime$': '<rootDir>/node_modules/react/jsx-runtime.js',
         '^\\.(css|less|sass|scss)$': 'identity-obj-proxy',
         '^.+\\.(png|jpg|jpeg|gif|webp|svg)$': '<rootDir>/backend/__tests__/mocks/fileMock.js',
       },
