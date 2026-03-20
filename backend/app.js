@@ -71,6 +71,7 @@ const recruiterGraphInsightsController = lazyController(() => import('./controll
 const referenceQualityController = lazyController(() => import('./controllers/referenceQuality.controller.js'));
 const roleFitController = lazyController(() => import('./controllers/roleFit.controller.js'));
 const performancePredictionController = lazyController(() => import('./controllers/performancePrediction.controller.js'));
+const careerTrajectoryController = lazyController(() => import('./controllers/careerTrajectory.controller.js'));
 
 const loadHrkeyScoreService = lazyModule(() => import('./hrkeyScoreService.js'));
 const loadScoreSnapshots = lazyModule(() => import('./services/hrscore/scoreSnapshots.js'));
@@ -1242,6 +1243,27 @@ app.get(
     })
   }),
   performancePredictionController.getPerformancePrediction
+);
+
+/**
+ * GET /api/career-trajectory/:candidateId
+ */
+app.get(
+  '/api/career-trajectory/:candidateId',
+  requireAuth,
+  requireReferenceAccessPermission({
+    capabilityAction: 'read_references',
+    resolveSubject: async (req) => ({
+      candidateUserId: req.params.candidateId
+    }),
+    allowSuperadmin: true,
+    onError: (error, _req, res) => res.status(error.status || 500).json({
+      ok: false,
+      error: error.status && error.status < 500 ? 'FORBIDDEN' : 'INTERNAL_ERROR',
+      message: error.status && error.status < 500 ? error.message : 'An unexpected error occurred'
+    })
+  }),
+  careerTrajectoryController.getCareerTrajectory
 );
 
 /**
